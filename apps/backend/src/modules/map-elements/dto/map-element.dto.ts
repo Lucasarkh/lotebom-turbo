@@ -38,18 +38,15 @@ export class MapElementDto {
   geometryType: GeometryType;
 
   @ApiProperty({ description: 'JSON da geometria (pontos, raio, etc)' })
-  @IsObject()
   @IsNotEmpty()
   geometryJson: any;
 
   @ApiPropertyOptional({ description: 'JSON de estilo (fill, stroke, opacity, zIndex)' })
   @IsOptional()
-  @IsObject()
   styleJson?: any;
 
   @ApiPropertyOptional({ description: 'JSON de metadados específicos do tipo' })
   @IsOptional()
-  @IsObject()
   metaJson?: any;
 }
 

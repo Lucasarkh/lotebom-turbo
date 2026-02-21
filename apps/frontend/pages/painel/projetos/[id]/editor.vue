@@ -234,15 +234,97 @@ function onCreateLotInBlock() {
 async function handleSave() {
   try {
     saveStatus.value = 'saving'
-    const data = store.exportData()
+    const dataString = store.exportData()
+    const data = JSON.parse(dataString)
+    
     const { useApi } = await import('~/composables/useApi')
     const { fetchApi } = useApi()
+    
+    // 1. Save canonical map data
     await fetchApi(`/projects/${projectId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ mapData: JSON.parse(data) }),
+      method: 'PATCH',
+      body: JSON.stringify({ mapData: data }),
     })
+
+    // 2. Extract and sync map-elements
+    const elements: any[] = []
+
+    // Convert LOTS
+    for (const [id, lot] of data.lots) {
+      elements.push({
+        id: `${projectId}:${id}`, // Prefix with projectId to ensure global uniqueness
+        type: 'LOT',
+        name: lot.label || `Lote ${id}`,
+        code: lot.label || null,
+        geometryType: 'POLYGON',
+        geometryJson: lot.polygon,
+        styleJson: { status: lot.status },
+        metaJson: {
+          area: lot.area,
+          frontage: lot.frontage,
+          price: lot.price,
+          notes: lot.notes,
+        },
+      })
+    }
+
+    // Convert ROADS
+    for (const [id, edge] of data.edges) {
+      elements.push({
+        id: `${projectId}:${id}`,
+        type: 'ROAD',
+        name: `Via ${id}`,
+        code: null,
+        geometryType: 'POLYLINE',
+        geometryJson: edge.curve,
+        styleJson: { width: edge.width, style: edge.style },
+      })
+    }
+
+    // Convert ROUNDABOUTS
+    for (const [id, rb] of data.roundabouts) {
+      elements.push({
+        id: `${projectId}:${id}`,
+        type: 'ROUNDABOUT',
+        name: `Rotatória ${id}`,
+        code: null,
+        geometryType: 'CIRCLE',
+        geometryJson: { center: rb.center, radius: rb.radius },
+      })
+    }
+
+    // Convert NATURAL
+    for (const [id, ne] of data.naturalElements) {
+      elements.push({
+        id: `${projectId}:${id}`,
+        type: ne.kind === 'lake' ? 'LAKE' : ne.kind === 'green_area' ? 'GREEN' : 'POLYGON',
+        name: ne.label || `Área ${id}`,
+        code: ne.label || null,
+        geometryType: 'POLYGON',
+        geometryJson: ne.polygon,
+      })
+    }
+
+    // Convert LABELS
+    for (const [id, lb] of data.textLabels) {
+      elements.push({
+        id: `${projectId}:${id}`,
+        type: 'LABEL',
+        name: lb.text,
+        code: null,
+        geometryType: 'RECT',
+        geometryJson: { position: lb.position, text: lb.text, fontSize: lb.fontSize },
+        styleJson: { color: lb.color, rotation: lb.rotation },
+      })
+    }
+
+    await fetchApi(`/projects/${projectId}/map-elements/bulk`, {
+      method: 'PUT',
+      body: JSON.stringify({ elements }),
+    })
+
     saveStatus.value = 'saved'
-    lastSavedSnapshot.value = data
+    lastSavedSnapshot.value = dataString
   } catch (e) {
     console.error('Save failed:', e)
     saveStatus.value = 'error'

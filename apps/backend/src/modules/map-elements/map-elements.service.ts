@@ -35,12 +35,14 @@ export class MapElementsService {
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
-    const incomingIds = dto.elements
-      .filter((el) => el.id)
-      .map((el) => el.id as string);
-
+    // We'll use a transaction for safety
     return this.prisma.$transaction(async (tx) => {
-      // Delete elements no longer in payload
+      const incomingIds = dto.elements
+        .filter((el) => el.id)
+        .map((el) => el.id as string);
+
+      // 1. Delete elements that are no longer present in the payload
+      // Careful: this might delete LotDetails, leads, etc via Cascade.
       await tx.mapElement.deleteMany({
         where: {
           tenantId,
@@ -52,11 +54,12 @@ export class MapElementsService {
       const results: any[] = [];
 
       for (const el of dto.elements) {
+        let element: any;
         if (el.id) {
           // Update existing
-          const updated = await tx.mapElement.update({
+          element = await tx.mapElement.upsert({
             where: { id: el.id },
-            data: {
+            update: {
               type: el.type,
               name: el.name,
               code: el.code,
@@ -65,11 +68,22 @@ export class MapElementsService {
               styleJson: el.styleJson ?? undefined,
               metaJson: el.metaJson ?? undefined,
             },
+            create: {
+              id: el.id,
+              tenantId,
+              projectId,
+              type: el.type,
+              name: el.name,
+              code: el.code,
+              geometryType: el.geometryType,
+              geometryJson: el.geometryJson,
+              styleJson: el.styleJson,
+              metaJson: el.metaJson,
+            },
           });
-          results.push(updated);
         } else {
-          // Create new
-          const created = await tx.mapElement.create({
+          // Create new (no id provided)
+          element = await tx.mapElement.create({
             data: {
               tenantId,
               projectId,
@@ -82,8 +96,31 @@ export class MapElementsService {
               metaJson: el.metaJson,
             },
           });
-          results.push(created);
         }
+
+        // 2. Synchronize LotDetails for LOT elements
+        if (element.type === 'LOT') {
+          const lotMeta = (element.metaJson as any) || {};
+          await tx.lotDetails.upsert({
+            where: { mapElementId: element.id },
+            update: {
+              // Only update fields from metaJson if they exist
+              areaM2: lotMeta.areaM2 || lotMeta.area || undefined,
+              frontage: lotMeta.frontage || undefined,
+              price: lotMeta.price || undefined,
+            },
+            create: {
+              tenantId,
+              projectId,
+              mapElementId: element.id,
+              status: 'AVAILABLE',
+              areaM2: lotMeta.areaM2 || lotMeta.area || null,
+              frontage: lotMeta.frontage || null,
+              price: lotMeta.price || null,
+            },
+          });
+        }
+        results.push(element);
       }
 
       return results;

@@ -106,6 +106,19 @@
         </div>
       </section>
 
+      <!-- Lot Photos -->
+      <section v-if="details?.medias?.length" class="pub-section">
+        <div class="pub-container">
+          <h2 class="pub-section-title">Galeria do Lote</h2>
+          <div class="pub-gallery">
+            <div v-for="(m, i) in details.medias" :key="m.id" class="gallery-item" @click="openLightbox(Number(i))">
+              <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption || 'Foto do lote'" loading="lazy" />
+              <video v-else :src="m.url" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Lead capture form -->
       <section class="pub-section" id="contato">
         <div class="pub-container">
@@ -191,6 +204,17 @@
         <p>{{ project?.tenant?.name }} &middot; Loteamento {{ project?.name }}</p>
         <p v-if="corretor" style="margin-top:4px; font-size:0.8rem;">Atendimento: {{ corretor.name }}{{ corretor.phone ? ` · ${corretor.phone}` : '' }}</p>
       </footer>
+
+      <!-- Lightbox -->
+      <div v-if="lightboxOpen" class="lightbox" @click.self="lightboxOpen = false">
+        <button class="lightbox-close" @click="lightboxOpen = false">&times;</button>
+        <button v-if="lightboxIdx > 0" class="lightbox-nav lightbox-prev" @click="lightboxIdx--">&#8249;</button>
+        <div class="lightbox-content">
+          <img v-if="lightboxMedia?.type === 'PHOTO'" :src="lightboxMedia.url" :alt="lightboxMedia.caption" />
+          <video v-else :src="lightboxMedia?.url" controls autoplay />
+        </div>
+        <button v-if="lightboxIdx < (details.medias?.length || 1) - 1" class="lightbox-nav lightbox-next" @click="lightboxIdx++">&#8250;</button>
+      </div>
     </template>
   </div>
 </template>
@@ -221,7 +245,39 @@ const projectUrl = computed(() => {
 
 const lot = computed(() => {
   if (!project.value) return null
-  return project.value.mapElements?.find(e => e.type === 'LOT' && (e.code === lotCode || e.id === lotCode)) || null
+  // 1. Try in mapElements (standard way)
+  const fromElements = project.value.mapElements?.find(e => e.type === 'LOT' && (e.code === lotCode || e.id === lotCode))
+  if (fromElements) return fromElements
+
+  // 2. Try in mapData (newer flexible way)
+  if (project.value.mapData) {
+    try {
+      const data = typeof project.value.mapData === 'string' ? JSON.parse(project.value.mapData) : project.value.mapData
+      const lotsArr = Array.isArray(data.lots) ? data.lots : (data.lots ? Object.entries(data.lots).map(([,l]) => l) : [])
+      const found = lotsArr.find((l) => (l.code === lotCode || l.id === lotCode || l.label === lotCode))
+      if (found) {
+        // Synthesize a structure similar to MapElement + LotDetails
+        const PPM = 10
+        return {
+          id: found.id,
+          code: found.code || found.label || found.id,
+          name: found.label || found.code || 'Lote',
+          lotDetails: {
+            status: (found.status || 'available').toUpperCase(),
+            price: found.price || null,
+            areaM2: Number(found.area) > 0 ? parseFloat((Number(found.area) / (PPM * PPM)).toFixed(1)) : 0,
+            frontage: Number(found.manualFrontage) || (Number(found.frontage) > 0 ? parseFloat((Number(found.frontage) / PPM).toFixed(1)) : 0),
+            depth: found.depth || null,
+            slope: found.slope || 'FLAT',
+            notes: found.notes || '',
+            conditionsJson: found.conditionsJson || [],
+            medias: [] // mapData doesn't store medias directly, they should be in lotDetails relation usually
+          }
+        }
+      }
+    } catch (e) { console.error('Error parsing mapData in lot page', e) }
+  }
+  return null
 })
 
 const details = computed(() => lot.value?.lotDetails || null)
@@ -256,6 +312,15 @@ const leadForm = ref({ name: '', email: '', phone: '', message: '' })
 const submitting = ref(false)
 const leadSuccess = ref(false)
 const leadError = ref('')
+
+const lightboxOpen = ref(false)
+const lightboxIdx = ref(0)
+const lightboxMedia = computed(() => details.value?.medias?.[lightboxIdx.value] ?? null)
+
+function openLightbox(idx) {
+  lightboxIdx.value = idx
+  lightboxOpen.value = true
+}
 
 onMounted(async () => {
   try {

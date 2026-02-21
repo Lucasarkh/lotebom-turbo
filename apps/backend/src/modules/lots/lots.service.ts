@@ -17,7 +17,10 @@ export class LotsService {
   async findByProject(tenantId: string, projectId: string) {
     return this.prisma.lotDetails.findMany({
       where: { tenantId, projectId },
-      include: { mapElement: true },
+      include: { 
+        mapElement: true,
+        medias: { orderBy: { createdAt: 'desc' } }
+      },
       orderBy: { mapElement: { code: 'asc' } },
     });
   }

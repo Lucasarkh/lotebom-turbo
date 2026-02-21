@@ -83,8 +83,9 @@ export class UploadController {
     @Param('projectId') projectId: string,
     @UploadedFile() file: Express.Multer.File,
     @Query('caption') caption?: string,
+    @Query('lotDetailsId') lotDetailsId?: string,
   ) {
-    return this.uploadService.uploadMedia(tenantId, projectId, file, caption);
+    return this.uploadService.uploadMedia(tenantId, projectId, file, caption, lotDetailsId);
   }
 
   @Delete('media/:mediaId')

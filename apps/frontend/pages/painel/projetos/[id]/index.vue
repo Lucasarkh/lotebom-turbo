@@ -106,6 +106,10 @@
               </tbody>
             </table>
           </div>
+          <!-- Debug info -->
+          <div v-if="authStore.isAdmin" style="margin-top: 10px; font-size: 0.7rem; color: #999;">
+            ID do Projeto: {{ project.id }}
+          </div>
         </div>
       </div>
 
@@ -118,7 +122,7 @@
         <div v-else class="table-wrapper">
           <table>
             <thead>
-              <tr><th>Código</th><th>Nome</th><th>Status</th><th>Preço</th><th>Área</th><th>Frente</th><th>Fundo</th><th>Inclinação</th></tr>
+              <tr><th>Código</th><th>Nome</th><th>Status</th><th>Preço</th><th>Área</th><th>Frente</th><th>Fundo</th><th>Inclinação</th><th v-if="authStore.canEdit">Ações</th></tr>
             </thead>
             <tbody>
               <tr v-for="l in lots" :key="l.id">
@@ -132,9 +136,95 @@
                 <td>{{ l.frontage ? `${l.frontage} m` : '—' }}</td>
                 <td>{{ l.depth ? `${l.depth} m` : '—' }}</td>
                 <td>{{ slopeLabel(l.slope) }}</td>
+                <td v-if="authStore.canEdit">
+                  <button class="btn btn-sm btn-secondary" @click="openEditLot(l)">Editar</button>
+                </td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Lot Edit Modal -->
+      <div v-if="editingLot" class="modal-overlay" @click.self="editingLot = null">
+        <div class="modal" style="max-width: 800px;">
+          <div class="modal-header" style="margin-bottom: var(--space-4);">
+            <h3>Editar Lote: {{ editingLot.mapElement?.code || editingLot.id }}</h3>
+            <button class="modal-close" @click="editingLot = null">✕</button>
+          </div>
+          
+          <div class="grid grid-cols-2" style="gap: var(--space-4); margin-top: var(--space-4);">
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select v-model="lotForm.status" class="form-input">
+                <option value="AVAILABLE">Disponível</option>
+                <option value="RESERVED">Reservado</option>
+                <option value="SOLD">Vendido</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Preço (R$)</label>
+              <input v-model.number="lotForm.price" type="number" step="0.01" class="form-input" placeholder="0.00" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Área (m²)</label>
+              <input v-model.number="lotForm.areaM2" type="number" step="0.01" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Frente (m)</label>
+              <input v-model.number="lotForm.frontage" type="number" step="0.01" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Profundidade/Fundo (m)</label>
+              <input v-model.number="lotForm.depth" type="number" step="0.01" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Inclinação</label>
+              <select v-model="lotForm.slope" class="form-input">
+                <option value="FLAT">Plano</option>
+                <option value="UPHILL">Aclive</option>
+                <option value="DOWNHILL">Declive</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Condições de Venda (uma por linha)</label>
+            <textarea v-model="lotForm.conditionsText" class="form-textarea" rows="3" placeholder="Ex: Entrada 10% + 120x
+Sem comprovante de renda"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notas / Descrição</label>
+            <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informações adicionais do lote..."></textarea>
+          </div>
+
+          <hr style="margin: var(--space-5) 0; border: 0; border-top: 1px solid var(--gray-200);" />
+
+          <h4 style="margin-bottom: var(--space-3);">Fotos do Lote</h4>
+          <div v-if="lotMedias.length === 0" class="empty-state" style="padding: var(--space-4); background: var(--gray-50);">
+            <p>Nenhuma foto específica deste lote.</p>
+          </div>
+          <div v-else class="grid grid-cols-4" style="gap: var(--space-2); margin-bottom: var(--space-3);">
+            <div v-for="m in lotMedias" :key="m.id" class="media-card" style="height: 100px;">
+              <img :src="m.url" class="media-thumb" style="height: 70px;" />
+              <div class="media-info" style="padding: 4px;">
+                <button class="btn btn-danger btn-xs" @click="removeLotMedia(m.id)">✕</button>
+              </div>
+            </div>
+          </div>
+          
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+            {{ uploadingLotMedia ? 'Enviando...' : '+ Adicionar Foto do Lote' }}
+            <input type="file" accept="image/*" style="display:none" @change="uploadLotMediaFile" :disabled="uploadingLotMedia" />
+          </label>
+
+          <div class="modal-actions" style="margin-top: var(--space-6);">
+            <button class="btn btn-secondary" @click="editingLot = null">Cancelar</button>
+            <button class="btn btn-primary" :disabled="savingLot" @click="saveLotDetails">
+              {{ savingLot ? 'Salvando...' : 'Salvar Detalhes' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -353,6 +443,92 @@ const uploadingMedia = ref(false)
 const savingSettings = ref(false)
 const settingsError = ref('')
 const settingsSaved = ref(false)
+
+const editingLot = ref(null)
+const lotForm = ref({ status: 'AVAILABLE', price: null, areaM2: null, frontage: null, depth: null, slope: 'FLAT', notes: '', conditionsText: '' })
+const savingLot = ref(false)
+const uploadingLotMedia = ref(false)
+
+const lotMedias = computed(() => {
+  if (!editingLot.value) return []
+  return editingLot.value.medias || []
+})
+
+const openEditLot = (lot) => {
+  editingLot.value = lot
+  lotForm.value = { 
+    status: lot.status, 
+    price: lot.price, 
+    areaM2: lot.areaM2, 
+    frontage: lot.frontage, 
+    depth: lot.depth, 
+    slope: lot.slope, 
+    notes: lot.notes || '',
+    conditionsText: Array.isArray(lot.conditionsJson) ? lot.conditionsJson.join('\n') : ''
+  }
+}
+
+const saveLotDetails = async () => {
+  if (!editingLot.value) return
+  savingLot.value = true
+  try {
+    const payload = {
+      ...lotForm.value,
+      conditionsJson: lotForm.value.conditionsText.split('\n').map(s => s.trim()).filter(Boolean)
+    }
+    delete payload.conditionsText
+
+    const updated = await fetchApi(`/projects/${projectId}/lots/${editingLot.value.mapElementId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+    
+    // Update local lots array
+    const idx = lots.value.findIndex(l => l.id === editingLot.value.id)
+    if (idx !== -1) {
+      lots.value[idx] = { ...lots.value[idx], ...updated }
+    }
+    
+    toastSuccess('Detalhes do lote salvos!')
+    editingLot.value = null
+  } catch (e) {
+    toastFromError(e, 'Erro ao salvar detalhes do lote')
+  }
+  savingLot.value = false
+}
+
+const uploadLotMediaFile = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file || !editingLot.value) return
+  uploadingLotMedia.value = true
+  try {
+    const fd = new FormData(); fd.append('file', file)
+    const m = await uploadApi(`/projects/${projectId}/media?lotDetailsId=${editingLot.value.id}`, fd)
+    
+    // Update locally
+    if (!editingLot.value.medias) editingLot.value.medias = []
+    editingLot.value.medias.unshift(m)
+    
+    toastSuccess('Foto do lote enviada!')
+  } catch (err) {
+    toastFromError(err, 'Erro ao enviar foto')
+  }
+  e.target.value = ''
+  uploadingLotMedia.value = false
+}
+
+const removeLotMedia = async (id) => {
+  if (!confirm('Excluir foto do lote?')) return
+  try {
+    await fetchApi(`/projects/${projectId}/media/${id}`, { method: 'DELETE' })
+    if (editingLot.value.medias) {
+      editingLot.value.medias = editingLot.value.medias.filter(m => m.id !== id)
+    }
+    toastSuccess('Foto excluída')
+  } catch (e) {
+    toastFromError(e, 'Erro ao excluir foto')
+  }
+}
 
 const tenantSlug = computed(() => project.value?.tenant?.slug || '')
 const publicUrl = computed(() => tenantSlug.value && project.value ? `/p/${tenantSlug.value}/${project.value.slug}` : null)

@@ -67,7 +67,7 @@
         <g
           v-for="lot in lotList"
           :key="lot.id"
-          :style="{ cursor: lot.status === 'available' ? 'pointer' : 'default' }"
+          :style="{ cursor: String(lot.status).toLowerCase() === 'available' ? 'pointer' : 'default' }"
           @click.stop="onLotClick(lot)"
         >
           <path
@@ -127,7 +127,7 @@
         <div v-if="popup.price" class="popup-row"><span>Preço</span><strong>R$ {{ Number(popup.price).toLocaleString('pt-BR') }}</strong></div>
       </div>
       <button
-        v-if="popup.status === 'available'"
+        v-if="String(popup.status).toLowerCase() === 'available'"
         class="btn btn-primary btn-sm popup-cta"
         @click="onInterest"
       >
@@ -146,6 +146,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { polygonToSVGPath, centroid } from '~/composables/lotEditor/geometry/polygon'
 import { roadSurfaceFromBezier, flattenBezier } from '~/composables/lotEditor/geometry/bezier'
 
@@ -156,6 +157,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ interest: [lot: any] }>()
 
+const router = useRouter()
 const route = useRoute()
 const tSlug = route.params.tenant
 const pSlug = route.params.project
@@ -362,38 +364,44 @@ function lotCenter(lot: ParsedLot): { x: number; y: number } {
 }
 
 function lotFill(lot: ParsedLot): string {
-  if (lot.status === 'sold') return 'rgba(239,68,68,0.35)'
-  if (lot.status === 'reserved') return 'rgba(245,158,11,0.35)'
+  const st = String(lot.status).toLowerCase()
+  if (st === 'sold') return 'rgba(239,68,68,0.35)'
+  if (st === 'reserved') return 'rgba(245,158,11,0.35)'
   return 'rgba(34,197,94,0.2)'
 }
 
 function lotStroke(lot: ParsedLot): string {
-  if (lot.status === 'sold') return '#ef4444'
-  if (lot.status === 'reserved') return '#f59e0b'
+  const st = String(lot.status).toLowerCase()
+  if (st === 'sold') return '#ef4444'
+  if (st === 'reserved') return '#f59e0b'
   return '#22c55e'
 }
 
 function statusBadgeColor(status: string): string {
-  if (status === 'sold') return '#ef4444'
-  if (status === 'reserved') return '#f59e0b'
+  const st = String(status).toLowerCase()
+  if (st === 'sold') return '#ef4444'
+  if (st === 'reserved') return '#f59e0b'
   return '#10b981'
 }
 
 function statusBadgeClass(status: string): string {
-  if (status === 'sold') return 'badge-danger'
-  if (status === 'reserved') return 'badge-warning'
+  const st = String(status).toLowerCase()
+  if (st === 'sold') return 'badge-danger'
+  if (st === 'reserved') return 'badge-warning'
   return 'badge-success'
 }
 
 function statusLabel(status: string): string {
-  if (status === 'sold') return 'Vend.'
-  if (status === 'reserved') return 'Res.'
+  const st = String(status).toLowerCase()
+  if (st === 'sold') return 'Vend.'
+  if (st === 'reserved') return 'Res.'
   return 'Disp.'
 }
 
 function statusLabelFull(status: string): string {
-  if (status === 'sold') return 'Vendido'
-  if (status === 'reserved') return 'Reservado'
+  const st = String(status).toLowerCase()
+  if (st === 'sold') return 'Vendido'
+  if (st === 'reserved') return 'Reservado'
   return 'Disponível'
 }
 
@@ -440,6 +448,11 @@ const popupStyle = computed(() => {
 })
 
 function onLotClick(lot: ParsedLot) {
+  // If clicking on already open popup lot, navigate directly
+  if (popup.value?.id === lot.id) {
+    router.push(getLotUrl(lot))
+    return
+  }
   const c = lotCenter(lot)
   const sx = c.x * zoom.value + pan.value.x
   const sy = c.y * zoom.value + pan.value.y

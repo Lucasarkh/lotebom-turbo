@@ -88,7 +88,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const route = useRoute()
 const tSlug = route.params.tenant
 const pSlug = route.params.project
@@ -278,6 +280,10 @@ function getCenter(el: MapEl) {
 function onElementClick(e: any, el: MapEl) {
   if (!isClickable(el)) return
   e.cancelBubble = true
+  if (popupEl.value?.id === el.id) {
+    router.push(getLotUrl(el))
+    return
+  }
   popupEl.value = el
   // Position popup near the element center in screen space
   const stage = stageRef.value?.getNode()

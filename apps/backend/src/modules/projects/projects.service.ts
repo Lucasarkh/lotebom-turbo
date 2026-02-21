@@ -61,10 +61,14 @@ export class ProjectsService {
       },
       include: {
         mapElements: {
-          include: { lotDetails: true },
+          include: {
+            lotDetails: {
+              include: { medias: true }
+            }
+          },
           orderBy: { createdAt: 'asc' },
         },
-        projectMedias: { orderBy: { createdAt: 'desc' } },
+        projectMedias: { where: { lotDetailsId: null }, orderBy: { createdAt: 'desc' } },
       },
     });
     if (!project) throw new NotFoundException('Projeto não encontrado ou não publicado.');

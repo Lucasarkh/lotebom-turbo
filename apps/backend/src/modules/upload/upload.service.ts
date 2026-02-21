@@ -67,6 +67,7 @@ export class UploadService {
     projectId: string,
     file: Express.Multer.File,
     caption?: string,
+    lotDetailsId?: string,
   ) {
     this.validateFile(file, ALLOWED_MEDIA_TYPES, MAX_MEDIA_SIZE);
 
@@ -75,14 +76,21 @@ export class UploadService {
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
-    const folder = `projects/${projectId}/media`;
+    if (lotDetailsId) {
+      const lot = await this.prisma.lotDetails.findFirst({
+        where: { id: lotDetailsId, tenantId, projectId },
+      });
+      if (!lot) throw new NotFoundException('Lote não encontrado.');
+    }
+
+    const folder = lotDetailsId ? `projects/${projectId}/lots/${lotDetailsId}` : `projects/${projectId}/media`;
     const key = this.s3.buildKey(tenantId, folder, file.originalname);
     const url = await this.s3.upload(file.buffer, key, file.mimetype);
 
     const type: MediaType = file.mimetype.startsWith('video/') ? 'VIDEO' : 'PHOTO';
 
     return this.prisma.projectMedia.create({
-      data: { tenantId, projectId, type, url, caption },
+      data: { tenantId, projectId, type, url, caption, lotDetailsId },
     });
   }
 
