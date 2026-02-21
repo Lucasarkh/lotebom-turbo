@@ -36,6 +36,10 @@ export class UpdateProjectDto {
   @IsOptional()
   highlightsJson?: any;
 
+  @ApiPropertyOptional({ description: 'Exibe tabela de condições de pagamento nas páginas públicas' })
+  @IsOptional()
+  showPaymentConditions?: boolean;
+
   @ApiPropertyOptional({ description: 'Texto de localização e infraestrutura do entorno' })
   @IsOptional()
   @IsString()

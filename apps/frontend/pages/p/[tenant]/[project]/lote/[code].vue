@@ -120,15 +120,70 @@
         </div>
       </section>
 
-      <!-- Conditions / notes -->
-      <section v-if="details?.notes || details?.conditionsJson?.length" class="pub-section pub-section-alt">
+      <!-- Notes -->
+      <section v-if="details?.notes" class="pub-section pub-section-alt">
         <div class="pub-container pub-container-narrow">
           <h2 class="pub-section-title">Informações Adicionais</h2>
           <p v-if="details?.notes" class="pub-location-text">{{ details.notes }}</p>
-          <div v-if="Array.isArray(details?.conditionsJson) && details.conditionsJson.length" class="conditions-list">
-            <div v-for="(c, i) in details.conditionsJson" :key="i" class="condition-item">
-              <span class="condition-icon">✓</span>
-              <span>{{ c }}</span>
+        </div>
+      </section>
+
+      <!-- Structured Payment Conditions (Tabela de Financiamento) -->
+      <section v-if="project?.showPaymentConditions && details?.paymentConditions" class="pub-section">
+        <div class="pub-container pub-container-narrow">
+          <div class="payment-table-card card">
+            <div class="payment-table-header">
+              <h3>Condições de Pagamento</h3>
+              <div class="payment-table-subheader" v-if="details.paymentConditions.setor">
+                Lote {{ lot.code || lot.name }} - {{ details.paymentConditions.setor }}
+              </div>
+              <div class="payment-table-subheader" v-else>
+                Lote {{ lot.code || lot.name }}
+              </div>
+            </div>
+            
+            <div class="payment-summary-grid">
+              <div class="ps-item">
+                <span class="ps-label">ÁREA (m²)</span>
+                <span class="ps-value">{{ details.areaM2?.toLocaleString('pt-BR') }}</span>
+              </div>
+              <div class="ps-item highlight">
+                <span class="ps-label">VALOR À VISTA</span>
+                <span class="ps-value">R$ {{ details.price?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+              </div>
+              <div class="ps-item">
+                <span class="ps-label">ATO</span>
+                <span class="ps-value">R$ {{ (details.paymentConditions.ato || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+              </div>
+              <div class="ps-item">
+                <span class="ps-label">ENTRADA ({{ details.paymentConditions.entrada?.count || 0 }}X)</span>
+                <span class="ps-value">R$ {{ (details.paymentConditions.entrada?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+              </div>
+              <div class="ps-item">
+                <span class="ps-label">SALDO</span>
+                <span class="ps-value">R$ {{ (details.paymentConditions.saldo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+              </div>
+            </div>
+
+            <table class="installments-table">
+              <thead>
+                <tr>
+                  <th colspan="2">PARCELAS MENSAIS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(p, i) in details.paymentConditions.parcelas" :key="i">
+                  <td>{{ p.months }} VEZES</td>
+                  <td class="text-right">R$ {{ (p.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div v-if="details.paymentConditions.observacoes?.length" class="payment-observations">
+              <strong>Observações:</strong>
+              <ol>
+                <li v-for="(obs, i) in details.paymentConditions.observacoes" :key="i">{{ obs }}</li>
+              </ol>
             </div>
           </div>
         </div>
@@ -366,6 +421,7 @@ const lot = computed(() => {
             slope: found.slope || 'FLAT',
             notes: found.notes || '',
             conditionsJson: found.conditionsJson || [],
+            paymentConditions: found.paymentConditions || null,
             medias: []
           }
         }
@@ -538,6 +594,32 @@ async function submitLead() {
 .lot-summary-row { display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--gray-600); padding: 4px 0; border-bottom: 1px solid var(--gray-200); }
 .lot-summary-row:last-child { border-bottom: none; }
 .lot-summary-row strong { color: var(--gray-800); }
+
+/* Payment Table Styles */
+.payment-table-card { padding: 0; overflow: hidden; border: 1px solid var(--gray-200); background: white; margin-top: var(--space-6); }
+.payment-table-header { padding: var(--space-4); background: #f8fafc; border-bottom: 2px solid var(--gray-200); text-align: center; }
+.payment-table-header h3 { font-size: 1.1rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+.payment-table-subheader { font-size: 0.8rem; color: #64748b; margin-top: 4px; font-weight: 600; }
+
+.payment-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border-bottom: 1px solid var(--gray-200); }
+.ps-item { padding: var(--space-3) var(--space-4); border-right: 1px solid var(--gray-100); display: flex; flex-direction: column; gap: 2px; }
+.ps-item:last-child { border-right: none; }
+.ps-item.highlight { background: #f1f5f9; }
+.ps-label { font-size: 0.65rem; color: #64748b; font-weight: 700; letter-spacing: 0.3px; }
+.ps-value { font-size: 0.9375rem; font-weight: 800; color: #0f172a; }
+.ps-item.highlight .ps-value { color: #1e40af; }
+
+.installments-table { width: 100%; border-collapse: collapse; }
+.installments-table th { background: #334155; color: white; padding: 10px; font-size: 0.85rem; letter-spacing: 1px; text-align: center; }
+.installments-table td { padding: 8px 16px; font-size: 0.875rem; font-weight: 600; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); border-right: 1px solid var(--gray-100); }
+.installments-table tr:nth-child(even) td { background: #f8fafc; }
+.installments-table td:last-child { border-right: none; }
+.text-right { text-align: right; }
+
+.payment-observations { padding: var(--space-5); background: #fdfdfd; font-size: 0.75rem; color: #475569; border-top: 1px solid var(--gray-200); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+.payment-observations strong { display: block; margin-bottom: 8px; font-size: 0.8rem; color: #1e293b; text-decoration: underline; }
+.payment-observations ol { padding-left: 20px; list-style-type: decimal; line-height: 1.6; }
+.payment-observations li { margin-bottom: 4px; }
 
 .lots-grid-sm { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
 .lot-card-sm { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: var(--space-3); text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; transition: box-shadow 0.2s; }

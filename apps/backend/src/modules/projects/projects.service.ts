@@ -100,6 +100,7 @@ export class ProjectsService {
         ...(dto.mapData !== undefined && { mapData: dto.mapData }),
         ...(dto.highlightsJson !== undefined && { highlightsJson: dto.highlightsJson }),
         ...(dto.locationText !== undefined && { locationText: dto.locationText }),
+        ...(dto.showPaymentConditions !== undefined && { showPaymentConditions: dto.showPaymentConditions }),
       },
       include: {
         tenant: { select: { slug: true, name: true } },

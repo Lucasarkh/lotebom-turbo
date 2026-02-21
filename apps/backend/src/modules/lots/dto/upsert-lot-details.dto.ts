@@ -43,10 +43,15 @@ export class UpsertLotDetailsDto {
   @IsEnum(SlopeType)
   slope?: SlopeType;
 
-  @ApiPropertyOptional({ description: 'Condições de pagamento (JSON)' })
+  @ApiPropertyOptional({ description: 'Condições de pagamento customizadas (ex: lista)' })
   @IsOptional()
   @IsObject()
   conditionsJson?: any;
+
+  @ApiPropertyOptional({ description: 'Tabela de financiamento/preço do lote (JSON structured)' })
+  @IsOptional()
+  @IsObject()
+  paymentConditions?: any;
 
   @ApiPropertyOptional({ description: 'Medidas por lado do polígono (JSON)' })
   @IsOptional()

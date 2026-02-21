@@ -116,6 +116,15 @@ export interface Lot {
   ignoreDrawingArea?: boolean
   /** Explicit area override in m² */
   manualAreaM2?: number | null
+
+  /** Structured payment table (Financing) */
+  paymentConditions?: {
+    ato?: number
+    entrada?: { count: number, total: number }
+    saldo?: number
+    parcelas?: { months: number, amount: number }[]
+    observacoes?: string[]
+  }
 }
 
 // ─── NATURAL ELEMENT ─────────────────────────────────────

@@ -60,6 +60,7 @@ CREATE TABLE "Project" (
     "mapData" JSONB,
     "highlightsJson" JSONB,
     "locationText" TEXT,
+    "showPaymentConditions" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -100,6 +101,7 @@ CREATE TABLE "LotDetails" (
     "slope" "SlopeType" NOT NULL DEFAULT 'FLAT',
     "conditionsJson" JSONB,
     "sideMetricsJson" JSONB,
+    "paymentConditions" JSONB,
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

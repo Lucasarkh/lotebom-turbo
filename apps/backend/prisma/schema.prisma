@@ -114,6 +114,7 @@ model Project {
   mapData         Json?
   highlightsJson  Json?
   locationText    String?       @db.Text
+  showPaymentConditions Boolean @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -168,6 +169,7 @@ model LotDetails {
   slope          SlopeType  @default(FLAT)
   conditionsJson Json?
   sideMetricsJson Json?
+  paymentConditions Json?
   notes          String?    @db.Text
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

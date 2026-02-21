@@ -210,18 +210,6 @@
         />
       </div>
 
-      <!-- Conditions -->
-      <div class="field">
-        <label>Condições</label>
-        <input
-          type="text"
-          :value="lot.conditions"
-          @input="update('conditions', ($event.target as HTMLInputElement).value)"
-          class="field-input"
-          placeholder="À vista, parcelado..."
-        />
-      </div>
-
       <!-- Notes -->
       <div class="field">
         <label>Observações</label>
@@ -232,6 +220,66 @@
           rows="3"
           placeholder="Notas sobre o lote..."
         ></textarea>
+      </div>
+
+      <!-- Payment Conditions (Financing Table) -->
+      <div class="field-group" style="border-top: 1px dashed var(--gray-200); padding-top: 14px;">
+        <div class="group-header">
+          <span class="group-label">Condições (Financiamento)</span>
+          <button class="btn-action btn-sm" @click="initPaymentConditions" v-if="!lot.paymentConditions">Habilitar Tabela</button>
+        </div>
+        
+        <template v-if="lot.paymentConditions">
+          <div class="field">
+            <label>Setor/Quadra (Título)</label>
+            <input type="text" :value="lot.paymentConditions.setor" @input="updatePayment('setor', ($event.target as HTMLInputElement).value)" class="field-input sm" placeholder="Ex: Setor 6" />
+          </div>
+          
+          <div class="prop-grid mt-2">
+            <div class="prop-field">
+              <label>Ato (R$)</label>
+              <input type="number" step="0.01" :value="lot.paymentConditions.ato" @input="updatePayment('ato', parseFloat(($event.target as HTMLInputElement).value))" class="field-input sm" />
+            </div>
+            <div class="prop-field">
+              <label>Saldo (R$)</label>
+              <input type="number" step="0.01" :value="lot.paymentConditions.saldo" @input="updatePayment('saldo', parseFloat(($event.target as HTMLInputElement).value))" class="field-input sm" />
+            </div>
+          </div>
+          
+          <div class="prop-grid mt-2">
+            <div class="prop-field">
+              <label>Entrada (Qtd x)</label>
+              <input type="number" :value="lot.paymentConditions.entrada?.count" @input="updateEntrada('count', parseInt(($event.target as HTMLInputElement).value))" class="field-input sm" />
+            </div>
+            <div class="prop-field">
+              <label>Entrada Total (R$)</label>
+              <input type="number" step="0.01" :value="lot.paymentConditions.entrada?.total" @input="updateEntrada('total', parseFloat(($event.target as HTMLInputElement).value))" class="field-input sm" />
+            </div>
+          </div>
+
+          <div class="field mt-3">
+            <label>Parcelas Mensais</label>
+            <div v-for="(p, i) in lot.paymentConditions.parcelas" :key="i" class="flex items-center gap-1 mb-1">
+              <input type="number" :value="p.months" @input="updateParcela(i, 'months', parseInt(($event.target as HTMLInputElement).value))" class="field-input sm text-center" style="width: 50px" placeholder="Meses" />
+              <span class="text-xs text-gray-400">vezes:</span>
+              <input type="number" step="0.01" :value="p.amount" @input="updateParcela(i, 'amount', parseFloat(($event.target as HTMLInputElement).value))" class="field-input sm flex-1" placeholder="Valor R$" />
+              <button class="btn-reset-area" @click="removeParcela(i)" style="padding:0 5px">×</button>
+            </div>
+            <button class="btn-action full-width mt-1" @click="addParcela">+ Adicionar Faixa</button>
+          </div>
+
+          <div class="field mt-3">
+            <label>Observações Adicionais (Tabela)</label>
+            <textarea
+              :value="lot.paymentConditions.observacoes?.join('\n')"
+              @input="updatePayment('observacoes', ($event.target as HTMLTextAreaElement).value.split('\n'))"
+              class="field-textarea"
+              rows="3"
+              placeholder="Uma observação por linha..."
+            ></textarea>
+          </div>
+          <button class="btn-danger btn-sm full-width mt-2" @click="update('paymentConditions', undefined)">Remover Tabela</button>
+        </template>
       </div>
 
       <!-- Action Buttons -->
@@ -454,6 +502,82 @@ async function startEditLabel(index: number) {
     labelInputRef.value?.focus()
   }
 }
+
+// ─── Payment handlers ───────────────────────────────
+
+function initPaymentConditions() {
+  update('paymentConditions', {
+    setor: 'Setor 6',
+    ato: 0,
+    entrada: { count: 6, total: 0 },
+    saldo: 0,
+    parcelas: [
+      { months: 12, amount: 0 },
+      { months: 24, amount: 0 },
+      { months: 36, amount: 0 },
+      { months: 48, amount: 0 },
+      { months: 60, amount: 0 },
+      { months: 84, amount: 0 },
+      { months: 96, amount: 0 },
+      { months: 120, amount: 0 },
+      { months: 180, amount: 0 },
+      { months: 204, amount: 0 },
+      { months: 240, amount: 0 }
+    ],
+    observacoes: [
+      'O valor do ato refere-se a intermediação imobiliária.',
+      'A 1ª parcela da entrada terá seu vencimento em até 30 dias.',
+      'Pagamento das parcelas mensais inicia-se após pagamento da entrada.',
+      'Planos com juros de 12.6825% a.a. sob o regime de amortização da tabela PRICE.',
+      'As parcelas do saldo devedor serão reajustadas monetariamente pelo IGP-M FGV anual.',
+      'Ao final do financiamento, será apurado eventual valor residual (IGP-M FGV) sobre o último período.',
+      'Tabela sujeita à alteração de preço sem aviso prévio.'
+    ]
+  })
+}
+
+function updatePayment(field: string, value: any) {
+  if (!props.lot) return
+  const pc = props.lot.paymentConditions ? { ...props.lot.paymentConditions } : {}
+  ;(pc as any)[field] = value
+  update('paymentConditions', pc)
+}
+
+function updateEntrada(field: string, value: any) {
+  if (!props.lot) return
+  const pc = props.lot.paymentConditions ? { ...props.lot.paymentConditions } : {}
+  const entrada = pc.entrada ? { ...pc.entrada } : { count: 0, total: 0 }
+  ;(entrada as any)[field] = value
+  pc.entrada = entrada
+  update('paymentConditions', pc)
+}
+
+function updateParcela(index: number, field: string, value: any) {
+  if (!props.lot) return
+  const pc = props.lot.paymentConditions ? { ...props.lot.paymentConditions } : {}
+  const parcelas = pc.parcelas ? [...pc.parcelas] : []
+  if (parcelas[index]) {
+    (parcelas[index] as any)[field] = value
+  }
+  pc.parcelas = parcelas
+  update('paymentConditions', pc)
+}
+
+function addParcela() {
+  if (!props.lot) return
+  const pc = props.lot.paymentConditions ? { ...props.lot.paymentConditions } : {}
+  const parcelas = pc.parcelas ? [...pc.parcelas] : []
+  parcelas.push({ months: (parcelas[parcelas.length - 1]?.months ?? 0) + 12, amount: 0 })
+  pc.parcelas = parcelas
+  update('paymentConditions', pc)
+}
+
+function removeParcela(index: number) {
+  if (!props.lot) return
+  const pc = props.lot.paymentConditions ? { ...props.lot.paymentConditions } : {}
+  pc.parcelas = pc.parcelas?.filter((_, i) => i !== index)
+  update('paymentConditions', pc)
+}
 </script>
 
 <style scoped>
@@ -486,6 +610,9 @@ async function startEditLabel(index: number) {
 .field-input:focus { border-color: var(--primary); }
 .field-textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: var(--radius-md); font-size: 13px; color: var(--gray-800); outline: none; resize: vertical; font-family: var(--font-sans); box-sizing: border-box; transition: border-color 0.15s; }
 .field-textarea:focus { border-color: var(--primary); }
+.field-input.sm { padding: 4px 8px; font-size: 12px; }
+.prop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.prop-field label { display: block; font-size: 10px; font-weight: 600; color: var(--gray-400); margin-bottom: 2px; text-transform: uppercase; }
 .field-value { font-size: 14px; font-weight: 600; color: var(--gray-700); }
 .area-highlight { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.2px; margin-top: 1px; }
 .area-source { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }

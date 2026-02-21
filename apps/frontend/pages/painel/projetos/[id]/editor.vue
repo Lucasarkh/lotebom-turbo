@@ -476,9 +476,7 @@ async function handleSave() {
         sideRight: lot.sideRight ?? undefined,
         sideMetricsJson: lot.sideMetrics ? lot.sideMetrics : undefined,
         notes: lot.notes || undefined,
-        conditionsJson: lot.conditions
-          ? lot.conditions.split('\n').map((s: string) => s.trim()).filter(Boolean)
-          : undefined,
+        paymentConditions: lot.paymentConditions ?? undefined,
       }
       lotSyncPromises.push(
         fetchApi(`/projects/${projectId}/lots/${mapElementId}`, {

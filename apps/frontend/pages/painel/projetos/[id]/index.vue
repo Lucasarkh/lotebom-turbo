@@ -57,6 +57,10 @@
               <label class="form-label">Descrição</label>
               <textarea v-model="editForm.description" class="form-textarea" rows="3"></textarea>
             </div>
+            <div class="form-group" style="display:flex; align-items:center; gap: var(--space-2); margin-top: var(--space-4); margin-bottom: var(--space-5);">
+              <input type="checkbox" v-model="editForm.showPaymentConditions" id="chkShowPayment" style="width:18px; height:18px; cursor:pointer;" />
+              <label for="chkShowPayment" class="form-label" style="margin-bottom:0; cursor:pointer; font-weight:600;">Exibir tabela de financiamento nas páginas dos lotes</label>
+            </div>
             <div v-if="settingsError" class="alert alert-error">{{ settingsError }}</div>
             <div v-if="settingsSaved" class="alert alert-success">Salvo com sucesso!</div>
             <button type="submit" class="btn btn-primary" :disabled="savingSettings">{{ savingSettings ? 'Salvando...' : 'Salvar' }}</button>
@@ -215,14 +219,63 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Condições de Venda (uma por linha)</label>
-            <textarea v-model="lotForm.conditionsText" class="form-textarea" rows="3" placeholder="Ex: Entrada 10% + 120x
-Sem comprovante de renda"></textarea>
-          </div>
-
-          <div class="form-group">
             <label class="form-label">Notas / Descrição</label>
             <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informações adicionais do lote..."></textarea>
+          </div>
+
+          <div class="form-group" style="border-top: 1px dashed var(--gray-200); padding-top: var(--space-4); margin-top: var(--space-4);">
+            <div class="flex justify-between items-center" style="margin-bottom: var(--space-2);">
+              <label class="form-label" style="margin:0">Tabela de Financiamento</label>
+              <button v-if="!lotForm.paymentConditions" class="btn btn-sm btn-ghost" @click="initPaymentConditionsInForm">+ Habilitar Tabela</button>
+              <button v-else class="btn btn-sm btn-ghost btn-danger" @click="lotForm.paymentConditions = null">Remover Tabela</button>
+            </div>
+
+            <template v-if="lotForm.paymentConditions">
+              <div class="grid grid-cols-2" style="gap: var(--space-3); background: #f8fafc; padding: var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--gray-100);">
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Setor / Localização</label>
+                  <input v-model="lotForm.paymentConditions.setor" class="form-input" placeholder="Ex: Setor 6" />
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Ato (R$)</label>
+                  <input v-model.number="lotForm.paymentConditions.ato" type="number" step="0.01" class="form-input" placeholder="0.00" />
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Entrada (Qtd Parcelas)</label>
+                  <input v-model.number="lotForm.paymentConditions.entrada.count" type="number" class="form-input" placeholder="Ex: 6" />
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Entrada Total (R$)</label>
+                  <input v-model.number="lotForm.paymentConditions.entrada.total" type="number" step="0.01" class="form-input" placeholder="0.00" />
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">Saldo do Saldo (R$)</label>
+                  <input v-model.number="lotForm.paymentConditions.saldo" type="number" step="0.01" class="form-input" placeholder="0.00" />
+                </div>
+              </div>
+
+              <div style="margin-top: var(--space-4);">
+                <label class="form-label">Parcelas Mensais</label>
+                <div v-for="(p, i) in lotForm.paymentConditions.parcelas" :key="i" class="flex gap-2 items-center" style="margin-bottom: var(--space-1);">
+                  <input v-model.number="p.months" type="number" class="form-input" style="width: 80px;" placeholder="Meses" />
+                  <span style="font-size: 0.8rem; color: var(--gray-400);">vezes de</span>
+                  <input v-model.number="p.amount" type="number" step="0.01" class="form-input flex-1" placeholder="R$ 0.00" />
+                  <button class="btn btn-sm" style="padding: 4px;" @click="removeParcelaInForm(i)">✕</button>
+                </div>
+                <button class="btn btn-sm btn-outline" style="width:100%; margin-top: var(--space-2);" @click="addParcelaInForm">+ Adicionar Parcela</button>
+              </div>
+
+              <div class="form-group" style="margin-top: var(--space-4);">
+                <label class="form-label">Observações da Tabela (uma por linha)</label>
+                <textarea 
+                  :value="lotForm.paymentConditions.observacoes?.join('\n')" 
+                  @input="lotForm.paymentConditions.observacoes = ($event.target as HTMLTextAreaElement).value.split('\n')"
+                  class="form-textarea" 
+                  rows="3" 
+                  placeholder="Observações legais..."
+                ></textarea>
+              </div>
+            </template>
           </div>
 
           <hr style="margin: var(--space-5) 0; border: 0; border-top: 1px solid var(--gray-200);" />
@@ -471,7 +524,19 @@ const settingsError = ref('')
 const settingsSaved = ref(false)
 
 const editingLot = ref<any>(null)
-const lotForm = ref({ status: 'AVAILABLE', price: null, areaM2: null, frontage: null, depth: null, sideLeft: null, sideRight: null, slope: 'FLAT', notes: '', conditionsText: '' })
+const lotForm = ref({
+  status: 'AVAILABLE',
+  price: null,
+  areaM2: null,
+  frontage: null,
+  depth: null,
+  sideLeft: null,
+  sideRight: null,
+  slope: 'FLAT',
+  notes: '',
+  conditionsText: '',
+  paymentConditions: null as any
+})
 const savingLot = ref(false)
 const uploadingLotMedia = ref(false)
 
@@ -508,7 +573,8 @@ const openEditLot = (lot: any) => {
     sideRight: lot.sideRight ?? null,
     slope: lot.slope, 
     notes: lot.notes || '',
-    conditionsText: Array.isArray(lot.conditionsJson) ? lot.conditionsJson.join('\n') : ''
+    conditionsText: Array.isArray(lot.conditionsJson) ? lot.conditionsJson.join('\n') : '',
+    paymentConditions: lot.paymentConditions ? JSON.parse(JSON.stringify(lot.paymentConditions)) : null
   }
 }
 
@@ -526,7 +592,7 @@ const saveLotDetails = async () => {
       sideRight: lotForm.value.sideRight ?? undefined,
       slope: lotForm.value.slope,
       notes: lotForm.value.notes || undefined,
-      conditionsJson: lotForm.value.conditionsText.split('\n').map(s => s.trim()).filter(Boolean),
+      paymentConditions: lotForm.value.paymentConditions || undefined,
     }
     // Only override areaM2 when the panel's trapezoid formula produces a result;
     // otherwise let the map editor's last computed value in the DB stand.
@@ -551,6 +617,49 @@ const saveLotDetails = async () => {
     toastFromError(e, 'Erro ao salvar detalhes do lote')
   }
   savingLot.value = false
+}
+
+// ─── Payment Condition Helpers ──────────────────────────
+const initPaymentConditionsInForm = () => {
+  lotForm.value.paymentConditions = {
+    setor: 'Setor 6',
+    ato: 0,
+    entrada: { count: 6, total: 0 },
+    saldo: 0,
+    parcelas: [
+      { months: 12, amount: 0 },
+      { months: 24, amount: 0 },
+      { months: 36, amount: 0 },
+      { months: 48, amount: 0 },
+      { months: 60, amount: 0 },
+      { months: 84, amount: 0 },
+      { months: 96, amount: 0 },
+      { months: 120, amount: 0 },
+      { months: 180, amount: 0 },
+      { months: 204, amount: 0 },
+      { months: 240, amount: 0 }
+    ],
+    observacoes: [
+      'O valor do ato refere-se a intermediação imobiliária.',
+      'A 1ª parcela da entrada terá seu vencimento em até 30 dias.',
+      'Pagamento das parcelas mensais inicia-se após pagamento da entrada.',
+      'Planos com juros de 12.6825% a.a. sob o regime de amortização da tabela PRICE.',
+      'As parcelas do saldo devedor serão reajustadas monetariamente pelo IGP-M FGV anual.',
+      'Ao final do financiamento, será apurado eventual valor residual (IGP-M FGV) sobre o último período.',
+      'Tabela sujeita à alteração de preço sem aviso prévio.'
+    ]
+  }
+}
+
+const addParcelaInForm = () => {
+  if (!lotForm.value.paymentConditions) return
+  if (!lotForm.value.paymentConditions.parcelas) lotForm.value.paymentConditions.parcelas = []
+  const last = lotForm.value.paymentConditions.parcelas[lotForm.value.paymentConditions.parcelas.length - 1]
+  lotForm.value.paymentConditions.parcelas.push({ months: (last?.months || 0) + 12, amount: 0 })
+}
+
+const removeParcelaInForm = (idx: number) => {
+  lotForm.value.paymentConditions.parcelas.splice(idx, 1)
 }
 
 const uploadLotMediaFile = async (e) => {
@@ -589,7 +698,12 @@ const removeLotMedia = async (id) => {
 const tenantSlug = computed(() => project.value?.tenant?.slug || '')
 const publicUrl = computed(() => tenantSlug.value && project.value ? `/p/${tenantSlug.value}/${project.value.slug}` : null)
 
-const editForm = ref({ name: '', slug: '', description: '' })
+const editForm = ref({
+  name: '',
+  slug: '',
+  description: '',
+  showPaymentConditions: false
+})
 
 // ── Public info (highlights + location) ──────────────────
 const pubInfoForm = ref({ highlightsJson: [], locationText: '' })
@@ -710,7 +824,12 @@ const loadProject = async () => {
     mapElements.value = els
     lots.value = lt
     media.value = md
-    editForm.value = { name: p.name, slug: p.slug, description: p.description || '' }
+    editForm.value = {
+      name: p.name,
+      slug: p.slug,
+      description: p.description || '',
+      showPaymentConditions: p.showPaymentConditions ?? false
+    }
     pubInfoForm.value = {
       highlightsJson: Array.isArray(p.highlightsJson) ? p.highlightsJson : [],
       locationText: p.locationText || '',

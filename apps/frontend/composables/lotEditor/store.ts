@@ -878,7 +878,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     lot.area = polygonArea(lot.polygon)
   }
 
-  function updateLot(lotId: LotId, updates: Partial<Pick<Lot, 'label' | 'status' | 'price' | 'conditions' | 'notes' | 'manualFrontage' | 'manualBack' | 'sideLeft' | 'sideRight' | 'manualDepth' | 'sideMetrics' | 'ignoreDrawingArea' | 'manualAreaM2'>>) {
+  function updateLot(lotId: LotId, updates: Partial<Pick<Lot, 'label' | 'status' | 'price' | 'conditions' | 'notes' | 'manualFrontage' | 'manualBack' | 'sideLeft' | 'sideRight' | 'manualDepth' | 'sideMetrics' | 'ignoreDrawingArea' | 'manualAreaM2' | 'paymentConditions'>>) {
     const lot = lots.get(lotId)
     if (!lot) return
     Object.assign(lot, updates)
