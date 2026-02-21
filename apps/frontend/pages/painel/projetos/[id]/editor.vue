@@ -42,10 +42,11 @@
         <NuxtLink to="/painel/projetos" class="back-link">← Projetos</NuxtLink>
         <span class="project-name">{{ projectName }}</span>
         <div class="topbar-actions">
-          <span v-if="saveStatus === 'saving'" class="save-indicator saving">⏳ Salvando…</span>
+          <span v-if="saveStatus === 'loading'" class="save-indicator loading">📡 Carregando…</span>
+          <span v-else-if="saveStatus === 'saving'" class="save-indicator saving">⏳ Salvando…</span>
           <span v-else-if="saveStatus === 'saved'" class="save-indicator saved">✅ Salvo</span>
-          <span v-else-if="saveStatus === 'error'" class="save-indicator error">❌ Erro ao salvar</span>
-          <button class="topbar-btn" @click="handleSave">
+          <span v-else-if="saveStatus === 'error'" class="save-indicator error">❌ Erro ao carregar/salvar</span>
+          <button class="topbar-btn" :disabled="saveStatus === 'loading'" @click="handleSave">
             💾 Salvar
           </button>
         </div>
@@ -109,11 +110,12 @@ const showLotGenModal = ref(false)
 const lotGenBlockId = ref<BlockId | null>(null)
 
 // ─── Save state ──────────────────────────────────────────
-const saveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
+const saveStatus = ref<'idle' | 'saving' | 'saved' | 'error' | 'loading'>('idle')
 const lastSavedSnapshot = ref<string | null>(null)
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 function scheduleAutoSave() {
+  if (store.isLoading) return
   if (autoSaveTimer) clearTimeout(autoSaveTimer)
   autoSaveTimer = setTimeout(async () => {
     const current = store.exportData()
@@ -127,6 +129,7 @@ function scheduleAutoSave() {
 watch(
   () => store.exportData(),
   () => {
+    if (store.isLoading) return
     if (saveStatus.value === 'saved') saveStatus.value = 'idle'
     scheduleAutoSave()
   },
@@ -180,6 +183,8 @@ function handleKeydown(e: KeyboardEvent) {
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
   try {
+    saveStatus.value = 'loading'
+    store.isLoading = true
     const { useApi } = await import('~/composables/useApi')
     const { fetchApi } = useApi()
     const project = await fetchApi(`/projects/${projectId}`)
@@ -192,9 +197,18 @@ onMounted(async () => {
           : JSON.stringify(project.mapData)
         store.importData(json)
         lastSavedSnapshot.value = store.exportData()
+      } else {
+        // We ensure we have a snapshot for comparison on empty new projects
+        lastSavedSnapshot.value = store.exportData()
       }
+      saveStatus.value = 'idle'
     }
-  } catch {}
+  } catch (e) {
+    console.error('Project load failed:', e)
+    saveStatus.value = 'error'
+  } finally {
+    store.isLoading = false
+  }
 })
 
 onUnmounted(() => {
@@ -250,9 +264,19 @@ function onCreateLotInBlock() {
 }
 
 async function handleSave() {
+  if (saveStatus.value === 'saving' || store.isLoading) return
+  if (saveStatus.value === 'error' && !store.isLoading) {
+    // If we're in error state (load failed), we block autosave to prevent overwriting
+    // but we might want to allow manual save if the user really wants to start over.
+    // For now, let's keep it safe.
+    console.warn('Blocking save because project is in error state or still loading.')
+    return
+  }
+
+  const dataString = store.exportData()
+  
   try {
     saveStatus.value = 'saving'
-    const dataString = store.exportData()
     const data = JSON.parse(dataString)
     
     const { useApi } = await import('~/composables/useApi')
@@ -263,6 +287,7 @@ async function handleSave() {
       method: 'PATCH',
       body: JSON.stringify({ mapData: data }),
     })
+    // ...
 
     // 2. Extract and sync map-elements
     const elements: any[] = []
@@ -398,6 +423,11 @@ async function handleSave() {
 
     saveStatus.value = 'saved'
     lastSavedSnapshot.value = dataString
+    
+    // If changes were made WHILE we were saving, re-schedule another save for the latest version
+    if (store.exportData() !== lastSavedSnapshot.value) {
+      scheduleAutoSave()
+    }
   } catch (e) {
     console.error('Save failed:', e)
     saveStatus.value = 'error'

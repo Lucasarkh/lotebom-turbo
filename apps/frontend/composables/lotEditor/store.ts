@@ -76,6 +76,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
   const pixelsPerMeter = ref(10) // 10px = 1m
   const autoSnap = ref(true)
   const autoFrame = ref(true)
+  const isLoading = ref(false)   // loading state to prevent saving
 
   // Currently highlighted lot vertex index (for panel sync)
   const activeLotVertexIndex = ref<number | null>(null)
@@ -126,21 +127,26 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
   }
 
   function restoreSnapshot(json: string) {
-    const data = JSON.parse(json)
-    nodes.clear()
-    edges.clear()
-    roundabouts.clear()
-    blocks.clear()
-    lots.clear()
-    naturalElements.clear()
-    textLabels.clear()
-    for (const [k, v] of data.nodes) nodes.set(k, v)
-    for (const [k, v] of data.edges) edges.set(k, v)
-    for (const [k, v] of data.roundabouts) roundabouts.set(k, v)
-    for (const [k, v] of data.blocks) blocks.set(k, v)
-    for (const [k, v] of data.lots) lots.set(k, v)
-    for (const [k, v] of data.naturalElements) naturalElements.set(k, v)
-    if (data.textLabels) for (const [k, v] of data.textLabels) textLabels.set(k, v)
+    if (!json || json === '{}' || json === 'null') return
+    try {
+      const data = JSON.parse(json)
+      nodes.clear()
+      edges.clear()
+      roundabouts.clear()
+      blocks.clear()
+      lots.clear()
+      naturalElements.clear()
+      textLabels.clear()
+      if (data.nodes) for (const [k, v] of data.nodes) nodes.set(k, v)
+      if (data.edges) for (const [k, v] of data.edges) edges.set(k, v)
+      if (data.roundabouts) for (const [k, v] of data.roundabouts) roundabouts.set(k, v)
+      if (data.blocks) for (const [k, v] of data.blocks) blocks.set(k, v)
+      if (data.lots) for (const [k, v] of data.lots) lots.set(k, v)
+      if (data.naturalElements) for (const [k, v] of data.naturalElements) naturalElements.set(k, v)
+      if (data.textLabels) for (const [k, v] of data.textLabels) textLabels.set(k, v)
+    } catch (e) {
+      console.error('Failed to restore snapshot:', e)
+    }
   }
 
   function pushUndo() {
@@ -568,12 +574,16 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
    */
   function redetectBlocks(skipLotRegeneration = false) {
     try {
-      // Preserve existing blocks that have lots
-      const existingWithLots = new Map<string, Block>()
+      // Preserve existing blocks that have lots OR are manually created/prefabs
+      const existingBlocks = new Map<string, Block>()
       for (const block of blocks.values()) {
-        if (block.lots.length > 0) {
+        // If it's a road-cycle block, identify by cycle
+        if (block.edgeCycle && block.edgeCycle.length > 0) {
           const key = [...block.edgeCycle].sort().join(',')
-          existingWithLots.set(key, block)
+          existingBlocks.set(key, block)
+        } else {
+          // If it's a prefab or manual block (no road cycle), identify by ID
+          existingBlocks.set(block.id, block)
         }
       }
 
@@ -584,7 +594,10 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
 
       for (const block of rawBlocks) {
         const key = [...block.edgeCycle].sort().join(',')
-        const existing = existingWithLots.get(key)
+        const existing = existingBlocks.get(key)
+        
+        // Remove from the "to be kept" collection since we found it based on roads
+        if (existing) existingBlocks.delete(key)
 
         // Always calculate inset to get accurate boundary
         const insetAmount = averageRoadHalfWidth(block.edgeCycle, getState())
@@ -597,8 +610,6 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
           blocks.set(existing.id, existing)
 
           // If the block was manually edited, keep lots exactly where they are.
-          // moveSelection already moves lots together with the block, so no
-          // additional translation is needed here.
           if (existing.manuallyEdited || skipLotRegeneration) {
             // Do nothing — lots are already positioned correctly
           } else if (
@@ -631,7 +642,12 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
         }
       }
 
-      // Clean up orphaned lots
+      // 2. Restore remaining manual/prefab blocks (the ones not found in road cycles)
+      for (const b of existingBlocks.values()) {
+        blocks.set(b.id, b)
+      }
+
+      // 3. Clean up orphaned lots
       const activeBlockIds = new Set(blocks.keys())
       for (const [lotId, lot] of lots) {
         if (!activeBlockIds.has(lot.blockId)) {
@@ -1353,11 +1369,16 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
   }
 
   function importData(json: string) {
-    pushUndo()
-    restoreSnapshot(json)
-    // Skip lot regeneration: use the persisted lot polygons as-is.
-    // This guarantees lots don't change on reload.
-    redetectBlocks(/* skipLotRegeneration */ true)
+    isLoading.value = true
+    try {
+      pushUndo()
+      restoreSnapshot(json)
+      // Skip lot regeneration: use the persisted lot polygons as-is.
+      // This guarantees lots don't change on reload.
+      redetectBlocks(/* skipLotRegeneration */ true)
+    } finally {
+      isLoading.value = false
+    }
   }
 
   function clearAll() {
@@ -1381,7 +1402,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     isDrawingRoad, roadDrawNodes, cursorPos, snapIndicator,
     isDrawingNatural, naturalDrawPoints,
     roundaboutRadius, roundaboutPorts,
-    textFontSize, textColor,
+    textFontSize, textColor, isLoading,
 
     // Computed
     selectedLot, selectedBlock, selectedBlocksCount, canUndo, canRedo, stats,
