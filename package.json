@@ -1,0 +1,17 @@
+{
+  "name": "meu-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.15.1",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "generate": "pnpm --filter ./apps/backend run prisma:generate",
+    "migrate": "pnpm --filter ./apps/backend run prisma:migrate:dev",
+    "seed": "pnpm --filter ./apps/backend run prisma:seed",
+    "reset": "pnpm --filter ./apps/backend run prisma:reset"
+  },
+  "devDependencies": {
+    "turbo": "^2.7.4"
+  }
+}

@@ -1,0 +1,12 @@
+<template>
+  <div class="public-layout">
+    <slot />
+  </div>
+</template>
+
+<style scoped>
+.public-layout {
+  min-height: 100vh;
+  background: var(--gray-50);
+}
+</style>

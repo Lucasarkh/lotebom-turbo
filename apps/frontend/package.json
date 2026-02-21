@@ -1,0 +1,40 @@
+{
+  "name": "lot-nuxt",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@nuxt/image": "^1.11.0",
+    "@vueuse/core": "^14.1.0",
+    "konva": "^10.2.0",
+    "nuxt": "^4.0.1",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.18",
+    "vue-konva": "^3.3.0",
+    "vue-router": "^4.5.1",
+    "vue3-toastify": "^0.2.8"
+  },
+  "devDependencies": {
+    "@nuxt/eslint-config": "^1.8.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
+    "eslint": "^9.33.0",
+    "eslint-plugin-vue": "^10.4.0",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "sass": "^1.94.1",
+    "sass-loader": "^16.0.6",
+    "vitest": "^4.0.18"
+  }
+}

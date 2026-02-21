@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@/*": ["src/*"],
+      "@modules/*": ["src/modules/*"],
+      "@infra/*": ["src/infra/*"],
+      "@common/*": ["src/common/*"],
+      "@auth/*": ["src/modules/auth/*"],
+      "@user/*": ["src/modules/user/*"],
+      "@decorators/*": ["src/common/decorators/*"],
+      "@guards/*": ["src/common/guards/*"]
+    }
+  },
+  "extends": "../../tsconfig.base.json"
+}

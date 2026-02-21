@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ProjectStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MapElementType {
+  LOT
+  ROAD
+  ROUNDABOUT
+  LAKE
+  GREEN
+  LABEL
+  PATH
+  POLYGON
+}
+
+enum GeometryType {
+  POLYGON
+  POLYLINE
+  CIRCLE
+  RECT
+}
+
+enum LotStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum SlopeType {
+  FLAT
+  UPHILL
+  DOWNHILL
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  WON
+  LOST
+}
+
+// ─── CORE MODELS ────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  projects      Project[]
+  mapElements   MapElement[]
+  lotDetails    LotDetails[]
+  projectMedias ProjectMedia[]
+  leads         Lead[]
+
+  @@unique([slug])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(VIEWER)
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String
+  description     String?       @db.Text
+  status          ProjectStatus @default(DRAFT)
+  mapBaseImageUrl String?
+  mapData         Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  mapElements   MapElement[]
+  lotDetails    LotDetails[]
+  projectMedias ProjectMedia[]
+  leads         Lead[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+model MapElement {
+  id           String         @id @default(cuid())
+  tenantId     String
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type         MapElementType
+  name         String?
+  code         String?
+  geometryType GeometryType
+  geometryJson Json
+  styleJson    Json?
+  metaJson     Json?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  lotDetails LotDetails?
+  leads      Lead[]
+
+  @@unique([tenantId, projectId, code])
+  @@index([tenantId, projectId])
+}
+
+model LotDetails {
+  id             String    @id @default(cuid())
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mapElementId   String    @unique
+  mapElement     MapElement @relation(fields: [mapElementId], references: [id], onDelete: Cascade)
+  status         LotStatus  @default(AVAILABLE)
+  price          Float?
+  areaM2         Float?
+  frontage       Float?
+  depth          Float?
+  slope          SlopeType  @default(FLAT)
+  conditionsJson Json?
+  notes          String?    @db.Text
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([tenantId, projectId])
+  @@index([status])
+}
+
+model ProjectMedia {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      MediaType @default(PHOTO)
+  url       String
+  caption   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId, projectId])
+}
+
+model Lead {
+  id            String     @id @default(cuid())
+  tenantId      String
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId     String
+  project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mapElementId  String?
+  mapElement    MapElement? @relation(fields: [mapElementId], references: [id], onDelete: SetNull)
+  name          String
+  email         String?
+  phone         String?
+  message       String?    @db.Text
+  source        String?
+  status        LeadStatus @default(NEW)
+  lastContactAt DateTime?
+  notes         String?    @db.Text
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([tenantId, projectId])
+  @@index([status])
+}
+

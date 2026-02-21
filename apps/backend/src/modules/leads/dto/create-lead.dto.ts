@@ -1,0 +1,26 @@
+import { IsEmail, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateLeadDto {
+  @ApiProperty({ example: 'João Silva' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ example: 'joao@email.com' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ example: '11999998888' })
+  @IsString()
+  phone: string;
+
+  @ApiPropertyOptional({ description: 'ID do elemento do mapa (lote) de interesse' })
+  @IsOptional()
+  @IsUUID()
+  mapElementId?: string;
+
+  @ApiPropertyOptional({ example: 'Quero saber sobre condições de pagamento' })
+  @IsOptional()
+  @IsString()
+  message?: string;
+}
