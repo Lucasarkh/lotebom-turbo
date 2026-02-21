@@ -1,5 +1,10 @@
 <template>
-  <div class="block-panel" data-panel v-if="block">
+  <div
+    class="block-panel"
+    data-panel
+    v-if="block"
+    @keydown.stop="handlePanelKeydown"
+  >
     <div class="panel-header">
       <h3>Quadra Selecionada</h3>
       <button class="close-btn" @click="emit('close')" title="Fechar">✕</button>
@@ -97,6 +102,12 @@ function onAddLot() {
   const newId = store.addLotToBlock(props.block.id)
   if (newId) {
     store.select({ type: 'lot', id: newId })
+  }
+}
+
+function handlePanelKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape') {
+    e.stopPropagation()
   }
 }
 </script>

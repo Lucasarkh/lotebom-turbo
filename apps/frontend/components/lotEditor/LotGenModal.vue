@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-overlay" @click.self="emit('close')">
+  <div class="modal-overlay" @click.self="emit('close')" @keydown.stop="handleModalKeydown">
     <div class="modal-card">
       <div class="modal-header">
         <h3>Gerar Lotes na Quadra</h3>
@@ -124,6 +124,12 @@ function generate() {
       rows: gridRows.value,
       cols: gridCols.value,
     })
+  }
+}
+
+function handleModalKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape') {
+    e.stopPropagation()
   }
 }
 </script>

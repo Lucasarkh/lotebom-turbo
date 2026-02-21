@@ -190,6 +190,21 @@
     <!-- Theme -->
     <div class="toolbox-section">
       <div class="tool-group-label">Configurações</div>
+      <div class="field-row mb-2">
+        <label class="text-xs text-gray-500 font-medium block mb-1">Escala (Pixels / Metro)</label>
+        <div class="flex gap-2">
+          <input 
+            type="number" 
+            :value="pixelsPerMeter" 
+            class="field-input text-xs flex-1"
+            min="1" 
+            max="1000"
+            @input="emit('setPixelsPerMeter', Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="text-xs text-gray-400 self-center">px/m</span>
+        </div>
+        <p class="field-hint text-xs mt-1">Ex: 10 = 10px per meter (Most projects: 10 or 100)</p>
+      </div>
       <label class="toggle-row">
         <input type="checkbox" :checked="autoFrame" @change="emit('setAutoFrame', ($event.target as HTMLInputElement).checked)" />
         <span class="toggle-label text-xs">Auto Enquadramento</span>
@@ -231,10 +246,10 @@
         <span>Área Vendável:</span>
       </div>
       <div class="stat-row">
-         <span class="text-xs">{{ (stats.totalArea / 100).toLocaleString('pt-BR') }} m²</span>
+         <span class="text-xs">{{ (stats.totalArea / (props.pixelsPerMeter * props.pixelsPerMeter || 100)).toLocaleString('pt-BR') }} m²</span>
       </div>
       <div class="stat-row">
-         <span class="text-xs font-bold">{{ (stats.totalArea / 1000000).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) }} ha</span>
+         <span class="text-xs font-bold">{{ (stats.totalArea / ((props.pixelsPerMeter * props.pixelsPerMeter || 100) * 10000)).toLocaleString('pt-BR', { minimumFractionDigits: 3 }) }} ha</span>
       </div>
       
       <button 
@@ -254,7 +269,7 @@
 import type { EditorTool } from '../../composables/lotEditor/store'
 import type { ThemeName } from '../../composables/lotEditor/themes'
 
-defineProps<{
+const props = defineProps<{
   activeTool: EditorTool
   roadWidth: number
   wallWidth: number
@@ -269,6 +284,7 @@ defineProps<{
   autoFrame: boolean
   autoSnap: boolean
   currentTheme: ThemeName
+  pixelsPerMeter: number
   stats: { nodes: number; edges: number; blocks: number; lots: number; totalArea: number }
 }>()
 
@@ -284,6 +300,7 @@ const emit = defineEmits<{
   setTextColor: [color: string]
   setAutoFrame: [enabled: boolean]
   setAutoSnap: [enabled: boolean]
+  setPixelsPerMeter: [ppm: number]
   undo: []
   redo: []
   deleteSelected: []

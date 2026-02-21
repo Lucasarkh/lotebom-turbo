@@ -247,7 +247,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 
 definePageMeta({ layout: 'public' })
@@ -271,21 +271,85 @@ const projectUrl = computed(() => {
   return corretorCode ? `${base}?c=${corretorCode}` : base
 })
 
+/**
+ * Standard Brazilian real estate area: (average width) * (average depth)
+ * or weighted scale average for polygons.
+ */
+function calcContractArea(lot: any): number | null {
+  const poly: Array<{x:number,y:number}> = lot.polygon ?? []
+  if (poly.length < 2) return null
+  
+  const lengths = poly.map((p: any, i: number) => {
+    const q = poly[(i + 1) % poly.length]!
+    return Math.sqrt((q.x - p.x) ** 2 + (q.y - p.y) ** 2)
+  })
+  const sm: Array<{meters: number | null}> = lot.sideMetrics ?? []
+
+  // Case: All 4 sides defined (most common and precise)
+  const m = sm.map(s => s.meters)
+  if (sm.length === 4 && m.every(v => v !== null && v > 0)) {
+    return ((m[0]! + m[2]!) / 2) * ((m[1]! + m[3]!) / 2)
+  }
+
+  const scales: (number | null)[] = lengths.map((len: number, i: number) => {
+    const mv = sm[i]?.meters
+    return (mv != null && mv > 0 && len > 0) ? mv / len : null
+  })
+
+  const validScales = scales.filter((s): s is number => s !== null)
+  const minRequired = Math.max(1, Math.ceil(sm.length * 0.5))
+  if (validScales.length < minRequired) return null
+
+  if (sm.length === 4) {
+    const s0 = scales[0] ?? null, s1 = scales[1] ?? null, s2 = scales[2] ?? null, s3 = scales[3] ?? null
+    const getAvg = (a: number | null, b: number | null) => {
+      if (a != null && b != null) return (a + b) / 2
+      return a ?? b ?? null
+    }
+    const sw = getAvg(s0, s2)
+    const sd = getAvg(s1, s3)
+    if (sw != null && sd != null) return (lot.area ?? 0) * sw * sd
+  }
+
+  const product = validScales.reduce((a, b) => a * b, 1)
+  const geometricMean = Math.pow(product, 1 / validScales.length)
+  return (lot.area ?? 0) * geometricMean * geometricMean
+}
+
 const lot = computed(() => {
   if (!project.value) return null
-  // 1. Try in mapElements (standard way)
-  const fromElements = project.value.mapElements?.find(e => e.type === 'LOT' && (e.code === lotCode || e.id === lotCode))
+  const PPM = (project.value as any).pixelsPerMeter || 10
+
+  // 1. Try relational mapElements (standard way)
+  const fromElements = (project.value as any).mapElements?.find((e: any) => e.type === 'LOT' && (e.code === lotCode || e.id === lotCode))
   if (fromElements) return fromElements
 
-  // 2. Try in mapData (newer flexible way)
-  if (project.value.mapData) {
+  // 2. Try JSON mapData (flexible way)
+  if ((project.value as any).mapData) {
     try {
-      const data = typeof project.value.mapData === 'string' ? JSON.parse(project.value.mapData) : project.value.mapData
-      const lotsArr = Array.isArray(data.lots) ? data.lots : (data.lots ? Object.entries(data.lots).map(([,l]) => l) : [])
-      const found = lotsArr.find((l) => (l.code === lotCode || l.id === lotCode || l.label === lotCode))
+      const data = typeof (project.value as any).mapData === 'string' ? JSON.parse((project.value as any).mapData) : (project.value as any).mapData
+      const lotsArr: any[] = Array.isArray(data.lots)
+        ? data.lots.map(([, l]: [string, any]) => l)
+        : (data.lots ? Object.values(data.lots) : [])
+      const found = lotsArr.find((l: any) => l.code === lotCode || l.id === lotCode || l.label === lotCode)
+      
       if (found) {
+        // Area priority: Manual > Side metrics (contract) > Drawing (pixel)
+        const contractArea = calcContractArea(found)
+        let finalAreaM2 = (Number(found.area) > 0 ? (Number(found.area) / (PPM * PPM)) : 0)
+        
+        if (found.manualAreaM2 != null) {
+          finalAreaM2 = Number(found.manualAreaM2)
+        } else if (contractArea !== null) {
+          finalAreaM2 = contractArea
+        }
+
+        // Frontage priority: Manual > Drawing (pixel)
+        const finalFrontage = found.manualFrontage != null
+          ? Number(found.manualFrontage)
+          : (Number(found.frontage) > 0 ? (Number(found.frontage) / PPM) : 0)
+
         // Synthesize a structure similar to MapElement + LotDetails
-        const PPM = 10
         return {
           id: found.id,
           code: found.code || found.label || found.id,
@@ -293,8 +357,8 @@ const lot = computed(() => {
           lotDetails: {
             status: (found.status || 'available').toUpperCase(),
             price: found.price || null,
-            areaM2: Number(found.area) > 0 ? parseFloat((Number(found.area) / (PPM * PPM)).toFixed(1)) : 0,
-            frontage: Number(found.manualFrontage) || (Number(found.frontage) > 0 ? parseFloat((Number(found.frontage) / PPM).toFixed(1)) : 0),
+            areaM2: parseFloat(finalAreaM2.toFixed(2)),
+            frontage: parseFloat(finalFrontage.toFixed(2)),
             depth: found.manualBack || found.depth || null,
             sideLeft: found.sideLeft ?? null,
             sideRight: found.sideRight ?? null,

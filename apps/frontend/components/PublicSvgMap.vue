@@ -352,20 +352,44 @@ const parsedData = computed<{
   if (!props.mapData) return { lots: [], edges: [], nodes: [], roundabouts: [], naturalElements: [], textLabels: [] }
   try {
     const raw = typeof props.mapData === 'string' ? JSON.parse(props.mapData) : props.mapData
-    const lots: ParsedLot[] = (raw.lots || []).map(([, l]: [string, any]) => ({
-      id: l.id,
-      label: l.label || 'Lote',
-      code: l.code || l.label || l.id,
-      polygon: l.polygon || [],
-      status: l.status || 'available',
-      area: l.area || 0,
-      frontage: l.manualFrontage || l.frontage || 0,
-      price: l.price ?? null,
-      areaM2: Number(l.area) > 0 ? parseFloat((Number(l.area) / (PPM * PPM)).toFixed(1)) : 0,
-      frontageM: Number(l.manualFrontage)
-        ? parseFloat((Number(l.manualFrontage)).toFixed(1))
-        : Number(l.frontage) > 0 ? parseFloat((Number(l.frontage) / PPM).toFixed(1)) : 0,
-    }))
+    const rawPpm = Number(raw.pixelsPerMeter) || 10
+    const lots: ParsedLot[] = (raw.lots || []).map(([, l]: [string, any]) => {
+      // Logic for contract area calculation (same as editor)
+      const calcArea = () => {
+        const poly = l.polygon || []
+        if (poly.length < 4) return null
+        const sm = l.sideMetrics || []
+        const m = sm.map((s: any) => s.meters)
+        if (sm.length === 4 && m.every((v: any) => v !== null && v > 0)) {
+          return ((Number(m[0]) + Number(m[2])) / 2) * ((Number(m[1]) + Number(m[3])) / 2)
+        }
+        return null
+      }
+
+      const contractArea = calcArea()
+      
+      let areaM2 = (Number(l.area) / (rawPpm * rawPpm))
+      if (l.manualAreaM2 != null) {
+        areaM2 = Number(l.manualAreaM2)
+      } else if (contractArea !== null) {
+        areaM2 = contractArea
+      }
+
+      return {
+        id: l.id,
+        label: l.label || 'Lote',
+        code: l.code || l.label || l.id,
+        polygon: l.polygon || [],
+        status: l.status || 'available',
+        area: l.area || 0,
+        frontage: l.manualFrontage || l.frontage || 0,
+        price: l.price ?? null,
+        areaM2: parseFloat(areaM2.toFixed(2)),
+        frontageM: Number(l.manualFrontage)
+          ? parseFloat((Number(l.manualFrontage)).toFixed(1))
+          : Number(l.frontage) > 0 ? parseFloat((Number(l.frontage) / rawPpm).toFixed(1)) : 0,
+      }
+    })
     const edges: ParsedEdge[] = (raw.edges || []).map(([, e]: [string, any]) => ({
       id: e.id,
       from: e.from,

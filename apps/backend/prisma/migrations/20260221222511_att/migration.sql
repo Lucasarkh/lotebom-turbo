@@ -20,7 +20,7 @@ CREATE TYPE "SlopeType" AS ENUM ('FLAT', 'UPHILL', 'DOWNHILL');
 CREATE TYPE "MediaType" AS ENUM ('PHOTO', 'VIDEO');
 
 -- CreateEnum
-CREATE TYPE "LeadStatus" AS ENUM ('NEW', 'CONTACTED', 'WON', 'LOST');
+CREATE TYPE "LeadStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'NEGOTIATING', 'WON', 'LOST');
 
 -- CreateTable
 CREATE TABLE "Tenant" (
@@ -57,6 +57,9 @@ CREATE TABLE "Project" (
     "description" TEXT,
     "status" "ProjectStatus" NOT NULL DEFAULT 'DRAFT',
     "mapBaseImageUrl" TEXT,
+    "mapData" JSONB,
+    "highlightsJson" JSONB,
+    "locationText" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -92,8 +95,11 @@ CREATE TABLE "LotDetails" (
     "areaM2" DOUBLE PRECISION,
     "frontage" DOUBLE PRECISION,
     "depth" DOUBLE PRECISION,
+    "sideLeft" DOUBLE PRECISION,
+    "sideRight" DOUBLE PRECISION,
     "slope" "SlopeType" NOT NULL DEFAULT 'FLAT',
     "conditionsJson" JSONB,
+    "sideMetricsJson" JSONB,
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -106,6 +112,7 @@ CREATE TABLE "ProjectMedia" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
+    "lotDetailsId" TEXT,
     "type" "MediaType" NOT NULL DEFAULT 'PHOTO',
     "url" TEXT NOT NULL,
     "caption" TEXT,
@@ -121,6 +128,7 @@ CREATE TABLE "Lead" (
     "tenantId" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "mapElementId" TEXT,
+    "realtorLinkId" TEXT,
     "name" TEXT NOT NULL,
     "email" TEXT,
     "phone" TEXT,
@@ -133,6 +141,24 @@ CREATE TABLE "Lead" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Lead_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RealtorLink" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "projectId" TEXT,
+    "name" TEXT NOT NULL,
+    "phone" TEXT,
+    "email" TEXT,
+    "photoUrl" TEXT,
+    "code" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RealtorLink_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -169,10 +195,19 @@ CREATE INDEX "LotDetails_status_idx" ON "LotDetails"("status");
 CREATE INDEX "ProjectMedia_tenantId_projectId_idx" ON "ProjectMedia"("tenantId", "projectId");
 
 -- CreateIndex
+CREATE INDEX "ProjectMedia_lotDetailsId_idx" ON "ProjectMedia"("lotDetailsId");
+
+-- CreateIndex
 CREATE INDEX "Lead_tenantId_projectId_idx" ON "Lead"("tenantId", "projectId");
 
 -- CreateIndex
 CREATE INDEX "Lead_status_idx" ON "Lead"("status");
+
+-- CreateIndex
+CREATE INDEX "RealtorLink_tenantId_idx" ON "RealtorLink"("tenantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RealtorLink_tenantId_code_key" ON "RealtorLink"("tenantId", "code");
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -202,6 +237,9 @@ ALTER TABLE "ProjectMedia" ADD CONSTRAINT "ProjectMedia_tenantId_fkey" FOREIGN K
 ALTER TABLE "ProjectMedia" ADD CONSTRAINT "ProjectMedia_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "ProjectMedia" ADD CONSTRAINT "ProjectMedia_lotDetailsId_fkey" FOREIGN KEY ("lotDetailsId") REFERENCES "LotDetails"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Lead" ADD CONSTRAINT "Lead_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -209,3 +247,12 @@ ALTER TABLE "Lead" ADD CONSTRAINT "Lead_projectId_fkey" FOREIGN KEY ("projectId"
 
 -- AddForeignKey
 ALTER TABLE "Lead" ADD CONSTRAINT "Lead_mapElementId_fkey" FOREIGN KEY ("mapElementId") REFERENCES "MapElement"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Lead" ADD CONSTRAINT "Lead_realtorLinkId_fkey" FOREIGN KEY ("realtorLinkId") REFERENCES "RealtorLink"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;

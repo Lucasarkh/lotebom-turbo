@@ -109,6 +109,13 @@ export interface Lot {
   conditions: string
   notes: string
   label: string
+  /** 
+   * When true, area calculation should ignore the drawn geometry 
+   * and use ONLY the averages of sideMetrics.
+   */
+  ignoreDrawingArea?: boolean
+  /** Explicit area override in m² */
+  manualAreaM2?: number | null
 }
 
 // ─── NATURAL ELEMENT ─────────────────────────────────────

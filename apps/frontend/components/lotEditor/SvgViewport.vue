@@ -334,6 +334,11 @@ onUnmounted(() => {
 })
 
 function onKeyDown(e: KeyboardEvent) {
+  // Ignore keyboard shortcuts when typing in inputs
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+    return
+  }
+
   if (e.code === 'Space' || e.key === ' ') {
     isSpacePressed.value = true
   }

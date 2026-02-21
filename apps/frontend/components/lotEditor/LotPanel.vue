@@ -1,5 +1,10 @@
 <template>
-  <div class="lot-panel" data-panel v-if="lot">
+  <div
+    class="lot-panel"
+    data-panel
+    v-if="lot"
+    @keydown="handlePanelKeydown"
+  >
     <div class="panel-header">
       <h3>{{ lot.label }}</h3>
       <button class="close-btn" @click="emit('close')" title="Fechar">✕</button>
@@ -27,16 +32,79 @@
         </div>
       </div>
 
-      <!-- Auto Area (pixel-based) -->
-      <div class="field">
-        <label>Área (mapa)</label>
-        <div class="field-value">{{ pixelAreaM2.toFixed(1) }} m²</div>
+      <!-- Effective Area -->
+      <div class="field" @click.stop>
+        <label>Área Oficial (m²)</label>
+        <div class="flex gap-2">
+          <input
+            type="number"
+            step="0.01"
+            :value="lot.manualAreaM2 ?? (contractAreaM2 ?? pixelAreaM2).toFixed(2)"
+            class="field-input flex-1 area-highlight-input"
+            :class="{ 'manual-active': lot.manualAreaM2 != null }"
+            @input="update('manualAreaM2', parseFloatOrNull(($event.target as HTMLInputElement).value))"
+            placeholder="0.00"
+          />
+          <button 
+            v-if="lot.manualAreaM2 != null" 
+            class="btn-reset-area" 
+            title="Usar cálculo automático"
+            @click="update('manualAreaM2', null)"
+          >↺</button>
+        </div>
+        
+        <div class="area-source mt-2">
+          <div v-if="lot.manualAreaM2 != null" class="source-item text-blue-600">
+            <span class="dot blue"></span>
+            Valor inserido manualmente (Sobrepõe cálculos)
+          </div>
+          <div v-else-if="contractAreaM2 !== null" class="source-item text-green-600 font-medium">
+            <span class="dot green"></span>
+            Calculada pelas medidas dos lados ({{ contractAreaM2.toFixed(2) }} m²)
+          </div>
+          <div v-else class="source-item text-gray-500">
+            <span class="dot gray"></span>
+            Estimada pelo desenho no mapa ({{ pixelAreaM2.toFixed(1) }} m²)
+          </div>
+        </div>
+      </div>
+
+      <!-- Override switch -->
+      <div v-if="lot.manualAreaM2 == null" class="field override-field">
+        <label class="checkbox-container">
+          <input
+            type="checkbox"
+            :checked="lot.ignoreDrawingArea"
+            @change="update('ignoreDrawingArea', ($event.target as HTMLInputElement).checked)"
+          />
+          <span class="checkmark"></span>
+          <span class="checkbox-label">Forçar cálculo pelas medidas</span>
+        </label>
+        <p class="field-hint">Ignora distorções do desenho e usa o produto das médias das medidas.</p>
       </div>
 
       <!-- Frontage -->
-      <div class="field" v-if="lot.frontage > 0">
-        <label>Testada (calculada)</label>
-        <div class="field-value">{{ (lot.frontage / ppm).toFixed(2) }} m</div>
+      <div class="field" @click.stop>
+        <label>Testada / Frente (m)</label>
+        <div class="flex gap-2">
+          <input
+            type="number"
+            step="0.01"
+            :value="lot.manualFrontage ?? estimatedMeters(frontEdgeIndex).toFixed(2)"
+            class="field-input flex-1 area-highlight-input"
+            :class="{ 'manual-active': lot.manualFrontage != null }"
+            @input="update('manualFrontage', parseFloatOrNull(($event.target as HTMLInputElement).value))"
+            placeholder="0.00"
+          />
+          <button 
+            v-if="lot.manualFrontage != null" 
+            class="btn-reset-area" 
+            title="Usar cálculo automático"
+            @click="update('manualFrontage', null)"
+          >↺</button>
+        </div>
+        <p class="field-hint" v-if="lot.manualFrontage == null">Estimado pelo desenho do lado {{ frontEdgeIndex + 1 }}.</p>
+        <p class="field-hint text-blue-600 font-medium" v-else>Valor manual (Sobrepõe cálculos).</p>
       </div>
 
       <!-- ─── Side Measurements ─────────────────────── -->
@@ -301,25 +369,61 @@ const pixelAreaM2 = computed(() => {
 const contractAreaM2 = computed<number | null>(() => {
   const lot = props.lot
   if (!lot) return null
+  const poly = lot.polygon
+  if (poly.length < 2) return null
+  
   const lengths = edgeLengths.value
   const sm = sideMetrics.value
-  const scales: number[] = []
-  for (let i = 0; i < lengths.length; i++) {
-    const m = sm[i]?.meters
-    if (m != null && m > 0 && (lengths[i] ?? 0) > 0) {
-      scales.push(m / lengths[i]!)
-    }
+
+  // Check if we have all 4 meters for a 4-sided lot (most common case)
+  const m = sm.map(s => s.meters)
+  if (sm.length === 4 && m.every(v => v !== null && v > 0)) {
+    // Standard Brazilian real estate area for irregular quadrilaterals:
+    // (Pair 1 & 3 average) * (Pair 2 & 4 average)
+    return ((m[0]! + m[2]!) / 2) * ((m[1]! + m[3]!) / 2)
   }
-  // Need at least 50% of sides defined for a meaningful area estimate
+
+  const scales: (number | null)[] = lengths.map((len, j) => {
+    const meterVal = sm[j]?.meters
+    return (meterVal != null && meterVal > 0 && len > 0) ? meterVal / len : null
+  })
+
+  // Need at least 50% of sides defined for a reliable estimate
+  const validScales = scales.filter((s): s is number => s !== null)
   const minRequired = Math.max(1, Math.ceil(sm.length * 0.5))
-  if (scales.length < minRequired) return null
-  const avgScale = scales.reduce((a, b) => a + b, 0) / scales.length
-  return lot.area * avgScale * avgScale
+  if (validScales.length < minRequired) return null
+
+  // Special logic for 4-sided lots to handle aspect ratio corrections when partial sides are given
+  if (sm.length === 4) {
+    const getAvg = (a: number | null, b: number | null) => {
+      if (a != null && b != null) return (a + b) / 2
+      return a ?? b ?? null
+    }
+    const sw = getAvg(scales[0]!, scales[2]!)
+    const sd = getAvg(scales[1]!, scales[3]!)
+    if (sw != null && sd != null) return lot.area * sw * sd
+  }
+
+  // Fallback to geometric mean
+  const product = validScales.reduce((a, b) => a * b, 1)
+  const geometricMean = Math.pow(product, 1 / validScales.length)
+  return lot.area * geometricMean * geometricMean
 })
 
 const sidesWithMeters = computed(() =>
   sideMetrics.value.filter(s => s.meters != null && s.meters > 0).length
 )
+
+// ─── Event handlers ───────────────────────────────────
+
+function handlePanelKeydown(e: KeyboardEvent) {
+  // Always stop propagation for potentially destructive keys (Delete, Backspace)
+  // or keys that trigger tools (V, R, etc.) when the focus is inside the panel.
+  // We allow 'Escape' to bubble so it can close the panel via the global listener.
+  if (e.key !== 'Escape') {
+    e.stopPropagation()
+  }
+}
 
 // ─── Side edit handlers ───────────────────────────────
 
@@ -383,6 +487,38 @@ async function startEditLabel(index: number) {
 .field-textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: var(--radius-md); font-size: 13px; color: var(--gray-800); outline: none; resize: vertical; font-family: var(--font-sans); box-sizing: border-box; transition: border-color 0.15s; }
 .field-textarea:focus { border-color: var(--primary); }
 .field-value { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+.area-highlight { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.2px; margin-top: 1px; }
+.area-source { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+.source-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--gray-400); font-style: italic; }
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot.blue { background: #3b82f6; }
+.manual-active { border-color: #3b82f6; background-color: #eff6ff; font-weight: 700; color: #1d4ed8; }
+
+.btn-reset-area, .btn-reset-frontage {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #64748b;
+  transition: all 0.2s;
+}
+.btn-reset-area:hover, .btn-reset-frontage:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.override-field { border-top: 1px dashed var(--gray-100); padding-top: 12px; }
+.checkbox-container { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin-bottom: 2px !important; }
+.checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.checkmark { height: 16px; width: 16px; background-color: #fff; border: 1px solid var(--gray-200); border-radius: 4px; position: relative; transition: all 0.2s; }
+.checkbox-container:hover input ~ .checkmark { border-color: var(--primary); }
+.checkbox-container input:checked ~ .checkmark { background-color: var(--primary); border-color: var(--primary); }
+.checkmark:after { content: ""; position: absolute; display: none; left: 5px; top: 2px; width: 4px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.checkbox-container input:checked ~ .checkmark:after { display: block; }
+.checkbox-label { font-size: 12px; font-weight: 600; color: var(--gray-700); text-transform: none !important; margin: 0 !important; letter-spacing: 0 !important; }
+
 .status-buttons { display: flex; gap: 4px; }
 .status-btn { flex: 1; padding: 6px 8px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); background: none; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.15s; color: var(--gray-500); }
 .status-btn.available.active { background: var(--success-light); border-color: var(--success); color: var(--success); }

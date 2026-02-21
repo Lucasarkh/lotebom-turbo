@@ -14,6 +14,7 @@
       :auto-frame="store.autoFrame"
       :auto-snap="store.autoSnap"
       :current-theme="store.themeName"
+      :pixels-per-meter="store.pixelsPerMeter"
       :text-font-size="store.textFontSize"
       :text-color="store.textColor"
       :stats="store.stats"
@@ -26,6 +27,7 @@
       @set-prefab-height="(h) => store.prefabHeight = h"
       @set-auto-frame="(v) => store.autoFrame = v"
       @set-auto-snap="(v) => store.autoSnap = v"
+      @set-pixels-per-meter="(ppm) => store.pixelsPerMeter = ppm"
       @undo="store.undo"
       @redo="store.redo"
       @delete-selected="store.deleteSelected"
@@ -143,9 +145,9 @@ function handleKeydown(e: KeyboardEvent) {
   // Ignore if user is typing in an input / textarea / select
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
 
-  // Ignore if focus is inside any side panel (lot panel, block panel, modal, etc.)
+  // Ignore if focus is inside any side panel or modal
   // This prevents Delete/Backspace from deleting a lot while editing its properties
-  if (target.closest('[data-panel], .lot-panel, .block-panel, .modal, .modal-overlay')) return
+  if (target.closest('[data-panel], .lot-panel, .block-panel, .modal, .modal-overlay, .modal-card')) return
 
   const key = e.key.toLowerCase()
   
@@ -263,6 +265,51 @@ function onCreateLotInBlock() {
   }
 }
 
+/**
+ * Standard Brazilian real estate area: (average width) * (average depth)
+ * or weighted scale average for polygons.
+ */
+function calcContractArea(lot: any): number | null {
+  const poly: Array<{x:number,y:number}> = lot.polygon ?? []
+  if (poly.length < 2) return null
+  
+  const lengths = poly.map((p: any, i: number) => {
+    const q = poly[(i + 1) % poly.length]!
+    return Math.sqrt((q.x - p.x) ** 2 + (q.y - p.y) ** 2)
+  })
+  const sm: Array<{meters: number | null}> = lot.sideMetrics ?? []
+
+  // Case: All 4 sides defined (most common and precise)
+  const m = sm.map(s => s.meters)
+  if (sm.length === 4 && m.every(v => v !== null && v > 0)) {
+    return ((m[0]! + m[2]!) / 2) * ((m[1]! + m[3]!) / 2)
+  }
+
+  const scales: (number | null)[] = lengths.map((len, i) => {
+    const mv = sm[i]?.meters
+    return (mv != null && mv > 0 && len > 0) ? mv / len : null
+  })
+
+  const validScales = scales.filter((s): s is number => s !== null)
+  const minRequired = Math.max(1, Math.ceil(sm.length * 0.5))
+  if (validScales.length < minRequired) return null
+
+  if (sm.length === 4) {
+    const s0 = scales[0], s1 = scales[1], s2 = scales[2], s3 = scales[3]
+    const getAvg = (a: number | null, b: number | null) => {
+      if (a != null && b != null) return (a + b) / 2
+      return a ?? b ?? null
+    }
+    const sw = getAvg(s0, s2)
+    const sd = getAvg(s1, s3)
+    if (sw != null && sd != null) return (lot.area ?? 0) * sw * sd
+  }
+
+  const product = validScales.reduce((a, b) => a * b, 1)
+  const geometricMean = Math.pow(product, 1 / validScales.length)
+  return (lot.area ?? 0) * geometricMean * geometricMean
+}
+
 async function handleSave() {
   if (saveStatus.value === 'saving' || store.isLoading) return
   if (saveStatus.value === 'error' && !store.isLoading) {
@@ -279,6 +326,17 @@ async function handleSave() {
     saveStatus.value = 'saving'
     const data = JSON.parse(dataString)
     
+    // Core parameters for area/frontage calculations
+    const ppm: number = (data.pixelsPerMeter && Number(data.pixelsPerMeter) > 0)
+      ? Number(data.pixelsPerMeter)
+      : (store.pixelsPerMeter || 10)
+
+    const lotStatusMap: Record<string, string> = {
+      available: 'AVAILABLE',
+      reserved: 'RESERVED',
+      sold: 'SOLD',
+    }
+
     const { useApi } = await import('~/composables/useApi')
     const { fetchApi } = useApi()
     
@@ -294,6 +352,22 @@ async function handleSave() {
 
     // Convert LOTS
     for (const [id, lot] of data.lots) {
+      const contractArea = calcContractArea(lot)
+      const pixelAreaM2 = parseFloat(((lot.area ?? 0) / (ppm * ppm)).toFixed(2))
+      
+      // areaM2 priority: manual > contract > pixel
+      let areaM2 = pixelAreaM2
+      if (lot.manualAreaM2 != null) {
+        areaM2 = Number(lot.manualAreaM2)
+      } else if (contractArea !== null) {
+        areaM2 = parseFloat(contractArea.toFixed(2))
+      }
+
+      const frontageM: number | undefined =
+        lot.manualFrontage != null
+          ? Number(lot.manualFrontage)
+          : (Number(lot.frontage) > 0 ? parseFloat((Number(lot.frontage) / ppm).toFixed(2)) : undefined)
+
       elements.push({
         id: `${projectId}:${id}`, // Prefix with projectId to ensure global uniqueness
         type: 'LOT',
@@ -303,8 +377,9 @@ async function handleSave() {
         geometryJson: lot.polygon,
         styleJson: { status: lot.status },
         metaJson: {
-          area: lot.area,
-          frontage: lot.frontage,
+          area: areaM2, // Use converted area in metaJson
+          frontage: frontageM, // Use converted frontage in metaJson
+          areaM2: areaM2, // Use explicit areaM2 in metaJson as well
           price: lot.price,
           notes: lot.notes,
         },
@@ -367,41 +442,35 @@ async function handleSave() {
     })
 
     // 3. Sync LotDetails (status, price, notes, measurements, etc.)
-    const lotStatusMap: Record<string, string> = {
-      available: 'AVAILABLE',
-      reserved: 'RESERVED',
-      sold: 'SOLD',
-    }
-
-    const calcContractArea = (lot: any): number | null => {
-      const poly: Array<{x:number,y:number}> = lot.polygon ?? []
-      if (poly.length < 2) return null
-      const lengths = poly.map((p: any, i: number) => {
-        const q = poly[(i + 1) % poly.length]!
-        return Math.sqrt((q.x - p.x) ** 2 + (q.y - p.y) ** 2)
-      })
-      const sm: Array<{meters: number | null}> = lot.sideMetrics ?? []
-      const scales: number[] = []
-      for (let i = 0; i < lengths.length; i++) {
-        const m = sm[i]?.meters
-        if (m != null && m > 0 && (lengths[i] ?? 0) > 0) {
-          scales.push(m / lengths[i]!)
-        }
-      }
-      if (scales.length === 0) return null
-      const avgScale = scales.reduce((a: number, b: number) => a + b, 0) / scales.length
-      // lot.area is in px²
-      return (lot.area ?? 0) * avgScale * avgScale
-    }
-
     const lotSyncPromises: Promise<any>[] = []
     for (const [id, lot] of data.lots) {
       const mapElementId = `${projectId}:${id}`
       const contractArea = calcContractArea(lot)
+
+      // areaM2 priority: 
+      // 1. Manual area override set by user
+      // 2. Calculated area from side metrics (if enough metrics exist)
+      // 3. Pixel area from drawing / PPM²
+      const pixelAreaM2 = parseFloat(((lot.area ?? 0) / (ppm * ppm)).toFixed(2))
+      let areaM2 = pixelAreaM2
+      
+      if (lot.manualAreaM2 != null) {
+        areaM2 = Number(lot.manualAreaM2)
+      } else if (contractArea !== null) {
+        areaM2 = parseFloat(contractArea.toFixed(2))
+      }
+
+      // frontage priority: manual override > calculated pixels
+      const frontageM: number | undefined =
+        lot.manualFrontage != null
+          ? Number(lot.manualFrontage)
+          : (Number(lot.frontage) > 0 ? parseFloat((Number(lot.frontage) / ppm).toFixed(2)) : undefined)
+
       const payload: Record<string, any> = {
         status: lotStatusMap[lot.status] ?? 'AVAILABLE',
         price: lot.price ?? undefined,
-        frontage: lot.manualFrontage ?? undefined,
+        frontage: frontageM,
+        areaM2: areaM2,
         depth: lot.manualBack ?? lot.manualDepth ?? undefined,
         sideLeft: lot.sideLeft ?? undefined,
         sideRight: lot.sideRight ?? undefined,
@@ -411,7 +480,6 @@ async function handleSave() {
           ? lot.conditions.split('\n').map((s: string) => s.trim()).filter(Boolean)
           : undefined,
       }
-      if (contractArea !== null) payload.areaM2 = contractArea
       lotSyncPromises.push(
         fetchApi(`/projects/${projectId}/lots/${mapElementId}`, {
           method: 'PUT',

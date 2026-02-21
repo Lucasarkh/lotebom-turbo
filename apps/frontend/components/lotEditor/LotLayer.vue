@@ -213,7 +213,7 @@ function isSelected(id: LotId): boolean {
 function formatArea(areaPx: number): string {
   const ppm = props.pixelsPerMeter || 10
   const m2 = areaPx / (ppm * ppm)
-  return isNaN(m2) ? '???' : `${m2.toFixed(1)} m²`
+  return isNaN(m2) ? '???' : `${m2.toFixed(2)} m²`
 }
 
 function statusBadgeColor(status: LotStatus): string {

@@ -122,6 +122,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       lots: Array.from(lots.entries()),
       naturalElements: Array.from(naturalElements.entries()),
       textLabels: Array.from(textLabels.entries()),
+      pixelsPerMeter: pixelsPerMeter.value,
     }
     return JSON.stringify(data)
   }
@@ -144,6 +145,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       if (data.lots) for (const [k, v] of data.lots) lots.set(k, v)
       if (data.naturalElements) for (const [k, v] of data.naturalElements) naturalElements.set(k, v)
       if (data.textLabels) for (const [k, v] of data.textLabels) textLabels.set(k, v)
+      if (data.pixelsPerMeter && Number(data.pixelsPerMeter) > 0) pixelsPerMeter.value = Number(data.pixelsPerMeter)
     } catch (e) {
       console.error('Failed to restore snapshot:', e)
     }
@@ -876,7 +878,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     lot.area = polygonArea(lot.polygon)
   }
 
-  function updateLot(lotId: LotId, updates: Partial<Pick<Lot, 'label' | 'status' | 'price' | 'conditions' | 'notes' | 'manualFrontage' | 'manualBack' | 'sideLeft' | 'sideRight' | 'manualDepth' | 'sideMetrics'>>) {
+  function updateLot(lotId: LotId, updates: Partial<Pick<Lot, 'label' | 'status' | 'price' | 'conditions' | 'notes' | 'manualFrontage' | 'manualBack' | 'sideLeft' | 'sideRight' | 'manualDepth' | 'sideMetrics' | 'ignoreDrawingArea' | 'manualAreaM2'>>) {
     const lot = lots.get(lotId)
     if (!lot) return
     Object.assign(lot, updates)
@@ -907,6 +909,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       sideRight: lot.sideRight,
       manualDepth: lot.manualDepth,
       sideMetrics: lot.sideMetrics ? lot.sideMetrics.map(s => ({ ...s })) : undefined,
+      ignoreDrawingArea: lot.ignoreDrawingArea,
       status: 'available',
       price: null,
       conditions: lot.conditions,

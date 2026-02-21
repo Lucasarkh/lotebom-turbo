@@ -447,7 +447,7 @@ Sem comprovante de renda"></textarea>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 
 const route = useRoute()
@@ -456,13 +456,13 @@ const { fetchApi, uploadApi } = useApi()
 const authStore = useAuthStore()
 const { success: toastSuccess, fromError: toastFromError } = useToast()
 
-const projectId = route.params.id
+const projectId = route.params.id as string
 const loading = ref(true)
 const error = ref('')
-const project = ref(null)
-const mapElements = ref([])
-const lots = ref([])
-const media = ref([])
+const project = ref<any>(null)
+const mapElements = ref<any[]>([])
+const lots = ref<any[]>([])
+const media = ref<any[]>([])
 const activeTab = ref('map')
 const uploadingMap = ref(false)
 const uploadingMedia = ref(false)
@@ -470,7 +470,7 @@ const savingSettings = ref(false)
 const settingsError = ref('')
 const settingsSaved = ref(false)
 
-const editingLot = ref(null)
+const editingLot = ref<any>(null)
 const lotForm = ref({ status: 'AVAILABLE', price: null, areaM2: null, frontage: null, depth: null, sideLeft: null, sideRight: null, slope: 'FLAT', notes: '', conditionsText: '' })
 const savingLot = ref(false)
 const uploadingLotMedia = ref(false)
@@ -496,7 +496,7 @@ const lotMedias = computed(() => {
   return editingLot.value.medias || []
 })
 
-const openEditLot = (lot) => {
+const openEditLot = (lot: any) => {
   editingLot.value = lot
   lotForm.value = { 
     status: lot.status, 
@@ -517,12 +517,22 @@ const saveLotDetails = async () => {
   savingLot.value = true
   try {
     const calc = lotContractArea.value
-    const payload = {
-      ...lotForm.value,
-      areaM2: calc !== null ? Math.round(calc * 100) / 100 : lotForm.value.areaM2,
-      conditionsJson: lotForm.value.conditionsText.split('\n').map(s => s.trim()).filter(Boolean)
+    const payload: Record<string, any> = {
+      status: lotForm.value.status,
+      price: lotForm.value.price ?? undefined,
+      frontage: lotForm.value.frontage ?? undefined,
+      depth: lotForm.value.depth ?? undefined,
+      sideLeft: lotForm.value.sideLeft ?? undefined,
+      sideRight: lotForm.value.sideRight ?? undefined,
+      slope: lotForm.value.slope,
+      notes: lotForm.value.notes || undefined,
+      conditionsJson: lotForm.value.conditionsText.split('\n').map(s => s.trim()).filter(Boolean),
     }
-    delete payload.conditionsText
+    // Only override areaM2 when the panel's trapezoid formula produces a result;
+    // otherwise let the map editor's last computed value in the DB stand.
+    if (calc !== null) {
+      payload.areaM2 = Math.round(calc * 100) / 100
+    }
 
     const updated = await fetchApi(`/projects/${projectId}/lots/${editingLot.value.mapElementId}`, {
       method: 'PUT',
@@ -530,14 +540,14 @@ const saveLotDetails = async () => {
     })
     
     // Update local lots array
-    const idx = lots.value.findIndex(l => l.id === editingLot.value.id)
+    const idx = lots.value.findIndex((l: any) => l.id === editingLot.value.id)
     if (idx !== -1) {
       lots.value[idx] = { ...lots.value[idx], ...updated }
     }
     
     toastSuccess('Detalhes do lote salvos!')
     editingLot.value = null
-  } catch (e) {
+  } catch (e: any) {
     toastFromError(e, 'Erro ao salvar detalhes do lote')
   }
   savingLot.value = false

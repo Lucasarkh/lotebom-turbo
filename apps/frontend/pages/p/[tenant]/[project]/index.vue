@@ -128,7 +128,7 @@
                 <span class="badge badge-success" style="font-size:0.75rem;">Disponível</span>
               </div>
               <div class="lot-card-details">
-                <span v-if="lot.lotDetails?.areaM2">��� {{ lot.lotDetails.areaM2 }} m²</span>
+                <span v-if="lot.lotDetails?.areaM2">📐 {{ lot.lotDetails.areaM2 }} m²</span>
                 <span v-if="lot.lotDetails?.frontage">↔ {{ lot.lotDetails.frontage }} m frente</span>
                 <span v-if="lot.lotDetails?.price" class="lot-price">R$ {{ lot.lotDetails.price.toLocaleString('pt-BR') }}</span>
               </div>
@@ -184,11 +184,11 @@
                   <label class="form-label">Telefone *</label>
                   <input v-model="leadForm.phone" class="form-input" required placeholder="(00) 00000-0000" />
                 </div>
-                <div v-if="lotElements.length" class="form-group">
+                <div v-if="unifiedAvailableLots.length" class="form-group">
                   <label class="form-label">Lote de interesse</label>
                   <select v-model="leadForm.mapElementId" class="form-input">
                     <option value="">Nenhum específico</option>
-                    <option v-for="lot in availableLotElements" :key="lot.id" :value="lot.id">
+                    <option v-for="lot in unifiedAvailableLots" :key="lot.id" :value="lot.id">
                       {{ lot.code || lot.name || lot.id }} {{ lot.lotDetails?.areaM2 ? `— ${lot.lotDetails.areaM2} m²` : '' }}
                     </option>
                   </select>
@@ -264,6 +264,51 @@ const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
 const lightboxMedia = computed(() => project.value?.projectMedias?.[lightboxIdx.value] ?? null)
 
+/**
+ * Standard Brazilian real estate area: (average width) * (average depth)
+ * or weighted scale average for polygons.
+ */
+function calcContractArea(lot: any): number | null {
+  const poly: Array<{x:number,y:number}> = lot.polygon ?? []
+  if (poly.length < 2) return null
+  
+  const lengths = poly.map((p: any, i: number) => {
+    const q = poly[(i + 1) % poly.length]!
+    return Math.sqrt((q.x - p.x) ** 2 + (q.y - p.y) ** 2)
+  })
+  const sm: Array<{meters: number | null}> = lot.sideMetrics ?? []
+
+  // Case: All 4 sides defined (most common and precise)
+  const m = sm.map(s => s.meters)
+  if (sm.length === 4 && m.every(v => v !== null && v > 0)) {
+    return ((m[0]! + m[2]!) / 2) * ((m[1]! + m[3]!) / 2)
+  }
+
+  const scales: (number | null)[] = lengths.map((len: number, i: number) => {
+    const mv = sm[i]?.meters
+    return (mv != null && mv > 0 && len > 0) ? mv / len : null
+  })
+
+  const validScales = scales.filter((s): s is number => s !== null)
+  const minRequired = Math.max(1, Math.ceil(sm.length * 0.5))
+  if (validScales.length < minRequired) return null
+
+  if (sm.length === 4) {
+    const s0 = scales[0] ?? null, s1 = scales[1] ?? null, s2 = scales[2] ?? null, s3 = scales[3] ?? null
+    const getAvg = (a: number | null, b: number | null) => {
+      if (a != null && b != null) return (a + b) / 2
+      return a ?? b ?? null
+    }
+    const sw = getAvg(s0, s2)
+    const sd = getAvg(s1, s3)
+    if (sw != null && sd != null) return (lot.area ?? 0) * sw * sd
+  }
+
+  const product = validScales.reduce((a, b) => a * b, 1)
+  const geometricMean = Math.pow(product, 1 / validScales.length)
+  return (lot.area ?? 0) * geometricMean * geometricMean
+}
+
 const highlights = computed(() => {
   const raw = project.value?.highlightsJson
   return Array.isArray(raw) ? raw : []
@@ -287,19 +332,38 @@ const hasMapData = computed(() => !!project.value?.mapData)
 
 const unifiedAvailableLots = computed(() => {
   if (hasMapData.value) {
-    const PPM = 10
+    const rawMapData = typeof project.value.mapData === 'string' ? JSON.parse(project.value.mapData) : project.value.mapData
+    const PPM = Number(rawMapData.pixelsPerMeter) || 10
+
     return mapDataLots.value
       .filter((l: any) => l.status === 'available')
-      .map((l: any) => ({
-        id: l.id,
-        name: l.label,
-        code: l.code || l.label || l.id,
-        lotDetails: {
-          areaM2: Number(l.area) > 0 ? (Number(l.area) / (PPM * PPM)).toFixed(1) : 0,
-          frontage: Number(l.manualFrontage) || (Number(l.frontage) > 0 ? (Number(l.frontage) / PPM).toFixed(1) : 0),
-          price: l.price
+      .map((l: any) => {
+        // Area priority: Manual > Side metrics (contract) > Drawing (pixel)
+        const contractArea = calcContractArea(l)
+        let finalAreaM2 = (Number(l.area) > 0 ? (Number(l.area) / (PPM * PPM)) : 0)
+        
+        if (l.manualAreaM2 != null) {
+          finalAreaM2 = Number(l.manualAreaM2)
+        } else if (contractArea !== null) {
+          finalAreaM2 = contractArea
         }
-      }))
+
+        // Frontage priority: Manual > Drawing (pixel)
+        const finalFrontage = l.manualFrontage != null
+          ? Number(l.manualFrontage)
+          : (Number(l.frontage) > 0 ? (Number(l.frontage) / PPM) : 0)
+
+        return {
+          id: l.id,
+          name: l.label,
+          code: l.code || l.label || l.id,
+          lotDetails: {
+            areaM2: parseFloat(finalAreaM2.toFixed(2)),
+            frontage: parseFloat(finalFrontage.toFixed(2)),
+            price: l.price
+          }
+        }
+      })
   }
   return availableLotElements.value
 })
