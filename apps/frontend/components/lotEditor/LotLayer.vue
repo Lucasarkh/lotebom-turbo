@@ -82,17 +82,46 @@
 
       <!-- Vertex Handles (Editable) -->
       <g v-if="isSelected(lot.id)">
+        <!-- Edge midpoint add-vertex indicators -->
+        <g
+          v-for="(p, i) in lot.polygon"
+          :key="'mid-' + i"
+        >
+          <circle
+            :cx="edgeMid(lot, i).x"
+            :cy="edgeMid(lot, i).y"
+            r="5"
+            fill="rgba(255,255,255,0.7)"
+            stroke="#3b82f6"
+            stroke-width="1.5"
+            stroke-dasharray="2 1"
+            class="midpoint-handle"
+            title="Clique para adicionar ponto"
+            @mousedown.stop
+            @click.stop="emit('addVertex', lot.id, i)"
+          />
+          <text
+            :x="edgeMid(lot, i).x" :y="edgeMid(lot, i).y + 0.5"
+            text-anchor="middle" dominant-baseline="central"
+            fill="#2563eb" font-size="8" font-weight="700"
+            pointer-events="none"
+          >+</text>
+        </g>
+
+        <!-- Vertex circles -->
         <circle
           v-for="(p, i) in lot.polygon"
           :key="i"
           :cx="p.x"
           :cy="p.y"
-          r="4"
-          fill="#4ade80"
-          stroke="#fff"
+          r="5"
+          :fill="activeVertexIndex === i ? '#f59e0b' : '#4ade80'"
+          :stroke="activeVertexIndex === i ? '#92400e' : '#fff'"
           stroke-width="1.5"
           class="vertex-handle"
+          title="Arrastar para mover"
           @mousedown="onVertexMouseDown($event, i, lot.id)"
+          @contextmenu.prevent.stop
         />
       </g>
     </g>
@@ -111,17 +140,27 @@ const props = defineProps<{
   theme: ThemeColors
   selectedTargets: { type: string, id: string }[]
   pixelsPerMeter: number
+  activeVertexIndex?: number | null
 }>()
 
 const emit = defineEmits<{
   selectLot: [id: LotId, event: MouseEvent]
   dragLotVertex: [lotId: LotId, vertexIndex: number]
   dragLot: [lotId: LotId, event: MouseEvent]
+  addVertex: [lotId: LotId, afterIndex: number]
 }>()
 
 function onVertexMouseDown(e: MouseEvent, index: number, lotId: LotId) {
+  if (e.button !== 0) return  // only left-click drags
   e.stopPropagation()
   emit('dragLotVertex', lotId, index)
+}
+
+function edgeMid(lot: Lot, i: number): { x: number; y: number } {
+  const n = lot.polygon.length
+  const a = lot.polygon[i]!
+  const b = lot.polygon[(i + 1) % n]!
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
 }
 
 function onLotMouseDown(e: MouseEvent, lotId: LotId) {
@@ -206,10 +245,28 @@ function statusLabel(status: LotStatus): string {
 }
 
 .vertex-handle {
-  cursor: crosshair;
+  cursor: grab;
 }
 .vertex-handle:hover {
-  r: 6;
-  fill: #22c55e;
+  fill: #ef4444;
+}
+.vertex-handle:active {
+  cursor: grabbing;
+}
+
+.midpoint-handle {
+  cursor: crosshair;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.midpoint-handle:hover {
+  opacity: 1;
+}
+
+.delete-vertex-btn {
+  cursor: pointer;
+}
+.delete-vertex-btn:hover circle {
+  fill: #b91c1c;
 }
 </style>

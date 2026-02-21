@@ -67,20 +67,48 @@
                 <strong class="spec-value">{{ details.areaM2 }} m²</strong>
               </div>
             </div>
-            <div v-if="details?.frontage" class="spec-item">
-              <span class="spec-icon">↔</span>
-              <div class="spec-body">
-                <span class="spec-label">Frente</span>
-                <strong class="spec-value">{{ details.frontage }} m</strong>
+            <!-- Per-side metrics (from map editor) -->
+            <template v-if="lotSideMetrics.length > 0">
+              <div v-for="(s, i) in lotSideMetrics" :key="i" class="spec-item">
+                <span class="spec-icon">▷</span>
+                <div class="spec-body">
+                  <span class="spec-label">{{ s.label }}</span>
+                  <strong v-if="s.meters != null" class="spec-value">{{ Number(s.meters).toFixed(2) }} m</strong>
+                  <strong v-else class="spec-value" style="color:var(--gray-400)">—</strong>
+                </div>
               </div>
-            </div>
-            <div v-if="details?.depth" class="spec-item">
-              <span class="spec-icon">↕</span>
-              <div class="spec-body">
-                <span class="spec-label">Fundo</span>
-                <strong class="spec-value">{{ details.depth }} m</strong>
+            </template>
+            <!-- Fallback legacy fields -->
+            <template v-else>
+              <div v-if="details?.frontage" class="spec-item">
+                <span class="spec-icon">↔</span>
+                <div class="spec-body">
+                  <span class="spec-label">Frente</span>
+                  <strong class="spec-value">{{ details.frontage }} m</strong>
+                </div>
               </div>
-            </div>
+              <div v-if="details?.depth && details.depth !== details.frontage" class="spec-item">
+                <span class="spec-icon">↕</span>
+                <div class="spec-body">
+                  <span class="spec-label">Fundo</span>
+                  <strong class="spec-value">{{ details.depth }} m</strong>
+                </div>
+              </div>
+              <div v-if="details?.sideLeft" class="spec-item">
+                <span class="spec-icon">║</span>
+                <div class="spec-body">
+                  <span class="spec-label">Lado Esq.</span>
+                  <strong class="spec-value">{{ details.sideLeft }} m</strong>
+                </div>
+              </div>
+              <div v-if="details?.sideRight && details.sideRight !== details.sideLeft" class="spec-item">
+                <span class="spec-icon">║</span>
+                <div class="spec-body">
+                  <span class="spec-label">Lado Dir.</span>
+                  <strong class="spec-value">{{ details.sideRight }} m</strong>
+                </div>
+              </div>
+            </template>
             <div v-if="details?.slope" class="spec-item">
               <span class="spec-icon">⛰</span>
               <div class="spec-body">
@@ -267,11 +295,14 @@ const lot = computed(() => {
             price: found.price || null,
             areaM2: Number(found.area) > 0 ? parseFloat((Number(found.area) / (PPM * PPM)).toFixed(1)) : 0,
             frontage: Number(found.manualFrontage) || (Number(found.frontage) > 0 ? parseFloat((Number(found.frontage) / PPM).toFixed(1)) : 0),
-            depth: found.depth || null,
+            depth: found.manualBack || found.depth || null,
+            sideLeft: found.sideLeft ?? null,
+            sideRight: found.sideRight ?? null,
+            sideMetricsJson: found.sideMetrics ?? [],
             slope: found.slope || 'FLAT',
             notes: found.notes || '',
             conditionsJson: found.conditionsJson || [],
-            medias: [] // mapData doesn't store medias directly, they should be in lotDetails relation usually
+            medias: []
           }
         }
       }
@@ -281,6 +312,12 @@ const lot = computed(() => {
 })
 
 const details = computed(() => lot.value?.lotDetails || null)
+
+const lotSideMetrics = computed(() => {
+  const raw = details.value?.sideMetricsJson
+  if (!Array.isArray(raw) || raw.length === 0) return []
+  return raw
+})
 
 const statusClass = computed(() => ({
   AVAILABLE: 'status-available',

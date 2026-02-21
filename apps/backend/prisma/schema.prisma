@@ -163,8 +163,11 @@ model LotDetails {
   areaM2         Float?
   frontage       Float?
   depth          Float?
+  sideLeft       Float?
+  sideRight      Float?
   slope          SlopeType  @default(FLAT)
   conditionsJson Json?
+  sideMetricsJson Json?
   notes          String?    @db.Text
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

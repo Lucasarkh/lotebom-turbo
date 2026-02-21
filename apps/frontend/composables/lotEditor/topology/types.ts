@@ -80,6 +80,14 @@ export interface Block {
 // ─── LOT ─────────────────────────────────────────────────
 export type LotStatus = 'available' | 'reserved' | 'sold'
 
+/** Real-world measurement for one polygon edge */
+export interface SideMetric {
+  /** User-defined label for this edge, e.g. "Frente", "Lado Dir." */
+  label: string
+  /** Real-world length in meters (null = not set by user) */
+  meters: number | null
+}
+
 export interface Lot {
   id: LotId
   blockId: BlockId
@@ -88,8 +96,13 @@ export interface Lot {
   area: number
   /** Front edge length in pixels */
   frontage: number
-  /** Optional metadata overrides for real-world labeling */
+  /** Per-edge real-world measurements (parallel to polygon edges) */
+  sideMetrics?: SideMetric[]
+  /** Optional metadata overrides for real-world labeling (legacy, kept for compat) */
   manualFrontage?: number
+  manualBack?: number
+  sideLeft?: number
+  sideRight?: number
   manualDepth?: number
   status: LotStatus
   price: number | null

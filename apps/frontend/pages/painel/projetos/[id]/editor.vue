@@ -58,11 +58,15 @@
     <LotPanel
       v-if="store.selectedLot"
       :lot="store.selectedLot"
+      :pixels-per-meter="store.pixelsPerMeter"
+      :active-vertex-index="store.activeLotVertexIndex"
       @update="onLotUpdate"
       @close="store.clearSelection"
       @delete-lot="onDeleteLot"
       @duplicate-lot="onDuplicateLot"
       @create-lot="onCreateLotInBlock"
+      @remove-vertex="onRemoveLotVertex"
+      @add-vertex="onAddLotVertex"
     />
 
     <BlockPanel
@@ -131,8 +135,14 @@ watch(
 
 // Handle keyboard shortcuts
 function handleKeydown(e: KeyboardEvent) {
-  // Ignore if user is typing in an input
-  if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) return
+  const target = e.target as HTMLElement
+
+  // Ignore if user is typing in an input / textarea / select
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+
+  // Ignore if focus is inside any side panel (lot panel, block panel, modal, etc.)
+  // This prevents Delete/Backspace from deleting a lot while editing its properties
+  if (target.closest('[data-panel], .lot-panel, .block-panel, .modal, .modal-overlay')) return
 
   const key = e.key.toLowerCase()
   
@@ -204,6 +214,14 @@ function onGenerateLots(blockId: BlockId, options: any) {
 
 function onLotUpdate(lotId: LotId, field: string, value: any) {
   store.updateLot(lotId, { [field]: value })
+}
+
+function onRemoveLotVertex(index: number) {
+  if (store.selectedLot) store.removeLotVertex(store.selectedLot.id, index)
+}
+
+function onAddLotVertex(afterIndex: number) {
+  if (store.selectedLot) store.addLotVertex(store.selectedLot.id, afterIndex)
 }
 
 function onDeleteLot() {
@@ -322,6 +340,61 @@ async function handleSave() {
       method: 'PUT',
       body: JSON.stringify({ elements }),
     })
+
+    // 3. Sync LotDetails (status, price, notes, measurements, etc.)
+    const lotStatusMap: Record<string, string> = {
+      available: 'AVAILABLE',
+      reserved: 'RESERVED',
+      sold: 'SOLD',
+    }
+
+    const calcContractArea = (lot: any): number | null => {
+      const poly: Array<{x:number,y:number}> = lot.polygon ?? []
+      if (poly.length < 2) return null
+      const lengths = poly.map((p: any, i: number) => {
+        const q = poly[(i + 1) % poly.length]!
+        return Math.sqrt((q.x - p.x) ** 2 + (q.y - p.y) ** 2)
+      })
+      const sm: Array<{meters: number | null}> = lot.sideMetrics ?? []
+      const scales: number[] = []
+      for (let i = 0; i < lengths.length; i++) {
+        const m = sm[i]?.meters
+        if (m != null && m > 0 && (lengths[i] ?? 0) > 0) {
+          scales.push(m / lengths[i]!)
+        }
+      }
+      if (scales.length === 0) return null
+      const avgScale = scales.reduce((a: number, b: number) => a + b, 0) / scales.length
+      // lot.area is in px²
+      return (lot.area ?? 0) * avgScale * avgScale
+    }
+
+    const lotSyncPromises: Promise<any>[] = []
+    for (const [id, lot] of data.lots) {
+      const mapElementId = `${projectId}:${id}`
+      const contractArea = calcContractArea(lot)
+      const payload: Record<string, any> = {
+        status: lotStatusMap[lot.status] ?? 'AVAILABLE',
+        price: lot.price ?? undefined,
+        frontage: lot.manualFrontage ?? undefined,
+        depth: lot.manualBack ?? lot.manualDepth ?? undefined,
+        sideLeft: lot.sideLeft ?? undefined,
+        sideRight: lot.sideRight ?? undefined,
+        sideMetricsJson: lot.sideMetrics ? lot.sideMetrics : undefined,
+        notes: lot.notes || undefined,
+        conditionsJson: lot.conditions
+          ? lot.conditions.split('\n').map((s: string) => s.trim()).filter(Boolean)
+          : undefined,
+      }
+      if (contractArea !== null) payload.areaM2 = contractArea
+      lotSyncPromises.push(
+        fetchApi(`/projects/${projectId}/lots/${mapElementId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        }).catch(() => { /* silently ignore individual lot sync errors */ })
+      )
+    }
+    await Promise.all(lotSyncPromises)
 
     saveStatus.value = 'saved'
     lastSavedSnapshot.value = dataString

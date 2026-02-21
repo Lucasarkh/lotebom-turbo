@@ -71,8 +71,21 @@
       </div>
       <div v-if="popupLot" class="popup-details">
         <div v-if="popupLot.areaM2" class="popup-row"><span>Área</span><strong>{{ popupLot.areaM2 }} m²</strong></div>
-        <div v-if="popupLot.frontage" class="popup-row"><span>Frente</span><strong>{{ popupLot.frontage }} m</strong></div>
-        <div v-if="popupLot.depth" class="popup-row"><span>Fundo</span><strong>{{ popupLot.depth }} m</strong></div>
+        <!-- Per-side metrics (from map editor) -->
+        <template v-if="popupSideMetrics.length > 0">
+          <div v-for="(s, i) in popupSideMetrics" :key="i" class="popup-row">
+            <span>{{ s.label }}</span>
+            <strong v-if="s.meters != null">{{ Number(s.meters).toFixed(2) }} m</strong>
+            <strong v-else style="color:var(--gray-400)">—</strong>
+          </div>
+        </template>
+        <!-- Fallback legacy fields -->
+        <template v-else>
+          <div v-if="popupLot.frontage" class="popup-row"><span>Frente</span><strong>{{ popupLot.frontage }} m</strong></div>
+          <div v-if="popupLot.depth && popupLot.depth !== popupLot.frontage" class="popup-row"><span>Fundo</span><strong>{{ popupLot.depth }} m</strong></div>
+          <div v-if="popupLot.sideLeft" class="popup-row"><span>Lado Esq.</span><strong>{{ popupLot.sideLeft }} m</strong></div>
+          <div v-if="popupLot.sideRight && popupLot.sideRight !== popupLot.sideLeft" class="popup-row"><span>Lado Dir.</span><strong>{{ popupLot.sideRight }} m</strong></div>
+        </template>
         <div v-if="popupLot.price" class="popup-row"><span>Preço</span><strong>R$ {{ popupLot.price.toLocaleString('pt-BR') }}</strong></div>
         <div v-if="popupLot.slope && popupLot.slope !== 'FLAT'" class="popup-row"><span>Inclinação</span><strong>{{ slopeLabel(popupLot.slope) }}</strong></div>
       </div>
@@ -136,6 +149,11 @@ const lotStatusLabel = (s?: string) => ({ AVAILABLE: 'Disponível', RESERVED: 'R
 const slopeLabel = (s?: string) => ({ FLAT: 'Plano', UPHILL: 'Aclive', DOWNHILL: 'Declive' }[s || ''] || s)
 
 const popupLot = computed(() => popupEl.value?.lotDetails ?? null)
+const popupSideMetrics = computed<Array<{ label: string; meters: number | null }>>(() => {
+  const raw = popupLot.value?.sideMetricsJson
+  if (!Array.isArray(raw) || raw.length === 0) return []
+  return raw
+})
 
 const popupStyle = computed(() => ({
   left: `${popupPos.value.x}px`,

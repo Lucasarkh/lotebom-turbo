@@ -28,6 +28,16 @@ export class UpsertLotDetailsDto {
   @IsNumber()
   depth?: number;
 
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @IsNumber()
+  sideLeft?: number;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @IsNumber()
+  sideRight?: number;
+
   @ApiPropertyOptional({ enum: SlopeType, example: 'FLAT' })
   @IsOptional()
   @IsEnum(SlopeType)
@@ -37,6 +47,11 @@ export class UpsertLotDetailsDto {
   @IsOptional()
   @IsObject()
   conditionsJson?: any;
+
+  @ApiPropertyOptional({ description: 'Medidas por lado do polígono (JSON)' })
+  @IsOptional()
+  @IsObject()
+  sideMetricsJson?: any;
 
   @ApiPropertyOptional({ example: 'Lote de esquina' })
   @IsOptional()

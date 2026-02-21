@@ -84,9 +84,11 @@
           :theme="store.theme"
           :selected-targets="store.selectedTargets"
           :pixels-per-meter="store.pixelsPerMeter"
+          :active-vertex-index="store.activeLotVertexIndex"
           @select-lot="onSelectLot"
           @drag-lot-vertex="onDragLotVertex"
           @drag-lot="onDragLot"
+          @add-vertex="onAddLotVertex"
         />
 
         <!-- Nodes (on top) -->
@@ -833,6 +835,15 @@ function onDragLotVertex(lotId: LotId, index: number) {
   isDraggingLotVertex.value = true
   dragLotId.value = lotId
   dragLotVertexIndex.value = index
+  store.activeLotVertexIndex = index
+}
+
+function onRemoveLotVertex(lotId: LotId, index: number) {
+  store.removeLotVertex(lotId, index)
+}
+
+function onAddLotVertex(lotId: LotId, afterIndex: number) {
+  store.addLotVertex(lotId, afterIndex)
 }
 
 function onDragLot(lotId: LotId, e: MouseEvent) {

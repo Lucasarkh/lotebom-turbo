@@ -1,5 +1,5 @@
 <template>
-  <div class="block-panel" v-if="block">
+  <div class="block-panel" data-panel v-if="block">
     <div class="panel-header">
       <h3>Quadra Selecionada</h3>
       <button class="close-btn" @click="emit('close')" title="Fechar">✕</button>

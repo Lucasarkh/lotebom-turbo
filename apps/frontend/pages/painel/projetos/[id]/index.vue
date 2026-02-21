@@ -166,25 +166,51 @@
               <label class="form-label">Preço (R$)</label>
               <input v-model.number="lotForm.price" type="number" step="0.01" class="form-input" placeholder="0.00" />
             </div>
-            <div class="form-group">
-              <label class="form-label">Área (m²)</label>
-              <input v-model.number="lotForm.areaM2" type="number" step="0.01" class="form-input" />
+          </div>
+
+          <div style="margin-top: var(--space-4);">
+            <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-3);">Medidas para Contrato</h4>
+            <div v-if="lotContractArea !== null" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:8px 14px; margin-bottom: var(--space-3); display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; font-weight:700; color:#3b82f6; text-transform:uppercase; letter-spacing:0.3px;">Área Calculada</span>
+              <span style="font-size:0.95rem; font-weight:700; color:#1d4ed8;">{{ lotContractArea.toFixed(2) }} m²</span>
             </div>
-            <div class="form-group">
-              <label class="form-label">Frente (m)</label>
-              <input v-model.number="lotForm.frontage" type="number" step="0.01" class="form-input" />
+            <!-- Per-side metrics from map editor -->
+            <div v-if="editingLotSideMetrics.length > 0" style="margin-bottom: var(--space-3);">
+              <div style="font-size:0.7rem; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Lados do Lote (do editor)</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <div v-for="(s, i) in editingLotSideMetrics" :key="i" style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:6px; padding:4px 10px; display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:0.75rem; color:var(--gray-500);">{{ s.label }}</span>
+                  <span v-if="s.meters != null" style="font-size:0.875rem; font-weight:600; color:var(--gray-800);">{{ Number(s.meters).toFixed(2) }} m</span>
+                  <span v-else style="font-size:0.75rem; color:var(--gray-400); font-style:italic;">—</span>
+                </div>
+              </div>
+              <p style="font-size:0.7rem; color:var(--gray-400); margin-top:4px;">Edite no editor de mapas para alterar os lados.</p>
             </div>
-            <div class="form-group">
-              <label class="form-label">Profundidade/Fundo (m)</label>
-              <input v-model.number="lotForm.depth" type="number" step="0.01" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Inclinação</label>
-              <select v-model="lotForm.slope" class="form-input">
-                <option value="FLAT">Plano</option>
-                <option value="UPHILL">Aclive</option>
-                <option value="DOWNHILL">Declive</option>
-              </select>
+            <div class="grid grid-cols-2" style="gap: var(--space-3);">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Frente (m)</label>
+                <input v-model.number="lotForm.frontage" type="number" step="0.01" class="form-input" placeholder="Ex: 10.00" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Lado Esquerdo (m)</label>
+                <input v-model.number="lotForm.sideLeft" type="number" step="0.01" class="form-input" placeholder="Ex: 25.00" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Fundo (m) <small style="color:var(--gray-400)">se diferente da frente</small></label>
+                <input v-model.number="lotForm.depth" type="number" step="0.01" class="form-input" placeholder="= Frente" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Lado Direito (m) <small style="color:var(--gray-400)">se diferente</small></label>
+                <input v-model.number="lotForm.sideRight" type="number" step="0.01" class="form-input" placeholder="= Lado Esq." />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">Inclinação</label>
+                <select v-model="lotForm.slope" class="form-input">
+                  <option value="FLAT">Plano</option>
+                  <option value="UPHILL">Aclive</option>
+                  <option value="DOWNHILL">Declive</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -445,9 +471,25 @@ const settingsError = ref('')
 const settingsSaved = ref(false)
 
 const editingLot = ref(null)
-const lotForm = ref({ status: 'AVAILABLE', price: null, areaM2: null, frontage: null, depth: null, slope: 'FLAT', notes: '', conditionsText: '' })
+const lotForm = ref({ status: 'AVAILABLE', price: null, areaM2: null, frontage: null, depth: null, sideLeft: null, sideRight: null, slope: 'FLAT', notes: '', conditionsText: '' })
 const savingLot = ref(false)
 const uploadingLotMedia = ref(false)
+
+const editingLotSideMetrics = computed(() => {
+  const raw = editingLot.value?.sideMetricsJson
+  if (!Array.isArray(raw) || raw.length === 0) return []
+  return raw
+})
+
+const lotContractArea = computed(() => {
+  const f = lotForm.value.frontage
+  if (!f) return null
+  const back = lotForm.value.depth ?? f   // fundo (back width) defaults to frente
+  const sideL = lotForm.value.sideLeft
+  if (!sideL) return null
+  const sideR = lotForm.value.sideRight ?? sideL
+  return ((f + back) / 2) * ((sideL + sideR) / 2)
+})
 
 const lotMedias = computed(() => {
   if (!editingLot.value) return []
@@ -461,7 +503,9 @@ const openEditLot = (lot) => {
     price: lot.price, 
     areaM2: lot.areaM2, 
     frontage: lot.frontage, 
-    depth: lot.depth, 
+    depth: lot.depth,
+    sideLeft: lot.sideLeft ?? null,
+    sideRight: lot.sideRight ?? null,
     slope: lot.slope, 
     notes: lot.notes || '',
     conditionsText: Array.isArray(lot.conditionsJson) ? lot.conditionsJson.join('\n') : ''
@@ -472,8 +516,10 @@ const saveLotDetails = async () => {
   if (!editingLot.value) return
   savingLot.value = true
   try {
+    const calc = lotContractArea.value
     const payload = {
       ...lotForm.value,
+      areaM2: calc !== null ? Math.round(calc * 100) / 100 : lotForm.value.areaM2,
       conditionsJson: lotForm.value.conditionsText.split('\n').map(s => s.trim()).filter(Boolean)
     }
     delete payload.conditionsText

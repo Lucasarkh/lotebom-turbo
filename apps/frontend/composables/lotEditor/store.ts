@@ -5,7 +5,7 @@ import type {
   NodeId, EdgeId, BlockId, LotId, RoundaboutId, NaturalElementId, TextLabelId,
   TopoNode, TopoEdge, Block, Lot, Roundabout, NaturalElement, TextLabel,
   LoteamentoState, NodeType, RoadStyle, LotStatus,
-  NaturalElementKind,
+  NaturalElementKind, SideMetric,
 } from './topology/types'
 import type { Vec2, BezierCurve } from './geometry/types'
 import { straightBezier, splitBezier, bezierPoint } from './geometry/bezier'
@@ -74,8 +74,11 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
   const wallWidth = ref(4)       // default wall width in px (thin line)
   const snapRadius = ref(20)
   const pixelsPerMeter = ref(10) // 10px = 1m
-  const autoSnap = ref(false)
-  const autoFrame = ref(false)
+  const autoSnap = ref(true)
+  const autoFrame = ref(true)
+
+  // Currently highlighted lot vertex index (for panel sync)
+  const activeLotVertexIndex = ref<number | null>(null)
 
   // Prefab block settings (meters)
   const prefabWidth = ref(120)
@@ -806,6 +809,38 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     lot.area = polygonArea(lot.polygon)
   }
 
+  function removeLotVertex(lotId: LotId, vertexIndex: number) {
+    const lot = lots.get(lotId)
+    if (!lot || lot.polygon.length <= 3) return  // keep minimum triangle
+    pushUndo()
+    lot.polygon.splice(vertexIndex, 1)
+    // Keep sideMetrics in sync
+    if (lot.sideMetrics && lot.sideMetrics.length > 0) {
+      lot.sideMetrics.splice(vertexIndex, 1)
+    }
+    lot.area = polygonArea(lot.polygon)
+    const parentBlock = blocks.get(lot.blockId)
+    if (parentBlock) parentBlock.manuallyEdited = true
+  }
+
+  function addLotVertex(lotId: LotId, afterIndex: number) {
+    const lot = lots.get(lotId)
+    if (!lot || lot.polygon.length < 3) return
+    pushUndo()
+    const n = lot.polygon.length
+    const a = lot.polygon[afterIndex]!
+    const b = lot.polygon[(afterIndex + 1) % n]!
+    const mid: Vec2 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+    lot.polygon.splice(afterIndex + 1, 0, mid)
+    // Keep sideMetrics in sync — insert a blank entry after afterIndex
+    if (lot.sideMetrics && lot.sideMetrics.length > 0) {
+      lot.sideMetrics.splice(afterIndex + 1, 0, { label: `Lado ${afterIndex + 2}`, meters: null })
+    }
+    lot.area = polygonArea(lot.polygon)
+    const parentBlock = blocks.get(lot.blockId)
+    if (parentBlock) parentBlock.manuallyEdited = true
+  }
+
   /**
    * Move an entire lot by a delta vector.
    * Lots can be freely moved — no hard block-boundary constraint.
@@ -825,7 +860,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     lot.area = polygonArea(lot.polygon)
   }
 
-  function updateLot(lotId: LotId, updates: Partial<Pick<Lot, 'label' | 'status' | 'price' | 'conditions' | 'notes' | 'manualFrontage' | 'manualDepth'>>) {
+  function updateLot(lotId: LotId, updates: Partial<Pick<Lot, 'label' | 'status' | 'price' | 'conditions' | 'notes' | 'manualFrontage' | 'manualBack' | 'sideLeft' | 'sideRight' | 'manualDepth' | 'sideMetrics'>>) {
     const lot = lots.get(lotId)
     if (!lot) return
     Object.assign(lot, updates)
@@ -851,7 +886,11 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       area: lot.area,
       frontage: lot.frontage,
       manualFrontage: lot.manualFrontage,
+      manualBack: lot.manualBack,
+      sideLeft: lot.sideLeft,
+      sideRight: lot.sideRight,
       manualDepth: lot.manualDepth,
+      sideMetrics: lot.sideMetrics ? lot.sideMetrics.map(s => ({ ...s })) : undefined,
       status: 'available',
       price: null,
       conditions: lot.conditions,
@@ -1096,6 +1135,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
   function clearSelection() {
     selection.value = null
     selectedTargets.value = []
+    activeLotVertexIndex.value = null
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1363,7 +1403,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     redetectBlocks, addPrefabBlock,
 
     // Lots
-    generateBlockLots, moveLotVertex, moveLot, updateLot,
+    generateBlockLots, moveLotVertex, removeLotVertex, addLotVertex, moveLot, updateLot,
     duplicateLot, addLotToBlock, removeLot,
     isDrawingLot, lotDrawPoints,
     startLotDraw, addLotDrawPoint, finishLotDraw,
@@ -1382,6 +1422,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     selectTool, select, clearSelection, deleteSelected,
     selectedTargets, moveSelection, isSelected,
     autoSnap, autoFrame, updateBlockGridDepth,
+    activeLotVertexIndex,
 
     // Undo / Redo
     undo, redo, pushUndo,
