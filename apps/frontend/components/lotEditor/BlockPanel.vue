@@ -32,14 +32,22 @@
         >
           🏗️ Gerar Grade de Lotes
         </button>
-        <button
-          v-else
-          class="btn-outline full-width"
-          :disabled="!!validationError"
-          @click="emit('generateLots', block.id)"
-        >
-          📝 Editar Grade de Lotes
-        </button>
+        <template v-else>
+          <button
+            class="btn-outline full-width"
+            :disabled="!!validationError"
+            @click="emit('generateLots', block.id)"
+          >
+            📝 Editar Grade de Lotes
+          </button>
+          <button
+            class="btn-add-lot full-width"
+            style="margin-top: 8px;"
+            @click="onAddLot"
+          >
+            ➕ Adicionar Lote
+          </button>
+        </template>
         
         <button class="btn-danger full-width" style="margin-top: 10px;" @click="store.deleteSelected">
           🗑️ Excluir Quadra
@@ -83,6 +91,14 @@ const validationError = computed(() => {
   
   return null
 })
+
+function onAddLot() {
+  if (!props.block) return
+  const newId = store.addLotToBlock(props.block.id)
+  if (newId) {
+    store.select({ type: 'lot', id: newId })
+  }
+}
 </script>
 
 <style scoped>
@@ -230,5 +246,21 @@ const validationError = computed(() => {
 .btn-outline:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-add-lot {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #86efac;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-add-lot:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
 }
 </style>

@@ -73,6 +73,8 @@ export interface Block {
   lots: LotId[]
   /** Persisted generation settings for grid editing */
   grid?: BlockGrid
+  /** When true, lots were manually edited and should NOT be auto-regenerated */
+  manuallyEdited?: boolean
 }
 
 // ─── LOT ─────────────────────────────────────────────────

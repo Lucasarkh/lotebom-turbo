@@ -74,8 +74,8 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
   const wallWidth = ref(4)       // default wall width in px (thin line)
   const snapRadius = ref(20)
   const pixelsPerMeter = ref(10) // 10px = 1m
-  const autoSnap = ref(true)
-  const autoFrame = ref(true)
+  const autoSnap = ref(false)
+  const autoFrame = ref(false)
 
   // Prefab block settings (meters)
   const prefabWidth = ref(120)
@@ -593,12 +593,16 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
           existing.sides = insetBlock.sides
           blocks.set(existing.id, existing)
 
-          // Only regenerate lots when a topology edit happened (not on load).
-          if (
-            !skipLotRegeneration &&
+          // If the block was manually edited, keep lots exactly where they are.
+          // moveSelection already moves lots together with the block, so no
+          // additional translation is needed here.
+          if (existing.manuallyEdited || skipLotRegeneration) {
+            // Do nothing — lots are already positioned correctly
+          } else if (
             existing.grid &&
             (existing.grid.autoFrame || autoFrame.value)
           ) {
+            // Auto-regenerate lots to follow the new boundary
             const currentOptions = {
               mode: existing.grid.mode || 'grid',
               frontage: existing.grid.frontage,
@@ -676,6 +680,8 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     }
 
     block.status = 'lots_generated'
+    // Fresh generation resets manuallyEdited; user can choose to edit again
+    block.manuallyEdited = false
   }
 
   function startLotDraw() {
@@ -735,6 +741,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     lots.set(id, newLot)
     block.lots.push(id)
     block.status = 'lots_generated'
+    block.manuallyEdited = true
 
     isDrawingLot.value = false
     lotDrawPoints.value = []
@@ -777,6 +784,10 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     if (!lot) return
     if (vertexIndex < 0 || vertexIndex >= lot.polygon.length) return
 
+    // Mark the parent block as manually edited so auto-regen won't overwrite
+    const parentBlock = blocks.get(lot.blockId)
+    if (parentBlock) parentBlock.manuallyEdited = true
+
     let finalPos = { ...pos }
     if (autoSnap.value) {
       // For lot vertices, snap to other lots and block boundaries — NOT to road centerlines
@@ -789,32 +800,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       }
     }
 
-    // Clamp vertex to stay inside the parent block polygon
-    const block = blocks.get(lot.blockId)
-    if (block && !pointInPolygon(finalPos, block.polygon)) {
-      // Project the point onto the nearest block boundary edge
-      let bestDist = Infinity
-      let bestPt = finalPos
-      const poly = block.polygon
-      for (let i = 0; i < poly.length; i++) {
-        const a = poly[i]!
-        const b = poly[(i + 1) % poly.length]!
-        const ab = sub(b, a)
-        const ap = sub(finalPos, a)
-        const abLenSq = ab.x * ab.x + ab.y * ab.y
-        if (abLenSq < 1e-12) continue
-        let t = (ap.x * ab.x + ap.y * ab.y) / abLenSq
-        t = Math.max(0, Math.min(1, t))
-        const proj = add(a, scale(ab, t))
-        const dx = finalPos.x - proj.x, dy = finalPos.y - proj.y
-        const d = dx * dx + dy * dy
-        if (d < bestDist) {
-          bestDist = d
-          bestPt = proj
-        }
-      }
-      finalPos = bestPt
-    }
+    // Allow vertex to move freely — no hard block-boundary clamping
 
     lot.polygon[vertexIndex] = finalPos
     lot.area = polygonArea(lot.polygon)
@@ -822,25 +808,19 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
 
   /**
    * Move an entire lot by a delta vector.
-   * Constrains the lot to stay within its parent block polygon.
+   * Lots can be freely moved — no hard block-boundary constraint.
    */
   function moveLot(lotId: LotId, delta: Vec2) {
     const lot = lots.get(lotId)
     if (!lot) return
     const block = blocks.get(lot.blockId)
 
-    // Compute translated polygon
-    const newPolygon = lot.polygon.map(p => ({ x: p.x + delta.x, y: p.y + delta.y }))
+    // Mark the parent block as manually edited
+    if (block) block.manuallyEdited = true
 
-    // If block exists, verify all vertices stay inside
-    if (block && block.polygon.length >= 3) {
-      const allInside = newPolygon.every(p => pointInPolygon(p, block.polygon))
-      if (!allInside) return // Don't move outside block
-    }
-
-    // Apply the translation
+    // Apply the translation directly — user has full control
     for (let i = 0; i < lot.polygon.length; i++) {
-      lot.polygon[i] = newPolygon[i]!
+      lot.polygon[i] = { x: lot.polygon[i]!.x + delta.x, y: lot.polygon[i]!.y + delta.y }
     }
     lot.area = polygonArea(lot.polygon)
   }
@@ -849,6 +829,105 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     const lot = lots.get(lotId)
     if (!lot) return
     Object.assign(lot, updates)
+  }
+
+  /**
+   * Duplicate a lot, placing the copy slightly offset from the original.
+   */
+  function duplicateLot(lotId: LotId): LotId | null {
+    const lot = lots.get(lotId)
+    if (!lot) return null
+    const block = blocks.get(lot.blockId)
+    if (!block) return null
+
+    pushUndo()
+    const newId = uid('lot')
+    const offset = 10 // slight pixel offset
+    const newPolygon = lot.polygon.map(p => ({ x: p.x + offset, y: p.y + offset }))
+    const newLot: Lot = {
+      id: newId,
+      blockId: lot.blockId,
+      polygon: newPolygon,
+      area: lot.area,
+      frontage: lot.frontage,
+      manualFrontage: lot.manualFrontage,
+      manualDepth: lot.manualDepth,
+      status: 'available',
+      price: null,
+      conditions: lot.conditions,
+      notes: '',
+      label: `Lote ${block.lots.length + 1}`,
+    }
+    lots.set(newId, newLot)
+    block.lots.push(newId)
+    block.manuallyEdited = true
+    return newId
+  }
+
+  /**
+   * Create a new empty rectangular lot in the center of a block.
+   */
+  function addLotToBlock(blockId: BlockId): LotId | null {
+    const block = blocks.get(blockId)
+    if (!block || block.polygon.length < 3) return null
+
+    pushUndo()
+
+    // Compute block centroid
+    let cx = 0, cy = 0
+    for (const p of block.polygon) { cx += p.x; cy += p.y }
+    cx /= block.polygon.length
+    cy /= block.polygon.length
+
+    // Create a small rectangular lot around the centroid
+    const ppm = pixelsPerMeter.value
+    const halfW = 5 * ppm  // 5m half-width → 10m frontage
+    const halfH = 10 * ppm // 10m half-height → 20m depth
+    const polygon: Vec2[] = [
+      { x: cx - halfW, y: cy - halfH },
+      { x: cx + halfW, y: cy - halfH },
+      { x: cx + halfW, y: cy + halfH },
+      { x: cx - halfW, y: cy + halfH },
+    ]
+
+    const newId = uid('lot')
+    const newLot: Lot = {
+      id: newId,
+      blockId,
+      polygon,
+      area: polygonArea(polygon),
+      frontage: halfW * 2,
+      status: 'available',
+      price: null,
+      conditions: '',
+      notes: '',
+      label: `Lote ${block.lots.length + 1}`,
+    }
+    lots.set(newId, newLot)
+    block.lots.push(newId)
+    block.status = 'lots_generated'
+    block.manuallyEdited = true
+    return newId
+  }
+
+  /**
+   * Remove a single lot by ID (with proper block cleanup).
+   */
+  function removeLot(lotId: LotId) {
+    const lot = lots.get(lotId)
+    if (!lot) return
+    pushUndo()
+    const block = blocks.get(lot.blockId)
+    if (block) {
+      block.lots = block.lots.filter(id => id !== lotId)
+      block.manuallyEdited = true
+      if (block.lots.length === 0) {
+        block.grid = undefined
+        block.status = 'detected'
+        block.manuallyEdited = false
+      }
+    }
+    lots.delete(lotId)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1042,6 +1121,10 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
             const e = edges.get(eId)
             if (e) { nodesToMove.add(e.from); nodesToMove.add(e.to) }
           }
+          // Also move all child lots with the block
+          for (const lid of b.lots) {
+            lotsToMove.add(lid)
+          }
         }
       } else if (target.type === 'roundabout') {
         rabsToMove.add(target.id)
@@ -1166,10 +1249,12 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
           const b = blocks.get(lot.blockId)
           if (b) {
             b.lots = b.lots.filter(id => id !== sel.id)
+            b.manuallyEdited = true
             // If all lots removed, clear grid so auto-regeneration won't recreate them
             if (b.lots.length === 0) {
               b.grid = undefined
               b.status = 'detected'
+              b.manuallyEdited = false
             }
           }
           lots.delete(sel.id)
@@ -1279,6 +1364,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
 
     // Lots
     generateBlockLots, moveLotVertex, moveLot, updateLot,
+    duplicateLot, addLotToBlock, removeLot,
     isDrawingLot, lotDrawPoints,
     startLotDraw, addLotDrawPoint, finishLotDraw,
 

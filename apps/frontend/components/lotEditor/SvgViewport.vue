@@ -350,6 +350,16 @@ function onKeyDown(e: KeyboardEvent) {
     return
   }
 
+  // Ctrl+D: duplicate selected lot
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+    e.preventDefault()
+    if (store.selection?.type === 'lot') {
+      const newId = store.duplicateLot(store.selection.id)
+      if (newId) store.select({ type: 'lot', id: newId })
+    }
+    return
+  }
+
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (store.selection) {
       store.deleteSelected()

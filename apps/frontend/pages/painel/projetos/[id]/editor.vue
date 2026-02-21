@@ -60,7 +60,9 @@
       :lot="store.selectedLot"
       @update="onLotUpdate"
       @close="store.clearSelection"
-      @delete-lot="store.deleteSelected"
+      @delete-lot="onDeleteLot"
+      @duplicate-lot="onDuplicateLot"
+      @create-lot="onCreateLotInBlock"
     />
 
     <BlockPanel
@@ -202,6 +204,31 @@ function onGenerateLots(blockId: BlockId, options: any) {
 
 function onLotUpdate(lotId: LotId, field: string, value: any) {
   store.updateLot(lotId, { [field]: value })
+}
+
+function onDeleteLot() {
+  if (store.selectedLot) {
+    store.removeLot(store.selectedLot.id)
+    store.clearSelection()
+  }
+}
+
+function onDuplicateLot() {
+  if (store.selectedLot) {
+    const newId = store.duplicateLot(store.selectedLot.id)
+    if (newId) {
+      store.select({ type: 'lot', id: newId })
+    }
+  }
+}
+
+function onCreateLotInBlock() {
+  if (store.selectedLot) {
+    const newId = store.addLotToBlock(store.selectedLot.blockId)
+    if (newId) {
+      store.select({ type: 'lot', id: newId })
+    }
+  }
 }
 
 async function handleSave() {

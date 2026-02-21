@@ -120,8 +120,18 @@
         ></textarea>
       </div>
 
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn-action duplicate-btn" @click="emit('duplicateLot')" title="Duplicar lote (Ctrl+D)">
+          📋 Duplicar
+        </button>
+        <button class="btn-action create-btn" @click="emit('createLot')" title="Criar novo lote na quadra">
+          ➕ Novo Lote
+        </button>
+      </div>
+
       <!-- Delete -->
-      <button class="btn-danger full-width" style="margin-top: 12px;" @click="emit('deleteLot')">
+      <button class="btn-danger full-width" style="margin-top: 4px;" @click="emit('deleteLot')">
         🗑️ Excluir Lote
       </button>
     </div>
@@ -139,6 +149,8 @@ const emit = defineEmits<{
   update: [lotId: LotId, field: string, value: any]
   close: []
   deleteLot: []
+  duplicateLot: []
+  createLot: []
 }>()
 
 function update(field: string, value: any) {
@@ -280,5 +292,45 @@ function update(field: string, value: any) {
 
 .status-btn:hover:not(.active) {
   background: var(--gray-50);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-700);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn-action:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+}
+
+.duplicate-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+
+.create-btn:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #16a34a;
 }
 </style>
