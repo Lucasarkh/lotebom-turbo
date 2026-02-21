@@ -18,6 +18,57 @@
       <rect :width="cw" :height="ch" fill="#f1f5f9" />
 
       <g :transform="worldTransform">
+        <!-- Natural Elements (Lakes, Green Areas, etc) -->
+        <g v-for="el in naturalElements" :key="'nat-' + el.id">
+          <!-- Lake -->
+          <template v-if="el.kind === 'lake'">
+            <path
+              :d="smoothPath(el.polygon)"
+              fill="#93c5fd"
+              stroke="#60a5fa"
+              stroke-width="1.5"
+            />
+            <path
+              :d="smoothPath(insetPolygon(el.polygon, 8 / zoom))"
+              fill="none"
+              stroke="rgba(255,255,255,0.3)"
+              stroke-width="1"
+              pointer-events="none"
+            />
+          </template>
+          <!-- Green Area -->
+          <template v-else-if="el.kind === 'green_area'">
+            <path
+              :d="smoothPath(el.polygon)"
+              fill="#86efac"
+              stroke="#4ade80"
+              stroke-width="1"
+            />
+          </template>
+          <!-- Institutional -->
+          <template v-else>
+            <path
+              :d="smoothPath(el.polygon)"
+              fill="#fde68a"
+              stroke="#fbbf24"
+              stroke-width="1"
+            />
+          </template>
+
+          <text
+            v-if="el.label"
+            :x="elCenter(el.polygon).x"
+            :y="elCenter(el.polygon).y"
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill="#334155"
+            :font-size="10 / zoom"
+            font-weight="600"
+            opacity="0.6"
+            pointer-events="none"
+          >{{ el.label }}</text>
+        </g>
+
         <!-- Road shadows -->
         <path
           v-for="edge in roadEdges"
@@ -38,6 +89,38 @@
           stroke-width="0.5"
           pointer-events="none"
         />
+
+        <!-- Roundabouts -->
+        <g v-for="rab in roundabouts" :key="'rab-' + rab.id">
+          <circle
+            :cx="rab.center.x"
+            :cy="rab.center.y"
+            :r="rab.radius"
+            fill="#cbd5e1"
+            stroke="#94a3b8"
+            stroke-width="0.5"
+          />
+          <!-- Island -->
+          <circle
+            :cx="rab.center.x"
+            :cy="rab.center.y"
+            :r="Math.max(8 / zoom, rab.radius * 0.4)"
+            fill="#86efac"
+            stroke="#4ade80"
+            stroke-width="1"
+          />
+          <!-- Decorative inner circle -->
+          <circle
+            :cx="rab.center.x"
+            :cy="rab.center.y"
+            :r="rab.radius * 0.75"
+            fill="none"
+            stroke="white"
+            stroke-width="1.5"
+            stroke-dasharray="8 6"
+            opacity="0.5"
+          />
+        </g>
 
         <!-- Road joints (circles at nodes to fill gaps) -->
         <circle
@@ -104,6 +187,24 @@
             >{{ statusLabel(lot.status) }}</text>
           </g>
         </g>
+
+        <!-- Text Labels -->
+        <g
+          v-for="label in textLabels"
+          :key="'txt-' + label.id"
+          :transform="`translate(${label.position.x}, ${label.position.y}) rotate(${label.rotation || 0})`"
+          pointer-events="none"
+        >
+          <text
+            x="0"
+            y="0"
+            :fill="label.color || '#374151'"
+            :font-size="label.fontSize / zoom"
+            font-weight="700"
+          >
+            {{ label.text }}
+          </text>
+        </g>
       </g>
     </svg>
 
@@ -147,7 +248,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { polygonToSVGPath, centroid } from '~/composables/lotEditor/geometry/polygon'
+import { polygonToSVGPath, centroid, smoothPolygon, insetPolygon } from '~/composables/lotEditor/geometry/polygon'
 import { roadSurfaceFromBezier, flattenBezier } from '~/composables/lotEditor/geometry/bezier'
 
 /* ── Props ─────────────────────────────────────────────── */
@@ -218,8 +319,37 @@ interface ParsedNode {
   position: { x: number; y: number }
 }
 
-const parsedData = computed<{ lots: ParsedLot[]; edges: ParsedEdge[]; nodes: ParsedNode[] }>(() => {
-  if (!props.mapData) return { lots: [], edges: [], nodes: [] }
+interface Roundabout {
+  id: string
+  center: { x: number; y: number }
+  radius: number
+}
+
+interface NaturalElement {
+  id: string
+  kind: 'lake' | 'green_area' | 'institutional'
+  polygon: { x: number; y: number }[]
+  label: string
+}
+
+interface TextLabel {
+  id: string
+  position: { x: number; y: number }
+  text: string
+  fontSize: number
+  color: string
+  rotation: number
+}
+
+const parsedData = computed<{
+  lots: ParsedLot[]
+  edges: ParsedEdge[]
+  nodes: ParsedNode[]
+  roundabouts: Roundabout[]
+  naturalElements: NaturalElement[]
+  textLabels: TextLabel[]
+}>(() => {
+  if (!props.mapData) return { lots: [], edges: [], nodes: [], roundabouts: [], naturalElements: [], textLabels: [] }
   try {
     const raw = typeof props.mapData === 'string' ? JSON.parse(props.mapData) : props.mapData
     const lots: ParsedLot[] = (raw.lots || []).map(([, l]: [string, any]) => ({
@@ -248,14 +378,40 @@ const parsedData = computed<{ lots: ParsedLot[]; edges: ParsedEdge[]; nodes: Par
       id: n.id,
       position: n.position || { x: 0, y: 0 },
     }))
-    return { lots, edges, nodes }
+
+    const roundabouts: Roundabout[] = (raw.roundabouts || []).map(([, r]: [string, any]) => ({
+      id: r.id,
+      center: r.center || { x: 0, y: 0 },
+      radius: r.radius || 30,
+    }))
+
+    const naturalElements: NaturalElement[] = (raw.naturalElements || []).map(([, n]: [string, any]) => ({
+      id: n.id,
+      kind: n.kind || 'institutional',
+      polygon: n.polygon || [],
+      label: n.label || '',
+    }))
+
+    const textLabels: TextLabel[] = (raw.textLabels || []).map(([, t]: [string, any]) => ({
+      id: t.id,
+      position: t.position || { x: 0, y: 0 },
+      text: t.text || '',
+      fontSize: t.fontSize || 14,
+      color: t.color || '#374151',
+      rotation: t.rotation || 0,
+    }))
+
+    return { lots, edges, nodes, roundabouts, naturalElements, textLabels }
   } catch {
-    return { lots: [], edges: [], nodes: [] }
+    return { lots: [], edges: [], nodes: [], roundabouts: [], naturalElements: [], textLabels: [] }
   }
 })
 
 const lotList = computed(() => parsedData.value.lots)
 const roadEdges = computed(() => parsedData.value.edges.filter(e => e.style !== 'wall' && e.style !== 'roundabout_internal'))
+const roundabouts = computed(() => parsedData.value.roundabouts)
+const naturalElements = computed(() => parsedData.value.naturalElements)
+const textLabels = computed(() => parsedData.value.textLabels)
 const roadNodes = computed(() => {
   const idsInRoads = new Set<string>()
   for (const e of roadEdges.value) { idsInRoads.add(e.from); idsInRoads.add(e.to) }
@@ -361,6 +517,16 @@ function lotPath(lot: ParsedLot): string {
 
 function lotCenter(lot: ParsedLot): { x: number; y: number } {
   return centroid(lot.polygon)
+}
+
+function smoothPath(poly: { x: number; y: number }[]): string {
+  if (!poly || poly.length < 3) return ''
+  return polygonToSVGPath(smoothPolygon(poly, 2))
+}
+
+function elCenter(poly: { x: number; y: number }[]): { x: number; y: number } {
+  if (!poly || poly.length === 0) return { x: 0, y: 0 }
+  return centroid(poly)
 }
 
 function lotFill(lot: ParsedLot): string {
