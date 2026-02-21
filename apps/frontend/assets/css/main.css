@@ -166,6 +166,17 @@ a:hover { color: var(--primary-hover); }
   background: var(--gray-100);
 }
 
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--primary-light);
+  border-color: var(--primary-hover);
+  color: var(--primary-hover);
+}
+
 .btn-sm {
   padding: var(--space-1) var(--space-3);
   font-size: 0.8125rem;

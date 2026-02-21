@@ -31,4 +31,13 @@ export class UpdateProjectDto {
   @ApiPropertyOptional({ description: 'Dados do mapa do editor (JSON)' })
   @IsOptional()
   mapData?: any;
+
+  @ApiPropertyOptional({ description: 'Destaques/diferenciais do loteamento [{icon, label, value}]' })
+  @IsOptional()
+  highlightsJson?: any;
+
+  @ApiPropertyOptional({ description: 'Texto de localização e infraestrutura do entorno' })
+  @IsOptional()
+  @IsString()
+  locationText?: string;
 }

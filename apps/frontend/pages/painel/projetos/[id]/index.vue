@@ -17,6 +17,13 @@
           <p>{{ project.description || 'Sem descrição' }}</p>
         </div>
         <div class="flex gap-2">
+          <a
+            v-if="project.status === 'PUBLISHED'"
+            :href="`/p/${tenantSlug}/${project.slug}`"
+            target="_blank"
+            class="btn btn-sm btn-outline"
+            title="Ver página pública"
+          >🔗 Ver Página</a>
           <span class="badge" :class="project.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'" style="font-size: 0.875rem; padding: 4px 14px;">
             {{ project.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
           </span>
@@ -154,6 +161,170 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab: Pág. Pública -->
+      <div v-if="activeTab === 'public'">
+        <!-- Public URL card -->
+        <div class="card" style="margin-bottom: var(--space-5);">
+          <h3 style="margin-bottom: var(--space-3);">Link da Página Pública</h3>
+          <div v-if="project.status !== 'PUBLISHED'" class="alert alert-warning" style="margin-bottom: var(--space-3);">
+            O projeto está como Rascunho. Publique-o para a página ser acessível.
+          </div>
+          <div class="flex gap-3 items-center" style="flex-wrap:wrap;">
+            <code style="background: var(--gray-100); padding: 6px 12px; border-radius: var(--radius-sm); font-size:0.9rem;">
+              {{ publicUrl || '(publique o projeto para gerar o link)' }}
+            </code>
+            <a v-if="publicUrl" :href="publicUrl" target="_blank" class="btn btn-sm btn-outline">🔗 Abrir</a>
+            <button v-if="publicUrl" class="btn btn-sm btn-secondary" @click="copyLink(`${$config?.public?.baseUrl || ''}${publicUrl}`)">📋 Copiar</button>
+          </div>
+        </div>
+
+        <!-- Highlights / features -->
+        <div class="card" style="margin-bottom: var(--space-5);">
+          <h3 style="margin-bottom: var(--space-4);">Diferenciais do Loteamento</h3>
+          <p style="color: var(--gray-500); font-size:0.875rem; margin-bottom: var(--space-4);">Ícones e informações exibidos na página pública como cards de destaque.</p>
+
+          <div v-if="pubInfoForm.highlightsJson.length" style="margin-bottom: var(--space-4);">
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Ícone</th><th>Rótulo</th><th>Valor</th><th></th></tr></thead>
+                <tbody>
+                  <tr v-for="(h, i) in pubInfoForm.highlightsJson" :key="i">
+                    <td style="font-size:1.25rem;">{{ h.icon }}</td>
+                    <td>{{ h.label }}</td>
+                    <td>{{ h.value }}</td>
+                    <td><button v-if="authStore.canEdit" class="btn btn-danger btn-sm" @click="removeHighlight(i)">✕</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div v-if="authStore.canEdit" class="flex gap-2 items-end" style="flex-wrap:wrap; margin-bottom: var(--space-4);">
+            <div class="form-group" style="margin:0; flex:0 0 80px;">
+              <label class="form-label">Ícone</label>
+              <input v-model="newHighlight.icon" class="form-input" placeholder="🏡" style="font-size:1.2rem;" />
+            </div>
+            <div class="form-group" style="margin:0; flex:1 1 160px;">
+              <label class="form-label">Rótulo</label>
+              <input v-model="newHighlight.label" class="form-input" placeholder="Infraestrutura completa" />
+            </div>
+            <div class="form-group" style="margin:0; flex:1 1 160px;">
+              <label class="form-label">Valor / Detalhe</label>
+              <input v-model="newHighlight.value" class="form-input" placeholder="Água, luz, asfalto" />
+            </div>
+            <button class="btn btn-secondary btn-sm" style="margin-bottom:2px;" @click="addHighlight">+ Adicionar</button>
+          </div>
+        </div>
+
+        <!-- Location / info text -->
+        <div class="card" style="margin-bottom: var(--space-5);">
+          <h3 style="margin-bottom: var(--space-3);">Localização e Infraestrutura</h3>
+          <p style="color: var(--gray-500); font-size:0.875rem; margin-bottom: var(--space-3);">Texto exibido na seção de informações gerais da página pública.</p>
+          <div class="form-group">
+            <textarea v-model="pubInfoForm.locationText" class="form-textarea" rows="5" placeholder="Ex: Localizado no bairro X, próximo a escola, hospital, etc." :disabled="!authStore.canEdit"></textarea>
+          </div>
+        </div>
+
+        <div v-if="authStore.canEdit">
+          <div v-if="pubInfoSaved" class="alert alert-success" style="margin-bottom: var(--space-3);">Informações salvas!</div>
+          <button class="btn btn-primary" :disabled="savingPubInfo" @click="savePubInfo">
+            {{ savingPubInfo ? 'Salvando...' : 'Salvar Informações Públicas' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab: Corretores -->
+      <div v-if="activeTab === 'corretores'">
+        <div class="card" style="margin-bottom: var(--space-5);">
+          <h3 style="margin-bottom: var(--space-2);">Links de Corretor</h3>
+          <p style="color: var(--gray-500); font-size:0.875rem;">Cada corretor tem um link personalizado. Quando acessado, a página exibe os dados do corretor para contato. Leads capturados por esse link são vinculados ao corretor.</p>
+        </div>
+
+        <div v-if="authStore.canEdit" style="margin-bottom: var(--space-5);">
+          <button class="btn btn-primary" @click="showNewCorretor = !showNewCorretor">
+            {{ showNewCorretor ? '✕ Cancelar' : '+ Novo Corretor' }}
+          </button>
+
+          <div v-if="showNewCorretor" class="card" style="margin-top: var(--space-4); max-width: 600px;">
+            <h4 style="margin-bottom: var(--space-4);">Novo Link de Corretor</h4>
+            <div class="grid grid-cols-2" style="gap: var(--space-3);">
+              <div class="form-group">
+                <label class="form-label">Nome *</label>
+                <input v-model="corretorForm.name" class="form-input" placeholder="João Corretor" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Código (URL) *</label>
+                <input v-model="corretorForm.code" class="form-input" placeholder="joao-c" required />
+                <small style="color:var(--gray-500); font-size:0.75rem;">Usado como ?c={{ corretorForm.code || 'codigo' }}</small>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Telefone</label>
+                <input v-model="corretorForm.phone" class="form-input" placeholder="(00) 00000-0000" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">E-mail</label>
+                <input v-model="corretorForm.email" type="email" class="form-input" placeholder="corretor@email.com" />
+              </div>
+            </div>
+            <div v-if="corretorError" class="alert alert-error" style="margin-top: var(--space-3);">{{ corretorError }}</div>
+            <div class="modal-actions" style="margin-top: var(--space-4);">
+              <button class="btn btn-secondary" @click="showNewCorretor = false">Cancelar</button>
+              <button class="btn btn-primary" :disabled="creatingCorretor || !corretorForm.name || !corretorForm.code" @click="createCorretor">
+                {{ creatingCorretor ? 'Criando...' : 'Criar Corretor' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="loadingCorretores" class="loading-state"><div class="loading-spinner"></div></div>
+
+        <div v-else-if="corretores.length === 0" class="empty-state">
+          <div class="empty-state-icon">🤝</div>
+          <h3>Nenhum corretor cadastrado</h3>
+          <p>Crie links personalizados para corretores divulgarem o loteamento.</p>
+        </div>
+
+        <div v-else class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Código</th>
+                <th>Telefone</th>
+                <th>Leads</th>
+                <th>Status</th>
+                <th>Link do Loteamento</th>
+                <th v-if="authStore.canEdit">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in corretores" :key="c.id">
+                <td><strong>{{ c.name }}</strong></td>
+                <td><code>{{ c.code }}</code></td>
+                <td>{{ c.phone || '—' }}</td>
+                <td>{{ c._count?.leads ?? 0 }}</td>
+                <td>
+                  <span class="badge" :class="c.enabled ? 'badge-success' : 'badge-neutral'">{{ c.enabled ? 'Ativo' : 'Inativo' }}</span>
+                </td>
+                <td>
+                  <div v-if="publicUrl" class="flex gap-2 items-center">
+                    <code style="font-size:0.75rem; color: var(--gray-600);">?c={{ c.code }}</code>
+                    <button class="btn btn-sm btn-outline" @click="copyLink(`${$config?.public?.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')}${publicUrl}?c=${c.code}`)">📋 Copiar</button>
+                  </div>
+                  <span v-else style="color:var(--gray-400); font-size:0.8rem;">Publique o projeto</span>
+                </td>
+                <td v-if="authStore.canEdit">
+                  <div class="flex gap-2">
+                    <button class="btn btn-sm btn-secondary" @click="toggleCorretor(c)">{{ c.enabled ? 'Desativar' : 'Ativar' }}</button>
+                    <button class="btn btn-sm btn-danger" @click="deleteCorretor(c)">Excluir</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </template>
 
     <div v-else class="error-state">Projeto não encontrado.</div>
@@ -161,7 +332,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -183,12 +354,109 @@ const savingSettings = ref(false)
 const settingsError = ref('')
 const settingsSaved = ref(false)
 
+const tenantSlug = computed(() => project.value?.tenant?.slug || '')
+const publicUrl = computed(() => tenantSlug.value && project.value ? `/p/${tenantSlug.value}/${project.value.slug}` : null)
+
 const editForm = ref({ name: '', slug: '', description: '' })
 
+// ── Public info (highlights + location) ──────────────────
+const pubInfoForm = ref({ highlightsJson: [], locationText: '' })
+const savingPubInfo = ref(false)
+const pubInfoSaved = ref(false)
+const newHighlight = ref({ icon: '✅', label: '', value: '' })
+
+const addHighlight = () => {
+  if (!newHighlight.value.label) return
+  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { ...newHighlight.value }]
+  newHighlight.value = { icon: '✅', label: '', value: '' }
+}
+const removeHighlight = (i) => {
+  pubInfoForm.value.highlightsJson = pubInfoForm.value.highlightsJson.filter((_, idx) => idx !== i)
+}
+const savePubInfo = async () => {
+  savingPubInfo.value = true; pubInfoSaved.value = false
+  try {
+    project.value = await fetchApi(`/projects/${projectId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ highlightsJson: pubInfoForm.value.highlightsJson, locationText: pubInfoForm.value.locationText }),
+    })
+    pubInfoSaved.value = true
+    toastSuccess('Informações públicas salvas!')
+    setTimeout(() => pubInfoSaved.value = false, 2000)
+  } catch (e) { toastFromError(e, 'Erro ao salvar') }
+  savingPubInfo.value = false
+}
+
+// ── Corretores ────────────────────────────────────────────
+const corretores = ref([])
+const loadingCorretores = ref(false)
+const showNewCorretor = ref(false)
+const creatingCorretor = ref(false)
+const corretorForm = ref({ name: '', phone: '', email: '', code: '', enabled: true, notes: '' })
+const corretorError = ref('')
+
+const loadCorretores = async () => {
+  loadingCorretores.value = true
+  try {
+    corretores.value = await fetchApi(`/realtor-links?projectId=${projectId}`)
+  } catch (e) { toastFromError(e, 'Erro ao carregar corretores') }
+  loadingCorretores.value = false
+}
+
+const createCorretor = async () => {
+  creatingCorretor.value = true; corretorError.value = ''
+  try {
+    const c = await fetchApi('/realtor-links', {
+      method: 'POST',
+      body: JSON.stringify({ ...corretorForm.value, projectId }),
+    })
+    corretores.value.unshift(c)
+    showNewCorretor.value = false
+    corretorForm.value = { name: '', phone: '', email: '', code: '', enabled: true, notes: '' }
+    toastSuccess('Corretor criado!')
+  } catch (e) {
+    corretorError.value = e.message || 'Erro ao criar'
+    toastFromError(e, 'Erro ao criar corretor')
+  }
+  creatingCorretor.value = false
+}
+
+const toggleCorretor = async (c) => {
+  try {
+    const updated = await fetchApi(`/realtor-links/${c.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ enabled: !c.enabled }),
+    })
+    Object.assign(c, updated)
+  } catch (e) { toastFromError(e, 'Erro ao atualizar corretor') }
+}
+
+const deleteCorretor = async (c) => {
+  if (!confirm(`Excluir corretor "${c.name}"?`)) return
+  try {
+    await fetchApi(`/realtor-links/${c.id}`, { method: 'DELETE' })
+    corretores.value = corretores.value.filter(x => x.id !== c.id)
+    toastSuccess('Corretor excluído')
+  } catch (e) { toastFromError(e, 'Erro ao excluir corretor') }
+}
+
+const corretorLotLink = (c, lotCode) => {
+  if (!publicUrl.value) return ''
+  return `${window?.location?.origin || ''}${publicUrl.value}?c=${c.code}${lotCode ? `#lote-${lotCode}` : ''}`
+}
+
+const copyLink = (text) => {
+  navigator.clipboard.writeText(text)
+  toastSuccess('Link copiado!')
+}
+
+// ── Tabs ─────────────────────────────────────────────────
 const tabs = [
   { key: 'map', label: 'Mapa' },
   { key: 'lots', label: 'Lotes' },
   { key: 'media', label: 'Mídia' },
+  { key: 'public', label: 'Pág. Pública' },
+  { key: 'corretores', label: 'Corretores' },
   { key: 'settings', label: 'Configurações' },
 ]
 
@@ -211,6 +479,10 @@ const loadProject = async () => {
     lots.value = lt
     media.value = md
     editForm.value = { name: p.name, slug: p.slug, description: p.description || '' }
+    pubInfoForm.value = {
+      highlightsJson: Array.isArray(p.highlightsJson) ? p.highlightsJson : [],
+      locationText: p.locationText || '',
+    }
   } catch (e) {
     error.value = 'Não foi possível carregar o projeto.'
     toastFromError(e, 'Erro ao carregar projeto')
@@ -304,7 +576,10 @@ const deleteMedia = async (id) => {
   }
 }
 
-onMounted(loadProject)
+onMounted(async () => {
+  await loadProject()
+  await loadCorretores()
+})
 </script>
 
 <style scoped>

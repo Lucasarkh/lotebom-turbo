@@ -45,6 +45,7 @@
             <th>Telefone</th>
             <th>Projeto</th>
             <th>Lote</th>
+            <th>Corretor</th>
             <th>Status</th>
             <th>Data</th>
             <th v-if="authStore.canEdit">Ações</th>
@@ -57,6 +58,7 @@
             <td>{{ lead.phone || '—' }}</td>
             <td>{{ lead.project?.name || '—' }}</td>
             <td>{{ lead.lotCode || '—' }}</td>
+            <td>{{ lead.realtorLink?.name || '—' }}</td>
             <td>
               <select
                 v-if="authStore.canEdit"
@@ -94,6 +96,8 @@
           <p><strong>Telefone:</strong> {{ selectedLead.phone || '—' }}</p>
           <p><strong>Mensagem:</strong> {{ selectedLead.message || '—' }}</p>
           <p><strong>Status:</strong> {{ statusLabel(selectedLead.status) }}</p>
+          <p><strong>Corretor:</strong> {{ selectedLead.realtorLink?.name || '—' }}{{ selectedLead.realtorLink?.phone ? ` (${selectedLead.realtorLink.phone})` : '' }}</p>
+          <p><strong>Origem:</strong> {{ selectedLead.source || '—' }}</p>
           <p><strong>Data:</strong> {{ new Date(selectedLead.createdAt).toLocaleString('pt-BR') }}</p>
         </div>
       </div>

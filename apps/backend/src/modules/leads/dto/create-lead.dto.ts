@@ -23,4 +23,9 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   message?: string;
+
+  @ApiPropertyOptional({ description: 'Código do corretor (parâmetro ?c= da URL pública)' })
+  @IsOptional()
+  @IsString()
+  realtorCode?: string;
 }

@@ -27,11 +27,24 @@ export class LeadsService {
     if (!project || project.status !== 'PUBLISHED')
       throw new NotFoundException('Project not found');
 
+    // Resolve optional realtor code → ID
+    let realtorLinkId: string | undefined;
+    if (dto.realtorCode) {
+      const rl = await this.prisma.realtorLink.findFirst({
+        where: { tenantId: tenant.id, code: dto.realtorCode, enabled: true },
+      });
+      realtorLinkId = rl?.id;
+    }
+
+    const { realtorCode, ...leadData } = dto;
+
     return this.prisma.lead.create({
       data: {
         tenantId: tenant.id,
         projectId: project.id,
-        ...dto,
+        ...leadData,
+        ...(realtorLinkId ? { realtorLinkId } : {}),
+        source: realtorCode ? `corretor:${realtorCode}` : 'website',
       },
     });
   }
@@ -48,7 +61,7 @@ export class LeadsService {
         ...(projectId && { projectId }),
         ...(status && { status }),
       },
-      include: { project: true, mapElement: true },
+      include: { project: true, mapElement: true, realtorLink: { select: { name: true, code: true, phone: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -56,7 +69,7 @@ export class LeadsService {
   async findOne(tenantId: string, id: string) {
     const lead = await this.prisma.lead.findFirst({
       where: { id, tenantId },
-      include: { project: true, mapElement: true },
+      include: { project: true, mapElement: true, realtorLink: true },
     });
     if (!lead) throw new NotFoundException('Lead not found');
     return lead;

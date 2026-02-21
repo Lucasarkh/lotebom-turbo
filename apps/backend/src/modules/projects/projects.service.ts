@@ -29,6 +29,7 @@ export class ProjectsService {
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       include: {
+        tenant: { select: { slug: true, name: true } },
         _count: { select: { mapElements: true, leads: true } },
       },
     });
@@ -38,6 +39,7 @@ export class ProjectsService {
     const project = await this.prisma.project.findFirst({
       where: { id, tenantId },
       include: {
+        tenant: { select: { slug: true, name: true } },
         _count: { select: { mapElements: true, leads: true, projectMedias: true } },
       },
     });
@@ -92,6 +94,12 @@ export class ProjectsService {
         ...(dto.mapBaseImageUrl !== undefined && { mapBaseImageUrl: dto.mapBaseImageUrl }),
         ...(dto.status && { status: dto.status }),
         ...(dto.mapData !== undefined && { mapData: dto.mapData }),
+        ...(dto.highlightsJson !== undefined && { highlightsJson: dto.highlightsJson }),
+        ...(dto.locationText !== undefined && { locationText: dto.locationText }),
+      },
+      include: {
+        tenant: { select: { slug: true, name: true } },
+        _count: { select: { mapElements: true, leads: true, projectMedias: true } },
       },
     });
   }
@@ -105,6 +113,7 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id },
       data: { status: ProjectStatus.PUBLISHED },
+      include: { tenant: { select: { slug: true, name: true } } },
     });
   }
 
@@ -117,6 +126,7 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id },
       data: { status: ProjectStatus.DRAFT },
+      include: { tenant: { select: { slug: true, name: true } } },
     });
   }
 

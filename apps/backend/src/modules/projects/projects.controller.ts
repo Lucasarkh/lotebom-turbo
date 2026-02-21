@@ -47,8 +47,19 @@ export class ProjectsController {
 
   @Put(':id')
   @Roles('ADMIN', 'EDITOR')
-  @ApiOperation({ summary: 'Atualizar projeto' })
+  @ApiOperation({ summary: 'Atualizar projeto (PUT)' })
   update(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateProjectDto,
+  ) {
+    return this.projectsService.update(tenantId, id, dto);
+  }
+
+  @Patch(':id')
+  @Roles('ADMIN', 'EDITOR')
+  @ApiOperation({ summary: 'Atualizar projeto (PATCH)' })
+  patch(
     @TenantId() tenantId: string,
     @Param('id') id: string,
     @Body() dto: UpdateProjectDto,

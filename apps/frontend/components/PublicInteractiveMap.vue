@@ -79,12 +79,20 @@
       <button v-if="popupLot?.status === 'AVAILABLE'" class="btn btn-primary btn-sm popup-cta" @click="$emit('interest', popupEl)">
         Tenho interesse
       </button>
+      <NuxtLink :to="getLotUrl(popupEl)" class="btn btn-outline btn-sm popup-cta" style="margin-top: 8px; width: 100%; display: flex; justify-content: center;">
+        Ver detalhes
+      </NuxtLink>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+
+const route = useRoute()
+const tSlug = route.params.tenant
+const pSlug = route.params.project
+const cCode = route.query.c || ''
 
 interface MapEl {
   id: string
@@ -95,6 +103,12 @@ interface MapEl {
   geometryJson: any
   styleJson?: any
   lotDetails?: any
+}
+
+function getLotUrl(el: MapEl) {
+  const code = el.code || el.name || el.id
+  const base = `/p/${tSlug}/${pSlug}/lote/${encodeURIComponent(code)}`
+  return cCode ? `${base}?c=${cCode}` : base
 }
 
 const props = defineProps<{
