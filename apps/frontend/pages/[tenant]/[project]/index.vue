@@ -138,6 +138,30 @@
         </div>
       </section>
 
+      <!-- Planta Interativa -->
+      <section v-if="plantMap" class="v4-section" id="planta">
+        <div class="v4-container">
+          <div class="v4-section-header center">
+            <h2 class="v4-section-title">Planta Interativa</h2>
+            <p class="v4-section-subtitle">Explore a implantação do loteamento. Clique nos pontos para mais informações.</p>
+          </div>
+          <ClientOnly>
+            <div style="height: 540px; border-radius: 16px; overflow: hidden; box-shadow: var(--v4-shadow-elevated);">
+              <PlantMapViewer
+                :plant-map="plantMap"
+                :show-controls="true"
+                :show-legend="true"
+              />
+            </div>
+            <template #fallback>
+              <div style="height: 540px; border-radius:16px; background:#1a1a2e; display:flex; align-items:center; justify-content:center; color:#64748b;">
+                <div class="loading-spinner"></div>
+              </div>
+            </template>
+          </ClientOnly>
+        </div>
+      </section>
+
       <!-- Available Lots Grid -->
       <section v-if="unifiedAvailableLots.length" class="v4-section" id="lotes">
         <div class="v4-container">
@@ -313,6 +337,7 @@
       <!-- Sticky mobile CTA -->
       <nav class="v4-sticky-nav">
         <a href="#mapa" class="v4-nav-item">Mapa</a>
+        <a v-if="plantMap" href="#planta" class="v4-nav-item">Planta</a>
         <a v-if="unifiedAvailableLots.length" href="#lotes" class="v4-nav-item">Unidades</a>
         <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>
       </nav>
@@ -325,6 +350,9 @@ definePageMeta({ layout: 'public' })
 
 const route = useRoute()
 const { fetchPublic } = usePublicApi()
+import { usePublicPlantMap } from '~/composables/plantMap/usePlantMapApi'
+import type { PlantMap } from '~/composables/plantMap/types'
+import PlantMapViewer from '~/components/plantMap/PlantMapViewer.vue'
 
 const tenantSlug = route.params.tenant
 const projectSlug = route.params.project
@@ -335,6 +363,8 @@ const loading = ref(true)
 const error = ref('')
 const project = ref<any>(null)
 const corretor = ref<any>(null)
+const plantMap = ref<PlantMap | null>(null)
+const { getPublicPlantMap } = usePublicPlantMap()
 
 const leadForm = ref({ name: '', email: '', phone: '', mapElementId: '', message: '' })
 const submitting = ref(false)
@@ -506,6 +536,10 @@ onMounted(async () => {
           { name: 'theme-color', content: '#ffffff' }
         ]
       })
+      // Fetch plant map for this project (non-blocking)
+      getPublicPlantMap(p.value.id).then((pm) => {
+        plantMap.value = pm
+      }).catch(() => {})
     }
     else error.value = (p.reason as any)?.message || 'Projeto não encontrado'
     if (c.status === 'fulfilled' && c.value) corretor.value = c.value

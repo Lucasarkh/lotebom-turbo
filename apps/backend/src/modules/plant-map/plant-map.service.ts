@@ -1,0 +1,176 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '@infra/db/prisma.service';
+import { S3Service } from '@infra/s3/s3.service';
+import { CreatePlantMapDto } from './dto/create-plant-map.dto';
+import { UpdatePlantMapDto } from './dto/update-plant-map.dto';
+import { CreateHotspotDto } from './dto/create-hotspot.dto';
+import { UpdateHotspotDto } from './dto/update-hotspot.dto';
+
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20 MB
+
+@Injectable()
+export class PlantMapService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly s3: S3Service,
+  ) {}
+
+  // ── PlantMap CRUD ──────────────────────────────────────
+
+  async findByProject(tenantId: string, projectId: string) {
+    const plantMap = await this.prisma.plantMap.findFirst({
+      where: { projectId, tenantId },
+      include: {
+        hotspots: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    return plantMap;
+  }
+
+  /** Public access — no tenantId check (project uniqueness ensures isolation) */
+  async findByProjectPublic(projectId: string) {
+    const plantMap = await this.prisma.plantMap.findFirst({
+      where: { projectId },
+      include: {
+        hotspots: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    return plantMap;
+  }
+
+  async create(tenantId: string, projectId: string, dto: CreatePlantMapDto) {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, tenantId },
+    });
+    if (!project) throw new NotFoundException('Projeto não encontrado.');
+
+    const existing = await this.prisma.plantMap.findFirst({
+      where: { projectId, tenantId },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        'Já existe uma planta para este projeto. Use PUT para atualizar.',
+      );
+    }
+
+    return this.prisma.plantMap.create({
+      data: {
+        tenantId,
+        projectId,
+        ...dto,
+      },
+      include: { hotspots: true },
+    });
+  }
+
+  async update(tenantId: string, plantMapId: string, dto: UpdatePlantMapDto) {
+    const plantMap = await this._findMap(tenantId, plantMapId);
+
+    return this.prisma.plantMap.update({
+      where: { id: plantMap.id },
+      data: dto,
+      include: { hotspots: { orderBy: { createdAt: 'asc' } } },
+    });
+  }
+
+  async remove(tenantId: string, plantMapId: string) {
+    const plantMap = await this._findMap(tenantId, plantMapId);
+
+    // Delete S3 image
+    if (plantMap.imageUrl) {
+      const key = this.s3.keyFromUrl(plantMap.imageUrl);
+      if (key) await this.s3.delete(key).catch(() => {});
+    }
+
+    return this.prisma.plantMap.delete({ where: { id: plantMap.id } });
+  }
+
+  // ── Image upload ───────────────────────────────────────
+
+  async uploadImage(
+    tenantId: string,
+    projectId: string,
+    file: Express.Multer.File,
+  ) {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Tipo de arquivo inválido. Use JPG, PNG ou WebP.',
+      );
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      throw new BadRequestException('Arquivo muito grande. Máximo 20 MB.');
+    }
+
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, tenantId },
+    });
+    if (!project) throw new NotFoundException('Projeto não encontrado.');
+
+    const key = this.s3.buildKey(
+      tenantId,
+      `projects/${projectId}/plant-map`,
+      file.originalname,
+    );
+    const url = await this.s3.upload(file.buffer, key, file.mimetype);
+    return { imageUrl: url };
+  }
+
+  // ── Hotspot CRUD ───────────────────────────────────────
+
+  async createHotspot(
+    tenantId: string,
+    plantMapId: string,
+    dto: CreateHotspotDto,
+  ) {
+    const plantMap = await this._findMap(tenantId, plantMapId);
+
+    return this.prisma.plantHotspot.create({
+      data: {
+        tenantId,
+        plantMapId: plantMap.id,
+        ...dto,
+      },
+    });
+  }
+
+  async updateHotspot(
+    tenantId: string,
+    hotspotId: string,
+    dto: UpdateHotspotDto,
+  ) {
+    const hotspot = await this._findHotspot(tenantId, hotspotId);
+
+    return this.prisma.plantHotspot.update({
+      where: { id: hotspot.id },
+      data: dto,
+    });
+  }
+
+  async removeHotspot(tenantId: string, hotspotId: string) {
+    const hotspot = await this._findHotspot(tenantId, hotspotId);
+    return this.prisma.plantHotspot.delete({ where: { id: hotspot.id } });
+  }
+
+  // ── Helpers ────────────────────────────────────────────
+
+  private async _findMap(tenantId: string, plantMapId: string) {
+    const plantMap = await this.prisma.plantMap.findFirst({
+      where: { id: plantMapId, tenantId },
+    });
+    if (!plantMap) throw new NotFoundException('PlantMap não encontrado.');
+    return plantMap;
+  }
+
+  private async _findHotspot(tenantId: string, hotspotId: string) {
+    const hotspot = await this.prisma.plantHotspot.findFirst({
+      where: { id: hotspotId, tenantId },
+    });
+    if (!hotspot) throw new NotFoundException('Hotspot não encontrado.');
+    return hotspot;
+  }
+}

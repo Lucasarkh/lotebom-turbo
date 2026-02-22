@@ -22,6 +22,12 @@ CREATE TYPE "MediaType" AS ENUM ('PHOTO', 'VIDEO');
 -- CreateEnum
 CREATE TYPE "LeadStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'NEGOTIATING', 'WON', 'LOST');
 
+-- CreateEnum
+CREATE TYPE "PlantHotspotType" AS ENUM ('LOTE', 'PORTARIA', 'QUADRA', 'AREA_COMUM', 'OUTRO');
+
+-- CreateEnum
+CREATE TYPE "PlantHotspotLinkType" AS ENUM ('LOTE_PAGE', 'PROJECT_PAGE', 'CUSTOM_URL', 'NONE');
+
 -- CreateTable
 CREATE TABLE "Tenant" (
     "id" TEXT NOT NULL,
@@ -56,7 +62,7 @@ CREATE TABLE "Project" (
     "slug" TEXT NOT NULL,
     "description" TEXT,
     "status" "ProjectStatus" NOT NULL DEFAULT 'DRAFT',
-    "mapBaseImageUrl" TEXT,
+    "bannerImageUrl" TEXT,
     "mapData" JSONB,
     "highlightsJson" JSONB,
     "locationText" TEXT,
@@ -163,6 +169,48 @@ CREATE TABLE "RealtorLink" (
     CONSTRAINT "RealtorLink_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "PlantMap" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "imageUrl" TEXT NOT NULL,
+    "imageWidth" INTEGER,
+    "imageHeight" INTEGER,
+    "sunPathEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "sunPathAngleDeg" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "sunPathLabelEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PlantMap_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PlantHotspot" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "plantMapId" TEXT NOT NULL,
+    "type" "PlantHotspotType" NOT NULL DEFAULT 'OUTRO',
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "x" DOUBLE PRECISION NOT NULL,
+    "y" DOUBLE PRECISION NOT NULL,
+    "label" TEXT,
+    "labelEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "labelOffsetX" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "labelOffsetY" DOUBLE PRECISION NOT NULL DEFAULT -24,
+    "linkType" "PlantHotspotLinkType" NOT NULL DEFAULT 'NONE',
+    "linkId" TEXT,
+    "linkUrl" TEXT,
+    "loteStatus" "LotStatus",
+    "metaJson" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PlantHotspot_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Tenant_slug_key" ON "Tenant"("slug");
 
@@ -179,10 +227,10 @@ CREATE INDEX "Project_tenantId_idx" ON "Project"("tenantId");
 CREATE UNIQUE INDEX "Project_tenantId_slug_key" ON "Project"("tenantId", "slug");
 
 -- CreateIndex
-CREATE INDEX "MapElement_tenantId_projectId_idx" ON "MapElement"("tenantId", "projectId");
+CREATE INDEX "MapElement_tenantId_projectId_code_idx" ON "MapElement"("tenantId", "projectId", "code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "MapElement_tenantId_projectId_code_key" ON "MapElement"("tenantId", "projectId", "code");
+CREATE INDEX "MapElement_tenantId_projectId_idx" ON "MapElement"("tenantId", "projectId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LotDetails_mapElementId_key" ON "LotDetails"("mapElementId");
@@ -210,6 +258,18 @@ CREATE INDEX "RealtorLink_tenantId_idx" ON "RealtorLink"("tenantId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RealtorLink_tenantId_code_key" ON "RealtorLink"("tenantId", "code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PlantMap_projectId_key" ON "PlantMap"("projectId");
+
+-- CreateIndex
+CREATE INDEX "PlantMap_tenantId_idx" ON "PlantMap"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "PlantHotspot_plantMapId_idx" ON "PlantHotspot"("plantMapId");
+
+-- CreateIndex
+CREATE INDEX "PlantHotspot_tenantId_idx" ON "PlantHotspot"("tenantId");
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -258,3 +318,15 @@ ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_tenantId_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlantMap" ADD CONSTRAINT "PlantMap_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlantMap" ADD CONSTRAINT "PlantMap_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlantHotspot" ADD CONSTRAINT "PlantHotspot_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlantHotspot" ADD CONSTRAINT "PlantHotspot_plantMapId_fkey" FOREIGN KEY ("plantMapId") REFERENCES "PlantMap"("id") ON DELETE CASCADE ON UPDATE CASCADE;

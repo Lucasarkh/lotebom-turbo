@@ -67,6 +67,21 @@ enum LeadStatus {
   LOST
 }
 
+enum PlantHotspotType {
+  LOTE
+  PORTARIA
+  QUADRA
+  AREA_COMUM
+  OUTRO
+}
+
+enum PlantHotspotLinkType {
+  LOTE_PAGE
+  PROJECT_PAGE
+  CUSTOM_URL
+  NONE
+}
+
 // ─── CORE MODELS ────────────────────────────────────────
 
 model Tenant {
@@ -83,6 +98,8 @@ model Tenant {
   projectMedias ProjectMedia[]
   leads         Lead[]
   realtorLinks  RealtorLink[]
+  plantMaps     PlantMap[]
+  plantHotspots PlantHotspot[]
 
   @@unique([slug])
 }
@@ -123,6 +140,7 @@ model Project {
   projectMedias ProjectMedia[]
   leads         Lead[]
   realtorLinks  RealtorLink[]
+  plantMap      PlantMap?
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -242,5 +260,54 @@ model RealtorLink {
   leads Lead[]
 
   @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// ─── PLANT MAP (Planta Interativa) ──────────────────────
+
+model PlantMap {
+  id                  String   @id @default(cuid())
+  tenantId            String
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId           String   @unique
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  imageUrl            String
+  imageWidth          Int?
+  imageHeight         Int?
+  sunPathEnabled      Boolean  @default(false)
+  sunPathAngleDeg     Float    @default(0)
+  sunPathLabelEnabled Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  hotspots PlantHotspot[]
+
+  @@index([tenantId])
+}
+
+model PlantHotspot {
+  id           String               @id @default(cuid())
+  tenantId     String
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plantMapId   String
+  plantMap     PlantMap             @relation(fields: [plantMapId], references: [id], onDelete: Cascade)
+  type         PlantHotspotType     @default(OUTRO)
+  title        String
+  description  String?              @db.Text
+  x            Float
+  y            Float
+  label        String?
+  labelEnabled Boolean              @default(true)
+  labelOffsetX Float                @default(0)
+  labelOffsetY Float                @default(-24)
+  linkType     PlantHotspotLinkType @default(NONE)
+  linkId       String?
+  linkUrl      String?
+  loteStatus   LotStatus?
+  metaJson     Json?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([plantMapId])
   @@index([tenantId])
 }

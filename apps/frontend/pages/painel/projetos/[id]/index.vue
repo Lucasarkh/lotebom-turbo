@@ -61,10 +61,14 @@
       </div>
 
       <!-- Tabs -->
-      <div class="filter-bar">
+      <div class="filter-bar" style="display: flex; align-items: center; gap: 4px;">
         <button v-for="t in tabs" :key="t.key" class="filter-btn" :class="{ active: activeTab === t.key }" @click="activeTab = t.key">
           {{ t.label }}
         </button>
+        <!-- Planta Interativa — separate page -->
+        <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="filter-btn" style="text-decoration: none;">
+          🗺️ Planta
+        </NuxtLink>
       </div>
 
       <!-- Tab: Configurações -->
