@@ -36,14 +36,27 @@ export class LeadsService {
       realtorLinkId = rl?.id;
     }
 
-    const { realtorCode, ...leadData } = dto;
+    const { realtorCode, mapElementId, ...leadData } = dto;
+
+    // Validate if mapElementId exists within this project to avoid FK errors
+    let validMapElementId: string | undefined;
+    if (mapElementId && typeof mapElementId === 'string' && mapElementId.trim().length > 0) {
+      const exists = await this.prisma.mapElement.findFirst({
+        where: { id: mapElementId, projectId: project.id, tenantId: tenant.id },
+        select: { id: true },
+      });
+      if (exists) {
+        validMapElementId = exists.id;
+      }
+    }
 
     return this.prisma.lead.create({
       data: {
         tenantId: tenant.id,
         projectId: project.id,
         ...leadData,
-        ...(realtorLinkId ? { realtorLinkId } : {}),
+        ...(validMapElementId ? { mapElementId: validMapElementId } : {}),
+        realtorLinkId,
         source: realtorCode ? `corretor:${realtorCode}` : 'website',
       },
     });

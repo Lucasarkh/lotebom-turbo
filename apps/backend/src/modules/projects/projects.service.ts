@@ -68,7 +68,10 @@ export class ProjectsService {
           },
           orderBy: { createdAt: 'asc' },
         },
-        projectMedias: { where: { lotDetailsId: null }, orderBy: { createdAt: 'desc' } },
+        projectMedias: { 
+          where: { lotDetailsId: null },
+          orderBy: { createdAt: 'desc' } 
+        },
       },
     });
     if (!project) throw new NotFoundException('Projeto não encontrado ou não publicado.');

@@ -153,7 +153,7 @@
                   <span class="v4-lot-label">Unidade</span>
                   <span class="v4-lot-code">{{ lot.code || lot.name || lot.id }}</span>
                 </div>
-                <div class="v4-lot-status">Livre</div>
+                <div class="v4-lot-status">Disponível</div>
               </div>
               
               <div class="v4-lot-card-body">
@@ -321,8 +321,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-
 definePageMeta({ layout: 'public' })
 
 const route = useRoute()
@@ -406,9 +404,11 @@ const mapDataLots = computed(() => {
   if (!raw) return []
   try {
     const data = typeof raw === 'string' ? JSON.parse(raw) : raw
-    const entries = data.lots
-    if (!entries) return []
-    return entries.map(([ , l]: [string, any]) => l)
+    if (!data.lots) return []
+    if (Array.isArray(data.lots)) {
+      return data.lots.map(([, l]: [any, any]) => l)
+    }
+    return Object.values(data.lots)
   } catch { return [] }
 })
 
@@ -541,6 +541,10 @@ async function submitLead() {
 
 function openLeadForm(el: any) {
   leadForm.value.mapElementId = el?.id || ''
+  
+  if (el?.label || el?.code) {
+    leadForm.value.message = `Tenho interesse no lote ${el.label || el.code}`
+  }
   document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })
 }
 
@@ -963,50 +967,79 @@ function openLightbox(idx: number) {
   border: 1px solid #f2f2f2;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .v4-lot-card:hover { 
   box-shadow: var(--v4-shadow-elevated);
   transform: translateY(-4px);
+  border-color: var(--v4-primary);
 }
 
 .v4-lot-card-header { 
   display: flex; 
   justify-content: space-between; 
-  margin-bottom: 24px; 
+  align-items: flex-start;
+  margin-bottom: 20px; 
 }
 
-.v4-lot-code { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+.v4-lot-id {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.v4-lot-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--v4-text-muted);
+  letter-spacing: 0.1em;
+}
+
+.v4-lot-code { 
+  font-size: 26px; 
+  font-weight: 700; 
+  letter-spacing: -0.02em; 
+  color: var(--v4-text); 
+}
+
 .v4-lot-status { 
-  font-size: 12px; 
-  font-weight: 600; 
+  font-size: 11px; 
+  font-weight: 700; 
   color: #32d74b;
   background: rgba(50, 215, 75, 0.1);
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .v4-lot-info-row { 
   display: flex; 
-  gap: 16px; 
-  margin-bottom: 24px; 
+  gap: 20px; 
+  margin-bottom: 20px; 
   color: var(--v4-text-muted); 
   font-size: 15px;
+  align-items: center;
 }
 
 .v4-lot-price { 
   margin-top: auto;
-  border-top: 1px solid #f2f2f2;
-  padding-top: 24px;
+  border-top: 1px solid #f5f5f7;
+  padding-top: 20px;
 }
 
 .v4-price-value { font-size: 20px; font-weight: 600; color: var(--v4-text); }
 
 .v4-lot-card-footer { 
-  margin-top: 16px;
-  font-size: 14px;
+  margin-top: 20px;
+  font-size: 15px;
   color: var(--v4-primary);
-  font-weight: 500;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* Conversion Card */
@@ -1079,6 +1112,73 @@ function openLightbox(idx: number) {
 }
 
 .v4-realtor-name { font-size: 21px; font-weight: 600; color: var(--v4-text); }
+
+/* Gallery */
+.v4-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 240px;
+  gap: 20px;
+}
+
+.v4-gallery-item {
+  position: relative;
+  border-radius: var(--v4-radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--v4-bg-alt);
+  border: 1px solid var(--v4-border);
+}
+
+.v4-gallery-item--large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+@media (max-width: 768px) {
+  .v4-gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 180px;
+  }
+}
+
+.v4-gallery-item img, .v4-gallery-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.v4-gallery-item:hover img, .v4-gallery-item:hover video {
+  transform: scale(1.05);
+}
+
+.v4-gallery-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 60%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 24px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.v4-gallery-item:hover .v4-gallery-overlay {
+  opacity: 1;
+}
+
+.v4-gallery-caption {
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.v4-gallery-expand {
+  color: white;
+  font-size: 20px;
+}
 
 /* Form Styles */
 .v4-conversion-form-wrapper { 

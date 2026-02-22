@@ -316,29 +316,6 @@
         </div>
       </div>
 
-      <!-- Tab: Mídia -->
-      <div v-if="activeTab === 'media'">
-        <div v-if="authStore.canEdit" style="margin-bottom: var(--space-5);">
-          <label class="btn btn-primary" style="cursor:pointer;">
-            {{ uploadingMedia ? 'Enviando...' : '+ Upload Mídia' }}
-            <input type="file" accept="image/*,video/*" style="display:none" @change="uploadMediaFile" :disabled="uploadingMedia" />
-          </label>
-        </div>
-        <div v-if="media.length === 0" class="empty-state">
-          <h3>Nenhuma mídia</h3>
-          <p>Adicione fotos e vídeos do loteamento.</p>
-        </div>
-        <div v-else class="grid grid-cols-4">
-          <div v-for="m in media" :key="m.id" class="media-card">
-            <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption" class="media-thumb" />
-            <video v-else :src="m.url" class="media-thumb" controls />
-            <div class="media-info">
-              <span>{{ m.caption || m.type }}</span>
-              <button v-if="authStore.canEdit" class="btn btn-danger btn-sm" @click="deleteMedia(m.id)">Excluir</button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Tab: Pág. Pública -->
       <div v-if="activeTab === 'public'">
@@ -386,6 +363,37 @@
                 <span>{{ uploadingBanner ? '⌛ Enviando...' : (project.bannerImageUrl ? '🔄 Trocar Imagem' : '📤 Upload do Banner') }}</span>
                 <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage" :disabled="uploadingBanner" />
               </label>
+            </div>
+          </section>
+
+          <!-- Section: Media Gallery -->
+          <section class="card" style="padding: var(--space-6);">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+              <div style="width: 40px; height: 40px; background: #dcfce7; color: #166534; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📸</div>
+              <div style="flex: 1;">
+                <h3 style="margin:0;">Galeria de Mídia</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Fotos e vídeos que serão exibidos na galeria pública do loteamento.</p>
+              </div>
+              <div v-if="authStore.canEdit">
+                <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+                  {{ uploadingMedia ? 'Enviando...' : '+ Upload Mídia' }}
+                  <input type="file" accept="image/*,video/*" style="display:none" @change="uploadMediaFile" :disabled="uploadingMedia" />
+                </label>
+              </div>
+            </div>
+
+            <div v-if="media.length === 0" class="empty-state" style="padding: var(--space-8); background: var(--gray-50); border-radius: var(--radius-lg);">
+              <p>Nenhuma mídia de loteamento enviada.</p>
+            </div>
+            <div v-else class="grid grid-cols-4" style="gap: var(--space-4);">
+              <div v-for="m in media" :key="m.id" class="media-card" style="margin-bottom:0;">
+                <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption" class="media-thumb" style="height: 120px; border-radius: 8px;" />
+                <video v-else :src="m.url" class="media-thumb" style="height: 120px; border-radius: 8px;" />
+                <div class="media-info" style="padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.75rem; color: var(--gray-500);">{{ m.type }}</span>
+                  <button v-if="authStore.canEdit" class="btn btn-danger btn-xs" style="padding: 2px 8px;" @click="deleteMedia(m.id)">Excluir</button>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -885,7 +893,6 @@ const copyLink = (text) => {
 const tabs = [
   { key: 'map', label: 'Mapa' },
   { key: 'lots', label: 'Lotes' },
-  { key: 'media', label: 'Mídia' },
   { key: 'public', label: 'Pág. Pública' },
   { key: 'corretores', label: 'Corretores' },
   { key: 'settings', label: 'Configurações' },

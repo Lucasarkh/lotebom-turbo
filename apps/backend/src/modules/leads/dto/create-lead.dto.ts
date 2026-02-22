@@ -16,7 +16,7 @@ export class CreateLeadDto {
 
   @ApiPropertyOptional({ description: 'ID do elemento do mapa (lote) de interesse' })
   @IsOptional()
-  @IsUUID()
+  @IsString()
   mapElementId?: string;
 
   @ApiPropertyOptional({ example: 'Quero saber sobre condições de pagamento' })

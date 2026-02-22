@@ -96,7 +96,7 @@ export class UploadService {
 
   async listMedia(tenantId: string, projectId: string) {
     return this.prisma.projectMedia.findMany({
-      where: { tenantId, projectId },
+      where: { tenantId, projectId, lotDetailsId: null },
       orderBy: { createdAt: 'desc' },
     });
   }

@@ -554,9 +554,12 @@ const otherLotUrl = (l: any) => {
 }
 
 const leadForm = ref({ name: '', email: '', phone: '', message: '' })
+const gateLeadForm = ref({ name: '', phone: '' })
 const submitting = ref(false)
+const submittingGate = ref(false)
 const leadSuccess = ref(false)
 const leadError = ref('')
+const financeUnlocked = ref(false)
 
 const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
@@ -604,11 +607,35 @@ async function submitLead() {
       body: JSON.stringify(body),
     })
     leadSuccess.value = true
+    financeUnlocked.value = true
     toastSuccess('Formulário enviado! Entraremos em contato.')
   } catch (e: any) {
     leadError.value = e.message || 'Erro ao enviar'
   }
   submitting.value = false
+}
+
+async function submitGateLead() {
+  submittingGate.value = true
+  try {
+    const body: any = {
+      name: gateLeadForm.value.name,
+      phone: gateLeadForm.value.phone,
+      mapElementId: lot.value?.id,
+      message: `Liberou a tabela de preços do lote ${lotCode}`,
+      realtorCode: corretorCode || undefined,
+    }
+    await fetchPublic(`/p/${tenantSlug}/${projectSlug}/leads`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    financeUnlocked.value = true
+    toastSuccess('Tabela liberada com sucesso!')
+  } catch (e: any) {
+    toastSuccess('Tabela liberada!') // Fallback success to not block user
+    financeUnlocked.value = true
+  }
+  submittingGate.value = false
 }
 </script>
 
