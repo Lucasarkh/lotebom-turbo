@@ -21,7 +21,7 @@ export class UpdateProjectDto {
   @ApiPropertyOptional({ example: 'http://example.com/map.png' })
   @IsOptional()
   @IsString()
-  mapBaseImageUrl?: string;
+  bannerImageUrl?: string;
 
   @ApiPropertyOptional({ enum: ProjectStatus })
   @IsOptional()

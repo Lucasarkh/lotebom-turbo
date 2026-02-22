@@ -19,7 +19,6 @@ export function useMapEditor(projectId: string) {
   const dirty          = ref(false)
   const saving         = ref(false)
   const loading        = ref(true)
-  const mapBaseImageUrl = ref<string | null>(null)
 
   /* ── Tile placement state ──────────────────── */
   const activeTileId    = ref<string | null>('road-straight')
@@ -437,7 +436,6 @@ export function useMapEditor(projectId: string) {
         fetchApi(`/projects/${projectId}`),
         fetchApi(`/projects/${projectId}/map-elements`),
       ])
-      mapBaseImageUrl.value = project.mapBaseImageUrl ?? null
       elements.value = (raw || []).map((e: any) => ({
         id: e.id, type: e.type,
         name: e.name ?? '', code: e.code ?? '',
@@ -446,11 +444,10 @@ export function useMapEditor(projectId: string) {
         styleJson: e.styleJson ?? DEFAULT_STYLE[e.type as MapElementType],
         metaJson: e.metaJson ?? {},
       }))
-      if (!mapBaseImageUrl.value && elements.value.length === 0) {
-        editorStep.value = 'image'
-      } else if (elements.value.length === 0) {
-        editorStep.value = 'build'
-      }
+      
+      // Removed mapBaseImageUrl logic and image step check
+      editorStep.value = 'build'
+
       history.value = [JSON.stringify(elements.value)]
       historyIndex.value = 0
       dirty.value = false

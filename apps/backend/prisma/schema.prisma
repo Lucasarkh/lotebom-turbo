@@ -110,7 +110,7 @@ model Project {
   slug            String
   description     String?       @db.Text
   status          ProjectStatus @default(DRAFT)
-  mapBaseImageUrl String?
+  bannerImageUrl  String?
   mapData         Json?
   highlightsJson  Json?
   locationText    String?       @db.Text

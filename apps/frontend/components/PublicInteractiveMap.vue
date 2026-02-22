@@ -128,7 +128,6 @@ function getLotUrl(el: MapEl) {
 
 const props = defineProps<{
   elements: MapEl[]
-  mapBaseImageUrl: string | null
 }>()
 
 const emit = defineEmits<{ interest: [el: MapEl] }>()
@@ -139,7 +138,6 @@ const cw = ref(800)
 const ch = ref(500)
 const scale = ref(1)
 const pos = ref({ x: 0, y: 0 })
-const bgImage = ref<HTMLImageElement | null>(null)
 const popupEl = ref<MapEl | null>(null)
 const popupPos = ref({ x: 0, y: 0 })
 
@@ -170,15 +168,6 @@ const stageConfig = computed(() => ({
   y: pos.value.y,
   draggable: false,
 }))
-
-/* ── Background image ───── */
-watch(() => props.mapBaseImageUrl, (url) => {
-  if (!url) { bgImage.value = null; return }
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.onload = () => { bgImage.value = img }
-  img.src = url
-}, { immediate: true })
 
 /* ── Element style helpers ───── */
 function lotFill(el: MapEl) {

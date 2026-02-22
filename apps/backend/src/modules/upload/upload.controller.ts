@@ -25,9 +25,9 @@ import { UploadService } from './upload.service';
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
-  // ── Map base image ──────────────────────────────────────
+  // ── Project Banner ──────────────────────────────────────
 
-  @Post('map-image')
+  @Post('banner-image')
   @Roles('ADMIN', 'EDITOR')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -37,21 +37,21 @@ export class UploadController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  uploadMapImage(
+  uploadBannerImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.uploadService.uploadMapBaseImage(tenantId, projectId, file);
+    return this.uploadService.uploadBannerImage(tenantId, projectId, file);
   }
 
-  @Delete('map-image')
+  @Delete('banner-image')
   @Roles('ADMIN', 'EDITOR')
-  removeMapImage(
+  removeBannerImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
   ) {
-    return this.uploadService.removeMapBaseImage(tenantId, projectId);
+    return this.uploadService.removeBannerImage(tenantId, projectId);
   }
 
   // ── Project media (gallery) ─────────────────────────────

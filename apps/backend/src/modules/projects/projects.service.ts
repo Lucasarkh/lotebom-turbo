@@ -95,7 +95,7 @@ export class ProjectsService {
         ...(dto.name && { name: dto.name }),
         ...(dto.slug && { slug: dto.slug.toLowerCase().replace(/\s+/g, '-') }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.mapBaseImageUrl !== undefined && { mapBaseImageUrl: dto.mapBaseImageUrl }),
+        ...(dto.bannerImageUrl !== undefined && { bannerImageUrl: dto.bannerImageUrl }),
         ...(dto.status && { status: dto.status }),
         ...(dto.mapData !== undefined && { mapData: dto.mapData }),
         ...(dto.highlightsJson !== undefined && { highlightsJson: dto.highlightsJson }),

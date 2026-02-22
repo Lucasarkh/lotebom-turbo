@@ -8,29 +8,55 @@
     </div>
 
     <template v-else-if="project">
-      <div class="page-header">
-        <div>
-          <div class="flex items-center gap-3" style="margin-bottom: var(--space-2);">
-            <NuxtLink to="/painel/projetos" class="btn btn-ghost btn-sm">&larr; Projetos</NuxtLink>
+      <div class="page-header" style="align-items: center; border-bottom: 1px solid var(--gray-100); padding-bottom: var(--space-6); margin-bottom: var(--space-8);">
+        <div style="flex: 1;">
+          <div class="flex items-center gap-2" style="margin-bottom: var(--space-2);">
+            <NuxtLink to="/painel/projetos" class="btn btn-ghost btn-sm" style="padding-left: 0;">&larr; Projetos</NuxtLink>
+            <div style="width: 1px; height: 12px; background: var(--gray-300);"></div>
+            <span class="badge" :class="project.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'" style="font-size: 0.65rem; padding: 2px 8px; text-transform: uppercase;">
+              {{ project.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
+            </span>
           </div>
-          <h1>{{ project.name }}</h1>
-          <p>{{ project.description || 'Sem descrição' }}</p>
+          <h1 style="margin: 0; font-size: 1.5rem;">{{ project.name }}</h1>
+          <p style="margin: 0; color: var(--gray-500);">{{ project.description || 'Sem descrição' }}</p>
         </div>
-        <div class="flex gap-2">
+
+        <div class="flex items-center gap-3">
           <a
             v-if="project.status === 'PUBLISHED'"
             :href="`/p/${tenantSlug}/${project.slug}`"
             target="_blank"
             class="btn btn-sm btn-outline"
-            title="Ver página pública"
-          >🔗 Ver Página</a>
-          <span class="badge" :class="project.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'" style="font-size: 0.875rem; padding: 4px 14px;">
-            {{ project.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
-          </span>
-          <button v-if="authStore.canEdit" class="btn btn-sm" :class="project.status === 'PUBLISHED' ? 'btn-secondary' : 'btn-success'" @click="togglePublish">
-            {{ project.status === 'PUBLISHED' ? 'Despublicar' : 'Publicar' }}
-          </button>
-          <button v-if="authStore.canEdit" class="btn btn-danger btn-sm" @click="confirmDelete">Excluir</button>
+            style="display: flex; align-items: center; gap: 8px; border-radius: 64px; padding-left: 16px; padding-right: 16px; border-color: var(--primary-50); background: var(--primary-light); color: var(--primary);"
+          >
+            <span style="font-size: 1rem;">🌐</span>
+            <span style="font-weight: 600;">Ver Página Pública</span>
+          </a>
+
+          <div style="width: 1px; height: 32px; background: var(--gray-200); margin: 0 var(--space-1);"></div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              v-if="authStore.canEdit" 
+              class="btn btn-sm" 
+              :class="project.status === 'PUBLISHED' ? 'btn-secondary' : 'btn-success'" 
+              style="font-weight: 600; border-radius: 64px; padding-left: 20px; padding-right: 20px; height: 38px;"
+              @click="togglePublish"
+            >
+              {{ project.status === 'PUBLISHED' ? '⏸️ Parar Publicação' : '📡 Publicar Agora' }}
+            </button>
+            
+            <button 
+              v-if="authStore.canEdit" 
+              class="btn btn-sm" 
+              style="color: var(--danger); background: var(--danger-light); font-weight: 600; border-radius: 64px; padding-left: 16px; padding-right: 16px; border: 1px solid transparent;"
+              @mouseenter="($event.target as any).style.borderColor = 'var(--danger)'"
+              @mouseleave="($event.target as any).style.borderColor = 'transparent'"
+              @click="confirmDelete"
+            >
+              🗑️ Excluir
+            </button>
+          </div>
         </div>
       </div>
 
@@ -71,23 +97,6 @@
       <!-- Tab: Mapa -->
       <div v-if="activeTab === 'map'">
         <div class="card">
-          <h3 style="margin-bottom: var(--space-4);">Imagem Base do Mapa</h3>
-          <div v-if="project.mapBaseImageUrl" style="margin-bottom: var(--space-4);">
-            <img :src="project.mapBaseImageUrl" alt="Mapa" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);" />
-            <button v-if="authStore.canEdit" class="btn btn-danger btn-sm" style="margin-top: var(--space-3);" @click="removeMapImage">Remover imagem</button>
-          </div>
-          <div v-else>
-            <p style="margin-bottom: var(--space-3); color: var(--gray-500);">Nenhuma imagem base definida.</p>
-          </div>
-          <div v-if="authStore.canEdit">
-            <label class="btn btn-secondary" style="cursor:pointer;">
-              {{ uploadingMap ? 'Enviando...' : 'Upload imagem base' }}
-              <input type="file" accept="image/*" style="display:none" @change="uploadMapImage" :disabled="uploadingMap" />
-            </label>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top: var(--space-5);">
           <div class="flex justify-between items-center" style="margin-bottom: var(--space-4);">
             <h3>Elementos do Mapa ({{ mapElements.length }})</h3>
             <NuxtLink v-if="authStore.canEdit" :to="`/painel/projetos/${project.id}/editor`" class="btn btn-primary btn-sm">
@@ -333,73 +342,149 @@
 
       <!-- Tab: Pág. Pública -->
       <div v-if="activeTab === 'public'">
-        <!-- Public URL card -->
-        <div class="card" style="margin-bottom: var(--space-5);">
-          <h3 style="margin-bottom: var(--space-3);">Link da Página Pública</h3>
-          <div v-if="project.status !== 'PUBLISHED'" class="alert alert-warning" style="margin-bottom: var(--space-3);">
-            O projeto está como Rascunho. Publique-o para a página ser acessível.
+        <div class="flex justify-between items-center" style="margin-bottom: var(--space-6);">
+          <div>
+            <h2 style="margin:0; font-size: 1.25rem;">Conteúdo da Página Pública</h2>
+            <p style="margin:0; font-size: 0.875rem; color: var(--gray-500);">Gerencie o que seus clientes verão ao acessar o link do loteamento.</p>
           </div>
-          <div class="flex gap-3 items-center" style="flex-wrap:wrap;">
-            <code style="background: var(--gray-100); padding: 6px 12px; border-radius: var(--radius-sm); font-size:0.9rem;">
-              {{ publicUrl || '(publique o projeto para gerar o link)' }}
-            </code>
-            <a v-if="publicUrl" :href="publicUrl" target="_blank" class="btn btn-sm btn-outline">🔗 Abrir</a>
-            <button v-if="publicUrl" class="btn btn-sm btn-secondary" @click="copyLink(`${$config?.public?.baseUrl || ''}${publicUrl}`)">📋 Copiar</button>
-          </div>
-        </div>
-
-        <!-- Highlights / features -->
-        <div class="card" style="margin-bottom: var(--space-5);">
-          <h3 style="margin-bottom: var(--space-4);">Diferenciais do Loteamento</h3>
-          <p style="color: var(--gray-500); font-size:0.875rem; margin-bottom: var(--space-4);">Ícones e informações exibidos na página pública como cards de destaque.</p>
-
-          <div v-if="pubInfoForm.highlightsJson.length" style="margin-bottom: var(--space-4);">
-            <div class="table-wrapper">
-              <table>
-                <thead><tr><th>Ícone</th><th>Rótulo</th><th>Valor</th><th></th></tr></thead>
-                <tbody>
-                  <tr v-for="(h, i) in pubInfoForm.highlightsJson" :key="i">
-                    <td style="font-size:1.25rem;">{{ h.icon }}</td>
-                    <td>{{ h.label }}</td>
-                    <td>{{ h.value }}</td>
-                    <td><button v-if="authStore.canEdit" class="btn btn-danger btn-sm" @click="removeHighlight(i)">✕</button></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div v-if="authStore.canEdit" class="flex gap-2 items-end" style="flex-wrap:wrap; margin-bottom: var(--space-4);">
-            <div class="form-group" style="margin:0; flex:0 0 80px;">
-              <label class="form-label">Ícone</label>
-              <input v-model="newHighlight.icon" class="form-input" placeholder="🏡" style="font-size:1.2rem;" />
-            </div>
-            <div class="form-group" style="margin:0; flex:1 1 160px;">
-              <label class="form-label">Rótulo</label>
-              <input v-model="newHighlight.label" class="form-input" placeholder="Infraestrutura completa" />
-            </div>
-            <div class="form-group" style="margin:0; flex:1 1 160px;">
-              <label class="form-label">Valor / Detalhe</label>
-              <input v-model="newHighlight.value" class="form-input" placeholder="Água, luz, asfalto" />
-            </div>
-            <button class="btn btn-secondary btn-sm" style="margin-bottom:2px;" @click="addHighlight">+ Adicionar</button>
+          <div v-if="authStore.canEdit" class="flex items-center gap-4">
+            <transition name="fade">
+              <span v-if="pubInfoSaved" style="color: var(--success); font-weight: 600; font-size: 0.875rem;">✅ Salvo!</span>
+            </transition>
+            <button class="btn btn-primary" style="min-width: 160px;" :disabled="savingPubInfo" @click="savePubInfo">
+              {{ savingPubInfo ? 'Salvando...' : '💾 Salvar Alterações' }}
+            </button>
           </div>
         </div>
 
-        <!-- Location / info text -->
-        <div class="card" style="margin-bottom: var(--space-5);">
-          <h3 style="margin-bottom: var(--space-3);">Localização e Infraestrutura</h3>
-          <p style="color: var(--gray-500); font-size:0.875rem; margin-bottom: var(--space-3);">Texto exibido na seção de informações gerais da página pública.</p>
-          <div class="form-group">
-            <textarea v-model="pubInfoForm.locationText" class="form-textarea" rows="5" placeholder="Ex: Localizado no bairro X, próximo a escola, hospital, etc." :disabled="!authStore.canEdit"></textarea>
-          </div>
-        </div>
+        <div class="card-grid" style="display: grid; grid-template-columns: 1fr; gap: var(--space-6);">
+          
+          <!-- Section: Hero Banner -->
+          <section class="card" style="padding: var(--space-6);">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🖼️</div>
+              <div>
+                <h3 style="margin:0;">Banner do Loteamento</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">A primeira impressão da sua página pública.</p>
+              </div>
+            </div>
 
-        <div v-if="authStore.canEdit">
-          <div v-if="pubInfoSaved" class="alert alert-success" style="margin-bottom: var(--space-3);">Informações salvas!</div>
-          <button class="btn btn-primary" :disabled="savingPubInfo" @click="savePubInfo">
-            {{ savingPubInfo ? 'Salvando...' : 'Salvar Informações Públicas' }}
-          </button>
+            <div v-if="project.bannerImageUrl" class="banner-preview" style="position: relative; margin-bottom: var(--space-4); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); aspect-ratio: 16/5;">
+              <img :src="project.bannerImageUrl" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;" />
+              <div v-if="authStore.canEdit" style="position: absolute; bottom: 12px; right: 12px;">
+                <button class="btn btn-danger btn-sm" @click="removeBannerImage">🗑️ Remover Banner</button>
+              </div>
+            </div>
+            
+            <div v-else class="banner-placeholder" style="margin-bottom: var(--space-4); border: 2px dashed var(--gray-200); background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-8); text-align: center;">
+              <div style="font-size: 2.5rem; margin-bottom: var(--space-2); opacity: 0.3;">🌅</div>
+              <p style="color: var(--gray-500); font-size: 0.875rem;">Nenhum banner configurado. O topo da página será azul padrão.</p>
+            </div>
+
+            <div v-if="authStore.canEdit" class="flex justify-start">
+              <label class="btn btn-secondary" style="cursor:pointer; display: flex; align-items: center; gap: 8px;">
+                <span>{{ uploadingBanner ? '⌛ Enviando...' : (project.bannerImageUrl ? '🔄 Trocar Imagem' : '📤 Upload do Banner') }}</span>
+                <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage" :disabled="uploadingBanner" />
+              </label>
+            </div>
+          </section>
+
+          <!-- Section: Links & URLs -->
+          <section class="card" style="padding: var(--space-6);">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+              <div style="width: 40px; height: 40px; background: #fef3c7; color: #d97706; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🔗</div>
+              <div>
+                <h3 style="margin:0;">Link da Página Pública</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Compartilhe este link com seus clientes.</p>
+              </div>
+            </div>
+
+            <div v-if="project.status !== 'PUBLISHED'" class="alert alert-warning" style="margin-bottom: var(--space-4); background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: var(--space-3); border-radius: var(--radius-md); font-size: 0.875rem; display: flex; gap: 8px; align-items: center;">
+              <span>⚠️</span>
+              <div>O projeto está como rascunho. Publique-o para que a página fique visível.</div>
+            </div>
+
+            <div class="copy-url-bar" style="display: flex; gap: var(--space-2); align-items: stretch; background: var(--gray-100); padding: 8px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
+              <code style="flex: 1; padding: 0 12px; display: flex; align-items: center; color: var(--gray-700); font-weight: 500; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ publicUrl || '(publique o projeto para gerar o link)' }}
+              </code>
+              <div v-if="publicUrl" class="flex gap-2">
+                <button class="btn btn-sm btn-outline" style="background: white;" @click="copyLink(`${$config?.public?.baseUrl || ''}${publicUrl}`)">📋 Copiar</button>
+                <a :href="publicUrl" target="_blank" class="btn btn-sm btn-primary">🚀 Abrir</a>
+              </div>
+            </div>
+          </section>
+
+          <!-- Section: Highlights -->
+          <section class="card" style="padding: var(--space-6);">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
+              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⭐</div>
+              <div>
+                <h3 style="margin:0;">Cards de Destaque</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Destaque os principais diferenciais do loteamento.</p>
+              </div>
+            </div>
+
+            <!-- List highlights as cards -->
+            <div v-if="pubInfoForm.highlightsJson.length" class="highlights-preview-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
+              <div v-for="(h, i) in pubInfoForm.highlightsJson" :key="i" class="highlight-item-card" style="padding: var(--space-4); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); position: relative; background: white; display: flex; items-start; gap: 12px;">
+                <div style="font-size: 1.5rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #ecfdf5; color: #059669; border-radius: var(--radius-md);">✅</div>
+                <div style="flex: 1;">
+                  <strong style="display: block; font-size: 0.9375rem; color: var(--gray-800);">{{ h.label }}</strong>
+                  <span style="font-size: 0.8125rem; color: var(--gray-500);">{{ h.value }}</span>
+                </div>
+                <button v-if="authStore.canEdit" class="btn btn-xs" style="padding: 4px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; position: absolute; top: -8px; right: -8px; background: var(--danger); border: none; color: white; cursor: pointer; box-shadow: var(--shadow-sm);" title="Remover" @click="removeHighlight(i)">✕</button>
+              </div>
+            </div>
+
+            <!-- New highlight form -->
+            <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: var(--space-5); border-radius: var(--radius-xl); border: 1px solid var(--gray-200);">
+              <h4 style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.875rem;">➕ Adicionar novo Diferencial</span>
+              </h4>
+              <div class="highlights-form" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-4); align-items: end;">
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Rótulo / Título</label>
+                  <input v-model="newHighlight.label" class="form-input" placeholder="Ex: Infraestrutura completa" />
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Valor / Detalhe</label>
+                  <input v-model="newHighlight.value" class="form-input" placeholder="Ex: Água, luz, asfalto" />
+                </div>
+                <button class="btn btn-secondary" style="height: 42px;" @click="addHighlight">Adicionar</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Section: Details Text -->
+          <section class="card" style="padding: var(--space-6);">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📝</div>
+              <div>
+                <h3 style="margin:0;">Texto de Localização e Infra</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Descreva as facilidades do entorno do loteamento.</p>
+              </div>
+            </div>
+            
+            <div class="form-group" style="margin:0;">
+              <textarea 
+                v-model="pubInfoForm.locationText" 
+                class="form-textarea" 
+                rows="6" 
+                placeholder="Descreva detalhes sobre o acesso ao transporte, comércio local, escolas, áreas de lazer externas e infraestrutura urbana próxima..." 
+                :disabled="!authStore.canEdit"
+                style="padding: var(--space-4); line-height: 1.6; border-radius: var(--radius-lg); font-size: 0.9375rem;"
+              ></textarea>
+            </div>
+          </section>
+
+          <!-- Footer-ish Action Bar -->
+          <div v-if="authStore.canEdit" class="flex justify-end items-center gap-4" style="margin-top: var(--space-4);">
+            <div v-if="pubInfoSaved" style="color: var(--success); font-weight: 600; font-size: 0.875rem;">✅ Alterações salvas!</div>
+            <button class="btn btn-primary" style="min-width: 160px;" :disabled="savingPubInfo" @click="savePubInfo">
+              {{ savingPubInfo ? 'Salvando...' : '💾 Salvar Alterações' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -517,7 +602,7 @@ const mapElements = ref<any[]>([])
 const lots = ref<any[]>([])
 const media = ref<any[]>([])
 const activeTab = ref('map')
-const uploadingMap = ref(false)
+const uploadingBanner = ref(false)
 const uploadingMedia = ref(false)
 const savingSettings = ref(false)
 const settingsError = ref('')
@@ -709,12 +794,12 @@ const editForm = ref({
 const pubInfoForm = ref({ highlightsJson: [], locationText: '' })
 const savingPubInfo = ref(false)
 const pubInfoSaved = ref(false)
-const newHighlight = ref({ icon: '✅', label: '', value: '' })
+const newHighlight = ref({ label: '', value: '' })
 
 const addHighlight = () => {
   if (!newHighlight.value.label) return
-  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { ...newHighlight.value }]
-  newHighlight.value = { icon: '✅', label: '', value: '' }
+  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { icon: '✅', ...newHighlight.value }]
+  newHighlight.value = { label: '', value: '' }
 }
 const removeHighlight = (i) => {
   pubInfoForm.value.highlightsJson = pubInfoForm.value.highlightsJson.filter((_, idx) => idx !== i)
@@ -876,27 +961,27 @@ const confirmDelete = async () => {
   }
 }
 
-const uploadMapImage = async (e) => {
+const uploadBannerImage = async (e) => {
   const file = e.target.files?.[0]
   if (!file) return
-  uploadingMap.value = true
+  uploadingBanner.value = true
   try {
     const fd = new FormData(); fd.append('file', file)
-    project.value = await uploadApi(`/projects/${projectId}/map-image`, fd)
-    toastSuccess('Imagem do mapa enviada!')
+    project.value = await uploadApi(`/projects/${projectId}/banner-image`, fd)
+    toastSuccess('Banner do projeto enviado!')
   } catch (err) {
-    toastFromError(err, 'Erro ao enviar imagem')
+    toastFromError(err, 'Erro ao enviar banner')
   }
   e.target.value = ''
-  uploadingMap.value = false
+  uploadingBanner.value = false
 }
 
-const removeMapImage = async () => {
+const removeBannerImage = async () => {
   try {
-    project.value = await fetchApi(`/projects/${projectId}/map-image`, { method: 'DELETE' })
-    toastSuccess('Imagem removida')
+    project.value = await fetchApi(`/projects/${projectId}/banner-image`, { method: 'DELETE' })
+    toastSuccess('Banner removido')
   } catch (e) {
-    toastFromError(e, 'Erro ao remover imagem')
+    toastFromError(e, 'Erro ao remover banner')
   }
 }
 

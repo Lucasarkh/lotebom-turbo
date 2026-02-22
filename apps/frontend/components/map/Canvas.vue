@@ -19,7 +19,6 @@
     >
       <!-- Background layer -->
       <v-layer>
-        <v-image v-if="bgImage" :config="{ image: bgImage, x: 0, y: 0, listening: false }" />
         <v-line v-for="(line, i) in gridLines" :key="'g-' + i" :config="line" />
       </v-layer>
 
@@ -110,7 +109,6 @@ const props = defineProps<{
   placementRotation: number
   ghostPos: Point | null
   cellSize: number
-  mapBaseImageUrl: string | null
 }>()
 
 const emit = defineEmits<{
@@ -196,15 +194,6 @@ const gridLines = computed(() => {
   }
   return lines
 })
-
-/* ── Background image ────────────────────── */
-watch(() => props.mapBaseImageUrl, (url) => {
-  if (!url) { bgImage.value = null; return }
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.onload = () => { bgImage.value = img }
-  img.src = url
-}, { immediate: true })
 
 /* ── Tile rendering ──────────────────────── */
 function getShapes(el: MapElementData): TileRenderShape[] {

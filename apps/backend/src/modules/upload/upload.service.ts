@@ -15,9 +15,9 @@ export class UploadService {
     private readonly s3: S3Service,
   ) {}
 
-  // ── Map base image ──────────────────────────────────────
+  // ── Project Banner ──────────────────────────────────────
 
-  async uploadMapBaseImage(
+  async uploadBannerImage(
     tenantId: string,
     projectId: string,
     file: Express.Multer.File,
@@ -30,33 +30,33 @@ export class UploadService {
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
     // Delete old image from S3 if it exists
-    if (project.mapBaseImageUrl) {
-      const oldKey = this.s3.keyFromUrl(project.mapBaseImageUrl);
+    if (project.bannerImageUrl) {
+      const oldKey = this.s3.keyFromUrl(project.bannerImageUrl);
       if (oldKey) await this.s3.delete(oldKey).catch(() => {});
     }
 
-    const key = this.s3.buildKey(tenantId, `projects/${projectId}/map`, file.originalname);
+    const key = this.s3.buildKey(tenantId, `projects/${projectId}/banner`, file.originalname);
     const url = await this.s3.upload(file.buffer, key, file.mimetype);
 
     return this.prisma.project.update({
       where: { id: projectId },
-      data: { mapBaseImageUrl: url },
+      data: { bannerImageUrl: url },
     });
   }
 
-  async removeMapBaseImage(tenantId: string, projectId: string) {
+  async removeBannerImage(tenantId: string, projectId: string) {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, tenantId },
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
-    if (!project.mapBaseImageUrl) return project;
+    if (!project.bannerImageUrl) return project;
 
-    const oldKey = this.s3.keyFromUrl(project.mapBaseImageUrl);
+    const oldKey = this.s3.keyFromUrl(project.bannerImageUrl);
     if (oldKey) await this.s3.delete(oldKey).catch(() => {});
 
     return this.prisma.project.update({
       where: { id: projectId },
-      data: { mapBaseImageUrl: null },
+      data: { bannerImageUrl: null },
     });
   }
 

@@ -3,6 +3,7 @@
     <!-- Loading -->
     <div v-if="loading" class="pub-loading">
       <div class="loading-spinner"></div>
+      <p>Carregando projeto...</p>
     </div>
 
     <!-- Error -->
@@ -10,227 +11,310 @@
       <div class="pub-error-card card">
         <h2>Projeto não encontrado</h2>
         <p>{{ error }}</p>
+        <NuxtLink to="/" class="v4-btn-primary" style="display: inline-block; margin-top: 1rem;">Voltar ao início</NuxtLink>
       </div>
     </div>
 
     <!-- Project -->
     <template v-else-if="project">
-      <!-- Hero header -->
-      <header class="pub-hero">
-        <div class="pub-hero-content">
-          <div class="pub-tenant">{{ project.tenant?.name }}</div>
-          <h1 class="pub-title">{{ project.name }}</h1>
-          <p v-if="project.description" class="pub-desc">{{ project.description }}</p>
-          <div class="pub-stats">
-            <div class="pub-stat">
-              <span class="pub-stat-n">{{ totalLots }}</span>
-              <span class="pub-stat-l">Lotes</span>
+      <!-- Hero section -->
+      <section class="v4-hero" :class="{ 'has-banner': !!project.bannerImageUrl }">
+        <div v-if="project.bannerImageUrl" class="v4-hero-bg" :style="{ backgroundImage: `url(${project.bannerImageUrl})` }"></div>
+        <div class="v4-hero-overlay"></div>
+        
+        <div class="v4-container">
+          <div class="v4-hero-content">
+            <span class="v4-hero-tag">{{ project.tenant?.name || 'Vendas Iniciadas' }}</span>
+            <h1 class="v4-hero-title text-balance">{{ project.name }}</h1>
+            <p v-if="project.description" class="v4-hero-desc text-balance">{{ project.description }}</p>
+            
+            <div class="v4-hero-stats">
+              <div class="v4-stat-card">
+                <span class="v4-stat-label">Terrenos Totais</span>
+                <span class="v4-stat-value">{{ totalLots }}</span>
+              </div>
+              <div class="v4-stat-card">
+                <span class="v4-stat-label">Unidades Disponíveis</span>
+                <span class="v4-stat-value">{{ availableLots }}</span>
+              </div>
+              <div v-if="priceRange" class="v4-stat-card">
+                <span class="v4-stat-label">Investimento inicial</span>
+                <span class="v4-stat-value">R$ {{ priceRange }}</span>
+              </div>
             </div>
-            <div class="pub-stat">
-              <span class="pub-stat-n">{{ availableLots }}</span>
-              <span class="pub-stat-l">Disponíveis</span>
-            </div>
-            <div class="pub-stat">
-              <span class="pub-stat-n">{{ reservedLots }}</span>
-              <span class="pub-stat-l">Reservados</span>
-            </div>
-            <div class="pub-stat">
-              <span class="pub-stat-n">{{ soldLots }}</span>
-              <span class="pub-stat-l">Vendidos</span>
+
+            <div class="v4-hero-actions">
+              <a href="#mapa" class="v4-btn-primary">Ver Mapa Interativo</a>
+              <a href="#contato" class="v4-btn-white">Solicitar informações</a>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      <!-- Corretor Card -->
-      <div v-if="corretor" class="corretor-bar">
-        <div class="corretor-bar-inner">
-          <img v-if="corretor.photoUrl" :src="corretor.photoUrl" class="corretor-avatar" :alt="corretor.name" />
-          <div v-else class="corretor-avatar-placeholder">{{ corretor.name[0] }}</div>
-          <div class="corretor-info">
-            <span class="corretor-label">Atendimento por</span>
-            <strong class="corretor-name">{{ corretor.name }}</strong>
-          </div>
-          <div class="corretor-contacts">
-            <a v-if="corretor.phone" :href="`https://wa.me/${corretor.phone.replace(/\D/g,'')}`" target="_blank" class="corretor-contact-btn corretor-whatsapp">��� WhatsApp</a>
-            <a v-if="corretor.email" :href="`mailto:${corretor.email}`" class="corretor-contact-btn corretor-email">✉ E-mail</a>
-            <a href="#contato" class="corretor-contact-btn corretor-cta">Tenho Interesse</a>
+      <!-- Trust bar -->
+      <div v-if="corretor" class="v4-trust-bar">
+        <div class="v4-container">
+          <div class="v4-trust-inner">
+            <div class="v4-trust-person">
+              <div class="v4-trust-avatar">
+                <img v-if="corretor.profileImageUrl" :src="corretor.profileImageUrl" :alt="corretor.name" />
+                <span v-else class="v4-avatar-placeholder">{{ corretor.name[0] }}</span>
+              </div>
+              <div class="v4-trust-info">
+                <span class="v4-trust-label">Atendimento Exclusivo</span>
+                <strong class="v4-trust-name">{{ corretor.name }}</strong>
+              </div>
+            </div>
+            <div class="v4-trust-actions">
+              <a v-if="corretor.phone" :href="`https://wa.me/${corretor.phone.replace(/\D/g,'')}`" target="_blank" class="v4-trust-btn v4-trust-btn--whatsapp">
+                <span>WhatsApp</span>
+              </a>
+              <a href="#contato" class="v4-trust-btn v4-trust-btn--primary">
+                <span>Tenho Interesse</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Highlights -->
-      <section v-if="highlights.length" class="pub-section pub-section-highlights" id="info">
-        <div class="pub-container">
-          <h2 class="pub-section-title">Por que escolher este loteamento?</h2>
-          <div class="highlights-grid">
-            <div v-for="h in highlights" :key="h.label" class="highlight-card">
-              <span class="highlight-icon">{{ h.icon }}</span>
-              <div class="highlight-body">
-                <strong class="highlight-label">{{ h.label }}</strong>
-                <span v-if="h.value" class="highlight-value">{{ h.value }}</span>
+      <!-- Highlights & Info -->
+      <section v-if="highlights.length || project.locationText" class="v4-section" id="info">
+        <div class="v4-container">
+          <div class="v4-section-header">
+            <h2 class="v4-section-title">Diferenciais do Projeto</h2>
+            <p v-if="project.locationText" class="v4-section-subtitle">{{ project.locationText }}</p>
+          </div>
+
+          <div v-if="highlights.length" class="v4-highlights-grid">
+            <div v-for="h in highlights" :key="h.label" class="v4-highlight-card">
+              <div class="v4-highlight-icon-wrapper">
+                <span class="v4-highlight-icon">{{ h.icon }}</span>
+              </div>
+              <div class="v4-highlight-content">
+                <h4 class="v4-highlight-label">{{ h.label }}</h4>
+                <p v-if="h.value" class="v4-highlight-value">{{ h.value }}</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Location info -->
-      <section v-if="project.locationText" class="pub-section pub-section-alt" id="localizacao">
-        <div class="pub-container pub-container-narrow">
-          <h2 class="pub-section-title">Localização e Infraestrutura</h2>
-          <p class="pub-location-text">{{ project.locationText }}</p>
-        </div>
-      </section>
+      <!-- Interactive Map -->
+      <section class="v4-section v4-section-alt" id="mapa">
+        <div class="v4-container">
+          <div class="v4-section-header center">
+            <h2 class="v4-section-title">Escolha sua unidade no mapa</h2>
+            <p class="v4-section-subtitle">Mapa atualizado em tempo real. Clique no lote para ver mais informações.</p>
+          </div>
 
-      <!-- Map section -->
-      <section class="pub-section" id="mapa">
-        <div class="pub-container">
-          <h2 class="pub-section-title">Mapa Interativo</h2>
-          <p class="pub-section-sub">Clique nos lotes para ver detalhes. Arraste para mover o mapa.</p>
-          <ClientOnly>
-            <div class="pub-map-wrapper">
-              <PublicSvgMap
-                v-if="project.mapData"
-                :mapData="project.mapData"
-                @interest="openLeadForm($event)"
-              />
-              <PublicInteractiveMap
-                v-else
-                :elements="project.mapElements || []"
-                :mapBaseImageUrl="project.mapBaseImageUrl"
-                @interest="openLeadForm($event)"
-              />
+          <div class="v4-map-container">
+            <div class="v4-map-legend">
+              <div class="v4-legend-item"><span class="dot available"></span> Disponível</div>
+              <div class="v4-legend-item"><span class="dot reserved"></span> Reservado</div>
+              <div class="v4-legend-item"><span class="dot sold"></span> Vendido</div>
             </div>
-            <template #fallback>
-              <div class="pub-map-wrapper" style="display:flex; align-items:center; justify-content:center;">
-                <div class="loading-spinner"></div>
+            
+            <ClientOnly>
+              <div class="v4-map-viewport">
+                <PublicSvgMap
+                  v-if="project.mapData"
+                  :mapData="project.mapData"
+                  @interest="openLeadForm($event)"
+                />
+                <PublicInteractiveMap
+                  v-else
+                  :elements="project.mapElements || []"
+                  @interest="openLeadForm($event)"
+                />
               </div>
-            </template>
-          </ClientOnly>
-          <div class="pub-legend">
-            <div class="legend-item"><span class="legend-dot" style="background: rgba(34,197,94,0.5)"></span> Disponível</div>
-            <div class="legend-item"><span class="legend-dot" style="background: rgba(245,158,11,0.5)"></span> Reservado</div>
-            <div class="legend-item"><span class="legend-dot" style="background: rgba(239,68,68,0.5)"></span> Vendido</div>
+              <template #fallback>
+                <div class="v4-map-loading">
+                  <div class="loading-spinner"></div>
+                  <p>Carregando mapa interativo...</p>
+                </div>
+              </template>
+            </ClientOnly>
           </div>
         </div>
       </section>
 
-      <!-- Lots catalog -->
-      <section v-if="unifiedAvailableLots.length" class="pub-section pub-section-alt" id="lotes">
-        <div class="pub-container">
-          <h2 class="pub-section-title">Lotes Disponíveis</h2>
-          <p class="pub-section-sub">{{ availableLots }} lotes disponíveis<span v-if="priceRange"> · a partir de <strong>R$ {{ priceRange }}</strong></span></p>
-          <div class="lots-grid">
-            <NuxtLink v-for="lot in unifiedAvailableLots" :key="lot.id" :to="lotPageUrl(lot)" class="lot-card">
-              <div class="lot-card-header">
-                <span class="lot-code">{{ lot.code || lot.name || 'Lote' }}</span>
-                <span class="badge badge-success" style="font-size:0.75rem;">Disponível</span>
+      <!-- Available Lots Grid -->
+      <section v-if="unifiedAvailableLots.length" class="v4-section" id="lotes">
+        <div class="v4-container">
+          <div class="v4-section-header">
+            <h2 class="v4-section-title">Unidades Disponíveis</h2>
+            <p class="v4-section-subtitle">Selecione uma opção abaixo para ver metragens e condições.</p>
+          </div>
+
+          <div class="v4-lots-grid">
+            <NuxtLink v-for="lot in unifiedAvailableLots" :key="lot.id" :to="lotPageUrl(lot)" class="v4-lot-card">
+              <div class="v4-lot-card-header">
+                <div class="v4-lot-id">
+                  <span class="v4-lot-label">Unidade</span>
+                  <span class="v4-lot-code">{{ lot.code || lot.name || lot.id }}</span>
+                </div>
+                <div class="v4-lot-status">Livre</div>
               </div>
-              <div class="lot-card-details">
-                <span v-if="lot.lotDetails?.areaM2">📐 {{ lot.lotDetails.areaM2 }} m²</span>
-                <span v-if="lot.lotDetails?.frontage">↔ {{ lot.lotDetails.frontage }} m frente</span>
-                <span v-if="lot.lotDetails?.price" class="lot-price">R$ {{ lot.lotDetails.price.toLocaleString('pt-BR') }}</span>
+              
+              <div class="v4-lot-card-body">
+                <div class="v4-lot-info-row">
+                  <span class="v4-info-item">📐 {{ lot.lotDetails?.areaM2 || '---' }} m²</span>
+                  <span v-if="lot.lotDetails?.frontage" class="v4-info-item">↔ {{ lot.lotDetails.frontage }}m frente</span>
+                </div>
+                <div v-if="lot.lotDetails?.price" class="v4-lot-price">
+                  <span class="v4-price-label">Valor do investimento</span>
+                  <span class="v4-price-value">R$ {{ lot.lotDetails.price.toLocaleString('pt-BR') }}</span>
+                </div>
               </div>
-              <div class="lot-card-cta">Ver detalhes →</div>
+              
+              <div class="v4-lot-card-footer">
+                <span>Ver detalhes do lote</span>
+                <span class="v4-icon">→</span>
+              </div>
             </NuxtLink>
           </div>
         </div>
       </section>
 
       <!-- Media gallery -->
-      <section v-if="project.projectMedias?.length" class="pub-section" id="galeria">
-        <div class="pub-container">
-          <h2 class="pub-section-title">Galeria</h2>
-          <div class="pub-gallery">
-            <div v-for="(m, i) in project.projectMedias" :key="m.id" class="gallery-item" @click="openLightbox(Number(i))">
+      <section v-if="project.projectMedias?.length" class="v4-section" id="galeria">
+        <div class="v4-container">
+          <div class="v4-section-header">
+            <h2 class="v4-section-title">Galeria de Fotos</h2>
+            <p class="v4-section-subtitle">Conheça os detalhes e a infraestrutura do empreendimento.</p>
+          </div>
+
+          <div class="v4-gallery-grid">
+            <div 
+              v-for="(m, i) in project.projectMedias" 
+              :key="m.id" 
+              class="v4-gallery-item"
+              :class="{'v4-gallery-item--large': i === 0}"
+              @click="openLightbox(Number(i))"
+            >
               <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption || 'Foto'" loading="lazy" />
               <video v-else :src="m.url" />
-              <div v-if="m.caption" class="gallery-caption">{{ m.caption }}</div>
+              <div class="v4-gallery-overlay">
+                <span v-if="m.caption" class="v4-gallery-caption">{{ m.caption }}</span>
+                <span class="v4-gallery-expand">↗</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Lead form -->
-      <section class="pub-section pub-section-alt" id="contato">
-        <div class="pub-container">
-          <div class="pub-form-wrapper">
-            <div class="pub-form-info">
-              <h2 class="pub-section-title">Tenho Interesse</h2>
-              <p>Preencha o formulário e nossa equipe entrará em contato.</p>
-              <div v-if="lotElements.length" class="pub-lot-summary">
-                <h4>Lotes disponíveis: {{ availableLots }}</h4>
-                <p v-if="priceRange">Valores a partir de <strong>R$ {{ priceRange }}</strong></p>
+      <section class="v4-section v4-section-alt" id="contato">
+        <div class="v4-container">
+          <div class="v4-conversion-card">
+            <div class="v4-conversion-info">
+              <div class="v4-conversion-badge">
+                <span class="v4-pulse"></span>
+                Oportunidade única
               </div>
-              <div v-if="corretor" class="corretor-form-badge">
-                <strong>{{ corretor.name }}</strong> é seu corretor nesta visita e será notificado do seu interesse.
+              <h2 class="v4-conversion-title">Garanta sua unidade agora</h2>
+              <p class="v4-conversion-desc">Restam poucas unidades disponíveis. Preencha o formulário e nossa equipe entrará em contato para tirar suas dúvidas e agendar uma visita.</p>
+              
+              <div v-if="lotElements.length" class="v4-available-badge">
+                <span style="font-size: 1.25rem;">✨</span> {{ availableLots }} lotes disponíveis no momento
+              </div>
+
+              <div v-if="corretor" class="v4-active-realtor">
+                <div class="v4-realtor-avatar">
+                  <img v-if="corretor.profileImageUrl" :src="corretor.profileImageUrl" :alt="corretor.name" />
+                  <span v-else class="v4-avatar-placeholder">{{ corretor.name[0] }}</span>
+                </div>
+                <div class="v4-realtor-details">
+                  <span class="v4-realtor-label">Consultor Atendimento</span>
+                  <span class="v4-realtor-name">{{ corretor.name }}</span>
+                </div>
               </div>
             </div>
-            <form class="pub-lead-form card" @submit.prevent="submitLead" ref="formRef">
-              <div v-if="leadSuccess" class="alert alert-success">
-                Obrigado! Entraremos em contato em breve.
+
+            <div class="v4-conversion-form-wrapper">
+              <div v-if="leadSuccess" class="v4-form-success">
+                <div class="v4-success-icon">✓</div>
+                <h3>Mensagem enviada!</h3>
+                <p>Nossa equipe entrará em contato em breve através do telefone informado.</p>
               </div>
-              <template v-else>
-                <div class="form-group">
-                  <label class="form-label">Nome *</label>
-                  <input v-model="leadForm.name" class="form-input" required placeholder="Seu nome completo" />
+              <form v-else class="v4-form" @submit.prevent="submitLead" ref="formRef">
+                <h3 class="v4-form-title">Preencha seus dados</h3>
+                
+                <div class="v4-form-grid">
+                  <div class="v4-form-group">
+                    <label>Seu nome completo *</label>
+                    <input v-model="leadForm.name" required placeholder="Ex: João Silva" />
+                  </div>
+                  <div class="v4-form-group">
+                    <label>Telefone / WhatsApp *</label>
+                    <input v-model="leadForm.phone" required placeholder="(00) 00000-0000" />
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">E-mail *</label>
-                  <input v-model="leadForm.email" type="email" class="form-input" required placeholder="seu@email.com" />
+
+                <div class="v4-form-group">
+                  <label>E-mail *</label>
+                  <input v-model="leadForm.email" type="email" required placeholder="seu@email.com" />
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Telefone *</label>
-                  <input v-model="leadForm.phone" class="form-input" required placeholder="(00) 00000-0000" />
-                </div>
-                <div v-if="unifiedAvailableLots.length" class="form-group">
-                  <label class="form-label">Lote de interesse</label>
-                  <select v-model="leadForm.mapElementId" class="form-input">
-                    <option value="">Nenhum específico</option>
+
+                <div v-if="unifiedAvailableLots.length" class="v4-form-group">
+                  <label>Tenho interesse no lote</label>
+                  <select v-model="leadForm.mapElementId">
+                    <option value="">Não tenho preferência</option>
                     <option v-for="lot in unifiedAvailableLots" :key="lot.id" :value="lot.id">
                       {{ lot.code || lot.name || lot.id }} {{ lot.lotDetails?.areaM2 ? `— ${lot.lotDetails.areaM2} m²` : '' }}
                     </option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Mensagem</label>
-                  <textarea v-model="leadForm.message" class="form-textarea" rows="3" placeholder="Quero mais informações sobre este loteamento..."></textarea>
+
+                <div class="v4-form-group">
+                  <label>Mensagem (opcional)</label>
+                  <textarea v-model="leadForm.message" rows="3" placeholder="Em que podemos te ajudar?"></textarea>
                 </div>
-                <div v-if="leadError" class="alert alert-error">{{ leadError }}</div>
-                <button type="submit" class="btn btn-primary btn-lg" :disabled="submitting" style="width:100%">
-                  {{ submitting ? 'Enviando...' : 'Quero mais informações' }}
+
+                <div v-if="leadError" class="v4-form-error">{{ leadError }}</div>
+                
+                <button type="submit" class="v4-btn-submit" :disabled="submitting">
+                  {{ submitting ? 'Enviando...' : 'Falar com um consultor' }}
                 </button>
-              </template>
-            </form>
+                <p class="v4-form-privacy">Seus dados estão seguros conosco.</p>
+              </form>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- Footer -->
-      <footer class="pub-footer">
-        <p>{{ project.tenant?.name }} &middot; Loteamento {{ project.name }}</p>
-        <p v-if="corretor" style="margin-top:4px; font-size:0.8rem;">Atendimento: {{ corretor.name }}{{ corretor.phone ? ` · ${corretor.phone}` : '' }}</p>
+      <footer class="v4-footer">
+        <div class="v4-container">
+          <div class="v4-footer-inner">
+            <div class="v4-footer-brand">
+              <span class="v4-footer-tenant">{{ project.tenant?.name }}</span>
+              <span class="v4-footer-project">Loteamento {{ project.name }}</span>
+            </div>
+            <div class="v4-footer-copyright">
+              © {{ new Date().getFullYear() }} — Todos os direitos reservados.
+            </div>
+          </div>
+        </div>
       </footer>
 
       <!-- Lightbox -->
-      <div v-if="lightboxOpen" class="lightbox" @click.self="lightboxOpen = false">
-        <button class="lightbox-close" @click="lightboxOpen = false">&times;</button>
-        <button v-if="lightboxIdx > 0" class="lightbox-nav lightbox-prev" @click="lightboxIdx--">&#8249;</button>
-        <div class="lightbox-content">
+      <div v-if="lightboxOpen" class="v4-lightbox" @click.self="lightboxOpen = false">
+        <button class="v4-lightbox-close" @click="lightboxOpen = false">&times;</button>
+        <button v-if="lightboxIdx > 0" class="v4-lightbox-btn v4-prev" @click="lightboxIdx--">&#10094;</button>
+        <div class="v4-lightbox-content">
           <img v-if="lightboxMedia?.type === 'PHOTO'" :src="lightboxMedia.url" :alt="lightboxMedia.caption" />
           <video v-else :src="lightboxMedia?.url" controls autoplay />
+          <div v-if="lightboxMedia?.caption" class="v4-lightbox-caption">{{ lightboxMedia.caption }}</div>
         </div>
-        <button v-if="lightboxIdx < (project.projectMedias?.length || 1) - 1" class="lightbox-nav lightbox-next" @click="lightboxIdx++">&#8250;</button>
+        <button v-if="lightboxIdx < (project.projectMedias?.length || 1) - 1" class="v4-lightbox-btn v4-next" @click="lightboxIdx++">&#10095;</button>
       </div>
 
-      <!-- Sticky nav -->
-      <nav class="pub-sticky-nav">
-        <a v-if="highlights.length || project.locationText" href="#info">Info</a>
-        <a href="#mapa">Mapa</a>
-        <a v-if="availableLotElements.length" href="#lotes">Lotes</a>
-        <a v-if="project.projectMedias?.length" href="#galeria">Galeria</a>
-        <a href="#contato" class="btn btn-primary btn-sm">Tenho Interesse</a>
+      <!-- Sticky mobile CTA -->
+      <nav class="v4-sticky-nav">
+        <a href="#mapa" class="v4-nav-item">Mapa</a>
+        <a v-if="unifiedAvailableLots.length" href="#lotes" class="v4-nav-item">Unidades</a>
+        <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>
       </nav>
     </template>
   </div>
@@ -413,7 +497,16 @@ onMounted(async () => {
       fetchPublic(`/p/${tenantSlug}/${projectSlug}`),
       corretorCode ? fetchPublic(`/p/${tenantSlug}/corretores/${corretorCode}`) : Promise.resolve(null),
     ])
-    if (p.status === 'fulfilled') project.value = p.value
+    if (p.status === 'fulfilled') {
+      project.value = p.value
+      useHead({
+        title: `Loteamento ${p.value.name} — ${p.value.tenant?.name}`,
+        meta: [
+          { name: 'description', content: p.value.description || '' },
+          { name: 'theme-color', content: '#ffffff' }
+        ]
+      })
+    }
     else error.value = (p.reason as any)?.message || 'Projeto não encontrado'
     if (c.status === 'fulfilled' && c.value) corretor.value = c.value
   } catch (e: any) {
@@ -458,107 +551,608 @@ function openLightbox(idx: number) {
 </script>
 
 <style scoped>
-.pub-hero {
-  background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
-  color: white; padding: var(--space-12) var(--space-6); text-align: center;
+/* V4 Design System Tokens - Apple/Samsung Inspired */
+:global(:root) {
+  --v4-primary: #0071e3; /* Apple Blue */
+  --v4-primary-hover: #0077ed;
+  --v4-bg: #ffffff;
+  --v4-bg-alt: #f5f5f7; /* Apple secondary bg */
+  --v4-text: #1d1d1f; /* Apple Text */
+  --v4-text-muted: #86868b;
+  --v4-border: #d2d2d7;
+  --v4-radius-lg: 18px; /* Refined, not bubbly */
+  --v4-radius-md: 12px;
+  --v4-radius-sm: 8px;
+  --v4-shadow-soft: 0 4px 24px rgba(0,0,0,0.04);
+  --v4-shadow-elevated: 0 20px 40px rgba(0,0,0,0.08);
 }
-.pub-hero-content { max-width: 700px; margin: 0 auto; }
-.pub-tenant { font-size: 0.875rem; opacity: 0.8; margin-bottom: var(--space-2); text-transform: uppercase; letter-spacing: 0.05em; }
-.pub-title { font-size: 2.5rem; font-weight: 700; margin-bottom: var(--space-3); line-height: 1.15; }
-.pub-desc { font-size: 1.125rem; opacity: 0.9; margin-bottom: var(--space-6); line-height: 1.6; }
-.pub-stats { display: flex; justify-content: center; gap: var(--space-6); flex-wrap: wrap; }
-.pub-stat { text-align: center; }
-.pub-stat-n { display: block; font-size: 2rem; font-weight: 700; }
-.pub-stat-l { font-size: 0.8125rem; opacity: 0.8; }
 
-.corretor-bar { background: #f0fdf4; border-bottom: 2px solid #bbf7d0; padding: var(--space-3) var(--space-6); }
-.corretor-bar-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
-.corretor-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #4ade80; }
-.corretor-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; }
-.corretor-info { flex: 1; }
-.corretor-label { display: block; font-size: 0.7rem; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; }
-.corretor-name { color: #14532d; font-size: 1rem; }
-.corretor-contacts { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-.corretor-contact-btn { padding: 6px 14px; border-radius: 20px; font-size: 0.8125rem; font-weight: 600; text-decoration: none; transition: opacity 0.2s; }
-.corretor-contact-btn:hover { opacity: 0.85; }
-.corretor-whatsapp { background: #22c55e; color: white; }
-.corretor-email { background: #3b82f6; color: white; }
-.corretor-cta { background: var(--primary); color: white; }
-.corretor-form-badge { margin-top: var(--space-4); padding: var(--space-3); background: #f0fdf4; border-left: 3px solid #22c55e; border-radius: var(--radius-sm); font-size: 0.875rem; color: #166534; }
+/* Base Layout */
+.pub-page {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--v4-text);
+  background: var(--v4-bg);
+  line-height: 1.47059;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  -webkit-font-smoothing: antialiased;
+}
 
-.pub-section-highlights { background: #f8fafc; }
-.highlights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4); margin-top: var(--space-5); }
-.highlight-card { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: var(--space-5); display: flex; align-items: flex-start; gap: var(--space-3); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
-.highlight-icon { font-size: 1.75rem; flex-shrink: 0; }
-.highlight-body { display: flex; flex-direction: column; gap: 4px; }
-.highlight-label { font-weight: 600; color: var(--gray-800); font-size: 0.9375rem; }
-.highlight-value { color: var(--gray-500); font-size: 0.875rem; }
+.v4-container {
+  max-width: 1040px; /* More focused container like Apple */
+  margin: 0 auto;
+  padding: 0 22px;
+}
 
-.pub-container-narrow { max-width: 720px; }
-.pub-location-text { font-size: 1.0625rem; line-height: 1.75; color: var(--gray-700); white-space: pre-wrap; }
-
-.lots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-4); margin-top: var(--space-5); }
-.lot-card { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: var(--space-4); text-decoration: none; color: inherit; transition: box-shadow 0.2s, transform 0.2s; display: flex; flex-direction: column; gap: var(--space-2); }
-.lot-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
-.lot-card-header { display: flex; justify-content: space-between; align-items: center; }
-.lot-code { font-weight: 700; color: var(--gray-800); font-size: 1rem; }
-.lot-card-details { display: flex; flex-direction: column; gap: 4px; font-size: 0.875rem; color: var(--gray-600); }
-.lot-price { color: var(--primary); font-weight: 700; font-size: 1rem; margin-top: 4px; }
-.lot-card-cta { font-size: 0.8125rem; color: var(--primary); font-weight: 600; margin-top: auto; padding-top: var(--space-2); }
-
-.pub-section { padding: var(--space-12) var(--space-6); }
-.pub-section-alt { background: white; }
-.pub-container { max-width: 1000px; margin: 0 auto; }
-.pub-section-title { font-size: 1.75rem; font-weight: 700; color: var(--gray-800); margin-bottom: var(--space-2); }
-.pub-section-sub { color: var(--gray-500); margin-bottom: var(--space-5); }
-
-.pub-legend { display: flex; gap: var(--space-5); justify-content: center; margin-top: var(--space-4); flex-wrap: wrap; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--gray-600); }
-.legend-dot { width: 16px; height: 16px; border-radius: 3px; }
-
-.pub-map-wrapper {
+.v4-section {
+  padding: 80px 0; /* Consistent, balanced spacing */
   position: relative;
-  width: 100%;
-  min-height: 500px;
-  background: var(--gray-100);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin: var(--space-4) 0;
 }
 
-.pub-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-4); }
-.gallery-item { border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 4/3; background: var(--gray-200); }
-.gallery-item img, .gallery-item video { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
-.gallery-item:hover img, .gallery-item:hover video { transform: scale(1.05); }
-.gallery-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: var(--space-3); background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; font-size: 0.8125rem; }
+.v4-section-alt {
+  background: var(--v4-bg-alt);
+}
 
-.pub-form-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8); align-items: start; }
-@media (max-width: 768px) { .pub-form-wrapper { grid-template-columns: 1fr; } }
-.pub-form-info { padding-top: var(--space-4); }
-.pub-form-info p { color: var(--gray-600); margin-top: var(--space-3); line-height: 1.6; }
-.pub-lot-summary { margin-top: var(--space-5); padding: var(--space-4); background: var(--primary-light); border-radius: var(--radius-md); }
-.pub-lot-summary h4 { color: var(--primary); margin-bottom: var(--space-1); }
-.pub-lot-summary p { color: var(--gray-600); font-size: 0.875rem; margin: 0; }
-.pub-lead-form { padding: var(--space-6); }
+.v4-section-header {
+  margin-bottom: 44px;
+  max-width: 800px;
+}
 
-.pub-footer { text-align: center; padding: var(--space-6); color: var(--gray-400); font-size: 0.8125rem; border-top: 1px solid var(--gray-200); }
+.v4-section-header.center {
+  margin-inline: auto;
+  text-align: center;
+}
 
-.pub-sticky-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); border-top: 1px solid var(--gray-200); z-index: 50; flex-wrap: wrap; }
-.pub-sticky-nav a { color: var(--gray-600); text-decoration: none; font-size: 0.875rem; font-weight: 500; }
-.pub-sticky-nav a:hover { color: var(--primary); }
+.v4-section-title {
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.003em;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
 
-.lightbox { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; }
-.lightbox-close { position: absolute; top: 16px; right: 20px; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; z-index: 2; }
-.lightbox-content img, .lightbox-content video { max-width: 90vw; max-height: 85vh; border-radius: var(--radius-md); }
-.lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; color: white; font-size: 3rem; padding: 0 16px; cursor: pointer; border-radius: var(--radius-md); height: 60px; display: flex; align-items: center; }
-.lightbox-nav:hover { background: rgba(255,255,255,0.25); }
-.lightbox-prev { left: 16px; }
-.lightbox-next { right: 16px; }
+.v4-section-subtitle {
+  font-size: 21px;
+  line-height: 1.38105;
+  color: var(--v4-text-muted);
+  font-weight: 400;
+}
 
-.pub-loading { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
-.pub-error { display: flex; align-items: center; justify-content: center; min-height: 60vh; padding: var(--space-6); }
-.pub-error-card { text-align: center; padding: var(--space-8); max-width: 400px; }
-.pub-error-card h2 { margin-bottom: var(--space-3); color: var(--gray-800); }
-.pub-error-card p { color: var(--gray-500); }
+.v4-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--v4-primary);
+  border-radius: 50%;
+  margin-right: 8px;
+  box-shadow: 0 0 0 rgba(0, 113, 227, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 113, 227, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 113, 227, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 113, 227, 0); }
+}
+
+/* Navigation & Hero */
+.v4-hero {
+  position: relative;
+  background: #000;
+  color: white;
+  overflow: hidden;
+  min-height: 85vh; /* Premium height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 0;
+}
+
+.v4-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+  opacity: 1;
+  transition: all 0.5s ease;
+}
+
+.v4-hero.has-banner .v4-hero-bg {
+  filter: brightness(0.85); /* Maintain clarity, just tone down highlights */
+  transform: none;
+}
+
+.v4-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  z-index: 2;
+}
+
+.v4-hero.has-banner .v4-hero-overlay {
+  /* Subtle vignette that doesn't hide info, but grounds the text */
+  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.6) 100%);
+}
+
+.v4-hero-content {
+  position: relative;
+  z-index: 3;
+  padding: 40px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  /* Glassmorphic content plate for extreme legibility over busy images without blurring the BG */
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 32px;
+}
+
+.v4-hero-tag {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 24px;
+  background: var(--v4-primary); /* Use primary color to pop against image */
+  padding: 6px 16px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+}
+
+.v4-hero-title {
+  font-size: clamp(38px, 8vw, 72px); /* Slightly more balanced */
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.v4-hero-desc {
+  font-size: clamp(17px, 3vw, 20px);
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 32px;
+  max-width: 640px;
+  margin-inline: auto;
+  line-height: 1.5;
+}
+
+/* Hero Stats Card */
+.v4-hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.v4-stat-card {
+  text-align: center;
+  min-width: 120px;
+}
+
+.v4-stat-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.v4-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.v4-hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Buttons */
+.v4-btn-primary {
+  background: var(--v4-primary);
+  color: white;
+  padding: 12px 28px;
+  border-radius: 100px;
+  font-weight: 500;
+  font-size: 17px;
+  text-decoration: none;
+  transition: background 0.3s;
+}
+
+.v4-btn-white {
+  background: white;
+  color: #1d1d1f;
+  padding: 12px 28px;
+  border-radius: 100px;
+  font-weight: 500;
+  font-size: 17px;
+  text-decoration: none;
+  transition: all 0.3s;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+}
+
+.v4-btn-primary:hover { background: var(--v4-primary-hover); transform: translateY(-1px); }
+.v4-btn-white:hover { background: #f5f5f7; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+/* Trust Bar */
+.v4-trust-bar {
+  background: rgba(255, 255, 255, 0.85); /* Slightly more transparent */
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.05); /* Softer border */
+  padding: 12px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.03);
+}
+
+.v4-trust-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.v4-trust-person {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.v4-trust-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f5f5f7;
+  border: 1px solid var(--v4-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.v4-trust-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v4-avatar-placeholder {
+  line-height: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--v4-primary);
+  text-transform: uppercase;
+}
+
+.v4-trust-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.v4-trust-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--v4-text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.v4-trust-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--v4-text);
+}
+
+.v4-trust-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.v4-trust-btn {
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.v4-trust-btn--whatsapp { background: #25d366; color: white; }
+.v4-trust-btn--primary { background: var(--v4-primary); color: white; }
+
+/* Highlights Grid */
+.v4-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.v4-highlight-card {
+  background: var(--v4-bg);
+  padding: 40px;
+  border-radius: var(--v4-radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.3s;
+  border: 1px solid #f2f2f2;
+}
+
+.v4-highlight-card:hover { transform: scale(1.02); }
+
+.v4-highlight-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v4-highlight-icon { font-size: 40px; }
+.v4-highlight-label { font-size: 19px; font-weight: 600; margin-bottom: 8px; }
+.v4-highlight-value { font-size: 17px; color: var(--v4-text-muted); line-height: 1.47059; }
+
+/* Map Container */
+.v4-map-container {
+  background: white;
+  border-radius: var(--v4-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--v4-shadow-soft);
+  border: 1px solid var(--v4-border);
+}
+
+.v4-map-legend {
+  padding: 24px;
+  border-bottom: 1px solid var(--v4-border);
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+}
+
+.v4-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--v4-text-muted);
+}
+
+.v4-legend-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+.v4-legend-item .dot.available { background: #32d74b; } /* Apple Green */
+.v4-legend-item .dot.reserved { background: #ff9f0a; } /* Apple Orange */
+.v4-legend-item .dot.sold { background: #ff453a; } /* Apple Red */
+
+.v4-map-viewport {
+  background: #fafafa;
+  min-height: 500px;
+}
+
+/* Lots Grid */
+.v4-lots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.v4-lot-card {
+  background: white;
+  border-radius: var(--v4-radius-lg);
+  padding: 32px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #f2f2f2;
+  display: flex;
+  flex-direction: column;
+}
+
+.v4-lot-card:hover { 
+  box-shadow: var(--v4-shadow-elevated);
+  transform: translateY(-4px);
+}
+
+.v4-lot-card-header { 
+  display: flex; 
+  justify-content: space-between; 
+  margin-bottom: 24px; 
+}
+
+.v4-lot-code { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+.v4-lot-status { 
+  font-size: 12px; 
+  font-weight: 600; 
+  color: #32d74b;
+  background: rgba(50, 215, 75, 0.1);
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+
+.v4-lot-info-row { 
+  display: flex; 
+  gap: 16px; 
+  margin-bottom: 24px; 
+  color: var(--v4-text-muted); 
+  font-size: 15px;
+}
+
+.v4-lot-price { 
+  margin-top: auto;
+  border-top: 1px solid #f2f2f2;
+  padding-top: 24px;
+}
+
+.v4-price-value { font-size: 20px; font-weight: 600; color: var(--v4-text); }
+
+.v4-lot-card-footer { 
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--v4-primary);
+  font-weight: 500;
+}
+
+/* Conversion Card */
+.v4-conversion-card {
+  background: #f5f5f7;
+  border-radius: 30px;
+  padding: 100px 60px;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 60px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .v4-conversion-card { grid-template-columns: 1fr; padding: 40px 20px; }
+}
+
+.v4-conversion-badge {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--v4-primary);
+  margin-bottom: 16px;
+  display: block;
+}
+
+.v4-conversion-title { font-size: 48px; font-weight: 600; line-height: 1.1; margin-bottom: 20px; color: #1d1d1f; letter-spacing: -0.01em; }
+.v4-conversion-desc { font-size: 21px; color: #86868b; margin-bottom: 40px; line-height: 1.4; }
+
+.v4-active-realtor {
+  margin-top: 48px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-top: 40px;
+  border-top: 1px solid var(--v4-border);
+}
+
+.v4-realtor-avatar { 
+  width: 64px; 
+  height: 64px; 
+  border-radius: 50%; 
+  overflow: hidden; 
+  background: #f5f5f7; 
+  border: 1px solid var(--v4-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.v4-realtor-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v4-realtor-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.v4-realtor-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v4-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.v4-realtor-name { font-size: 21px; font-weight: 600; color: var(--v4-text); }
+
+/* Form Styles */
+.v4-conversion-form-wrapper { 
+  background: white; 
+  border-radius: 18px; 
+  padding: 40px; 
+  border: 1px solid #d2d2d7;
+  box-shadow: var(--v4-shadow-elevated);
+}
+
+.v4-form-title { font-size: 24px; font-weight: 600; margin-bottom: 32px; text-align: center; }
+
+.v4-form-group { margin-bottom: 24px; }
+.v4-form-group label { display: block; font-size: 12px; font-weight: 600; color: #86868b; margin-bottom: 8px; }
+.v4-form-group input, .v4-form-group select, .v4-form-group textarea {
+  width: 100%; padding: 14px 16px; border: 1px solid #d2d2d7; border-radius: 12px; font-family: inherit; font-size: 17px; color: #1d1d1f; background: #fafafa;
+}
+.v4-form-group input:focus { outline: none; border-color: var(--v4-primary); background: white; }
+
+.v4-btn-submit {
+  width: 100%; background: var(--v4-primary); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: background 0.2s;
+}
+.v4-btn-submit:hover { background: var(--v4-primary-hover); }
+
+/* Footer */
+.v4-footer { padding: 80px 0; border-top: 1px solid var(--v4-border); background: var(--v4-bg-alt); }
+.v4-footer-tenant { font-weight: 600; font-size: 17px; margin-bottom: 4px; display: block; }
+.v4-footer-copyright { font-size: 12px; color: var(--v4-text-muted); }
+
+/* Sticky mobile CTA */
+.v4-sticky-nav {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(29, 29, 31, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  padding: 8px;
+  border-radius: 100px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  width: 90%;
+  max-width: 340px;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) { .v4-sticky-nav { display: flex; } }
+
+.v4-nav-item {
+  color: white; text-decoration: none; font-size: 12px; font-weight: 600; padding: 10px 16px; border-radius: 100px;
+}
+.v4-nav-cta { background: var(--v4-primary); flex: 1; text-align: center; }
+
+/* Lightbox V4 */
+.v4-lightbox { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; }
+.v4-lightbox-btn { position: absolute; background: none; border: none; color: white; font-size: 40px; cursor: pointer; padding: 20px; opacity: 0.5; transition: 0.2s; }
+.v4-lightbox-btn:hover { opacity: 1; }
+.v4-prev { left: 20px; }
+.v4-next { right: 20px; }
+.v4-lightbox-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 32px; cursor: pointer; z-index: 2100; }
+.v4-lightbox-content { max-width: 90%; max-height: 80%; }
+.v4-lightbox-content img, .v4-lightbox-content video { max-width: 100%; max-height: 100%; border-radius: 12px; }
+
+@keyframes spinner { to { transform: rotate(360deg); } }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid rgba(0, 113, 227, 0.1); border-top-color: var(--v4-primary); border-radius: 50%; animation: spinner 1s linear infinite; }
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .v4-hero-content { padding-top: 60px; text-align: center; }
+  .v4-hero-stats { gap: 24px; }
+  .v4-stat-card { min-width: 100px; }
+  .v4-stat-value { font-size: 24px; }
+  .v4-btn-primary, .v4-btn-white { width: 100%; text-align: center; }
+}
 </style>
