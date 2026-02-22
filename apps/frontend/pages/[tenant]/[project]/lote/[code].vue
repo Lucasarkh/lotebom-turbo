@@ -39,11 +39,11 @@
               <span class="dot"></span>
               <span class="label">Início</span>
             </a>
-            <a href="#galeria" class="nav-dot" title="Galeria">
+            <a v-if="details?.medias?.length" href="#galeria" class="nav-dot" title="Galeria">
               <span class="dot"></span>
               <span class="label">Galeria</span>
             </a>
-            <a href="#ficha" class="nav-dot" title="Ficha Técnica">
+            <a v-if="details?.areaM2 || details?.frontage || details?.depth || details?.sideLeft || details?.sideRight || details?.slope || details?.notes" href="#ficha" class="nav-dot" title="Ficha Técnica">
               <span class="dot"></span>
               <span class="label">Ficha</span>
             </a>
@@ -69,7 +69,7 @@
                   <span class="q-val">{{ details.paymentConditions.setor }}</span>
                   <span class="q-unit">Setor / Quadra</span>
                 </div>
-                <div class="q-item">
+                <div class="q-item" v-if="details?.areaM2">
                   <span class="q-val">{{ details?.areaM2 }}</span>
                   <span class="q-unit">m² totais</span>
                 </div>
@@ -77,7 +77,7 @@
                   <span class="q-val">{{ details?.frontage }}</span>
                   <span class="q-unit">m frente</span>
                 </div>
-                <div class="q-item">
+                <div class="q-item" v-if="details?.slope">
                   <span class="q-val">{{ slopeLabel(details?.slope) }}</span>
                   <span class="q-unit">topografia</span>
                 </div>
@@ -85,13 +85,13 @@
             </section>
 
             <!-- Gallery -->
-            <section id="galeria" class="section-v4">
+            <section v-if="details?.medias?.length" id="galeria" class="section-v4">
               <div class="section-title-v4">
                 <h2>Galeria de Imagens</h2>
                 <div class="title-line"></div>
               </div>
               
-              <div v-if="details?.medias?.length" class="gallery-v4">
+              <div class="gallery-v4">
                 <div v-for="(m, i) in details.medias" :key="i" 
                   class="gallery-tile" 
                   :class="{ 'main': i === 0 }"
@@ -103,21 +103,17 @@
                   </div>
                 </div>
               </div>
-              <div v-else class="gallery-placeholder-v4">
-                <div class="p-icon">🗺️</div>
-                <p>Veja a localização no mapa principal do loteamento.</p>
-              </div>
             </section>
 
             <!-- Specification -->
-            <section id="ficha" class="section-v4">
+            <section v-if="details?.areaM2 || details?.frontage || details?.depth || details?.sideLeft || details?.sideRight || details?.slope || details?.notes" id="ficha" class="section-v4">
               <div class="section-title-v4">
                 <h2>Ficha Técnica Detalhada</h2>
                 <div class="title-line"></div>
               </div>
               
               <div class="specs-grid-v4">
-                <div class="spec-entry">
+                <div class="spec-entry" v-if="details?.areaM2">
                   <span class="s-label">Área Escriturada</span>
                   <span class="s-value">{{ details?.areaM2 }} m²</span>
                 </div>
@@ -137,7 +133,7 @@
                   <span class="s-label">Lateral Direita</span>
                   <span class="s-value">{{ details.sideRight }} m</span>
                 </div>
-                <div class="spec-entry">
+                <div class="spec-entry" v-if="details?.slope">
                   <span class="s-label">Perfil do Terreno</span>
                   <span class="s-value">{{ slopeLabel(details?.slope) }}</span>
                 </div>
@@ -332,7 +328,7 @@
         <!-- Footer / Others -->
         <footer class="footer-v4">
           <div class="page-container-v4">
-            <div class="other-assets-v4">
+            <div v-if="otherLots.length" class="other-assets-v4">
               <div class="assets-header-v4">
                 <h3>Outras Oportunidades</h3>
                 <NuxtLink :to="projectUrl">Ver todos no mapa</NuxtLink>
