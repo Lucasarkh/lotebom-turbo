@@ -21,6 +21,11 @@ export class UpdatePanoramaDto {
   @IsEnum(PanoramaProjection)
   projection?: PanoramaProjection;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+
   @ApiPropertyOptional({ minimum: 0, maximum: 359 })
   @IsOptional()
   @IsNumber()

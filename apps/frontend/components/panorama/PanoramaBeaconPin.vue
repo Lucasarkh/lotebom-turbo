@@ -42,10 +42,11 @@ function onMouseDown(e: MouseEvent) {
 }
 </script>
 
-<style scoped>
+<style>
 .panorama-beacon {
   position: absolute;
-  transform: translate(-50%, -100%);
+  /* Ancoragem exata: transformamos apenas X para centralizar */
+  transform: translateX(-50%);
   cursor: pointer;
   z-index: 10;
   pointer-events: auto;
@@ -53,7 +54,7 @@ function onMouseDown(e: MouseEvent) {
 }
 
 .panorama-beacon:hover {
-  transform: translate(-50%, -100%) scale(1.05);
+  transform: translateX(-50%) scale(1.05);
   z-index: 20;
 }
 
@@ -63,56 +64,66 @@ function onMouseDown(e: MouseEvent) {
   opacity: 0.85;
 }
 
-/* Stem line */
-.beacon-stem {
+/* Stem line - O pé do beacon agora é a âncora */
+.panorama-beacon .beacon-stem, 
+.pnlm-hotspot-base.custom-hotspot .beacon-stem {
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 2px;
-  height: 28px;
+  width: 2.5px;
+  height: 40px;
   background: white;
-  opacity: 0.9;
+  opacity: 1;
 }
 
-/* Label box */
-.beacon-label {
-  position: relative;
-  bottom: 28px;
+/* Label box - Posicionada acima da haste */
+.panorama-beacon .beacon-label, 
+.pnlm-hotspot-base.custom-hotspot .beacon-label {
+  position: absolute;
+  bottom: 40px;
   white-space: nowrap;
-  padding: 6px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-size: 1.1rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1.3;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   transform: translateX(-50%);
   left: 50%;
+  background: rgba(45, 65, 60, 0.95);
+  color: #fff;
+  backdrop-filter: blur(8px);
 }
 
 /* ─── Styles ──────────────────────────────────────────── */
 
 .beacon-style--default .beacon-label {
-  background: rgba(59, 92, 63, 0.88);
-  color: #fff;
-  backdrop-filter: blur(6px);
+  background: rgba(45, 65, 60, 0.95);
 }
 
 .beacon-style--highlight .beacon-label {
   background: rgba(184, 134, 11, 0.92);
-  color: #fff;
-  backdrop-filter: blur(6px);
 }
 
 .beacon-style--subtle .beacon-label {
   background: rgba(255, 255, 255, 0.75);
   color: #1e293b;
-  backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,0.4);
 }
 
 .beacon-style--subtle .beacon-stem {
   background: rgba(255, 255, 255, 0.6);
+}
+
+/* Pannellum specific fixes: Garantindo que o hotspot não tenha tamanho próprio */
+.pnlm-hotspot-base.custom-hotspot {
+  background: none !important;
+  cursor: pointer;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  border: none !important;
 }
 </style>

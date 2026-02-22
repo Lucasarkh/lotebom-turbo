@@ -37,7 +37,7 @@ export class PanoramaService {
 
   async findByProjectPublic(projectId: string) {
     return this.prisma.panorama.findMany({
-      where: { projectId },
+      where: { projectId, published: true },
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
         beacons: {
@@ -73,6 +73,7 @@ export class PanoramaService {
         projectId,
         title: dto.title ?? 'Vista Geral',
         projection: dto.projection ?? 'FLAT',
+        published: dto.published ?? false,
         sunPathAngleDeg: dto.sunPathAngleDeg ?? 0,
         sunPathLabelEnabled: dto.sunPathLabelEnabled ?? true,
         showImplantation: dto.showImplantation ?? false,

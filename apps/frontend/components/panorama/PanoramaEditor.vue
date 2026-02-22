@@ -21,6 +21,15 @@
 
       <div class="pe-toolbar-right">
         <template v-if="activePanorama">
+          <!-- Status badge -->
+          <span
+            class="badge"
+            :class="activePanorama.published ? 'badge-success' : 'badge-warning'"
+            style="margin-right: 8px;"
+          >
+            {{ activePanorama.published ? 'Publicado' : 'Rascunho' }}
+          </span>
+
           <!-- Mode buttons -->
           <button
             class="btn btn-sm"
@@ -296,19 +305,9 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Ângulo do sol ({{ settingsForm.sunPathAngleDeg }}°)</label>
-            <input
-              type="range"
-              min="0"
-              max="359"
-              v-model.number="settingsForm.sunPathAngleDeg"
-              class="form-range"
-            />
-          </div>
-          <div class="form-group">
             <label class="pe-checkbox-label">
-              <input type="checkbox" v-model="settingsForm.sunPathLabelEnabled" />
-              Mostrar trajetória solar
+              <input type="checkbox" v-model="settingsForm.published" />
+              Publicado (visível no site público)
             </label>
           </div>
           <div class="form-group">
@@ -683,8 +682,7 @@ const implantationFile = ref<File | null>(null)
 const settingsForm = reactive({
   title: '',
   projection: 'FLAT' as PanoramaProjection,
-  sunPathAngleDeg: 0,
-  sunPathLabelEnabled: true,
+  published: true,
   showImplantation: false,
 })
 
@@ -692,8 +690,7 @@ watch(showSettings, (v) => {
   if (v && activePanorama.value) {
     settingsForm.title = activePanorama.value.title
     settingsForm.projection = activePanorama.value.projection ?? 'FLAT'
-    settingsForm.sunPathAngleDeg = activePanorama.value.sunPathAngleDeg
-    settingsForm.sunPathLabelEnabled = activePanorama.value.sunPathLabelEnabled
+    settingsForm.published = activePanorama.value.published ?? true
     settingsForm.showImplantation = activePanorama.value.showImplantation
   }
 })
@@ -721,8 +718,7 @@ async function doSaveSettings() {
     const updated = await api.updatePanorama(activePanorama.value.id, {
       title: settingsForm.title,
       projection: settingsForm.projection,
-      sunPathAngleDeg: settingsForm.sunPathAngleDeg,
-      sunPathLabelEnabled: settingsForm.sunPathLabelEnabled,
+      published: settingsForm.published,
       showImplantation: settingsForm.showImplantation,
       implantationUrl: implantationUrl ?? undefined,
     })

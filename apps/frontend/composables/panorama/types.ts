@@ -35,6 +35,7 @@ export interface Panorama {
   projectId: string
   title: string
   projection: PanoramaProjection
+  published: boolean
   sunPathAngleDeg: number
   sunPathLabelEnabled: boolean
   showImplantation: boolean

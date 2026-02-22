@@ -37,30 +37,6 @@
           @click="onBeaconClick"
         />
       </div>
-
-      <!-- Sun path line -->
-      <svg
-        v-if="panorama.sunPathLabelEnabled && scale < 1.8"
-        class="panorama-sun-svg"
-        :viewBox="`0 0 ${imgW} ${imgH}`"
-        preserveAspectRatio="none"
-      >
-        <line
-          :x1="sunLine.x1" :y1="sunLine.y1"
-          :x2="sunLine.x2" :y2="sunLine.y2"
-          stroke="rgba(255,220,80,0.55)" stroke-width="2" stroke-dasharray="8,6"
-        />
-        <g :transform="`translate(${sunLine.x1},${sunLine.y1})`">
-          <text x="0" y="-8" fill="#FFD700" font-size="14" font-weight="600" text-anchor="middle">
-            ☀↓
-          </text>
-        </g>
-        <g :transform="`translate(${sunLine.x2},${sunLine.y2})`">
-          <text x="0" y="-8" fill="#FFD700" font-size="14" font-weight="600" text-anchor="middle">
-            ☀↑
-          </text>
-        </g>
-      </svg>
     </div>
 
     <!-- 360 Viewer (EQUIRECTANGULAR projection) -->
@@ -85,28 +61,6 @@
         </div>
       </div>
 
-      <!-- Top right: navigation -->
-      <div class="panorama-top-right">
-        <button
-          v-if="panorama.beacons.length > 0"
-          class="panorama-ui-btn"
-          @click="showBeacons = !showBeacons"
-        >
-          {{ showBeacons ? '🔵' : '⚪' }} Beacons
-        </button>
-      </div>
-
-      <!-- Bottom left: sun compass -->
-      <div class="panorama-bottom-left">
-        <div v-if="panorama.sunPathLabelEnabled" class="sun-compass">
-          <div class="sun-compass-labels">
-            <span>☀↓</span>
-            <span class="sun-compass-ns">N<br/>|<br/>S</span>
-            <span>☀↑</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Bottom center: timeline -->
       <div v-if="panorama.snapshots.length > 1" class="panorama-bottom-center">
         <PanoramaTimeline
@@ -125,13 +79,6 @@
         >
           {{ showImplantation ? '🏗️ Ocultar Implantação' : '🏗️ Mostrar Implantação' }}
         </button>
-      </div>
-
-      <!-- Zoom controls -->
-      <div class="panorama-zoom-controls">
-        <button class="panorama-zoom-btn" @click="zoomIn" title="Zoom in">+</button>
-        <button class="panorama-zoom-btn" @click="zoomOut" title="Zoom out">−</button>
-        <button class="panorama-zoom-btn panorama-zoom-btn--reset" @click="resetView" title="Resetar">⌂</button>
       </div>
     </div>
   </div>
@@ -201,31 +148,61 @@ function initPannellum() {
     type: 'equirectangular',
     panorama: activeSnapshot.value.imageUrl,
     autoLoad: true,
-    showControls: true,
+    showControls: false,
     compass: false,
     hotSpots: props.panorama.beacons.map(b => ({
       pitch: (b.y - 0.5) * -180,
       yaw: (b.x - 0.5) * 360,
-      type: 'info',
-      text: b.title,
+      cssClass: 'custom-hotspot',
+      createTooltipFunc: (hotSpotDiv: HTMLElement) => {
+        hotSpotDiv.classList.add('custom-hotspot');
+        hotSpotDiv.classList.add(`beacon-style--${b.style}`);
+        
+        const stem = document.createElement('div');
+        stem.className = 'beacon-stem';
+        
+        const label = document.createElement('div');
+        label.className = 'beacon-label';
+        
+        const text = document.createElement('span');
+        text.className = 'beacon-text';
+        text.innerText = b.title;
+        
+        label.appendChild(text);
+        hotSpotDiv.appendChild(stem);
+        hotSpotDiv.appendChild(label);
+      },
       clickHandlerFunc: () => emit('beaconClick', b)
     }))
   })
 
   // Listener for beacon placement in 360 view
-  if (props.editable) {
-    pviewer.on('mousedown', (e: MouseEvent) => {
-      // Optional: you could check if the user is just panning or clicking
-      const [pitch, yaw] = pviewer.mouseEventToCoords(e)
-      emit('viewClick', {
-        x: (yaw / 360) + 0.5,
-        y: (pitch / -180) + 0.5
-      })
-    })
-  }
+  const viewerContainer = pviewer.getContainer()
+  viewerContainer.addEventListener('mousedown', (e: MouseEvent) => {
+    if (!props.editable) return
+    if (e.button !== 0) return
+    
+    const startX = e.clientX
+    const startY = e.clientY
+    
+    const onUp = (upEv: MouseEvent) => {
+      viewerContainer.removeEventListener('mouseup', onUp)
+      
+      const dx = Math.abs(upEv.clientX - startX)
+      const dy = Math.abs(upEv.clientY - startY)
+      if (dx < 10 && dy < 10) {
+        const [pitch, yaw] = pviewer.mouseEventToCoords(upEv)
+        emit('viewClick', {
+          x: (yaw / 360) + 0.5,
+          y: (pitch / -180) + 0.5
+        })
+      }
+    }
+    viewerContainer.addEventListener('mouseup', onUp)
+  })
 }
 
-watch([activeSnapshot, () => props.panorama.projection], () => {
+watch([activeSnapshot, () => props.panorama.projection, () => props.panorama.beacons.length, () => props.editable], () => {
   if (props.panorama.projection === 'EQUIRECTANGULAR') {
     setTimeout(initPannellum, 500)
   }
@@ -599,18 +576,20 @@ function onBeaconClick(beacon: PanoramaBeacon) {
   padding: 8px 18px;
   border: none;
   border-radius: 8px;
-  background: rgba(59, 92, 63, 0.8);
+  background: rgba(45, 65, 60, 0.85);
   color: #fff;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: background 0.15s ease;
+  backdrop-filter: blur(8px);
+  transition: all 0.15s ease;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .panorama-ui-btn:hover {
-  background: rgba(59, 92, 63, 0.95);
+  background: rgba(45, 65, 60, 1);
+  transform: translateY(-1px);
 }
 
 /* ─── Zoom Controls ───────────────────────────────── */
