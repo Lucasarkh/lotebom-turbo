@@ -19,6 +19,12 @@
           >+ Adicionar</button>
           <button
             class="pme__mode-btn"
+            :class="{ active: editorMode === 'batch' }"
+            @click="editorMode = 'batch'"
+            :disabled="!plantMap"
+          >✨ Em lote</button>
+          <button
+            class="pme__mode-btn"
             :class="{ active: editorMode === 'move' }"
             @click="editorMode = 'move'"
             :disabled="!plantMap"
@@ -159,12 +165,38 @@
                 @touchstart.stop.prevent="startDragTouch(hs.id, $event)"
               />
             </g>
+
+            <!-- Batch markers -->
+            <g v-if="editorMode === 'batch'">
+              <g v-for="(m, i) in batchMarkers" :key="i" class="pme__batch-marker">
+                <circle
+                  :cx="m.x * imgW"
+                  :cy="m.y * imgH"
+                  :r="8 / canvasScale"
+                  fill="#3b82f6"
+                  stroke="white"
+                  stroke-width="1.5"
+                />
+                <text
+                  :x="m.x * imgW"
+                  :y="m.y * imgH - (12 / canvasScale)"
+                  text-anchor="middle"
+                  fill="#3b82f6"
+                  font-weight="bold"
+                  :font-size="12 / canvasScale"
+                  style="paint-order: stroke; stroke: #fff; stroke-width: 3px;"
+                >#{{ i + 1 }}</text>
+              </g>
+            </g>
           </svg>
         </div>
 
         <!-- Toast hint -->
         <div v-if="editorMode === 'add'" class="pme__canvas-hint">
           Clique na planta para adicionar um hotspot
+        </div>
+        <div v-if="editorMode === 'batch'" class="pme__canvas-hint">
+          Marque os pontos para criação em lote
         </div>
         <div v-if="editorMode === 'move'" class="pme__canvas-hint">
           Arraste um hotspot para reposicioná-lo
@@ -173,46 +205,102 @@
 
       <!-- Right: hotspot list -->
       <div class="pme__sidebar">
-        <div class="pme__sidebar-header">
-          <span>Hotspots ({{ localHotspots.length }})</span>
-          <button
-            v-if="selectedHotspotId"
-            class="pme__btn pme__btn--sm pme__btn--danger"
-            @click="deleteSelectedHotspot"
-          >Excluir</button>
-        </div>
+        <!-- Batch UI -->
+        <div v-if="editorMode === 'batch'" class="pme__batch-sidebar">
+          <div class="pme__sidebar-header">
+            <span>✨ Criação em Lote ({{ batchMarkers.length }})</span>
+            <button class="pme__btn pme__btn--sm" @click="clearBatch" :disabled="!batchMarkers.length">Limpar</button>
+          </div>
+          
+          <div class="pme__batch-form">
+            <p class="pme__batch-hint">
+              1. Clique na planta para marcar vários terrenos.<br/>
+              2. Defina o padrão de nome (ex: L-01).<br/>
+              3. Clique em "Gerar" para criar tudo.
+            </p>
 
-        <div v-if="!localHotspots.length" class="pme__sidebar-empty">
-          Nenhum hotspot ainda.<br/>Use o modo "+ Adicionar".
-        </div>
-
-        <div class="pme__hs-list">
-          <div
-            v-for="hs in localHotspots"
-            :key="hs.id"
-            class="pme__hs-item"
-            :class="{ selected: selectedHotspotId === hs.id }"
-            @click="selectHotspot(hs.id)"
-          >
-            <span class="pme__hs-icon">{{ typeIcon(hs.type) }}</span>
-            <div class="pme__hs-info">
-              <span class="pme__hs-title">{{ hs.label || hs.title }}</span>
-              <span class="pme__hs-type">{{ typeLabel(hs.type) }}</span>
+            <div class="pme__field">
+              <label class="pme__label">Padrão de nome:</label>
+              <input v-model="batchConfig.pattern" class="pme__input" placeholder="Ex: L-01" />
             </div>
-            <div class="pme__hs-actions">
-              <button
-                class="pme__hs-action-btn"
-                @click.stop="duplicateHotspot(hs)"
-                title="Duplicar"
-              >👯</button>
-              <button
-                class="pme__hs-action-btn"
-                @click.stop="editHotspot(hs)"
-                title="Editar"
-              >✏️</button>
+
+            <div class="pme__field">
+              <label class="pme__label">Tipo:</label>
+              <select v-model="batchConfig.type" class="pme__input pme__select">
+                <option value="LOTE">Lote</option>
+                <option value="QUADRA">Quadra</option>
+                <option value="PORTARIA">Portaria</option>
+                <option value="AREA_COMUM">Área Comum</option>
+                <option value="OUTRO">Outro</option>
+              </select>
+            </div>
+
+            <div class="pme__field--row">
+              <label class="pme__toggle-label">
+                <input type="checkbox" v-model="batchConfig.labelEnabled" />
+                <span>Exibir rótulos nos pinos</span>
+              </label>
+            </div>
+
+            <button
+              class="pme__btn pme__btn--primary pme__btn--full"
+              :disabled="!batchMarkers.length || savingBatch"
+              @click="generateBatch"
+            >
+              {{ savingBatch ? '⏳ Gerando...' : `📦 Gerar ${batchMarkers.length} Hotspots` }}
+            </button>
+          </div>
+
+          <div v-if="batchMarkers.length" class="pme__batch-list">
+            <div v-for="(m, i) in batchMarkers" :key="i" class="pme__batch-item">
+              <span>Ponto #{{ i + 1 }}</span>
+              <button class="pme__batch-del" @click="batchMarkers.splice(i, 1)">✕</button>
             </div>
           </div>
         </div>
+
+        <template v-else>
+          <div class="pme__sidebar-header">
+            <span>Hotspots ({{ localHotspots.length }})</span>
+            <button
+              v-if="selectedHotspotId"
+              class="pme__btn pme__btn--sm pme__btn--danger"
+              @click="deleteSelectedHotspot"
+            >Excluir</button>
+          </div>
+
+          <div v-if="!localHotspots.length" class="pme__sidebar-empty">
+            Nenhum hotspot ainda.<br/>Use o modo "+ Adicionar".
+          </div>
+
+          <div class="pme__hs-list">
+            <div
+              v-for="hs in localHotspots"
+              :key="hs.id"
+              class="pme__hs-item"
+              :class="{ selected: selectedHotspotId === hs.id }"
+              @click="selectHotspot(hs.id)"
+            >
+              <span class="pme__hs-icon">{{ typeIcon(hs.type) }}</span>
+              <div class="pme__hs-info">
+                <span class="pme__hs-title">{{ hs.label || hs.title }}</span>
+                <span class="pme__hs-type">{{ typeLabel(hs.type) }}</span>
+              </div>
+              <div class="pme__hs-actions">
+                <button
+                  class="pme__hs-action-btn"
+                  @click.stop="duplicateHotspot(hs)"
+                  title="Duplicar"
+                >👯</button>
+                <button
+                  class="pme__hs-action-btn"
+                  @click.stop="editHotspot(hs)"
+                  title="Editar"
+                >✏️</button>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -234,7 +322,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import type { PlantMap, PlantHotspot, CreateHotspotPayload } from '~/composables/plantMap/types'
 import { HOTSPOT_TYPE_ICONS, HOTSPOT_TYPE_LABELS } from '~/composables/plantMap/types'
 import { usePlantMapApi } from '~/composables/plantMap/usePlantMapApi'
@@ -287,11 +375,18 @@ onMounted(() => {
 })
 
 // ── UI state ──────────────────────────────────────────────
-const editorMode = ref<'view' | 'add' | 'move'>('view')
+const editorMode = ref<'view' | 'add' | 'move' | 'batch'>('view')
 const selectedHotspotId = ref<string | null>(null)
+const batchMarkers = ref<{ x: number; y: number }[]>([])
+const batchConfig = reactive({
+  pattern: 'L-01',
+  type: 'LOTE' as PlantHotspot['type'],
+  labelEnabled: true,
+})
 const saving = ref(false)
 const uploadingImage = ref(false)
 const savingHotspot = ref(false)
+const savingBatch = ref(false)
 const hotspotError = ref<string | null>(null)
 const errorMsg = ref<string | null>(null)
 const successMsg = ref<string | null>(null)
@@ -532,11 +627,17 @@ const commitHotspotPosition = async (id: string) => {
   }
 }
 
-// ── Canvas click (add mode) ─────────────────────────────────
+// ── Canvas click (add/batch mode) ─────────────────────────
 const handleCanvasClick = (e: MouseEvent) => {
-  if (editorMode.value !== 'add') return
+  if (editorMode.value === 'view' || editorMode.value === 'move') return
   if (isDraggingHotspot) return
   const { x, y } = clientToNormalized(e.clientX, e.clientY)
+
+  if (editorMode.value === 'batch') {
+    batchMarkers.value.push({ x, y })
+    return
+  }
+
   newHotspotPos.x = x
   newHotspotPos.y = y
   editingHotspot.value = null
@@ -606,6 +707,77 @@ const handleHotspotSave = async (payload: CreateHotspotPayload) => {
     hotspotError.value = e.message ?? 'Erro ao salvar hotspot.'
   } finally {
     savingHotspot.value = false
+  }
+}
+
+// ── Batch Generation ──────────────────────────────────────
+const clearBatch = () => {
+  batchMarkers.value = []
+}
+
+const generateBatch = async () => {
+  if (!plantMap.value || !batchMarkers.value.length) return
+  savingBatch.value = true
+  
+  try {
+    // Parse pattern e.g., "L-01" or "Q-001"
+    const match = batchConfig.pattern.match(/^(.+?)(\d+)$/)
+    let prefix = batchConfig.pattern
+    let nextNum = 1
+    let padding = 0
+
+    if (match) {
+      prefix = match[1]
+      padding = match[2].length
+      nextNum = parseInt(match[2], 10)
+    }
+
+    // Check existing hotspots to continue sequence if needed
+    const existingNums = localHotspots.value
+      .map(hs => {
+        const hsLabel = hs.label || hs.title
+        const m = hsLabel.match(new RegExp(`^${prefix}(\\d+)$`))
+        return m ? parseInt(m[1], 10) : null
+      })
+      .filter((n): n is number => n !== null)
+
+    if (existingNums.length > 0) {
+      const maxExisting = Math.max(...existingNums)
+      nextNum = Math.max(nextNum, maxExisting + 1)
+    }
+
+    // Create hotspots one by one
+    const newHotspots: PlantHotspot[] = []
+    for (const marker of batchMarkers.value) {
+      const currentLabel = `${prefix}${nextNum.toString().padStart(padding, '0')}`
+      
+      const payload: CreateHotspotPayload = {
+        type: batchConfig.type,
+        title: currentLabel,
+        label: currentLabel,
+        description: '',
+        x: marker.x,
+        y: marker.y,
+        labelEnabled: batchConfig.labelEnabled,
+        labelOffsetX: 0,
+        labelOffsetY: 0,
+        loteStatus: 'AVAILABLE',
+        metaJson: {},
+      }
+
+      const created = await api.createHotspot(plantMap.value.id, payload)
+      newHotspots.push(created)
+      nextNum++
+    }
+
+    localHotspots.value.push(...newHotspots)
+    showSuccess(`${newHotspots.length} hotspots criados com sucesso!`)
+    clearBatch()
+    editorMode.value = 'view'
+  } catch (e: any) {
+    showError(e.message ?? 'Erro ao gerar hotspots em lote.')
+  } finally {
+    savingBatch.value = false
   }
 }
 
@@ -935,6 +1107,98 @@ const showError = (msg: string) => {
 .pme__hs-action-btn:hover {
   opacity: 1;
   background: #334155;
+}
+
+/* ── Batch Sidebar & Forms ────────────────────────────── */
+.pme__batch-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.pme__batch-form {
+  padding: 16px;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pme__batch-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin: 0;
+  background: #0f172a;
+  padding: 8px;
+  border-radius: 6px;
+}
+.pme__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pme__field--row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+.pme__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pme__input {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+  color: #f1f5f9 !important;
+  font-size: 13px !important;
+  transition: border-color 0.2s;
+}
+.pme__input:focus {
+  outline: none;
+  border-color: #3b82f6 !important;
+}
+.pme__select {
+  appearance: listbox;
+  cursor: pointer;
+}
+.pme__batch-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pme__batch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1e293b;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+.pme__batch-del {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.pme__batch-del:hover {
+  background: #334155;
+  color: #ef4444;
+}
+
+.pme__btn--full {
+  width: 100%;
 }
 
 /* ── Buttons ────────────────────────────────────────────── */
