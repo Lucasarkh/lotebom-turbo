@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import type { PlantHotspot } from '~/composables/plantMap/types'
 import {
   HOTSPOT_TYPE_COLORS,
@@ -87,6 +87,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const route = useRoute()
 
 const badgeColor = computed(() =>
   props.hotspot ? HOTSPOT_TYPE_COLORS[props.hotspot.type] : '#6b7280',
@@ -107,8 +108,23 @@ const statusLabel = computed(() =>
 const ctaLink = computed(() => {
   if (!props.hotspot) return null
   const { linkType, linkId, linkUrl } = props.hotspot
-  if (linkType === 'LOTE_PAGE' && linkId) return `/lotes/${linkId}`
-  if (linkType === 'PROJECT_PAGE' && linkId) return `/${linkId}`
+  
+  // Se estivermos na página pública, o link deve ser relativo ao projeto
+  const tenant = route.params.tenant as string
+  const project = route.params.project as string
+  
+  if (linkType === 'LOTE_PAGE' && linkId) {
+    if (tenant && project) {
+      return `/${tenant}/${project}/lote/${linkId}`
+    }
+    return `/lotes/${linkId}`
+  }
+  
+  if (linkType === 'PROJECT_PAGE' && linkId) {
+    if (tenant) return `/${tenant}/${linkId}`
+    return `/${linkId}`
+  }
+  
   if (linkType === 'CUSTOM_URL' && linkUrl) return linkUrl
   return null
 })

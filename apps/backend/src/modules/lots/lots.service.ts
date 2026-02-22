@@ -33,9 +33,9 @@ export class LotsService {
   ) {
     // Validate that mapElement exists and belongs to tenant/project
     const el = await this.prisma.mapElement.findFirst({
-      where: { id: mapElementId, tenantId, projectId, type: 'LOT' },
+      where: { id: mapElementId, tenantId, projectId },
     });
-    if (!el) throw new NotFoundException('MapElement LOT not found');
+    if (!el) throw new NotFoundException('MapElement not found');
 
     return this.prisma.lotDetails.upsert({
       where: { mapElementId },

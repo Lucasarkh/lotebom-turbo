@@ -56,6 +56,7 @@
 </template>
 
 <script setup>
+// Force refresh project list page
 import { ref, watch, onMounted } from 'vue'
 
 const { fetchApi } = useApi()

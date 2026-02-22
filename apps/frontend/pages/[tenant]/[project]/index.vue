@@ -44,7 +44,7 @@
             </div>
 
             <div class="v4-hero-actions">
-              <a href="#mapa" class="v4-btn-primary">Ver Mapa Interativo</a>
+              <a href="#planta" class="v4-btn-primary">Ver Planta Interativa</a>
               <a href="#contato" class="v4-btn-white">Solicitar informações</a>
             </div>
           </div>
@@ -95,45 +95,6 @@
                 <p v-if="h.value" class="v4-highlight-value">{{ h.value }}</p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Interactive Map -->
-      <section class="v4-section v4-section-alt" id="mapa">
-        <div class="v4-container">
-          <div class="v4-section-header center">
-            <h2 class="v4-section-title">Escolha sua unidade no mapa</h2>
-            <p class="v4-section-subtitle">Mapa atualizado em tempo real. Clique no lote para ver mais informações.</p>
-          </div>
-
-          <div class="v4-map-container">
-            <div class="v4-map-legend">
-              <div class="v4-legend-item"><span class="dot available"></span> Disponível</div>
-              <div class="v4-legend-item"><span class="dot reserved"></span> Reservado</div>
-              <div class="v4-legend-item"><span class="dot sold"></span> Vendido</div>
-            </div>
-            
-            <ClientOnly>
-              <div class="v4-map-viewport">
-                <PublicSvgMap
-                  v-if="project.mapData"
-                  :mapData="project.mapData"
-                  @interest="openLeadForm($event)"
-                />
-                <PublicInteractiveMap
-                  v-else
-                  :elements="project.mapElements || []"
-                  @interest="openLeadForm($event)"
-                />
-              </div>
-              <template #fallback>
-                <div class="v4-map-loading">
-                  <div class="loading-spinner"></div>
-                  <p>Carregando mapa interativo...</p>
-                </div>
-              </template>
-            </ClientOnly>
           </div>
         </div>
       </section>
@@ -336,7 +297,6 @@
 
       <!-- Sticky mobile CTA -->
       <nav class="v4-sticky-nav">
-        <a href="#mapa" class="v4-nav-item">Mapa</a>
         <a v-if="plantMap" href="#planta" class="v4-nav-item">Planta</a>
         <a v-if="unifiedAvailableLots.length" href="#lotes" class="v4-nav-item">Unidades</a>
         <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>

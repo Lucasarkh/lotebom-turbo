@@ -56,32 +56,17 @@
             <div v-if="form.type === 'LOTE'" class="pm-field">
               <label class="pm-label">Status do lote</label>
               <select v-model="form.loteStatus" class="pm-input pm-select">
-                <option value="">Não definido</option>
                 <option value="AVAILABLE">Disponível</option>
                 <option value="RESERVED">Reservado</option>
                 <option value="SOLD">Vendido</option>
               </select>
             </div>
 
-            <!-- Link -->
-            <div class="pm-field">
-              <label class="pm-label">Link/Ação ao clicar</label>
-              <select v-model="form.linkType" class="pm-input pm-select">
-                <option value="NONE">Sem link</option>
-                <option value="LOTE_PAGE">Página do lote</option>
-                <option value="PROJECT_PAGE">Página do projeto</option>
-                <option value="CUSTOM_URL">URL customizada</option>
-              </select>
-            </div>
-
-            <div v-if="form.linkType === 'LOTE_PAGE' || form.linkType === 'PROJECT_PAGE'" class="pm-field">
-              <label class="pm-label">ID do recurso *</label>
-              <input v-model="form.linkId" class="pm-input" placeholder="ID do lote ou projeto" />
-            </div>
-
-            <div v-if="form.linkType === 'CUSTOM_URL'" class="pm-field">
-              <label class="pm-label">URL *</label>
-              <input v-model="form.linkUrl" class="pm-input" type="url" placeholder="https://..." />
+            <!-- Hint about automatic creation -->
+            <div v-if="!isEdit" class="pm-field">
+              <p class="pm-hint">
+                ✨ Qualquer ponto criado na planta terá automaticamente uma página pública e ficha técnica para edição de fotos, preços e detalhes.
+              </p>
             </div>
 
             <!-- Label offsets -->
@@ -268,6 +253,13 @@ const HOTSPOT_TYPES = Object.entries(HOTSPOT_TYPE_LABELS).map(([value, label]) =
 
 .pm-modal__body {
   padding: 16px 20px;
+}
+
+.pm-hint {
+  font-size: 11px;
+  color: #10b981;
+  margin-top: 4px;
+  font-weight: 600;
 }
 
 .pm-modal__footer {

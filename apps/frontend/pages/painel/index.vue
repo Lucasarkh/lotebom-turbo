@@ -89,6 +89,7 @@
 </template>
 
 <script setup>
+// Force refresh dashboard
 import { ref, onMounted } from 'vue'
 
 const { fetchApi } = useApi()

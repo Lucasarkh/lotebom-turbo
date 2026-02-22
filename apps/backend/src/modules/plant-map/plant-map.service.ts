@@ -129,12 +129,48 @@ export class PlantMapService {
   ) {
     const plantMap = await this._findMap(tenantId, plantMapId);
 
-    return this.prisma.plantHotspot.create({
-      data: {
-        tenantId,
-        plantMapId: plantMap.id,
-        ...dto,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      let linkId = dto.linkId;
+      let linkType = dto.linkType || 'NONE';
+
+      // Se não tiver link vinculado, cria automaticamente um MapElement e LotDetails
+      // permitindo que qualquer ponto (Lote, Quadra, etc) tenha sua própria ficha/página
+      if (!linkId || linkId === '') {
+        const mapElement = await tx.mapElement.create({
+          data: {
+            tenantId,
+            projectId: plantMap.projectId,
+            type: dto.type === 'LOTE' ? 'LOT' : 'LABEL',
+            name: dto.title,
+            code: dto.label || dto.title,
+            geometryType: 'POLYGON', // Mantido para compatibilidade com o sistema de páginas
+            geometryJson: { points: [] },
+            styleJson: {},
+          },
+        });
+
+        await tx.lotDetails.create({
+          data: {
+            tenantId,
+            projectId: plantMap.projectId,
+            mapElementId: mapElement.id,
+            status: dto.loteStatus || 'AVAILABLE',
+          },
+        });
+
+        linkId = mapElement.id;
+        linkType = 'LOTE_PAGE';
+      }
+
+      return tx.plantHotspot.create({
+        data: {
+          tenantId,
+          plantMapId: plantMap.id,
+          ...dto,
+          linkId,
+          linkType,
+        },
+      });
     });
   }
 
@@ -145,9 +181,31 @@ export class PlantMapService {
   ) {
     const hotspot = await this._findHotspot(tenantId, hotspotId);
 
-    return this.prisma.plantHotspot.update({
-      where: { id: hotspot.id },
-      data: dto,
+    return this.prisma.$transaction(async (tx) => {
+      const updatedHotspot = await tx.plantHotspot.update({
+        where: { id: hotspot.id },
+        data: dto,
+      });
+
+      // Sincroniza status se houver um lote vinculado
+      if (
+        updatedHotspot.type === 'LOTE' &&
+        updatedHotspot.linkType === 'LOTE_PAGE' &&
+        updatedHotspot.linkId &&
+        dto.loteStatus
+      ) {
+        await tx.lotDetails.updateMany({
+          where: {
+            mapElementId: updatedHotspot.linkId,
+            tenantId,
+          },
+          data: {
+            status: dto.loteStatus,
+          },
+        });
+      }
+
+      return updatedHotspot;
     });
   }
 

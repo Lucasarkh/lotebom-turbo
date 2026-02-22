@@ -65,9 +65,9 @@
         <button v-for="t in tabs" :key="t.key" class="filter-btn" :class="{ active: activeTab === t.key }" @click="activeTab = t.key">
           {{ t.label }}
         </button>
-        <!-- Planta Interativa — separate page -->
-        <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="filter-btn" style="text-decoration: none;">
-          🗺️ Planta
+        <!-- Planta Interativa — main visual tool -->
+        <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="filter-btn active" style="text-decoration: none; background: var(--primary); color: white;">
+          🗺️ Planta Interativa
         </NuxtLink>
       </div>
 
@@ -98,63 +98,40 @@
         </div>
       </div>
 
-      <!-- Tab: Mapa -->
-      <div v-if="activeTab === 'map'">
-        <div class="card">
-          <div class="flex justify-between items-center" style="margin-bottom: var(--space-4);">
-            <h3>Elementos do Mapa ({{ mapElements.length }})</h3>
-            <NuxtLink v-if="authStore.canEdit" :to="`/painel/projetos/${project.id}/editor`" class="btn btn-primary btn-sm">
-              Abrir Editor
-            </NuxtLink>
-          </div>
-          <div v-if="mapElements.length === 0" class="empty-state" style="padding: var(--space-8);">
-            <p>Nenhum elemento ainda. Use o Editor de Mapa para criar.</p>
-          </div>
-          <div v-else class="table-wrapper">
-            <table>
-              <thead><tr><th>Código</th><th>Nome</th><th>Tipo</th><th>Geometria</th></tr></thead>
-              <tbody>
-                <tr v-for="el in mapElements" :key="el.id">
-                  <td><code>{{ el.code || '—' }}</code></td>
-                  <td>{{ el.name || '—' }}</td>
-                  <td><span class="badge badge-neutral">{{ el.type }}</span></td>
-                  <td>{{ el.geometryType }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <!-- Debug info -->
-          <div v-if="authStore.isAdmin" style="margin-top: 10px; font-size: 0.7rem; color: #999;">
-            ID do Projeto: {{ project.id }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: Lotes -->
+      <!-- Tab: Lotes (Elementos do Projeto) -->
       <div v-if="activeTab === 'lots'">
         <div v-if="lots.length === 0" class="empty-state">
-          <h3>Nenhum detalhe de lote criado</h3>
-          <p>Crie elementos do tipo LOT no editor e adicione detalhes aqui.</p>
+          <h3>Nenhum elemento criado na planta</h3>
+          <p>Adicione pontos (hotspots) na Planta Interativa para que apareçam aqui para edição detalhada.</p>
+          <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="btn btn-primary" style="margin-top: 10px;">Ir para a Planta</NuxtLink>
         </div>
         <div v-else class="table-wrapper">
+          <div style="padding: 12px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; color: #92400e; display: flex; align-items: center; gap: 8px;">
+            <span>ℹ️</span>
+            Todos os pontos criados na Planta Interativa aparecem nesta lista para que você adicione fotos, preços e dados do contrato.
+          </div>
           <table>
             <thead>
-              <tr><th>Código</th><th>Nome</th><th>Status</th><th>Preço</th><th>Área</th><th>Frente</th><th>Fundo</th><th>Inclinação</th><th v-if="authStore.canEdit">Ações</th></tr>
+              <tr><th>Código</th><th>Nome</th><th>Tipo</th><th>Status</th><th>Preço</th><th>Área</th><th>Inclinação</th><th v-if="authStore.canEdit">Ações</th></tr>
             </thead>
             <tbody>
               <tr v-for="l in lots" :key="l.id">
                 <td><code>{{ l.mapElement?.code || '—' }}</code></td>
                 <td>{{ l.mapElement?.name || '—' }}</td>
                 <td>
+                  <span class="badge badge-neutral" style="font-size: 10px;">{{ l.mapElement?.type === 'LOT' ? 'Lote' : 'Ponto' }}</span>
+                </td>
+                <td>
                   <span class="badge" :class="lotBadge(l.status)">{{ lotLabel(l.status) }}</span>
                 </td>
                 <td>{{ l.price ? `R$ ${l.price.toLocaleString('pt-BR')}` : '—' }}</td>
                 <td>{{ l.areaM2 ? `${l.areaM2} m²` : '—' }}</td>
-                <td>{{ l.frontage ? `${l.frontage} m` : '—' }}</td>
-                <td>{{ l.depth ? `${l.depth} m` : '—' }}</td>
                 <td>{{ slopeLabel(l.slope) }}</td>
                 <td v-if="authStore.canEdit">
-                  <button class="btn btn-sm btn-secondary" @click="openEditLot(l)">Editar</button>
+                  <div class="flex gap-2">
+                     <button class="btn btn-sm btn-secondary" @click="openEditLot(l)">Editar Dados</button>
+                     <a v-if="publicUrl && l.mapElement" :href="`/${project.tenant.slug}/${project.slug}/lote/${l.mapElement.code}`" target="_blank" class="btn btn-sm btn-outline">Ver Página</a>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -611,7 +588,7 @@ const project = ref<any>(null)
 const mapElements = ref<any[]>([])
 const lots = ref<any[]>([])
 const media = ref<any[]>([])
-const activeTab = ref('map')
+const activeTab = ref('lots')
 const uploadingBanner = ref(false)
 const uploadingMedia = ref(false)
 const savingSettings = ref(false)
@@ -893,7 +870,6 @@ const copyLink = (text) => {
 
 // ── Tabs ─────────────────────────────────────────────────
 const tabs = [
-  { key: 'map', label: 'Mapa' },
   { key: 'lots', label: 'Lotes' },
   { key: 'public', label: 'Pág. Pública' },
   { key: 'corretores', label: 'Corretores' },
