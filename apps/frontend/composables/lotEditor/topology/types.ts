@@ -63,6 +63,7 @@ export interface BlockGrid {
 
 export interface Block {
   id: BlockId
+  label?: string
   /** Ordered list of edge IDs that form the boundary cycle */
   edgeCycle: EdgeId[]
   /** Computed polygon of the block interior (shrunk from road centerlines) */

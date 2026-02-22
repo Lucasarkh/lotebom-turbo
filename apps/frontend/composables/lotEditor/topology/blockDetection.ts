@@ -121,6 +121,7 @@ export function detectBlocks(
 
     blocks.push({
       id: genBlockId(),
+      label: `Q${blocks.length + 1}`,
       edgeCycle: cycle,
       polygon: finalPolygon,
       sides: finalSides,
@@ -151,6 +152,11 @@ export function detectBlocks(
       }
     }
     blocks.splice(maxIdx, 1)
+
+    // Re-label blocks after splicing to keep numbering sequential
+    for (let i = 0; i < blocks.length; i++) {
+      blocks[i]!.label = `Q${i + 1}`
+    }
   }
 
   return blocks

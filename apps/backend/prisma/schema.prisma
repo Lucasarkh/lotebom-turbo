@@ -147,7 +147,7 @@ model MapElement {
   lotDetails LotDetails?
   leads      Lead[]
 
-  @@unique([tenantId, projectId, code])
+  @@index([tenantId, projectId, code])
   @@index([tenantId, projectId])
 }
 

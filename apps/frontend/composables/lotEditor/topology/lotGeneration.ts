@@ -325,6 +325,10 @@ export function generateLots(
         lotPoly.reverse()
       }
 
+      const lotLabel = block.label
+        ? `${block.label} - Lote ${lots.length + 1}`
+        : `Lote ${lots.length + 1}`
+
       lots.push({
         id: genLotId(),
         blockId: block.id,
@@ -335,7 +339,7 @@ export function generateLots(
         price: null,
         conditions: '',
         notes: '',
-        label: `Lote ${lots.length + 1}`,
+        label: lotLabel,
       })
     }
   }

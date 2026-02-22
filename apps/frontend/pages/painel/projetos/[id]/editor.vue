@@ -154,10 +154,14 @@ function handleKeydown(e: KeyboardEvent) {
   if (key === 'v') store.selectTool('select')
   if (key === 'r' && !e.ctrlKey) store.selectTool('road')
   if (key === 'm') store.selectTool('wall')
-  if (key === 'c') store.selectTool('roundabout')
-  if (key === 'p') store.selectTool('roundabout')
+  if (key === 'c' || key === 'p') store.selectTool('roundabout')
   if (key === 'b') store.selectTool('prefab_block')
+  if (key === 'l') store.selectTool('lot_draw')
   if (key === 't') store.selectTool('text')
+  
+  if (key === 'g') store.selectTool('natural_green')
+  if (key === 'i') store.selectTool('natural_institutional')
+  if (key === 'j') store.selectTool('natural_lake')
   
   if (key === 'escape') {
     if (store.activeTool !== 'select') store.selectTool('select')

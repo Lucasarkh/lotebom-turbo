@@ -745,6 +745,10 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
     const id = uid('lot')
     const area = polygonArea(lotDrawPoints.value)
     
+    const label = block.label
+      ? `${block.label} - Lote ${block.lots.length + 1}`
+      : `Lote ${block.lots.length + 1}`
+
     // Add lot
     const newLot: Lot = {
       id,
@@ -756,7 +760,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       price: null,
       conditions: '',
       notes: '',
-      label: `Lote ${block.lots.length + 1}`,
+      label,
     }
     
     lots.set(id, newLot)
@@ -914,7 +918,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       price: null,
       conditions: lot.conditions,
       notes: '',
-      label: `Lote ${block.lots.length + 1}`,
+      label: block.label ? `${block.label} - Lote ${block.lots.length + 1}` : `Lote ${block.lots.length + 1}`,
     }
     lots.set(newId, newLot)
     block.lots.push(newId)
@@ -959,7 +963,7 @@ export const useLoteamentoStore = defineStore('loteamento', () => {
       price: null,
       conditions: '',
       notes: '',
-      label: `Lote ${block.lots.length + 1}`,
+      label: block.label ? `${block.label} - Lote ${block.lots.length + 1}` : `Lote ${block.lots.length + 1}`,
     }
     lots.set(newId, newLot)
     block.lots.push(newId)
