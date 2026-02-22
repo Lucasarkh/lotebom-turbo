@@ -33,6 +33,12 @@
       </div>
 
       <div class="pme__toolbar-right">
+        <!-- Beacons toggle -->
+        <label v-if="plantMap" class="pme__toggle-label">
+          <input type="checkbox" v-model="showBeacons" />
+          📍 Exibir pontos
+        </label>
+
         <!-- Sun path toggle -->
         <label v-if="plantMap" class="pme__toggle-label">
           <input type="checkbox" :checked="localSunPath.enabled" @change="toggleSunPath" />
@@ -73,7 +79,7 @@
       <span class="pme__sun-value">{{ localSunPath.angleDeg }}°</span>
       <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
         <input type="checkbox" v-model="localSunPath.showLabels" />
-        Mostrar N/S/E/O
+        Mostrar Nasce/Põe
       </label>
     </div>
 
@@ -135,35 +141,38 @@
               :show-labels="localSunPath.showLabels"
               :width="imgW"
               :height="imgH"
+              :scale="scale"
             />
 
             <!-- Hotspot pins -->
-            <g
-              v-for="hs in localHotspots"
-              :key="hs.id"
-              class="pme__hs-group"
-            >
-              <HotspotPin
-                :hotspot="hs"
-                :container-width="imgW"
-                :container-height="imgH"
-                :selected="selectedHotspotId === hs.id"
-                :show-label="true"
-                :pin-radius="Math.min(30, Math.max(8, 14 / canvasScale))"
-                @click="selectHotspot(hs.id)"
-              />
+            <g v-if="showBeacons">
+              <g
+                v-for="hs in localHotspots"
+                :key="hs.id"
+                class="pme__hs-group"
+              >
+                <HotspotPin
+                  :hotspot="hs"
+                  :container-width="imgW"
+                  :container-height="imgH"
+                  :selected="selectedHotspotId === hs.id"
+                  :show-label="true"
+                  :pin-radius="Math.min(30, Math.max(8, 14 / canvasScale))"
+                  @click="selectHotspot(hs.id)"
+                />
 
-              <!-- Drag handle (invisible larger hit area in move mode) -->
-              <circle
-                v-if="editorMode === 'move'"
-                :cx="hs.x * imgW"
-                :cy="hs.y * imgH"
-                :r="22 / canvasScale"
-                fill="transparent"
-                class="pme__drag-handle"
-                @mousedown.stop="startDrag(hs.id, $event)"
-                @touchstart.stop.prevent="startDragTouch(hs.id, $event)"
-              />
+                <!-- Drag handle (invisible larger hit area in move mode) -->
+                <circle
+                  v-if="editorMode === 'move'"
+                  :cx="hs.x * imgW"
+                  :cy="hs.y * imgH"
+                  :r="22 / canvasScale"
+                  fill="transparent"
+                  class="pme__drag-handle"
+                  @mousedown.stop="startDrag(hs.id, $event)"
+                  @touchstart.stop.prevent="startDragTouch(hs.id, $event)"
+                />
+              </g>
             </g>
 
             <!-- Batch markers -->
@@ -375,6 +384,7 @@ onMounted(() => {
 })
 
 // ── UI state ──────────────────────────────────────────────
+const showBeacons = ref(true)
 const editorMode = ref<'view' | 'add' | 'move' | 'batch'>('view')
 const selectedHotspotId = ref<string | null>(null)
 const batchMarkers = ref<{ x: number; y: number }[]>([])

@@ -47,32 +47,43 @@
           :show-labels="plantMap.sunPathLabelEnabled"
           :width="imgNaturalW"
           :height="imgNaturalH"
+          :scale="transform.scale"
         />
 
         <!-- Hotspot pins -->
-        <HotspotPin
-          v-for="hs in plantMap.hotspots"
-          :key="hs.id"
-          :hotspot="hs"
-          :container-width="imgNaturalW"
-          :container-height="imgNaturalH"
-          :selected="selectedHotspot?.id === hs.id"
-          :show-label="showLabels"
-          :pin-radius="pinRadiusForScale"
-          @click="openPopover($event, hs)"
-        />
+        <template v-if="showBeacons">
+          <HotspotPin
+            v-for="hs in plantMap.hotspots"
+            :key="hs.id"
+            :hotspot="hs"
+            :container-width="imgNaturalW"
+            :container-height="imgNaturalH"
+            :selected="selectedHotspot?.id === hs.id"
+            :show-label="showLabels"
+            :pin-radius="pinRadiusForScale"
+            @click="openPopover($event, hs)"
+          />
+        </template>
       </svg>
     </div>
 
     <!-- Zoom controls -->
     <div class="plant-map-viewer__controls" v-if="showControls">
+      <button 
+        class="plant-map-viewer__btn" 
+        :style="{ opacity: showBeacons ? 1 : 0.4 }"
+        :title="showBeacons ? 'Esconder pontos' : 'Mostrar pontos'"
+        @click="showBeacons = !showBeacons"
+      >
+        📍
+      </button>
       <button class="plant-map-viewer__btn" aria-label="Zoom in" @click="zoomIn">＋</button>
       <button class="plant-map-viewer__btn" aria-label="Zoom out" @click="zoomOut">－</button>
       <button class="plant-map-viewer__btn" aria-label="Resetar zoom" title="Resetar" @click="resetTransform">⌂</button>
     </div>
 
     <!-- Legend -->
-    <div v-if="showLegend" class="plant-map-viewer__legend">
+    <div v-if="showLegend && showBeacons" class="plant-map-viewer__legend">
       <div class="legend-item">
         <span class="legend-dot" style="background:#22c55e"></span> Disponível
       </div>
@@ -204,6 +215,12 @@ const pinRadiusForScale = computed(() =>
 
 // ── Popover ───────────────────────────────────────────────
 const selectedHotspot = ref<PlantHotspot | null>(null)
+const showBeacons = ref(true)
+
+watch(showBeacons, (val) => {
+  if (!val) selectedHotspot.value = null
+})
+
 const popoverAnchor = ref({ x: 0, y: 0 })
 
 const openPopover = (e: MouseEvent | PlantHotspot, hotspot?: PlantHotspot) => {
