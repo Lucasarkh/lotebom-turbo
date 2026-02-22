@@ -187,22 +187,33 @@ export class PlantMapService {
         data: dto,
       });
 
-      // Sincroniza status se houver um lote vinculado
+      // Synchronize linked MapElement and LotDetails
       if (
-        updatedHotspot.type === 'LOTE' &&
         updatedHotspot.linkType === 'LOTE_PAGE' &&
-        updatedHotspot.linkId &&
-        dto.loteStatus
+        updatedHotspot.linkId
       ) {
-        await tx.lotDetails.updateMany({
-          where: {
-            mapElementId: updatedHotspot.linkId,
-            tenantId,
-          },
+        // 1. Update MapElement (Name, Code/Label, Type)
+        await tx.mapElement.update({
+          where: { id: updatedHotspot.linkId },
           data: {
-            status: dto.loteStatus,
-          },
-        });
+            name: updatedHotspot.title,
+            code: updatedHotspot.label || updatedHotspot.title,
+            type: updatedHotspot.type === 'LOTE' ? 'LOT' : 'LABEL',
+          }
+        }).catch(() => null); // Ignore if already deleted or non-existent
+
+        // 2. Update LotDetails (Status)
+        if (dto.loteStatus) {
+          await tx.lotDetails.updateMany({
+            where: {
+              mapElementId: updatedHotspot.linkId,
+              tenantId,
+            },
+            data: {
+              status: dto.loteStatus,
+            },
+          });
+        }
       }
 
       return updatedHotspot;
@@ -211,7 +222,29 @@ export class PlantMapService {
 
   async removeHotspot(tenantId: string, hotspotId: string) {
     const hotspot = await this._findHotspot(tenantId, hotspotId);
-    return this.prisma.plantHotspot.delete({ where: { id: hotspot.id } });
+    
+    return this.prisma.$transaction(async (tx) => {
+      // If we have a linked LOTE_PAGE, we delete it (MapElement and LotDetails will cascade if correctly configured, otherwise we do it manually)
+      if (hotspot.linkType === 'LOTE_PAGE' && hotspot.linkId) {
+        // Find if any other hotspot is using this same linkId (unlikely with auto-creation, but safe)
+        const others = await tx.plantHotspot.count({
+          where: { linkId: hotspot.linkId, id: { not: hotspotId } }
+        });
+
+        if (others === 0) {
+          // Delete its lot details first (prismacolumn cascade usually handles, but let's be explicit)
+          await tx.lotDetails.deleteMany({
+            where: { mapElementId: hotspot.linkId }
+          }).catch(() => {});
+
+          await tx.mapElement.delete({
+            where: { id: hotspot.linkId }
+          }).catch(() => {});
+        }
+      }
+
+      return tx.plantHotspot.delete({ where: { id: hotspot.id } });
+    });
   }
 
   // ── Helpers ────────────────────────────────────────────

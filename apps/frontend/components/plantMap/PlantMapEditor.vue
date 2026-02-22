@@ -199,11 +199,18 @@
               <span class="pme__hs-title">{{ hs.label || hs.title }}</span>
               <span class="pme__hs-type">{{ typeLabel(hs.type) }}</span>
             </div>
-            <button
-              class="pme__hs-edit"
-              @click.stop="editHotspot(hs)"
-              title="Editar"
-            >✏️</button>
+            <div class="pme__hs-actions">
+              <button
+                class="pme__hs-action-btn"
+                @click.stop="duplicateHotspot(hs)"
+                title="Duplicar"
+              >👯</button>
+              <button
+                class="pme__hs-action-btn"
+                @click.stop="editHotspot(hs)"
+                title="Editar"
+              >✏️</button>
+            </div>
           </div>
         </div>
       </div>
@@ -259,6 +266,11 @@ const localSunPath = reactive({
 watch(
   () => props.initialPlantMap,
   (pm) => {
+    // Only reset image load state if URL changed
+    if (pm?.imageUrl !== plantMap.value?.imageUrl) {
+      imgLoaded.value = false
+    }
+    
     plantMap.value = pm ?? null
     localHotspots.value = [...(pm?.hotspots ?? [])]
     localSunPath.enabled = pm?.sunPathEnabled ?? false
@@ -266,6 +278,13 @@ watch(
     localSunPath.showLabels = pm?.sunPathLabelEnabled ?? true
   },
 )
+
+onMounted(() => {
+  // Try to fit on mount if image might be cached
+  if (imgLoaded.value) {
+    fitImageToContainer()
+  }
+})
 
 // ── UI state ──────────────────────────────────────────────
 const editorMode = ref<'view' | 'add' | 'move'>('view')
@@ -308,6 +327,66 @@ const onImageLoad = (e: Event) => {
   imgW.value = img.naturalWidth || plantMap.value?.imageWidth || 1200
   imgH.value = img.naturalHeight || plantMap.value?.imageHeight || 800
   imgLoaded.value = true
+  
+  // Fit to container on load
+  nextTick(() => {
+    fitImageToContainer()
+  })
+}
+
+const fitImageToContainer = () => {
+  if (!canvasWrapEl.value || !imgW.value || !imgH.value) return
+  
+  const rect = canvasWrapEl.value.getBoundingClientRect()
+  const cw = rect.width
+  const ch = rect.height
+  
+  if (cw <= 0 || ch <= 0) return
+
+  // Calculate scale to "cover" the container
+  const scaleX = cw / imgW.value
+  const scaleY = ch / imgH.value
+  const newScale = Math.max(scaleX, scaleY)
+  
+  scale.value = newScale
+  
+  // Center it
+  offset.value = {
+    x: (cw - imgW.value * newScale) / 2,
+    y: (ch - imgH.value * newScale) / 2
+  }
+}
+
+// ── Constraints ───────────────────────────────────────────
+const clampOffset = (newScale: number, newX: number, newY: number) => {
+  if (!canvasWrapEl.value) return { x: newX, y: newY }
+  const rect = canvasWrapEl.value.getBoundingClientRect()
+  const cw = rect.width
+  const ch = rect.height
+  
+  const contentW = imgW.value * newScale
+  const contentH = imgH.value * newScale
+  
+  let x = newX
+  let y = newY
+  
+  // If image is wider than container, don't let edges leave
+  if (contentW > cw) {
+    x = Math.min(0, Math.max(cw - contentW, x))
+  } else {
+    // Keep centered
+    x = (cw - contentW) / 2
+  }
+  
+  // If image is taller than container
+  if (contentH > ch) {
+    y = Math.min(0, Math.max(ch - contentH, y))
+  } else {
+    // Keep centered
+    y = (ch - contentH) / 2
+  }
+  
+  return { x, y }
 }
 
 // ── Wheel zoom ─────────────────────────────────────────────
@@ -317,13 +396,18 @@ const onWheel = (e: WheelEvent) => {
   const rect = canvasWrapEl.value!.getBoundingClientRect()
   const ox = e.clientX - rect.left
   const oy = e.clientY - rect.top
-  const delta = e.deltaY > 0 ? -0.1 : 0.1
-  const newScale = Math.min(8, Math.max(0.2, scale.value + delta * scale.value))
+  const delta = e.deltaY > 0 ? -0.15 : 0.15
+  
+  // Calculate minimum scale to keep image covering area
+  const minS = Math.max(rect.width / imgW.value, rect.height / imgH.value)
+  const newScale = Math.min(10, Math.max(minS * 0.8, scale.value + delta * scale.value))
+  
   const ratio = newScale / scale.value
-  offset.value = {
-    x: ox - ratio * (ox - offset.value.x),
-    y: oy - ratio * (oy - offset.value.y),
-  }
+  const newX = ox - ratio * (ox - offset.value.x)
+  const newY = oy - ratio * (oy - offset.value.y)
+  
+  const clamped = clampOffset(newScale, newX, newY)
+  offset.value = clamped
   scale.value = newScale
 }
 
@@ -339,10 +423,9 @@ const onMouseDown = (e: MouseEvent) => {
 
 const onMouseMove = (e: MouseEvent) => {
   if (isPanning) {
-    offset.value = {
-      x: panOffsetStart.x + e.clientX - panStart.x,
-      y: panOffsetStart.y + e.clientY - panStart.y,
-    }
+    const newX = panOffsetStart.x + e.clientX - panStart.x
+    const newY = panOffsetStart.y + e.clientY - panStart.y
+    offset.value = clampOffset(scale.value, newX, newY)
     return
   }
   if (isDraggingHotspot && draggingHotspotId) {
@@ -386,18 +469,17 @@ const onTouchMove = (e: TouchEvent) => {
     const rect = canvasWrapEl.value!.getBoundingClientRect()
     const cx = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left
     const cy = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
-    const newScale = Math.min(8, Math.max(0.2, scale.value + delta * scale.value))
+    const minS = Math.max(rect.width / imgW.value, rect.height / imgH.value)
+    const newScale = Math.min(10, Math.max(minS * 0.8, scale.value + delta * scale.value))
     const ratio = newScale / scale.value
-    offset.value = {
-      x: cx - ratio * (cx - offset.value.x),
-      y: cy - ratio * (cy - offset.value.y),
-    }
+    const newX = cx - ratio * (cx - offset.value.x)
+    const newY = cy - ratio * (cy - offset.value.y)
+    offset.value = clampOffset(newScale, newX, newY)
     scale.value = newScale
   } else if (e.touches.length === 1 && isPanning) {
-    offset.value = {
-      x: panOffsetStart.x + e.touches[0].clientX - panStart.x,
-      y: panOffsetStart.y + e.touches[0].clientY - panStart.y,
-    }
+    const newX = panOffsetStart.x + e.touches[0].clientX - panStart.x
+    const newY = panOffsetStart.y + e.touches[0].clientY - panStart.y
+    offset.value = clampOffset(scale.value, newX, newY)
   }
 }
 
@@ -471,6 +553,33 @@ const editHotspot = (hs: PlantHotspot) => {
   editingHotspot.value = hs
   hotspotError.value = null
   showModal.value = true
+}
+
+const duplicateHotspot = async (hs: PlantHotspot) => {
+  if (!plantMap.value) return
+  savingHotspot.value = true
+  try {
+    const payload: CreateHotspotPayload = {
+      type: hs.type,
+      title: `${hs.title} (cópia)`,
+      description: hs.description || '',
+      x: Math.min(0.99, hs.x + 0.02),
+      y: Math.min(0.99, hs.y + 0.02),
+      label: hs.label ? `${hs.label} (cópia)` : '',
+      labelEnabled: hs.labelEnabled,
+      labelOffsetX: hs.labelOffsetX,
+      labelOffsetY: hs.labelOffsetY,
+      loteStatus: hs.loteStatus || 'AVAILABLE',
+      metaJson: hs.metaJson || {},
+    }
+    const created = await api.createHotspot(plantMap.value.id, payload)
+    localHotspots.value.push(created)
+    showSuccess('Hotspot duplicado!')
+  } catch (e: any) {
+    showError(e.message ?? 'Erro ao duplicar hotspot.')
+  } finally {
+    savingHotspot.value = false
+  }
 }
 
 // ── Hotspot CRUD ───────────────────────────────────────────
@@ -806,17 +915,27 @@ const showError = (msg: string) => {
   text-overflow: ellipsis;
 }
 .pme__hs-type { font-size: 11px; color: #64748b; }
-.pme__hs-edit {
+.pme__hs-actions {
+  display: flex;
+  gap: 4px;
+}
+.pme__hs-action-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 14px;
-  padding: 2px 4px;
+  padding: 4px 6px;
   border-radius: 4px;
   opacity: 0.5;
-  transition: opacity 0.15s;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.pme__hs-edit:hover { opacity: 1; background: #334155; }
+.pme__hs-action-btn:hover {
+  opacity: 1;
+  background: #334155;
+}
 
 /* ── Buttons ────────────────────────────────────────────── */
 .pme__btn {

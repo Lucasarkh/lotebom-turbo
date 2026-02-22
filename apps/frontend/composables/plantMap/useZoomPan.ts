@@ -20,7 +20,7 @@ interface UseZoomPanOptions {
  * Coordinates returned/consumed use the content-element space.
  */
 export const useZoomPan = (options: UseZoomPanOptions = {}) => {
-  const { minScale = 0.5, maxScale = 6, scaleFactor = 0.1 } = options
+  const { minScale = 0.5, maxScale = 8, scaleFactor = 0.15 } = options
 
   const transform = ref<Transform>({ x: 0, y: 0, scale: 1 })
   const containerEl = ref<HTMLElement | null>(null)
@@ -35,24 +35,86 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
   let lastPinchDist = 0
 
   // ── Helpers ────────────────────────────────────────────
-  const clampScale = (s: number) => Math.min(maxScale, Math.max(minScale, s))
+  const clampScale = (s: number) => {
+    if (!containerEl.value || !contentEl.value) return Math.min(maxScale, Math.max(minScale, s))
+    
+    // Calculate minimum scale to "cover" or at least fill viewport
+    const cw = containerEl.value.clientWidth
+    const ch = containerEl.value.clientHeight
+    const iw = contentEl.value.offsetWidth || 1
+    const ih = contentEl.value.offsetHeight || 1
+    
+    const minS = Math.max(cw / iw, ch / ih)
+    return Math.min(maxScale, Math.max(minS * 0.9, s)) // allowing slight bounce out of 90%
+  }
+
+  const clampOffset = (s: number, x: number, y: number) => {
+    if (!containerEl.value || !contentEl.value) return { x, y }
+    const cw = containerEl.value.clientWidth
+    const ch = containerEl.value.clientHeight
+    const iw = contentEl.value.offsetWidth || 1
+    const ih = contentEl.value.offsetHeight || 1
+    
+    const contentW = iw * s
+    const contentH = ih * s
+    let newX = x
+    let newY = y
+
+    if (contentW > cw) {
+      newX = Math.min(0, Math.max(cw - contentW, newX))
+    } else {
+      newX = (cw - contentW) / 2
+    }
+
+    if (contentH > ch) {
+      newY = Math.min(0, Math.max(ch - contentH, newY))
+    } else {
+      newY = (ch - contentH) / 2
+    }
+
+    return { x: newX, y: newY }
+  }
 
   const applyZoom = (delta: number, originX: number, originY: number) => {
     const { x, y, scale } = transform.value
     const newScale = clampScale(scale + delta * scale)
     const ratio = newScale / scale
+    
+    const newX = originX - ratio * (originX - x)
+    const newY = originY - ratio * (originY - y)
 
+    const clamped = clampOffset(newScale, newX, newY)
     transform.value = {
       scale: newScale,
-      x: originX - ratio * (originX - x),
-      y: originY - ratio * (originY - y),
+      ...clamped
     }
+  }
+
+  // ── Fitting ────────────────────────────────────────────
+  const fitToContainer = () => {
+    if (!containerEl.value || !contentEl.value) return
+    const cw = containerEl.value.clientWidth
+    const ch = containerEl.value.clientHeight
+    const iw = contentEl.value.offsetWidth || 1
+    const ih = contentEl.value.offsetHeight || 1
+    
+    if (cw <= 0 || ch <= 0 || iw <= 0 || ih <= 0) return
+
+    const scaleX = cw / iw
+    const scaleY = ch / ih
+    const newScale = Math.max(scaleX, scaleY)
+    
+    const x = (cw - iw * newScale) / 2
+    const y = (ch - ih * newScale) / 2
+    
+    transform.value = { scale: newScale, x, y }
   }
 
   // ── Wheel zoom ─────────────────────────────────────────
   const onWheel = (e: WheelEvent) => {
     e.preventDefault()
-    const rect = containerEl.value!.getBoundingClientRect()
+    if (!containerEl.value) return
+    const rect = containerEl.value.getBoundingClientRect()
     const ox = e.clientX - rect.left
     const oy = e.clientY - rect.top
     const delta = e.deltaY > 0 ? -scaleFactor : scaleFactor
@@ -65,17 +127,20 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
     isPanning = true
     panStart = { x: e.clientX, y: e.clientY }
     transformAtPanStart = { ...transform.value }
-    ;(e.currentTarget as HTMLElement).style.cursor = 'grabbing'
+    if (containerEl.value) containerEl.value.style.cursor = 'grabbing'
   }
 
   const onMouseMove = (e: MouseEvent) => {
     if (!isPanning) return
     const dx = e.clientX - panStart.x
     const dy = e.clientY - panStart.y
+    const newX = transformAtPanStart.x + dx
+    const newY = transformAtPanStart.y + dy
+    
+    const clamped = clampOffset(transform.value.scale, newX, newY)
     transform.value = {
       ...transform.value,
-      x: transformAtPanStart.x + dx,
-      y: transformAtPanStart.y + dy,
+      ...clamped
     }
   }
 
@@ -104,10 +169,12 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
     if (e.touches.length === 1 && isPanning) {
       const dx = e.touches[0].clientX - panStart.x
       const dy = e.touches[0].clientY - panStart.y
+      const newX = transformAtPanStart.x + dx
+      const newY = transformAtPanStart.y + dy
+      const clamped = clampOffset(transform.value.scale, newX, newY)
       transform.value = {
         ...transform.value,
-        x: transformAtPanStart.x + dx,
-        y: transformAtPanStart.y + dy,
+        ...clamped
       }
     } else if (e.touches.length === 2) {
       const dist = getTouchDist(e.touches[0], e.touches[1])
@@ -127,7 +194,7 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
 
   // ── Reset ──────────────────────────────────────────────
   const resetTransform = () => {
-    transform.value = { x: 0, y: 0, scale: 1 }
+    fitToContainer()
   }
 
   // ── Lifecycle ──────────────────────────────────────────
@@ -164,6 +231,9 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
     containerEl,
     contentEl,
     resetTransform,
+    fitToContainer,
+    clampOffset,
+    clampScale,
     /** Programmatically re-attach events (call after containerEl is set) */
     attach,
     detach,

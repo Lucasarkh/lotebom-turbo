@@ -115,7 +115,16 @@ const props = withDefaults(defineProps<{
 })
 
 // ── Zoom/pan ─────────────────────────────────────────────
-const { transform, containerEl, contentEl, resetTransform, attach } = useZoomPan({
+const {
+  transform,
+  containerEl,
+  contentEl,
+  resetTransform,
+  fitToContainer,
+  clampOffset,
+  clampScale,
+  attach
+} = useZoomPan({
   minScale: 0.3,
   maxScale: 8,
 })
@@ -126,15 +135,36 @@ onMounted(() => {
 })
 
 const zoomIn = () => {
-  transform.value = {
-    ...transform.value,
-    scale: Math.min(8, transform.value.scale * 1.25),
+  if (!containerEl.value) return
+  const rect = containerEl.value.getBoundingClientRect()
+  const cx = rect.width / 2
+  const cy = rect.height / 2
+  const currentS = transform.value.scale
+  const newS = clampScale(currentS * 1.3)
+  const ratio = newS / currentS
+  const newX = cx - ratio * (cx - transform.value.x)
+  const newY = cy - ratio * (cy - transform.value.y)
+  
+  transform.value = { 
+    scale: newS,
+    ...clampOffset(newS, newX, newY)
   }
 }
+
 const zoomOut = () => {
+  if (!containerEl.value) return
+  const rect = containerEl.value.getBoundingClientRect()
+  const cx = rect.width / 2
+  const cy = rect.height / 2
+  const currentS = transform.value.scale
+  const newS = clampScale(currentS / 1.3)
+  const ratio = newS / currentS
+  const newX = cx - ratio * (cx - transform.value.x)
+  const newY = cy - ratio * (cy - transform.value.y)
+  
   transform.value = {
-    ...transform.value,
-    scale: Math.max(0.3, transform.value.scale * 0.8),
+    scale: newS,
+    ...clampOffset(newS, newX, newY)
   }
 }
 
@@ -154,6 +184,10 @@ const onImageLoad = (e: Event) => {
   imgNaturalW.value = img.naturalWidth || props.plantMap.imageWidth || 1200
   imgNaturalH.value = img.naturalHeight || props.plantMap.imageHeight || 800
   imageLoaded.value = true
+  
+  nextTick(() => {
+    fitToContainer()
+  })
 }
 
 // ── Labels ────────────────────────────────────────────────

@@ -455,7 +455,8 @@ const lot = computed(() => {
   const PPM = mapData?.pixelsPerMeter || (project.value as any).pixelsPerMeter || 10
 
   // 1. Try relational mapElements (standard way)
-  const fromElements = (project.value as any).mapElements?.find((e: any) => e.type === 'LOT' && (e.code === lotCode || e.id === lotCode))
+  // Match by code or ID, and allow any type that has pages (standardized for Hotspots)
+  const fromElements = (project.value as any).mapElements?.find((e: any) => (e.code === lotCode || e.id === lotCode))
   if (fromElements) return fromElements
 
   // 2. Try JSON mapData (flexible way)
