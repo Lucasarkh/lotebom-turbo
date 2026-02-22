@@ -24,7 +24,7 @@
         <div class="flex items-center gap-3">
           <a
             v-if="project.status === 'PUBLISHED'"
-            :href="`/p/${tenantSlug}/${project.slug}`"
+            :href="`/${tenantSlug}/${project.slug}`"
             target="_blank"
             class="btn btn-sm btn-outline"
             style="display: flex; align-items: center; gap: 8px; border-radius: 64px; padding-left: 16px; padding-right: 16px; border-color: var(--primary-50); background: var(--primary-light); color: var(--primary);"
@@ -787,7 +787,7 @@ const removeLotMedia = async (id) => {
 }
 
 const tenantSlug = computed(() => project.value?.tenant?.slug || '')
-const publicUrl = computed(() => tenantSlug.value && project.value ? `/p/${tenantSlug.value}/${project.value.slug}` : null)
+const publicUrl = computed(() => tenantSlug.value && project.value ? `/${tenantSlug.value}/${project.value.slug}` : null)
 
 const editForm = ref({
   name: '',

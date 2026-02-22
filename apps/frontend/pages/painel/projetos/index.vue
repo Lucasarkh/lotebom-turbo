@@ -38,7 +38,7 @@
           <div class="form-group">
             <label class="form-label">Slug</label>
             <input v-model="form.slug" class="form-input" placeholder="parque-dos-ipes" required @input="onSlugInput" />
-            <small style="color:var(--gray-500); font-size:0.75rem">URL pública: /p/.../{{ form.slug || '...' }}</small>
+            <small style="color:var(--gray-500); font-size:0.75rem">URL pública: /.../{{ form.slug || '...' }}</small>
           </div>
           <div class="form-group">
             <label class="form-label">Descrição</label>

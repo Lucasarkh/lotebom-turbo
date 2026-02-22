@@ -15,7 +15,7 @@
         <div class="form-group">
           <label class="form-label">Slug (URL amigável)</label>
           <input v-model="form.tenantSlug" class="form-input" placeholder="loteadora-xyz" required @input="onSlugInput" />
-          <small style="color:var(--gray-500);font-size:0.75rem">Será usado na URL pública: /p/<b>{{ form.tenantSlug || '...' }}</b>/projeto</small>
+          <small style="color:var(--gray-500);font-size:0.75rem">Será usado na URL pública: /<b>{{ form.tenantSlug || '...' }}</b>/projeto</small>
         </div>
         <div class="form-group">
           <label class="form-label">Seu nome</label>

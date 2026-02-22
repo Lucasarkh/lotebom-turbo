@@ -487,7 +487,7 @@ const priceRange = computed(() => {
 
 const lotPageUrl = (lot: any) => {
   const code = lot.code || lot.id || lot.name
-  const base = `/p/${tenantSlug}/${projectSlug}/lote/${encodeURIComponent(code)}`
+  const base = `/${tenantSlug}/${projectSlug}/lote/${encodeURIComponent(code)}`
   return corretorCode ? `${base}?c=${corretorCode}` : base
 }
 

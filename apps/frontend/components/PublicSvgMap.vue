@@ -266,7 +266,7 @@ const cCode = route.query.c || ''
 
 function getLotUrl(lot: ParsedLot) {
   const code = lot.code || lot.id
-  const base = `/p/${tSlug}/${pSlug}/lote/${encodeURIComponent(code)}`
+  const base = `/${tSlug}/${pSlug}/lote/${encodeURIComponent(code)}`
   return cCode ? `${base}?c=${cCode}` : base
 }
 

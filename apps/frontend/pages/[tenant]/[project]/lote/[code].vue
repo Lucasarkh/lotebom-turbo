@@ -397,7 +397,7 @@ const project = ref<any>(null)
 const corretor = ref<any>(null)
 
 const projectUrl = computed(() => {
-  const base = `/p/${tenantSlug}/${projectSlug}`
+  const base = `/${tenantSlug}/${projectSlug}`
   return corretorCode ? `${base}?c=${corretorCode}` : base
 })
 
@@ -555,7 +555,7 @@ const otherLots = computed(() => {
 
 const otherLotUrl = (l: any) => {
   const code = l.code || l.id
-  const base = `/p/${tenantSlug}/${projectSlug}/lote/${encodeURIComponent(code)}`
+  const base = `/${tenantSlug}/${projectSlug}/lote/${encodeURIComponent(code)}`
   return corretorCode ? `${base}?c=${corretorCode}` : base
 }
 

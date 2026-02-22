@@ -122,7 +122,7 @@ interface MapEl {
 
 function getLotUrl(el: MapEl) {
   const code = el.code || el.name || el.id
-  const base = `/p/${tSlug}/${pSlug}/lote/${encodeURIComponent(code)}`
+  const base = `/${tSlug}/${pSlug}/lote/${encodeURIComponent(code)}`
   return cCode ? `${base}?c=${cCode}` : base
 }
 

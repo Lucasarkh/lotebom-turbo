@@ -11,7 +11,7 @@
       <div class="project-card-header">
         <div class="project-card-info">
           <h3 class="project-card-title">{{ project.name }}</h3>
-          <p class="project-card-subtitle">{{ subtitle || project.description || 'Sem descrição' }}</p>
+          <p class="project-card-subtitle">{{ project.description || 'Sem descrição' }}</p>
         </div>
         <span class="badge" :class="project.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'">
           {{ project.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
@@ -30,6 +30,13 @@
         <div v-if="showDate" class="meta-item ml-auto">
           <span>Criado {{ formatDate(project.createdAt) }}</span>
         </div>
+      </div>
+
+      <div v-if="project.status === 'PUBLISHED' && project.tenant?.slug" class="project-card-actions">
+        <a :href="`/${project.tenant.slug}/${project.slug}`" target="_blank" class="btn btn-sm btn-outline btn-full" @click.stop>
+          <span>Página Pública</span>
+          <span style="font-size: 0.8rem">↗️</span>
+        </a>
       </div>
     </div>
   </div>
@@ -166,6 +173,28 @@ const formatDate = (d) => {
   color: var(--gray-500);
   border-top: 1px solid var(--gray-100);
   padding-top: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.project-card-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  background: var(--primary-light);
+  border-color: var(--primary-50);
+  color: var(--primary);
+}
+
+.btn-full:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
 }
 
 .meta-item {

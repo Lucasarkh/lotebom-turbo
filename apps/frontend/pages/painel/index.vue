@@ -52,7 +52,6 @@
             v-for="p in projects.slice(0, 6)" 
             :key="p.id" 
             :project="p" 
-            :subtitle="`/p/${p.slug}`"
             @click="$router.push(`/painel/projetos/${p.id}`)"
           />
         </div>

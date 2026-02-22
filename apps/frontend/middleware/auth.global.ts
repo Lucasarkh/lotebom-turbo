@@ -7,9 +7,10 @@ export default defineNuxtRouteMiddleware((to) => {
     authStore.loadFromStorage();
   }
 
-  // Public routes
+  // Public routes: login, cadastro, root, or any tenant/project page
   const publicRoutes = ['/login', '/cadastro'];
-  const isPublic = publicRoutes.includes(to.path) || to.path.startsWith('/p/');
+  const isPainel = to.path.startsWith('/painel');
+  const isPublic = publicRoutes.includes(to.path) || !isPainel;
 
   if (isPublic) {
     if (authStore.isLoggedIn && ['/login', '/cadastro'].includes(to.path)) {
