@@ -19,11 +19,6 @@ export default defineNuxtRouteMiddleware((to) => {
     return;
   }
 
-  // Root → redirect
-  if (to.path === '/') {
-    return navigateTo(authStore.isLoggedIn ? '/painel' : '/login');
-  }
-
   // All /painel routes require auth
   if (!authStore.isLoggedIn) {
     return navigateTo('/login');
