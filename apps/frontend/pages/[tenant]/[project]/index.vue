@@ -230,6 +230,28 @@
         </div>
       </section>
 
+      <!-- Endereço e Mapa -->
+      <section v-if="project.googleMapsUrl || project.address" class="v4-section" id="localizacao" style="padding-bottom: 80px;">
+        <div class="v4-container">
+          <div class="v4-section-header center">
+            <h2 class="v4-section-title">Nossa Localização</h2>
+            <p v-if="project.address" class="v4-section-subtitle" style="max-width: 600px; margin: 0 auto;">{{ project.address }}</p>
+          </div>
+
+          <div v-if="project.googleMapsUrl" class="v4-map-wrapper" style="margin-top: 40px; border-radius: 16px; overflow: hidden; box-shadow: var(--v4-shadow-elevated);">
+            <iframe 
+              :src="project.googleMapsUrl" 
+              width="100%" 
+              height="450" 
+              style="border:0; display: block;" 
+              allowfullscreen="" 
+              loading="lazy" 
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+        </div>
+      </section>
+
       <!-- Lead form -->
       <section class="v4-section v4-section-alt" id="contato">
         <div class="v4-container">

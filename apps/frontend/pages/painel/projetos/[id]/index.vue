@@ -510,6 +510,30 @@
             </div>
           </section>
 
+          <!-- Section: Location & Map -->
+          <section class="card" style="padding: var(--space-6);">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
+              <div style="width: 40px; height: 40px; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📍</div>
+              <div>
+                <h3 style="margin:0;">Endereço e Localização</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Defina o endereço e o mapa do Google para a página pública.</p>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: var(--space-5);">
+              <label class="form-label">Endereço Completo</label>
+              <input v-model="pubInfoForm.address" class="form-input" placeholder="Ex: Av. Brasil, 1000 - Centro, São Paulo - SP" :disabled="!authStore.canEdit" />
+            </div>
+
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Link ou Embed do Google Maps</label>
+              <input v-model="pubInfoForm.googleMapsUrl" class="form-input" placeholder="Cole aqui o link do Google Maps ou o link de incorporação (embed)" :disabled="!authStore.canEdit" />
+              <p style="font-size: 0.75rem; color: var(--gray-400); margin-top: 8px;">
+                Dica: Vá no Google Maps, clique em "Compartilhar", depois "Incorporar um mapa" e copie apenas o link dentro de <code>src="..."</code> ou cole o código inteiro (nós extrairemos o link para você).
+              </p>
+            </div>
+          </section>
+
           <!-- Footer-ish Action Bar -->
           <div v-if="authStore.canEdit" class="flex justify-end items-center gap-4" style="margin-top: var(--space-4);">
             <div v-if="pubInfoSaved" style="color: var(--success); font-weight: 600; font-size: 0.875rem;">✅ Alterações salvas!</div>
@@ -843,7 +867,9 @@ const pubInfoForm = ref({
   locationText: '',
   startingPrice: null,
   maxInstallments: null,
-  paymentConditionsSummary: ''
+  paymentConditionsSummary: '',
+  address: '',
+  googleMapsUrl: ''
 })
 const savingPubInfo = ref(false)
 const pubInfoSaved = ref(false)
@@ -860,6 +886,12 @@ const removeHighlight = (i) => {
 const savePubInfo = async () => {
   savingPubInfo.value = true; pubInfoSaved.value = false
   try {
+    let mapUrl = pubInfoForm.value.googleMapsUrl || '';
+    if (mapUrl.includes('<iframe')) {
+      const match = mapUrl.match(/src=["'](.+?)["']/);
+      if (match && match[1]) mapUrl = match[1];
+    }
+
     project.value = await fetchApi(`/projects/${projectId}`, {
       method: 'PATCH',
       body: JSON.stringify({ 
@@ -867,7 +899,9 @@ const savePubInfo = async () => {
         locationText: pubInfoForm.value.locationText,
         startingPrice: pubInfoForm.value.startingPrice ? Number(pubInfoForm.value.startingPrice) : null,
         maxInstallments: pubInfoForm.value.maxInstallments ? Number(pubInfoForm.value.maxInstallments) : null,
-        paymentConditionsSummary: pubInfoForm.value.paymentConditionsSummary || null
+        paymentConditionsSummary: pubInfoForm.value.paymentConditionsSummary || null,
+        address: pubInfoForm.value.address || null,
+        googleMapsUrl: mapUrl || null
       }),
     })
     pubInfoSaved.value = true
@@ -989,6 +1023,8 @@ const loadProject = async () => {
       startingPrice: p.startingPrice,
       maxInstallments: p.maxInstallments,
       paymentConditionsSummary: p.paymentConditionsSummary || '',
+      address: p.address || '',
+      googleMapsUrl: p.googleMapsUrl || ''
     }
     initialEditorContent.value = p.locationText || '<p></p>'
   } catch (e) {

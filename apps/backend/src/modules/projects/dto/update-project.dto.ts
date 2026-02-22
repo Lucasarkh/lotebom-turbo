@@ -57,4 +57,14 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   locationText?: string;
+
+  @ApiPropertyOptional({ description: 'Endereço escrito do loteamento' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional({ description: 'Link ou Embed URL do Google Maps' })
+  @IsOptional()
+  @IsString()
+  googleMapsUrl?: string;
 }

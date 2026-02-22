@@ -133,6 +133,8 @@ model Project {
   mapData         Json?
   highlightsJson  Json?
   locationText    String?       @db.Text
+  address         String?       @db.Text
+  googleMapsUrl   String?       @db.Text
   showPaymentConditions Boolean @default(false)
   startingPrice   Float?
   maxInstallments Int?

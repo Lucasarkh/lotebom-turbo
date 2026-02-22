@@ -133,6 +133,8 @@ export class ProjectsService {
         ...(dto.startingPrice !== undefined && { startingPrice: dto.startingPrice }),
         ...(dto.maxInstallments !== undefined && { maxInstallments: dto.maxInstallments }),
         ...(dto.paymentConditionsSummary !== undefined && { paymentConditionsSummary: dto.paymentConditionsSummary }),
+        ...(dto.address !== undefined && { address: dto.address }),
+        ...(dto.googleMapsUrl !== undefined && { googleMapsUrl: dto.googleMapsUrl }),
       },
       include: {
         tenant: { select: { slug: true, name: true } },
