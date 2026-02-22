@@ -331,9 +331,9 @@
                 <h3>Outras Oportunidades</h3>
                 <NuxtLink :to="projectUrl">Ver todos no mapa</NuxtLink>
               </div>
-              <div class="assets-scroll-v4">
-                <NuxtLink v-for="l in otherLots.slice(0, 6)" :key="l.id" :to="otherLotUrl(l)" class="asset-card-v4">
-                  <div class="a-code">Lote {{ l.code || l.id }}</div>
+              <div class="assets-grid-v4">
+                <NuxtLink v-for="l in otherLots.slice(0, 8)" :key="l.id" :to="otherLotUrl(l)" class="asset-card-v4">
+                  <div class="a-code">{{ (l.code || l.name || l.id).toString().toLowerCase().includes('lote') ? '' : 'Lote ' }}{{ l.code || l.name || l.id }}</div>
                   <div class="a-area">{{ l.lotDetails?.areaM2 }} m²</div>
                   <div class="a-price" v-if="l.lotDetails?.price">R$ {{ (l.lotDetails.price / 1000).toFixed(0) }}k</div>
                 </NuxtLink>
@@ -775,25 +775,86 @@ async function submitLead() {
 .f-field { margin-bottom: 12px; }
 .f-field input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--v4-border); background: #f5f5f7; font-size: 16px; transition: all 0.2s; }
 .f-field input:focus { border-color: var(--v4-primary); outline: none; background: white; }
-.cta-submit-v4 { width: 100%; padding: 16px; background: var(--v4-primary); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 17px; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
-.cta-submit-v4:hover { background: var(--v4-primary-hover); }
+.cta-submit-v4 { width: 100%; padding: 16px; background: var(--v4-primary); color: white; border: none; border-radius: 12px; font-weight: 600; font-size: 17px; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+.cta-submit-v4:hover { background: var(--v4-primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2); }
 
 .broker-info-v4 { margin-bottom: 20px; }
-.br-card { background: white; padding: 20px; border-radius: 18px; display: flex; align-items: center; gap: 16px; border: 1px solid var(--v4-border); }
-.br-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
-.br-details { display: flex; flex-direction: column; }
-.br-name { font-size: 15px; font-weight: 600; color: var(--v4-text); }
+.br-card { background: white; padding: 16px; border-radius: 18px; display: flex; align-items: center; gap: 16px; border: 1px solid var(--v4-border); }
+.br-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.br-avatar-placeholder { 
+  width: 56px; 
+  height: 56px; 
+  border-radius: 50%; 
+  background: #f5f5f7; 
+  color: var(--v4-primary); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-weight: 700; 
+  font-size: 20px; 
+  flex-shrink: 0;
+  border: 1px solid var(--v4-border);
+}
+.br-details { display: flex; flex-direction: column; gap: 2px; }
+.br-name { font-size: 16px; font-weight: 600; color: var(--v4-text); line-height: 1.2; }
 .br-role { font-size: 13px; color: var(--v4-text-muted); }
 
-/* Footers */
-.footer-v4 { padding: 60px 0; background: white; border-top: 1px solid var(--v4-border); }
-.assets-header-v4 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; }
-.assets-header-v4 h3 { font-size: 19px; font-weight: 600; }
+.form-divider-v4 { text-align: center; font-size: 13px; color: var(--v4-text-muted); margin: 8px 0; }
+.wa-btn-v4 { 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  background: #25d366;
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+.wa-btn-v4:hover { background: #20b858; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2); }
+.footer-v4 { padding: 80px 0; background: white; border-top: 1px solid var(--v4-border); }
+.other-assets-v4 { width: 100%; position: relative; }
+.assets-header-v4 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 32px; }
+.assets-header-v4 h3 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
 .assets-header-v4 a { font-size: 14px; font-weight: 600; color: var(--v4-primary); text-decoration: none; }
-.asset-card-v4 { min-width: 240px; background: #f5f5f7; padding: 24px; border-radius: 16px; border: 1px solid var(--v4-border); text-decoration: none; color: inherit; transition: all 0.2s; }
-.asset-card-v4:hover { background: white; transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
 
-.legal-v4 { margin-top: 60px; text-align: center; color: var(--v4-text-muted); font-size: 13px; padding-top: 40px; border-top: 1px solid var(--v4-border); }
+.assets-grid-v4 { 
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.asset-card-v4 { 
+  background: #f5f5f7; 
+  padding: 24px; 
+  border-radius: 20px; 
+  border: 1px solid var(--v4-border); 
+  text-decoration: none; 
+  color: inherit; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.asset-card-v4:hover { 
+  background: white; 
+  transform: translateY(-4px); 
+  box-shadow: 0 12px 24px rgba(0,0,0,0.06); 
+  border-color: var(--v4-primary); 
+}
+
+.a-code { font-size: 17px; font-weight: 700; color: var(--v4-text); }
+.a-area { font-size: 14px; color: var(--v4-text-muted); font-weight: 500; }
+.a-price { font-size: 18px; font-weight: 700; color: var(--v4-primary); margin-top: 8px; }
+
+.legal-v4 { margin-top: 80px; text-align: center; color: var(--v4-text-muted); font-size: 14px; padding-top: 40px; border-top: 1px solid var(--v4-border); opacity: 0.8; }
 
 /* Lightbox V4 */
 .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; }
