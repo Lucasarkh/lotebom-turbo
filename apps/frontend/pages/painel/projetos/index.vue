@@ -17,22 +17,13 @@
     </div>
 
     <div v-else class="grid grid-cols-3">
-      <div v-for="p in projects" :key="p.id" class="card project-card" @click="$router.push(`/painel/projetos/${p.id}`)">
-        <div class="card-header">
-          <div>
-            <div class="card-title">{{ p.name }}</div>
-            <div class="card-subtitle">{{ p.description || 'Sem descrição' }}</div>
-          </div>
-          <span class="badge" :class="p.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'">
-            {{ p.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
-          </span>
-        </div>
-        <div class="project-meta">
-          <span>{{ p._count?.mapElements ?? 0 }} elementos</span>
-          <span>{{ p._count?.leads ?? 0 }} leads</span>
-          <span>Criado {{ formatDate(p.createdAt) }}</span>
-        </div>
-      </div>
+      <ProjectCard 
+        v-for="p in projects" 
+        :key="p.id" 
+        :project="p" 
+        :show-date="true"
+        @click="$router.push(`/painel/projetos/${p.id}`)"
+      />
     </div>
 
     <!-- Create modal -->
@@ -120,6 +111,4 @@ onMounted(loadProjects)
 </script>
 
 <style scoped>
-.project-card { cursor: pointer; }
-.project-meta { display: flex; gap: var(--space-4); font-size: 0.8125rem; color: var(--gray-500); margin-top: var(--space-3); }
 </style>

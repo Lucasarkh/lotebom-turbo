@@ -48,21 +48,13 @@
           </NuxtLink>
         </div>
         <div v-else class="grid grid-cols-3">
-          <div v-for="p in projects.slice(0, 6)" :key="p.id" class="card" style="cursor:pointer" @click="$router.push(`/painel/projetos/${p.id}`)">
-            <div class="card-header">
-              <div>
-                <div class="card-title">{{ p.name }}</div>
-                <div class="card-subtitle">/p/{{ p.slug }}</div>
-              </div>
-              <span class="badge" :class="p.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'">
-                {{ p.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
-              </span>
-            </div>
-            <div class="flex gap-4" style="font-size: 0.8125rem; color: var(--gray-500);">
-              <span>{{ p._count?.mapElements ?? 0 }} elementos</span>
-              <span>{{ p._count?.leads ?? 0 }} leads</span>
-            </div>
-          </div>
+          <ProjectCard 
+            v-for="p in projects.slice(0, 6)" 
+            :key="p.id" 
+            :project="p" 
+            :subtitle="`/p/${p.slug}`"
+            @click="$router.push(`/painel/projetos/${p.id}`)"
+          />
         </div>
       </div>
 
