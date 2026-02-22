@@ -290,19 +290,17 @@
           <hr style="margin: var(--space-5) 0; border: 0; border-top: 1px solid var(--gray-200);" />
 
           <h4 style="margin-bottom: var(--space-3);">Fotos do Lote</h4>
-          <div v-if="lotMedias.length === 0" class="empty-state" style="padding: var(--space-4); background: var(--gray-50);">
+          <div v-if="lotMedias.length === 0" class="empty-state" style="padding: var(--space-4); background: var(--gray-50); border-radius: 12px;">
             <p>Nenhuma foto específica deste lote.</p>
           </div>
-          <div v-else class="grid grid-cols-4" style="gap: var(--space-2); margin-bottom: var(--space-3);">
-            <div v-for="m in lotMedias" :key="m.id" class="media-card" style="height: 100px;">
-              <img :src="m.url" class="media-thumb" style="height: 70px;" />
-              <div class="media-info" style="padding: 4px;">
-                <button class="btn btn-danger btn-xs" @click="removeLotMedia(m.id)">✕</button>
-              </div>
+          <div v-else class="grid grid-cols-4" style="gap: var(--space-3); margin-bottom: var(--space-4);">
+            <div v-for="m in lotMedias" :key="m.id" class="media-card-v4">
+              <img :src="m.url" class="media-thumb-v4" />
+              <button class="media-delete-btn-v4" @click="removeLotMedia(m.id)">✕</button>
             </div>
           </div>
           
-          <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer; width: fit-content;">
             {{ uploadingLotMedia ? 'Enviando...' : '+ Adicionar Foto do Lote' }}
             <input type="file" accept="image/*" style="display:none" @change="uploadLotMediaFile" :disabled="uploadingLotMedia" />
           </label>
@@ -385,13 +383,13 @@
             <div v-if="media.length === 0" class="empty-state" style="padding: var(--space-8); background: var(--gray-50); border-radius: var(--radius-lg);">
               <p>Nenhuma mídia de loteamento enviada.</p>
             </div>
-            <div v-else class="grid grid-cols-4" style="gap: var(--space-4);">
-              <div v-for="m in media" :key="m.id" class="media-card" style="margin-bottom:0;">
-                <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption" class="media-thumb" style="height: 120px; border-radius: 8px;" />
-                <video v-else :src="m.url" class="media-thumb" style="height: 120px; border-radius: 8px;" />
-                <div class="media-info" style="padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 0.75rem; color: var(--gray-500);">{{ m.type }}</span>
-                  <button v-if="authStore.canEdit" class="btn btn-danger btn-xs" style="padding: 2px 8px;" @click="deleteMedia(m.id)">Excluir</button>
+            <div v-else class="grid grid-cols-4" style="gap: var(--space-5);">
+              <div v-for="m in media" :key="m.id" class="media-card-v4" style="aspect-ratio: 16/10;">
+                <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption" class="media-thumb-v4" />
+                <video v-else :src="m.url" class="media-thumb-v4" />
+                <div class="media-overlay-v4">
+                   <div class="media-type-pill">{{ m.type === 'PHOTO' ? '🖼️ Foto' : '🎬 Vídeo' }}</div>
+                   <button v-if="authStore.canEdit" class="delete-btn-circ" title="Remover" @click="deleteMedia(m.id)">✕</button>
                 </div>
               </div>
             </div>
@@ -1026,6 +1024,22 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.media-card-v4 {
+  position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--gray-200); background: #f9f9fb; transition: all 0.2s; aspect-ratio: 16/10;
+}
+.media-card-v4:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.media-thumb-v4 { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.media-delete-btn-v4 { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(255, 30, 0, 0.1); color: #ff3b30; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.media-delete-btn-v4:hover { background: #ff3b30; color: white; transform: scale(1.1); }
+
+/* Overlays para a Galeria */
+.media-overlay-v4 { position: absolute; inset: 0; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; opacity: 0; transition: opacity 0.2s; background: linear-gradient(to top, rgba(0,0,0,0.4), transparent); }
+.media-card-v4:hover .media-overlay-v4 { opacity: 1; }
+.media-type-pill { background: rgba(255,255,255,0.9); color: #1d1d1f; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; width: fit-content; }
+.delete-btn-circ { width: 32px; height: 32px; border-radius: 50%; border: none; background: white; color: #ff3b30; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-left: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.delete-btn-circ:hover { background: #ff3b30; color: white; transform: rotate(90deg); }
+
 .media-card {
   border: 1px solid var(--gray-200); border-radius: var(--radius-md); overflow: hidden; background: white;
 }

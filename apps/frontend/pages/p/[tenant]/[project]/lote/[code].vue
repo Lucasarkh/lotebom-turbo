@@ -314,9 +314,15 @@
                 </form>
 
                 <div v-else class="form-success-v4">
-                  <div class="success-icon-v4">✓</div>
-                  <h4>Sucesso!</h4>
-                  <p>O corretor entrará em contato em breve.</p>
+                  <div class="success-animation-v4">
+                    <div class="success-circle-v4">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M20 6L9 17L4 12" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                  <h4>Solicitação Enviada!</h4>
+                  <p>O corretor entrará em contato em breve via WhatsApp ou e-mail.</p>
                 </div>
               </div>
             </div>
@@ -798,6 +804,36 @@ async function submitGateLead() {
 
 .lead-form-v4 { background: white; padding: 32px; border-radius: 20px; border: 1px solid var(--v4-border); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
 .form-header-v4 h3 { font-size: 24px; font-weight: 600; color: var(--v4-text); margin-bottom: 12px; }
+
+/* Success Page V4 */
+.form-success-v4 {
+  text-align: center;
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.success-circle-v4 {
+  width: 72px;
+  height: 72px;
+  background: #32d74b;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  animation: scale-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+.success-circle-v4 svg { width: 36px; height: 36px; stroke-dasharray: 40; stroke-dashoffset: 40; animation: checkmark 0.3s 0.3s ease-in-out forwards; }
+.form-success-v4 h4 { font-size: 22px; font-weight: 700; color: var(--v4-text); margin-bottom: 12px; letter-spacing: -0.01em; }
+.form-success-v4 p { font-size: 15px; color: var(--v4-text-muted); line-height: 1.5; margin-bottom: 40px; }
+.btn-success-reset-v4 { background: #f5f5f7; border: 1px solid var(--v4-border); color: var(--v4-text); padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+.btn-success-reset-v4:hover { background: #e8e8ed; }
+
+@keyframes scale-up { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes checkmark { 0% { stroke-dashoffset: 40; } 100% { stroke-dashoffset: 0; } }
+
 .form-header-v4 p { font-size: 15px; color: var(--v4-text-muted); margin-bottom: 24px; }
 .f-field { margin-bottom: 12px; }
 .f-field input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--v4-border); background: #f5f5f7; font-size: 16px; transition: all 0.2s; }
