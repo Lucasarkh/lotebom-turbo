@@ -123,6 +123,30 @@
         </div>
       </section>
 
+      <!-- Panorama 360° -->
+      <section v-if="panoramas.length" class="v4-section" id="panorama">
+        <div class="v4-container">
+          <div class="v4-section-header center">
+            <h2 class="v4-section-title">Vista 360°</h2>
+            <p class="v4-section-subtitle">Explore o empreendimento e seus arredores com vista panorâmica.</p>
+          </div>
+          <ClientOnly>
+            <div
+              v-for="pano in panoramas"
+              :key="pano.id"
+              style="height: 540px; border-radius: 16px; overflow: hidden; box-shadow: var(--v4-shadow-elevated); margin-bottom: 24px;"
+            >
+              <PanoramaViewer :panorama="pano" />
+            </div>
+            <template #fallback>
+              <div style="height: 540px; border-radius:16px; background:#111; display:flex; align-items:center; justify-content:center; color:#64748b;">
+                <div class="loading-spinner"></div>
+              </div>
+            </template>
+          </ClientOnly>
+        </div>
+      </section>
+
       <!-- Available Lots Grid -->
       <section v-if="unifiedAvailableLots.length" class="v4-section" id="lotes">
         <div class="v4-container">
@@ -298,6 +322,7 @@
       <!-- Sticky mobile CTA -->
       <nav class="v4-sticky-nav">
         <a v-if="plantMap" href="#planta" class="v4-nav-item">Planta</a>
+        <a v-if="panoramas.length" href="#panorama" class="v4-nav-item">Panorama</a>
         <a v-if="unifiedAvailableLots.length" href="#lotes" class="v4-nav-item">Unidades</a>
         <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>
       </nav>
@@ -313,6 +338,9 @@ const { fetchPublic } = usePublicApi()
 import { usePublicPlantMap } from '~/composables/plantMap/usePlantMapApi'
 import type { PlantMap } from '~/composables/plantMap/types'
 import PlantMapViewer from '~/components/plantMap/PlantMapViewer.vue'
+import { usePublicPanorama } from '~/composables/panorama/usePanoramaApi'
+import type { Panorama } from '~/composables/panorama/types'
+import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
 
 const tenantSlug = route.params.tenant
 const projectSlug = route.params.project
@@ -325,6 +353,8 @@ const project = ref<any>(null)
 const corretor = ref<any>(null)
 const plantMap = ref<PlantMap | null>(null)
 const { getPublicPlantMap } = usePublicPlantMap()
+const panoramas = ref<Panorama[]>([])
+const { getPublicPanoramas } = usePublicPanorama()
 
 const leadForm = ref({ name: '', email: '', phone: '', mapElementId: '', message: '' })
 const submitting = ref(false)
@@ -499,6 +529,10 @@ onMounted(async () => {
       // Fetch plant map for this project (non-blocking)
       getPublicPlantMap(p.value.id).then((pm) => {
         plantMap.value = pm
+      }).catch(() => {})
+      // Fetch panoramas for this project (non-blocking)
+      getPublicPanoramas(p.value.id).then((panos) => {
+        panoramas.value = panos ?? []
       }).catch(() => {})
     }
     else error.value = (p.reason as any)?.message || 'Projeto não encontrado'

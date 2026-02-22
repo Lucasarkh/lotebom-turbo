@@ -69,6 +69,10 @@
         <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="filter-btn active" style="text-decoration: none; background: var(--primary); color: white;">
           🗺️ Planta Interativa
         </NuxtLink>
+        <!-- Panorama 360° -->
+        <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="filter-btn" style="text-decoration: none; background: var(--gray-700); color: white;">
+          🌄 Panorama 360°
+        </NuxtLink>
       </div>
 
       <!-- Tab: Configurações -->

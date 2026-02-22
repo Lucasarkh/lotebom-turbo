@@ -97,9 +97,11 @@ model Tenant {
   lotDetails    LotDetails[]
   projectMedias ProjectMedia[]
   leads         Lead[]
-  realtorLinks  RealtorLink[]
-  plantMaps     PlantMap[]
-  plantHotspots PlantHotspot[]
+  realtorLinks     RealtorLink[]
+  plantMaps        PlantMap[]
+  plantHotspots    PlantHotspot[]
+  panoramas        Panorama[]
+  panoramaBeacons  PanoramaBeacon[]
 
   @@unique([slug])
 }
@@ -141,6 +143,7 @@ model Project {
   leads         Lead[]
   realtorLinks  RealtorLink[]
   plantMap      PlantMap?
+  panoramas     Panorama[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -260,6 +263,70 @@ model RealtorLink {
   leads Lead[]
 
   @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// ─── PANORAMA 360 ───────────────────────────────────────
+
+enum PanoramaProjection {
+  FLAT
+  EQUIRECTANGULAR
+}
+
+model Panorama {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title      String   @default("Vista Geral")
+  projection PanoramaProjection @default(FLAT)
+  sunPathAngleDeg     Float    @default(0)
+  sunPathLabelEnabled Boolean  @default(true)
+  showImplantation    Boolean  @default(false)
+  implantationUrl     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  snapshots PanoramaSnapshot[]
+  beacons   PanoramaBeacon[]
+
+  @@index([tenantId])
+  @@index([tenantId, projectId])
+}
+
+model PanoramaSnapshot {
+  id          String   @id @default(cuid())
+  panoramaId  String
+  panorama    Panorama @relation(fields: [panoramaId], references: [id], onDelete: Cascade)
+  imageUrl    String
+  imageWidth  Int?
+  imageHeight Int?
+  label       String
+  date        DateTime?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([panoramaId])
+}
+
+model PanoramaBeacon {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  panoramaId  String
+  panorama    Panorama @relation(fields: [panoramaId], references: [id], onDelete: Cascade)
+  title       String
+  description String?  @db.Text
+  x           Float
+  y           Float
+  style       String   @default("default")
+  visible     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([panoramaId])
   @@index([tenantId])
 }
 

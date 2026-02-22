@@ -9,6 +9,7 @@ import { LeadsModule } from '@modules/leads/leads.module';
 import { UploadModule } from '@modules/upload/upload.module';
 import { RealtorLinksModule } from '@modules/realtor-links/realtor-links.module';
 import { PlantMapModule } from '@modules/plant-map/plant-map.module';
+import { PanoramaModule } from '@modules/panorama/panorama.module';
 import { DbModule } from '@infra/db/db.module';
 
 @Module({
@@ -26,6 +27,7 @@ import { DbModule } from '@infra/db/db.module';
     UploadModule,
     RealtorLinksModule,
     PlantMapModule,
+    PanoramaModule,
   ],
   controllers: [],
   providers: [],
