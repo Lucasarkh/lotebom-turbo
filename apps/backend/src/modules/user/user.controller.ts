@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +18,7 @@ import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -35,8 +37,11 @@ export class UserController {
   @Get()
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Listar usuários do tenant' })
-  findAll(@TenantId() tenantId: string) {
-    return this.userService.findAll(tenantId);
+  findAll(
+    @TenantId() tenantId: string,
+    @Query() pagination: PaginationQueryDto,
+  ) {
+    return this.userService.findAll(tenantId, pagination);
   }
 
   @Get(':id')

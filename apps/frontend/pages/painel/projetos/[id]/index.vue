@@ -140,6 +140,7 @@
               </tr>
             </tbody>
           </table>
+          <CommonPagination :meta="lotsMeta" @change="loadLotsPaginated" />
         </div>
       </div>
 
@@ -447,25 +448,65 @@
             </div>
           </section>
 
+          <!-- Section: Price & Conditions -->
+          <section class="card" style="padding: var(--space-6);">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
+              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">💰</div>
+              <div>
+                <h3 style="margin:0;">Preços e Condições</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Defina os valores de destaque para a página pública.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2" style="gap: var(--space-5); margin-bottom: var(--space-6);">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Investimento Inicial (R$)</label>
+                <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="Ex: 144000" :disabled="!authStore.canEdit" />
+                <small style="color:var(--gray-400); font-size:0.75rem;">Deixe em branco para calcular automaticamente dos lotes.</small>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Parcelamento Máximo (Vezes)</label>
+                <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="Ex: 120" :disabled="!authStore.canEdit" />
+              </div>
+            </div>
+
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Resumo das Condições / Observações</label>
+              <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Ex: Entrada facilitada em 6x e saldo em 120 meses direto com a loteadora." :disabled="!authStore.canEdit" />
+              <small style="color:var(--gray-400); font-size:0.75rem;">Este texto aparecerá junto ao preço na página pública.</small>
+            </div>
+          </section>
+
           <!-- Section: Details Text -->
           <section class="card" style="padding: var(--space-6);">
             <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
               <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📝</div>
               <div>
-                <h3 style="margin:0;">Texto de Localização e Infra</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Descreva as facilidades do entorno do loteamento.</p>
+                <h3 style="margin:0;">Texto de Diferenciais e Infra</h3>
+                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Descreva as facilidades do entorno e destaques do loteamento.</p>
               </div>
             </div>
             
             <div class="form-group" style="margin:0;">
-              <textarea 
-                v-model="pubInfoForm.locationText" 
-                class="form-textarea" 
-                rows="6" 
-                placeholder="Descreva detalhes sobre o acesso ao transporte, comércio local, escolas, áreas de lazer externas e infraestrutura urbana próxima..." 
-                :disabled="!authStore.canEdit"
-                style="padding: var(--space-4); line-height: 1.6; border-radius: var(--radius-lg); font-size: 0.9375rem;"
-              ></textarea>
+              <div v-if="authStore.canEdit" class="flex gap-2" style="margin-bottom: 8px;">
+                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('bold')" title="Negrito"><b>B</b></button>
+                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('italic')" title="Itálico"><i>I</i></button>
+                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('insertUnorderedList')" title="Lista">• Lista</button>
+                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('formatBlock', 'p')" title="Parágrafo">P</button>
+              </div>
+              <div 
+                ref="richEditor"
+                contenteditable="true"
+                class="form-textarea rich-editor-v4"
+                :class="{ 'disabled': !authStore.canEdit }"
+                @input="updateFromEditor"
+                @blur="updateFromEditor"
+                v-html="initialEditorContent"
+                style="min-height: 240px; padding: var(--space-4); line-height: 1.6; border-radius: var(--radius-lg); font-size: 0.9375rem; background: white; border: 1px solid var(--gray-300); overflow-y: auto; white-space: pre-wrap;"
+              ></div>
+              <p style="font-size: 0.75rem; color: var(--gray-400); margin-top: 8px;">
+                Dica: Use <b>Shift + Enter</b> para quebra de linha simples e <b>Enter</b> para novo parágrafo.
+              </p>
             </div>
           </section>
 
@@ -591,6 +632,7 @@ const error = ref('')
 const project = ref<any>(null)
 const mapElements = ref<any[]>([])
 const lots = ref<any[]>([])
+const lotsMeta = ref({ totalItems: 0, itemCount: 0, itemsPerPage: 50, totalPages: 0, currentPage: 1 })
 const media = ref<any[]>([])
 const activeTab = ref('lots')
 const uploadingBanner = ref(false)
@@ -782,7 +824,27 @@ const editForm = ref({
 })
 
 // ── Public info (highlights + location) ──────────────────
-const pubInfoForm = ref({ highlightsJson: [], locationText: '' })
+const richEditor = ref<HTMLElement | null>(null);
+const initialEditorContent = ref('');
+
+const execCommand = (cmd: string, val = '') => {
+  document.execCommand(cmd, false, val);
+  updateFromEditor();
+};
+
+const updateFromEditor = () => {
+  if (richEditor.value) {
+    pubInfoForm.value.locationText = richEditor.value.innerHTML;
+  }
+};
+
+const pubInfoForm = ref({
+  highlightsJson: [],
+  locationText: '',
+  startingPrice: null,
+  maxInstallments: null,
+  paymentConditionsSummary: ''
+})
 const savingPubInfo = ref(false)
 const pubInfoSaved = ref(false)
 const newHighlight = ref({ label: '', value: '' })
@@ -800,7 +862,13 @@ const savePubInfo = async () => {
   try {
     project.value = await fetchApi(`/projects/${projectId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ highlightsJson: pubInfoForm.value.highlightsJson, locationText: pubInfoForm.value.locationText }),
+      body: JSON.stringify({ 
+        highlightsJson: pubInfoForm.value.highlightsJson, 
+        locationText: pubInfoForm.value.locationText,
+        startingPrice: pubInfoForm.value.startingPrice ? Number(pubInfoForm.value.startingPrice) : null,
+        maxInstallments: pubInfoForm.value.maxInstallments ? Number(pubInfoForm.value.maxInstallments) : null,
+        paymentConditionsSummary: pubInfoForm.value.paymentConditionsSummary || null
+      }),
     })
     pubInfoSaved.value = true
     toastSuccess('Informações públicas salvas!')
@@ -884,19 +952,30 @@ const lotBadge = (s) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning'
 const lotLabel = (s) => ({ AVAILABLE: 'Disponível', RESERVED: 'Reservado', SOLD: 'Vendido' }[s] || s)
 const slopeLabel = (s) => ({ FLAT: 'Plano', UPHILL: 'Aclive', DOWNHILL: 'Declive' }[s] || s)
 
+const loadLotsPaginated = async (page = 1) => {
+  try {
+    const res = await fetchApi(`/projects/${projectId}/lots?page=${page}&limit=50`)
+    lots.value = res.data
+    lotsMeta.value = res.meta
+  } catch (e) {
+    toastFromError(e, 'Erro ao carregar lotes')
+  }
+}
+
 const loadProject = async () => {
   loading.value = true
   error.value = ''
   try {
-    const [p, els, lt, md] = await Promise.all([
+    const [p, els, resLots, md] = await Promise.all([
       fetchApi(`/projects/${projectId}`),
       fetchApi(`/projects/${projectId}/map-elements`),
-      fetchApi(`/projects/${projectId}/lots`),
+      fetchApi(`/projects/${projectId}/lots?page=1&limit=50`),
       fetchApi(`/projects/${projectId}/media`),
     ])
     project.value = p
     mapElements.value = els
-    lots.value = lt
+    lots.value = resLots.data
+    lotsMeta.value = resLots.meta
     media.value = md
     editForm.value = {
       name: p.name,
@@ -907,7 +986,11 @@ const loadProject = async () => {
     pubInfoForm.value = {
       highlightsJson: Array.isArray(p.highlightsJson) ? p.highlightsJson : [],
       locationText: p.locationText || '',
+      startingPrice: p.startingPrice,
+      maxInstallments: p.maxInstallments,
+      paymentConditionsSummary: p.paymentConditionsSummary || '',
     }
+    initialEditorContent.value = p.locationText || '<p></p>'
   } catch (e) {
     error.value = 'Não foi possível carregar o projeto.'
     toastFromError(e, 'Erro ao carregar projeto')
@@ -1004,6 +1087,9 @@ const deleteMedia = async (id) => {
 onMounted(async () => {
   await loadProject()
   await loadCorretores()
+  if (typeof document !== 'undefined') {
+    document.execCommand('defaultParagraphSeparator', false, 'p');
+  }
 })
 </script>
 
@@ -1029,4 +1115,25 @@ onMounted(async () => {
 }
 .media-thumb { width: 100%; height: 160px; object-fit: cover; display: block; }
 .media-info { padding: var(--space-3); display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: var(--gray-600); }
+
+.rich-editor-v4 {
+  background: white !important;
+  color: var(--gray-800);
+  border: 1px solid var(--gray-300) !important;
+  transition: all 0.2s;
+  outline: none;
+}
+.rich-editor-v4:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px var(--primary-light) !important;
+}
+.rich-editor-v4.disabled {
+  background: var(--gray-50) !important;
+  pointer-events: none;
+  opacity: 0.7;
+}
+.rich-editor-v4 :deep(p), .rich-editor-v4 p, .rich-editor-v4 :deep(div), .rich-editor-v4 div { margin-bottom: 0.75rem; }
+.rich-editor-v4 :deep(ul), .rich-editor-v4 ul { padding-left: 1.5rem; margin-bottom: 1rem; list-style-type: disc; }
+.rich-editor-v4 :deep(li), .rich-editor-v4 li { margin-bottom: 0.25rem; }
+.rich-editor-v4 :deep(b), .rich-editor-v4 b, .rich-editor-v4 :deep(strong), .rich-editor-v4 strong { font-weight: 700; color: #000; }
 </style>

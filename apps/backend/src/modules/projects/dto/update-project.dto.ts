@@ -40,6 +40,19 @@ export class UpdateProjectDto {
   @IsOptional()
   showPaymentConditions?: boolean;
 
+  @ApiPropertyOptional({ description: 'Valor inicial do investimento (ex: 144000)' })
+  @IsOptional()
+  startingPrice?: number;
+
+  @ApiPropertyOptional({ description: 'Quantidade máxima de parcelas' })
+  @IsOptional()
+  maxInstallments?: number;
+
+  @ApiPropertyOptional({ description: 'Resumo das condições de pagamento (ex: Entrada facilitada em 6x)' })
+  @IsOptional()
+  @IsString()
+  paymentConditionsSummary?: string;
+
   @ApiPropertyOptional({ description: 'Texto de localização e infraestrutura do entorno' })
   @IsOptional()
   @IsString()

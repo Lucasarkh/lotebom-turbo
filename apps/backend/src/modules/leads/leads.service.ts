@@ -3,6 +3,8 @@ import { PrismaService } from '@infra/db/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadStatus } from '@prisma/client';
+import { LeadsQueryDto } from './dto/leads-query.dto';
+import { PaginatedResponse } from '@common/dto/paginated-response.dto';
 
 @Injectable()
 export class LeadsService {
@@ -65,18 +67,46 @@ export class LeadsService {
   /** Panel – list leads with optional filters */
   async findAll(
     tenantId: string,
-    projectId?: string,
-    status?: LeadStatus,
-  ) {
-    return this.prisma.lead.findMany({
-      where: {
-        tenantId,
-        ...(projectId && { projectId }),
-        ...(status && { status }),
+    query: LeadsQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { projectId, status, page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    const [data, totalItems] = await Promise.all([
+      this.prisma.lead.findMany({
+        where: {
+          tenantId,
+          ...(projectId && { projectId }),
+          ...(status && { status }),
+        },
+        include: {
+          project: true,
+          mapElement: true,
+          realtorLink: { select: { name: true, code: true, phone: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.lead.count({
+        where: {
+          tenantId,
+          ...(projectId && { projectId }),
+          ...(status && { status }),
+        },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
       },
-      include: { project: true, mapElement: true, realtorLink: { select: { name: true, code: true, phone: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async findOne(tenantId: string, id: string) {

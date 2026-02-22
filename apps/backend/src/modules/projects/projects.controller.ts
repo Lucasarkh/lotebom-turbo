@@ -7,6 +7,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
@@ -18,6 +19,7 @@ import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
@@ -35,8 +37,11 @@ export class ProjectsController {
 
   @Get()
   @ApiOperation({ summary: 'Listar projetos do tenant' })
-  findAll(@TenantId() tenantId: string) {
-    return this.projectsService.findAll(tenantId);
+  findAll(
+    @TenantId() tenantId: string,
+    @Query() pagination: PaginationQueryDto,
+  ) {
+    return this.projectsService.findAll(tenantId, pagination);
   }
 
   @Get(':id')

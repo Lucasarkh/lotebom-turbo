@@ -17,6 +17,7 @@ import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { LeadsService } from './leads.service';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadStatus } from '@prisma/client';
+import { LeadsQueryDto } from './dto/leads-query.dto';
 
 @ApiTags('Leads')
 @ApiBearerAuth()
@@ -29,10 +30,9 @@ export class LeadsController {
   @Roles('ADMIN', 'EDITOR', 'VIEWER')
   findAll(
     @TenantId() tenantId: string,
-    @Query('projectId') projectId?: string,
-    @Query('status') status?: LeadStatus,
+    @Query() query: LeadsQueryDto,
   ) {
-    return this.leadsService.findAll(tenantId, projectId, status);
+    return this.leadsService.findAll(tenantId, query);
   }
 
   @Get(':id')

@@ -26,6 +26,8 @@
       />
     </div>
 
+    <CommonPagination :meta="meta" @change="loadProjects" />
+
     <!-- Create modal -->
     <div v-if="showCreate" class="modal-overlay" @click.self="showCreate = false">
       <div class="modal">
@@ -64,6 +66,13 @@ const authStore = useAuthStore()
 const { success: toastSuccess, fromError: toastFromError } = useToast()
 const loading = ref(true)
 const projects = ref([])
+const meta = ref({
+  totalItems: 0,
+  itemCount: 0,
+  itemsPerPage: 9,
+  totalPages: 0,
+  currentPage: 1
+})
 const showCreate = ref(false)
 const creating = ref(false)
 const createError = ref('')
@@ -81,9 +90,12 @@ const onSlugInput = () => { slugManuallyEdited.value = true }
 
 const formatDate = (d) => new Date(d).toLocaleDateString('pt-BR')
 
-const loadProjects = async () => {
+const loadProjects = async (page = 1) => {
+  loading.value = true
   try {
-    projects.value = await fetchApi('/projects')
+    const res = await fetchApi(`/projects?page=${page}&limit=9`)
+    projects.value = res.data
+    meta.value = res.meta
   } catch (e) {
     toastFromError(e, 'Erro ao carregar projetos')
   }
@@ -96,6 +108,7 @@ const handleCreate = async () => {
   try {
     const p = await fetchApi('/projects', { method: 'POST', body: JSON.stringify(form.value) })
     projects.value.unshift(p)
+    meta.value.totalItems++
     showCreate.value = false
     form.value = { name: '', slug: '', description: '' }
     slugManuallyEdited.value = false
@@ -108,7 +121,7 @@ const handleCreate = async () => {
   }
 }
 
-onMounted(loadProjects)
+onMounted(() => loadProjects(1))
 </script>
 
 <style scoped>

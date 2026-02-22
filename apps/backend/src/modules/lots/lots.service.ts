@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@infra/db/prisma.service';
 import { UpsertLotDetailsDto } from './dto/upsert-lot-details.dto';
+import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
+import { PaginatedResponse } from '@common/dto/paginated-response.dto';
+import { LotDetails } from '@prisma/client';
 
 @Injectable()
 export class LotsService {
@@ -14,15 +17,40 @@ export class LotsService {
     return lot;
   }
 
-  async findByProject(tenantId: string, projectId: string) {
-    return this.prisma.lotDetails.findMany({
-      where: { tenantId, projectId },
-      include: { 
-        mapElement: true,
-        medias: { orderBy: { createdAt: 'desc' } }
+  async findByProject(
+    tenantId: string,
+    projectId: string,
+    query: PaginationQueryDto,
+  ): Promise<PaginatedResponse<LotDetails>> {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    const [data, totalItems] = await Promise.all([
+      this.prisma.lotDetails.findMany({
+        where: { tenantId, projectId },
+        include: {
+          mapElement: true,
+          medias: { orderBy: { createdAt: 'desc' } },
+        },
+        orderBy: { mapElement: { code: 'asc' } },
+        skip,
+        take: limit,
+      }),
+      this.prisma.lotDetails.count({
+        where: { tenantId, projectId },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
       },
-      orderBy: { mapElement: { code: 'asc' } },
-    });
+    };
   }
 
   async upsert(

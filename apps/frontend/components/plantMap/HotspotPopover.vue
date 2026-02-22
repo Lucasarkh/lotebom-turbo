@@ -1,63 +1,70 @@
 <template>
   <!-- Absolute positioned popover anchored to the hotspot pin -->
   <Teleport to="body">
-    <Transition name="popover">
+    <Transition name="hs-pop">
       <div
         v-if="hotspot"
-        class="plant-popover"
+        class="hs-popover"
         :style="popoverStyle"
         role="dialog"
         :aria-label="`Info: ${hotspot.title}`"
         @click.stop
       >
+        <!-- Arrow -->
+        <div class="hs-popover__arrow" :style="arrowStyle"></div>
+
         <!-- Close button -->
-        <button class="plant-popover__close" aria-label="Fechar" @click="$emit('close')">
-          ✕
+        <button class="hs-popover__close" aria-label="Fechar" @click="$emit('close')">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none"><path d="M18 6L6 18M6 6l12 12" /></svg>
         </button>
 
-        <!-- Type badge -->
-        <div class="plant-popover__badge" :style="{ background: badgeColor }">
-          <span>{{ typeIcon }}</span>
-          <span>{{ typeLabel }}</span>
-        </div>
-
-        <!-- Title -->
-        <h3 class="plant-popover__title">{{ hotspot.title }}</h3>
-
-        <!-- Lot status pill -->
-        <div
-          v-if="hotspot.type === 'LOTE' && hotspot.loteStatus"
-          class="plant-popover__status"
-          :style="{ background: statusColor + '22', color: statusColor, borderColor: statusColor }"
-        >
-          {{ statusLabel }}
-        </div>
-
-        <!-- Description -->
-        <p v-if="hotspot.description" class="plant-popover__desc">
-          {{ hotspot.description }}
-        </p>
-
-        <!-- Meta fields -->
-        <div v-if="hotspot.metaJson && Object.keys(hotspot.metaJson).length" class="plant-popover__meta">
-          <div
-            v-for="(val, key) in hotspot.metaJson"
-            :key="key"
-            class="plant-popover__meta-row"
-          >
-            <span class="plant-popover__meta-key">{{ key }}</span>
-            <span class="plant-popover__meta-val">{{ val }}</span>
+        <div class="hs-popover__body">
+          <!-- Category & Status -->
+          <div class="hs-popover__top">
+            <span class="hs-popover__badge" :style="{ background: badgeColor + '15', color: badgeColor }">
+              <span class="hs-popover__badge-icon">{{ typeIcon }}</span>
+              {{ typeLabel }}
+            </span>
+            
+            <div
+              v-if="hotspot.type === 'LOTE' && hotspot.loteStatus"
+              class="hs-popover__status"
+              :style="{ background: statusColor, color: '#fff' }"
+            >
+              {{ statusLabel }}
+            </div>
           </div>
-        </div>
 
-        <!-- CTA -->
-        <button
-          v-if="ctaLink"
-          class="plant-popover__cta"
-          @click="handleCta"
-        >
-          Ver detalhes →
-        </button>
+          <!-- Title -->
+          <h3 class="hs-popover__title">{{ hotspot.title }}</h3>
+
+          <!-- Meta Data Grid (like Area, Preis, etc.) -->
+          <div v-if="hotspot.metaJson && Object.keys(hotspot.metaJson).length" class="hs-popover__meta">
+            <div
+              v-for="(val, key) in hotspot.metaJson"
+              :key="key"
+              class="hs-popover__meta-item"
+            >
+              <span class="hs-popover__meta-key">{{ key }}</span>
+              <span class="hs-popover__meta-val">{{ val }}</span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <p v-if="hotspot.description" class="hs-popover__desc">
+            {{ hotspot.description }}
+          </p>
+
+          <!-- Action -->
+          <button
+            v-if="ctaLink"
+            class="hs-popover__cta"
+            @click="handleCta"
+          >
+            Ver detalhes 
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" style="margin-left: 4px"><path d="M5 12h14m-7-7l7 7-7 7" /></svg>
+          </button>
+        </div>
       </div>
     </Transition>
   </Teleport>
@@ -108,55 +115,59 @@ const statusLabel = computed(() =>
 const ctaLink = computed(() => {
   if (!props.hotspot) return null
   const { linkType, linkId, linkUrl } = props.hotspot
-  
-  // Se estivermos na página pública, o link deve ser relativo ao projeto
   const tenant = route.params.tenant as string
   const project = route.params.project as string
   
   if (linkType === 'LOTE_PAGE' && linkId) {
-    if (tenant && project) {
-      return `/${tenant}/${project}/lote/${linkId}`
-    }
+    if (tenant && project) return `/${tenant}/${project}/lote/${linkId}`
     return `/lotes/${linkId}`
   }
-  
   if (linkType === 'PROJECT_PAGE' && linkId) {
     if (tenant) return `/${tenant}/${linkId}`
     return `/${linkId}`
   }
-  
   if (linkType === 'CUSTOM_URL' && linkUrl) return linkUrl
   return null
 })
 
 const handleCta = () => {
   if (!ctaLink.value) return
-  const link = ctaLink.value
-  if (link.startsWith('http')) {
-    window.open(link, '_blank', 'noopener')
+  if (ctaLink.value.startsWith('http')) {
+    window.open(ctaLink.value, '_blank', 'noopener')
   } else {
-    router.push(link)
+    router.push(ctaLink.value)
   }
 }
 
-// Position the popover above/to the right of anchor, clamped to viewport
-const POPOVER_W = 240
-const POPOVER_OFFSET = 16
+// ── POSITIONING LOGIC ──────────────────────────────────────
+const POPOVER_W = 260
+const POPOVER_OFFSET = 12
 
 const popoverStyle = computed(() => {
-  if (!import.meta.client) return {}
+  if (!import.meta.client || !props.hotspot) return { display: 'none' }
   const vw = window.innerWidth
   const vh = window.innerHeight
 
-  let left = props.anchorX + POPOVER_OFFSET
-  let top = props.anchorY - 80
+  let left = props.anchorX - POPOVER_W / 2
+  let top = props.anchorY - 140 
 
-  // Prevent overflow right
-  if (left + POPOVER_W > vw - 8) left = props.anchorX - POPOVER_W - POPOVER_OFFSET
-  // Prevent overflow top
-  if (top < 8) top = props.anchorY + POPOVER_OFFSET
-  // Prevent overflow bottom
-  if (top + 300 > vh - 8) top = vh - 310
+  // Horizontal clamping
+  if (left < 8) left = 8
+  if (left + POPOVER_W > vw - 8) left = vw - POPOVER_W - 8
+
+  // Decide if showing above or below
+  const spaceAbove = props.anchorY - 20
+  if (spaceAbove < 240) {
+    // Show below if not enough space above
+    top = props.anchorY + POPOVER_OFFSET + 20
+  } else {
+    // Show above
+    top = props.anchorY - POPOVER_OFFSET - 200 // Higher offset to start, will be content dependent
+  }
+
+  // Final clamp for vertical
+  if (top < 10) top = 10
+  if (top + 300 > vh - 10) top = vh - 310
 
   return {
     position: 'fixed' as const,
@@ -166,118 +177,178 @@ const popoverStyle = computed(() => {
     zIndex: 9999,
   }
 })
+
+const arrowStyle = computed(() => {
+  if (!props.hotspot) return {}
+  const popLeft = parseFloat(popoverStyle.value.left || '0')
+  const arrowX = props.anchorX - popLeft
+  const popTop = parseFloat(popoverStyle.value.top || '0')
+  const isBelow = popTop > props.anchorY
+
+  return {
+    left: `${arrowX}px`,
+    [isBelow ? 'top' : 'bottom']: '-6px',
+    transform: isBelow ? 'rotate(45deg) translateY(-50%)' : 'rotate(45deg) translateY(50%)',
+    display: (arrowX < 15 || arrowX > POPOVER_W - 15) ? 'none' : 'block'
+  }
+})
 </script>
 
 <style scoped>
-.plant-popover {
+.hs-popover {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
-  padding: 16px;
-  min-width: 220px;
-  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 16px;
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  user-select: none;
+  pointer-events: auto;
 }
 
-.plant-popover__close {
+.hs-popover__arrow {
   position: absolute;
-  top: 8px;
-  right: 10px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  color: #6b7280;
-  padding: 2px 6px;
-  border-radius: 4px;
-  line-height: 1;
+  width: 12px;
+  height: 12px;
+  background: white;
+  z-index: -1;
+  box-shadow: 2px 2px 2px rgba(0,0,0,0.03);
+  border-right: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
-.plant-popover__close:hover { background: #f3f4f6; color: #111; }
 
-.plant-popover__badge {
+.hs-popover__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+}
+.hs-popover__close:hover {
+  background: #e5e7eb;
+  color: #111;
+  transform: rotate(90deg);
+}
+
+.hs-popover__body {
+  padding: 16px;
+}
+
+.hs-popover__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.hs-popover__badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 20px;
-  margin-bottom: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
-.plant-popover__title {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.3;
-  padding-right: 20px;
-}
-
-.plant-popover__status {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 10px;
-  border-radius: 20px;
-  border: 1.5px solid;
-  margin-bottom: 8px;
-  letter-spacing: 0.04em;
+.hs-popover__status {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
   text-transform: uppercase;
 }
 
-.plant-popover__desc {
-  font-size: 13px;
-  color: #374151;
-  margin: 0 0 10px;
-  line-height: 1.5;
-}
-
-.plant-popover__meta {
-  background: #f9fafb;
-  border-radius: 6px;
-  padding: 8px;
-  margin-bottom: 10px;
-}
-.plant-popover__meta-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  gap: 8px;
-  padding: 2px 0;
-}
-.plant-popover__meta-key {
-  color: #6b7280;
-  text-transform: capitalize;
-}
-.plant-popover__meta-val {
-  font-weight: 600;
+.hs-popover__title {
+  font-size: 18px;
+  font-weight: 800;
   color: #111827;
+  margin: 0 0 12px;
+  line-height: 1.2;
 }
 
-.plant-popover__cta {
-  display: block;
+.hs-popover__meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.hs-popover__meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.hs-popover__meta-key {
+  font-size: 9px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.hs-popover__meta-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.hs-popover__desc {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0 0 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hs-popover__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  background: #1d4ed8;
+  padding: 10px 16px;
+  background: #2563eb;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 9px 16px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease;
-  text-align: center;
-  margin-top: 4px;
+  transition: background 0.2s;
 }
-.plant-popover__cta:hover { background: #1e40af; }
+.hs-popover__cta:hover {
+  background: #1d4ed8;
+}
 
-/* Transition */
-.popover-enter-active, .popover-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+/* Animations */
+.hs-pop-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.popover-enter-from, .popover-leave-to {
+.hs-pop-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hs-pop-enter-from,
+.hs-pop-leave-to {
   opacity: 0;
-  transform: scale(0.95) translateY(4px);
+  transform: scale(0.9) translateY(10px);
 }
 </style>
+

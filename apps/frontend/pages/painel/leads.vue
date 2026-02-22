@@ -64,6 +64,7 @@
                 v-if="authStore.canEdit"
                 :value="lead.status"
                 class="form-select form-select-sm"
+                @click.stop
                 @change="updateStatus(lead, $event.target.value)"
               >
                 <option value="NEW">Novo</option>
@@ -77,12 +78,14 @@
             </td>
             <td>{{ new Date(lead.createdAt).toLocaleDateString('pt-BR') }}</td>
             <td v-if="authStore.canEdit">
-              <button class="btn btn-danger btn-sm" @click="deleteLead(lead)">Excluir</button>
+              <button class="btn btn-danger btn-sm" @click.stop="deleteLead(lead)">Excluir</button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <CommonPagination :meta="meta" @change="loadLeads" />
 
     <!-- Detail Modal -->
     <div v-if="selectedLead" class="modal-overlay" @click.self="selectedLead = null">
@@ -116,6 +119,7 @@ const loading = ref(true)
 const error = ref('')
 const leads = ref([])
 const projects = ref([])
+const meta = ref({ totalItems: 0, itemCount: 0, itemsPerPage: 10, totalPages: 0, currentPage: 1 })
 const selectedLead = ref(null)
 const filters = ref({ projectId: '', status: '' })
 
@@ -129,15 +133,19 @@ const statusLabel = (s) => ({
   NEGOTIATING: 'Negociando', CONVERTED: 'Convertido', LOST: 'Perdido',
 }[s] || s)
 
-const loadLeads = async () => {
+const loadLeads = async (page = 1) => {
   loading.value = true
   error.value = ''
   try {
     const params = new URLSearchParams()
     if (filters.value.projectId) params.set('projectId', filters.value.projectId)
     if (filters.value.status) params.set('status', filters.value.status)
+    params.set('page', page)
+    params.set('limit', 10)
     const qs = params.toString()
-    leads.value = await fetchApi(`/leads${qs ? '?' + qs : ''}`)
+    const res = await fetchApi(`/leads${qs ? '?' + qs : ''}`)
+    leads.value = res.data
+    meta.value = res.meta
   } catch (e) {
     error.value = 'Não foi possível carregar os leads.'
     toastFromError(e, 'Erro ao carregar leads')

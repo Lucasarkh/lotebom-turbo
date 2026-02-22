@@ -2,7 +2,9 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '@/infra/db/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectStatus, Project } from '@prisma/client';
+import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
+import { PaginatedResponse } from '@common/dto/paginated-response.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -24,15 +26,39 @@ export class ProjectsService {
     });
   }
 
-  async findAll(tenantId: string) {
-    return this.prisma.project.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        tenant: { select: { slug: true, name: true } },
-        _count: { select: { mapElements: true, leads: true } },
+  async findAll(
+    tenantId: string,
+    query: PaginationQueryDto,
+  ): Promise<PaginatedResponse<Project>> {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    const [data, totalItems] = await Promise.all([
+      this.prisma.project.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          tenant: { select: { slug: true, name: true } },
+          _count: { select: { mapElements: true, leads: true } },
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.project.count({
+        where: { tenantId },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
       },
-    });
+    };
   }
 
   async findOne(tenantId: string, id: string) {
@@ -104,6 +130,9 @@ export class ProjectsService {
         ...(dto.highlightsJson !== undefined && { highlightsJson: dto.highlightsJson }),
         ...(dto.locationText !== undefined && { locationText: dto.locationText }),
         ...(dto.showPaymentConditions !== undefined && { showPaymentConditions: dto.showPaymentConditions }),
+        ...(dto.startingPrice !== undefined && { startingPrice: dto.startingPrice }),
+        ...(dto.maxInstallments !== undefined && { maxInstallments: dto.maxInstallments }),
+        ...(dto.paymentConditionsSummary !== undefined && { paymentConditionsSummary: dto.paymentConditionsSummary }),
       },
       include: {
         tenant: { select: { slug: true, name: true } },

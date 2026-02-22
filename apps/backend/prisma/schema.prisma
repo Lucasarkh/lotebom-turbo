@@ -134,6 +134,9 @@ model Project {
   highlightsJson  Json?
   locationText    String?       @db.Text
   showPaymentConditions Boolean @default(false)
+  startingPrice   Float?
+  maxInstallments Int?
+  paymentConditionsSummary String? @db.Text
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

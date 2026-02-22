@@ -4,6 +4,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '@prisma/client';
+import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
+import { PaginatedResponse } from '@common/dto/paginated-response.dto';
 
 const USER_SELECT = {
   id: true,
@@ -40,12 +42,33 @@ export class UserService {
     });
   }
 
-  async findAll(tenantId: string) {
-    return this.prisma.user.findMany({
-      where: { tenantId },
-      select: USER_SELECT,
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(tenantId: string, query: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { tenantId },
+        select: USER_SELECT,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({
+        where: { tenantId },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        totalItems: total,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    };
   }
 
   async findById(tenantId: string, id: string) {

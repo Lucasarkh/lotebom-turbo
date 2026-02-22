@@ -40,6 +40,10 @@
               <div v-if="priceRange" class="v4-stat-card">
                 <span class="v4-stat-label">Investimento inicial</span>
                 <span class="v4-stat-value">R$ {{ priceRange }}</span>
+                <div v-if="project.maxInstallments || project.paymentConditionsSummary" class="v4-stat-meta">
+                  <span v-if="project.maxInstallments" class="v4-stat-installments">em até {{ project.maxInstallments }}x</span>
+                  <p v-if="project.paymentConditionsSummary" class="v4-stat-summary">{{ project.paymentConditionsSummary }}</p>
+                </div>
               </div>
             </div>
 
@@ -77,28 +81,6 @@
         </div>
       </div>
 
-      <!-- Highlights & Info -->
-      <section v-if="highlights.length || project.locationText" class="v4-section" id="info">
-        <div class="v4-container">
-          <div class="v4-section-header">
-            <h2 class="v4-section-title">Diferenciais do Projeto</h2>
-            <p v-if="project.locationText" class="v4-section-subtitle">{{ project.locationText }}</p>
-          </div>
-
-          <div v-if="highlights.length" class="v4-highlights-grid">
-            <div v-for="h in highlights" :key="h.label" class="v4-highlight-card">
-              <div class="v4-highlight-icon-wrapper">
-                <span class="v4-highlight-icon">{{ h.icon }}</span>
-              </div>
-              <div class="v4-highlight-content">
-                <h4 class="v4-highlight-label">{{ h.label }}</h4>
-                <p v-if="h.value" class="v4-highlight-value">{{ h.value }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Planta Interativa -->
       <section v-if="plantMap" class="v4-section" id="planta">
         <div class="v4-container">
@@ -128,7 +110,8 @@
         <div class="v4-container">
           <div class="v4-section-header center">
             <h2 class="v4-section-title">Vista 360°</h2>
-            <p class="v4-section-subtitle">Explore o empreendimento e seus arredores com vista panorâmica.</p>
+            <p v-if="panoramas[0]?.description" class="v4-section-subtitle">{{ panoramas[0].description }}</p>
+            <p v-else class="v4-section-subtitle">Explore o empreendimento e seus arredores com vista panorâmica.</p>
           </div>
           <ClientOnly>
             <div
@@ -147,6 +130,29 @@
         </div>
       </section>
 
+      <!-- Highlights & Info -->
+      <section v-if="highlights.length || project.locationText" class="v4-section" id="info">
+        <div class="v4-container">
+          <div class="v4-section-header center">
+            <h2 class="v4-section-title">Diferenciais do Projeto</h2>
+          </div>
+
+          <div v-if="project.locationText" class="v4-rich-content" v-html="formattedLocationText"></div>
+
+          <div v-if="highlights.length" class="v4-highlights-grid">
+            <div v-for="h in highlights" :key="h.label" class="v4-highlight-card">
+              <div class="v4-highlight-icon-wrapper">
+                <span class="v4-highlight-icon">{{ h.icon }}</span>
+              </div>
+              <div class="v4-highlight-content">
+                <h4 class="v4-highlight-label">{{ h.label }}</h4>
+                <p v-if="h.value" class="v4-highlight-value">{{ h.value }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Available Lots Grid -->
       <section v-if="unifiedAvailableLots.length" class="v4-section" id="lotes">
         <div class="v4-container">
@@ -156,7 +162,7 @@
           </div>
 
           <div class="v4-lots-grid">
-            <NuxtLink v-for="lot in unifiedAvailableLots" :key="lot.id" :to="lotPageUrl(lot)" class="v4-lot-card">
+            <NuxtLink v-for="lot in unifiedAvailableLots.slice(0, 6)" :key="lot.id" :to="lotPageUrl(lot)" class="v4-lot-card">
               <div class="v4-lot-card-header">
                 <div class="v4-lot-id">
                   <span class="v4-lot-label">Unidade</span>
@@ -182,6 +188,12 @@
               </div>
             </NuxtLink>
           </div>
+
+          <div v-if="unifiedAvailableLots.length > 6" style="margin-top: 56px; display: flex; justify-content: center;">
+            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;">
+              Ver todas as {{ unifiedAvailableLots.length }} unidades disponíveis
+            </NuxtLink>
+          </div>
         </div>
       </section>
 
@@ -195,7 +207,7 @@
 
           <div class="v4-gallery-grid">
             <div 
-              v-for="(m, i) in project.projectMedias" 
+              v-for="(m, i) in project.projectMedias.slice(0, 9)" 
               :key="m.id" 
               class="v4-gallery-item"
               :class="{'v4-gallery-item--large': i === 0}"
@@ -208,6 +220,12 @@
                 <span class="v4-gallery-expand">↗</span>
               </div>
             </div>
+          </div>
+
+          <div v-if="project.projectMedias.length > 9" style="margin-top: 56px; display: flex; justify-content: center;">
+            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/galeria`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;">
+              Ver todos os {{ project.projectMedias.length }} arquivos de mídia
+            </NuxtLink>
           </div>
         </div>
       </section>
@@ -362,6 +380,10 @@ const leadSuccess = ref(false)
 const leadError = ref('')
 const formRef = ref(null)
 
+const lotsPage = ref(1)
+const lotsTeaserCount = 6
+const lotsPerPage = 12 // Used in pagination on units page if needed, but for index teaser we use 6
+
 const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
 const lightboxMedia = computed(() => project.value?.projectMedias?.[lightboxIdx.value] ?? null)
@@ -435,14 +457,14 @@ const mapDataLots = computed(() => {
 const hasMapData = computed(() => !!project.value?.mapData)
 
 const unifiedAvailableLots = computed(() => {
+  let list = []
   if (hasMapData.value) {
     const rawMapData = typeof project.value.mapData === 'string' ? JSON.parse(project.value.mapData) : project.value.mapData
     const PPM = Number(rawMapData.pixelsPerMeter) || 10
 
-    return mapDataLots.value
+    list = mapDataLots.value
       .filter((l: any) => l.status === 'available')
       .map((l: any) => {
-        // Area priority: Manual > Side metrics (contract) > Drawing (pixel)
         const contractArea = calcContractArea(l)
         let finalAreaM2 = (Number(l.area) > 0 ? (Number(l.area) / (PPM * PPM)) : 0)
         
@@ -452,7 +474,6 @@ const unifiedAvailableLots = computed(() => {
           finalAreaM2 = contractArea
         }
 
-        // Frontage priority: Manual > Drawing (pixel)
         const finalFrontage = l.manualFrontage != null
           ? Number(l.manualFrontage)
           : (Number(l.frontage) > 0 ? (Number(l.frontage) / PPM) : 0)
@@ -468,8 +489,41 @@ const unifiedAvailableLots = computed(() => {
           }
         }
       })
+  } else {
+    list = availableLotElements.value
   }
-  return availableLotElements.value
+  return list
+})
+
+const paginatedAvailableLots = computed(() => {
+  const start = (lotsPage.value - 1) * lotsPerPage
+  const end = start + lotsPerPage
+  return unifiedAvailableLots.value.slice(start, end)
+})
+
+const lotsMeta = computed(() => ({
+  totalItems: unifiedAvailableLots.value.length,
+  itemCount: paginatedAvailableLots.value.length,
+  itemsPerPage: lotsPerPage,
+  totalPages: Math.ceil(unifiedAvailableLots.value.length / lotsPerPage),
+  currentPage: lotsPage.value
+}))
+
+const formattedLocationText = computed(() => {
+  const text = project.value?.locationText || ''
+  if (!text) return ''
+  
+  // Se parece conter HTML estrutural gerado pelo editor, retorna como está e deixa o CSS cuidar dos espaçamentos
+  if (text.includes('<p>') || text.includes('<div>') || text.includes('<ul>') || text.includes('<li>')) {
+    return text
+  }
+
+  // Caso contrário, trata como texto puro (markdown simples ou rascunho sem HTML)
+  // Converte quebras de linha em parágrafos, preservando linhas vazias como espaços
+  return text
+    .split('\n')
+    .map(t => `<p>${t.trim() || '&nbsp;'}</p>`)
+    .join('')
 })
 
 const totalLots = computed(() => {
@@ -490,6 +544,10 @@ const soldLots = computed(() => {
 })
 
 const priceRange = computed(() => {
+  if (project.value?.startingPrice) {
+    return project.value.startingPrice.toLocaleString('pt-BR')
+  }
+
   let prices: number[] = []
   if (hasMapData.value) {
     prices = mapDataLots.value
@@ -617,7 +675,7 @@ function openLightbox(idx: number) {
 }
 
 .v4-section {
-  padding: 80px 0; /* Consistent, balanced spacing */
+  padding: 48px 0; /* Reduced from 80px to avoid excessive gaps between sections */
   position: relative;
 }
 
@@ -626,7 +684,7 @@ function openLightbox(idx: number) {
 }
 
 .v4-section-header {
-  margin-bottom: 44px;
+  margin-bottom: 32px; /* Reduced from 44px */
   max-width: 800px;
 }
 
@@ -648,6 +706,36 @@ function openLightbox(idx: number) {
   line-height: 1.38105;
   color: var(--v4-text-muted);
   font-weight: 400;
+}
+
+.v4-rich-content {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--v4-text);
+  max-width: 800px;
+  margin: 0 auto 32px; /* Margin bottom for text wrap, matches header's vibe */
+}
+
+/* Ensure spacing between rich content elements */
+.v4-rich-content :deep(p), .v4-rich-content p,
+.v4-rich-content :deep(div), .v4-rich-content div {
+  margin-bottom: 20px;
+}
+
+.v4-rich-content :deep(ul), .v4-rich-content ul {
+  padding-left: 24px;
+  margin-bottom: 20px;
+  list-style-type: disc;
+}
+
+.v4-rich-content :deep(li), .v4-rich-content li {
+  margin-bottom: 8px;
+}
+
+.v4-rich-content :deep(strong), .v4-rich-content strong, 
+.v4-rich-content :deep(b), .v4-rich-content b {
+  font-weight: 700;
+  color: #000;
 }
 
 .v4-pulse {
@@ -786,6 +874,25 @@ function openLightbox(idx: number) {
   font-size: 28px;
   font-weight: 700;
   color: #ffffff;
+}
+
+.v4-stat-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.2;
+}
+
+.v4-stat-installments {
+  font-weight: 700;
+  color: #32d74b; /* Apple Green for highlights */
+  display: block;
+}
+
+.v4-stat-summary {
+  margin-top: 2px;
+  max-width: 150px;
+  margin-inline: auto;
 }
 
 .v4-hero-actions {
@@ -942,6 +1049,22 @@ function openLightbox(idx: number) {
 .v4-highlight-icon { font-size: 40px; }
 .v4-highlight-label { font-size: 19px; font-weight: 600; margin-bottom: 8px; }
 .v4-highlight-value { font-size: 17px; color: var(--v4-text-muted); line-height: 1.47059; }
+
+/* Rich Content */
+.v4-rich-content {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--v4-text-muted);
+  max-width: 800px;
+  margin: 0 auto 60px;
+  text-align: left;
+}
+.v4-rich-content :deep(p) { margin-bottom: 1.2rem; }
+.v4-rich-content :deep(strong), .v4-rich-content :deep(b) { color: var(--v4-text); font-weight: 700; }
+
+@media (max-width: 768px) {
+  .v4-rich-content { font-size: 17px; padding: 0 20px; }
+}
 
 /* Map Container */
 .v4-map-container {

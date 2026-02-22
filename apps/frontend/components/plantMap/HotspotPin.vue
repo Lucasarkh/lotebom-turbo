@@ -5,9 +5,9 @@
     role="button"
     :aria-label="hotspot.title"
     tabindex="0"
-    @click.stop="$emit('click', hotspot)"
-    @keydown.enter.stop="$emit('click', hotspot)"
-    @keydown.space.stop="$emit('click', hotspot)"
+    @click.stop="$emit('click', $event, hotspot)"
+    @keydown.enter.stop="$emit('click', $event, hotspot)"
+    @keydown.space.stop="$emit('click', $event, hotspot)"
   >
     <!-- Base Anchor Dot -->
     <circle
@@ -104,7 +104,7 @@ const props = withDefaults(defineProps<{
   pinRadius: 14,
 })
 
-defineEmits<{ (e: 'click', hotspot: PlantHotspot): void }>()
+defineEmits<{ (e: 'click', event: MouseEvent | KeyboardEvent, hotspot: PlantHotspot): void }>()
 
 const cx = computed(() => props.hotspot.x * props.containerWidth)
 const cy = computed(() => props.hotspot.y * props.containerHeight)

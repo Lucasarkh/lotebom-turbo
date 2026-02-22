@@ -41,6 +41,14 @@
           </tr>
         </tbody>
       </table>
+      
+      <div v-if="meta.totalPages > 1" style="margin-top: var(--space-4); padding: 0 var(--space-4) var(--space-4);">
+        <CommonPagination 
+          :current-page="meta.page" 
+          :total-pages="meta.totalPages" 
+          @change="loadUsers" 
+        />
+      </div>
     </div>
 
     <!-- Create / Edit Modal -->
@@ -97,6 +105,7 @@ const { success: toastSuccess, fromError: toastFromError } = useToast()
 const loading = ref(true)
 const error = ref('')
 const users = ref([])
+const meta = ref({ total: 0, page: 1, limit: 10, totalPages: 0 })
 const showCreate = ref(false)
 const editingUser = ref(null)
 const formLoading = ref(false)
@@ -106,10 +115,14 @@ const form = ref({ name: '', email: '', password: '', role: 'EDITOR' })
 const roleBadge = (r) => ({ ADMIN: 'badge-danger', EDITOR: 'badge-primary', VIEWER: 'badge-neutral' }[r] || 'badge-neutral')
 const roleLabel = (r) => ({ ADMIN: 'Administrador', EDITOR: 'Editor', VIEWER: 'Visualizador' }[r] || r)
 
-const loadUsers = async () => {
+const loadUsers = async (page = 1) => {
   loading.value = true
   error.value = ''
-  try { users.value = await fetchApi('/users') } catch (e) {
+  try {
+    const res = await fetchApi(`/users?page=${page}&limit=10`)
+    users.value = res.data
+    meta.value = res.meta
+  } catch (e) {
     error.value = 'Não foi possível carregar os usuários.'
     toastFromError(e, 'Erro ao carregar usuários')
   }
@@ -125,8 +138,8 @@ const createUser = async () => {
   if (form.value.password.length < 6) { formError.value = 'Senha deve ter no mínimo 6 caracteres'; return }
   formLoading.value = true; formError.value = ''
   try {
-    const u = await fetchApi('/users', { method: 'POST', body: JSON.stringify(form.value) })
-    users.value.push(u)
+    await fetchApi('/users', { method: 'POST', body: JSON.stringify(form.value) })
+    await loadUsers(1)
     closeModal()
     toastSuccess('Usuário criado com sucesso!')
   } catch (e) {

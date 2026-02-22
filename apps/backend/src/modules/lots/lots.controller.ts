@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -15,6 +16,7 @@ import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { LotsService } from './lots.service';
 import { UpsertLotDetailsDto } from './dto/upsert-lot-details.dto';
+import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 
 @ApiTags('Lots')
 @ApiBearerAuth()
@@ -28,8 +30,9 @@ export class LotsController {
   findAll(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
+    @Query() pagination: PaginationQueryDto,
   ) {
-    return this.lotsService.findByProject(tenantId, projectId);
+    return this.lotsService.findByProject(tenantId, projectId, pagination);
   }
 
   @Get(':mapElementId')

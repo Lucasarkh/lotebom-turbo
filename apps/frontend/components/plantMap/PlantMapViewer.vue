@@ -61,7 +61,7 @@
             :selected="selectedHotspot?.id === hs.id"
             :show-label="showLabels"
             :pin-radius="pinRadiusForScale"
-            @click="openPopover($event, hs)"
+            @click="openPopover"
           />
         </template>
       </svg>
@@ -221,16 +221,30 @@ watch(showBeacons, (val) => {
   if (!val) selectedHotspot.value = null
 })
 
+// Close popover when map is moved/zoomed
+watch(() => transform.value, () => {
+  if (selectedHotspot.value) selectedHotspot.value = null
+}, { deep: true })
+
 const popoverAnchor = ref({ x: 0, y: 0 })
 
-const openPopover = (e: MouseEvent | PlantHotspot, hotspot?: PlantHotspot) => {
-  // Can be called from @click on HotspotPin (MouseEvent) or directly
-  if (e instanceof MouseEvent) {
-    popoverAnchor.value = { x: e.clientX, y: e.clientY }
+const openPopover = (event: MouseEvent | KeyboardEvent | PlantHotspot, hotspot?: PlantHotspot) => {
+  if (event instanceof MouseEvent || event instanceof KeyboardEvent) {
+    // If it's a keyboard event, we might want to center it, or use fixed position
+    if (event instanceof MouseEvent) {
+      popoverAnchor.value = { x: event.clientX, y: event.clientY }
+    } else {
+      // Keyboard enter/space - fallback or try to get target rect
+      const target = event.target as HTMLElement
+      const rect = target?.getBoundingClientRect?.()
+      if (rect) {
+        popoverAnchor.value = { x: rect.left + rect.width / 2, y: rect.top }
+      }
+    }
     selectedHotspot.value = hotspot ?? null
   } else {
-    // Called via keyboard (PlantHotspot passed directly)
-    selectedHotspot.value = e
+    // Fallback for direct calls
+    selectedHotspot.value = event
   }
 }
 

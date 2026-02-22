@@ -115,14 +115,23 @@ const loadDashboard = async () => {
   loading.value = true
   error.value = ''
   try {
-    const [p, l] = await Promise.all([fetchApi('/projects'), fetchApi('/leads')])
+    // Current pagination is default (10 items), let's get a few more for stats
+    const [pRes, lRes] = await Promise.all([
+      fetchApi('/projects?limit=50'), 
+      fetchApi('/leads?limit=50')
+    ])
+    
+    const p = pRes.data || []
+    const l = lRes.data || []
+    
     projects.value = p
     recentLeads.value = l
+    
     stats.value = {
-      projects: p.length,
+      projects: pRes.meta?.totalItems ?? p.length,
       publishedProjects: p.filter(x => x.status === 'PUBLISHED').length,
       totalLots: p.reduce((sum, x) => sum + (x._count?.mapElements ?? 0), 0),
-      totalLeads: l.length,
+      totalLeads: lRes.meta?.totalItems ?? l.length,
     }
   } catch (e) {
     error.value = 'Não foi possível carregar os dados do dashboard.'
