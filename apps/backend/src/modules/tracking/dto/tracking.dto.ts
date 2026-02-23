@@ -40,6 +40,10 @@ export class CreateSessionDto {
   @IsOptional()
   @IsString()
   referrer?: string;
+
+  @IsOptional()
+  @IsString()
+  realtorCode?: string;
 }
 
 export class CreateEventDto {

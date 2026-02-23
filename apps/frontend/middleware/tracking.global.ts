@@ -17,6 +17,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await tracking.initTracking({
       tenantSlug: tenant,
       projectSlug: project,
+      realtorCode: to.query.c as string,
     });
   }
 

@@ -11,6 +11,7 @@ export const useTracking = () => {
     projectId?: string;
     tenantSlug?: string;
     projectSlug?: string;
+    realtorCode?: string;
   }) => {
     if (store.isInitialized) return;
 
@@ -23,6 +24,7 @@ export const useTracking = () => {
       utmCampaign: query.utm_campaign as string,
       utmContent: query.utm_content as string,
       utmTerm: query.utm_term as string,
+      realtorCode: params.realtorCode || (query.c as string),
       referrer: document.referrer || undefined,
     };
 

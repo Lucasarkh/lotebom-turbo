@@ -7,7 +7,7 @@ export class TrackingService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createSession(dto: CreateSessionDto, ip?: string, userAgent?: string) {
-    const { tenantSlug, projectSlug, ...data } = dto;
+    const { tenantSlug, projectSlug, realtorCode, ...data } = dto;
     let { tenantId, projectId } = data;
 
     if (!tenantId && tenantSlug) {
@@ -26,7 +26,7 @@ export class TrackingService {
       }
     }
 
-    return this.prisma.trackingSession.create({
+    const session = await this.prisma.trackingSession.create({
       data: {
         ...data,
         tenantId,
@@ -35,6 +35,24 @@ export class TrackingService {
         userAgent,
       },
     });
+
+    // Auto-track realtor link click if code provided
+    if (realtorCode && tenantId) {
+      const realtor = await this.prisma.realtorLink.findUnique({
+        where: { tenantId_code: { tenantId, code: realtorCode } },
+      });
+      if (realtor) {
+        await this.trackEvent({
+          sessionId: session.id,
+          type: 'CLICK',
+          category: 'REALTOR_LINK',
+          action: 'OPEN_LINK',
+          label: `${realtor.name} (${realtor.code})`,
+        });
+      }
+    }
+
+    return session;
   }
 
   async trackEvent(dto: CreateEventDto) {
