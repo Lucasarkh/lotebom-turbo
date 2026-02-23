@@ -7,9 +7,30 @@ export class TrackingService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createSession(dto: CreateSessionDto, ip?: string, userAgent?: string) {
+    const { tenantSlug, projectSlug, ...data } = dto;
+    let { tenantId, projectId } = data;
+
+    if (!tenantId && tenantSlug) {
+      const tenant = await this.prisma.tenant.findUnique({ where: { slug: tenantSlug } });
+      if (tenant) {
+        tenantId = tenant.id;
+      }
+    }
+
+    if (!projectId && projectSlug && tenantId) {
+      const project = await this.prisma.project.findFirst({
+        where: { tenantId, slug: projectSlug }
+      });
+      if (project) {
+        projectId = project.id;
+      }
+    }
+
     return this.prisma.trackingSession.create({
       data: {
-        ...dto,
+        ...data,
+        tenantId,
+        projectId,
         ip,
         userAgent,
       },
@@ -24,17 +45,21 @@ export class TrackingService {
     });
   }
 
-  async getMostAccessedLots(query: TrackingReportQueryDto) {
+  private getSessionWhere(query: TrackingReportQueryDto) {
     const { tenantId, projectId } = query;
+    return {
+      tenantId,
+      ...(projectId && projectId !== 'all' ? { projectId } : {}),
+    };
+  }
+
+  async getMostAccessedLots(query: TrackingReportQueryDto) {
+    const whereSession = this.getSessionWhere(query);
     return this.prisma.trackingEvent.groupBy({
       by: ['label'],
       where: {
-        type: 'CLICK',
         category: 'LOT',
-        session: {
-          tenantId,
-          projectId,
-        }
+        session: whereSession
       },
       _count: {
         id: true,
@@ -49,15 +74,12 @@ export class TrackingService {
   }
 
   async getPageViews(query: TrackingReportQueryDto) {
-    const { tenantId, projectId } = query;
+    const whereSession = this.getSessionWhere(query);
     return this.prisma.trackingEvent.groupBy({
       by: ['path'],
       where: {
         type: 'PAGE_VIEW',
-        session: {
-          tenantId,
-          projectId,
-        }
+        session: whereSession
       },
       _count: {
         id: true,
@@ -71,16 +93,12 @@ export class TrackingService {
   }
 
   async getRealtorLinkClicks(query: TrackingReportQueryDto) {
-    const { tenantId, projectId } = query;
+    const whereSession = this.getSessionWhere(query);
     return this.prisma.trackingEvent.groupBy({
       by: ['label'],
       where: {
-        type: 'CLICK',
         category: 'REALTOR_LINK',
-        session: {
-          tenantId,
-          projectId,
-        }
+        session: whereSession
       },
       _count: {
         id: true,
@@ -94,13 +112,10 @@ export class TrackingService {
   }
 
   async getLeadSources(query: TrackingReportQueryDto) {
-    const { tenantId, projectId } = query;
+    const whereSession = this.getSessionWhere(query);
     return this.prisma.trackingSession.groupBy({
       by: ['utmSource'],
-      where: {
-        tenantId,
-        projectId,
-      },
+      where: whereSession,
       _count: {
         id: true,
       },
@@ -113,11 +128,7 @@ export class TrackingService {
   }
 
   async getMetrics(query: TrackingReportQueryDto) {
-    const { tenantId, projectId } = query;
-    const whereSession = {
-      tenantId,
-      ...(projectId && projectId !== 'all' ? { projectId } : {}),
-    };
+    const whereSession = this.getSessionWhere(query);
 
     const [
       totalSessions,
@@ -134,10 +145,10 @@ export class TrackingService {
         where: { type: 'PAGE_VIEW', session: whereSession },
       }),
       this.prisma.trackingEvent.count({
-        where: { type: 'CLICK', category: 'LOT', session: whereSession },
+        where: { category: 'LOT', session: whereSession },
       }),
       this.prisma.trackingEvent.count({
-        where: { type: 'CLICK', category: 'REALTOR_LINK', session: whereSession },
+        where: { category: 'REALTOR_LINK', session: whereSession },
       }),
       this.prisma.trackingSession.groupBy({
         by: ['utmSource'],
@@ -155,14 +166,14 @@ export class TrackingService {
       }),
       this.prisma.trackingEvent.groupBy({
         by: ['label'],
-        where: { type: 'CLICK', category: 'LOT', session: whereSession },
+        where: { category: 'LOT', session: whereSession },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
         take: 10,
       }),
       this.prisma.trackingEvent.groupBy({
         by: ['label'],
-        where: { type: 'CLICK', category: 'REALTOR_LINK', session: whereSession },
+        where: { category: 'REALTOR_LINK', session: whereSession },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
         take: 10,

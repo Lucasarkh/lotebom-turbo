@@ -401,6 +401,8 @@ definePageMeta({ layout: 'public' })
 const route = useRoute()
 const { fetchPublic } = usePublicApi()
 const { success: toastSuccess } = useToast()
+const tracking = useTracking()
+const trackingStore = useTrackingStore()
 
 const tenantSlug = route.params.tenant as string
 const projectSlug = route.params.project as string
@@ -645,8 +647,19 @@ onMounted(async () => {
       fetchPublic(`/p/${tenantSlug}/${projectSlug}`),
       corretorCode ? fetchPublic(`/p/${tenantSlug}/corretores/${corretorCode}`) : Promise.resolve(null),
     ])
-    if (p.status === 'fulfilled') project.value = p.value
-    else error.value = (p.reason as any)?.message || 'Loteamento não encontrado'
+    if (p.status === 'fulfilled') {
+      project.value = p.value
+      // Initialize tracking
+      await tracking.initTracking({ 
+        tenantId: p.value.tenantId, 
+        projectId: p.value.id 
+      })
+      // Specific page view for the lot
+      tracking.trackPageView({ 
+        category: 'LOT', 
+        label: lotCode 
+      })
+    } else error.value = (p.reason as any)?.message || 'Loteamento não encontrado'
     if (c.status === 'fulfilled' && c.value) corretor.value = c.value
   } catch (e: any) {
     error.value = e.message || 'Erro ao carregar'

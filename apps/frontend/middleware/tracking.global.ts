@@ -13,9 +13,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Initializing session if needed
   if (tenant || project) {
-    // Only init if we have a context or it's first page load
-    // Note: initTracking has internal guard against multiple init
-    await tracking.initTracking({});
+    // Pass slugs so backend can resolve early for correct association in dashboard
+    await tracking.initTracking({
+      tenantSlug: tenant,
+      projectSlug: project,
+    });
   }
 
   // Tracking page view (will only work if session already exists, i.e., non-entry pages)

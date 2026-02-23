@@ -6,7 +6,12 @@ export const useTracking = () => {
   const api = usePublicApi();
   const route = useRoute();
 
-  const initTracking = async (params: { tenantId?: string; projectId?: string }) => {
+  const initTracking = async (params: { 
+    tenantId?: string; 
+    projectId?: string;
+    tenantSlug?: string;
+    projectSlug?: string;
+  }) => {
     if (store.isInitialized) return;
 
     store.loadFromStorage();

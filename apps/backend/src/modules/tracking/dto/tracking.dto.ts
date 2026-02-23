@@ -11,6 +11,14 @@ export class CreateSessionDto {
 
   @IsOptional()
   @IsString()
+  tenantSlug?: string;
+
+  @IsOptional()
+  @IsString()
+  projectSlug?: string;
+
+  @IsOptional()
+  @IsString()
   utmSource?: string;
 
   @IsOptional()

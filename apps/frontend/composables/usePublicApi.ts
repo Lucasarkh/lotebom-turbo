@@ -16,5 +16,9 @@ export const usePublicApi = () => {
     return txt ? JSON.parse(txt) : null
   }
 
-  return { fetchPublic }
+  return { 
+    fetchPublic,
+    get: (url: string, options: any = {}) => fetchPublic(url, { ...options, method: 'GET' }),
+    post: (url: string, body?: any, options: any = {}) => fetchPublic(url, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  }
 }
