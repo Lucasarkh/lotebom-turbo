@@ -2,11 +2,11 @@
 const { get, post, patch, delete: del } = useApi()
 const toast = useToast()
 
-const campaigns = ref([])
-const projects = ref([])
+const campaigns = ref<any[]>([])
+const projects = ref<any[]>([])
 const loading = ref(true)
 const showModal = ref(false)
-const editingCampaign = ref(null)
+const editingCampaign = ref<any>(null)
 
 const form = ref({
   projectId: '',
@@ -16,6 +16,7 @@ const form = ref({
   utmCampaign: '',
   utmContent: '',
   utmTerm: '',
+  budget: 0,
   active: true
 })
 
@@ -73,12 +74,13 @@ function openCreate() {
     utmCampaign: '',
     utmContent: '',
     utmTerm: '',
+    budget: 0,
     active: true
   }
   showModal.value = true
 }
 
-function openEdit(campaign) {
+function openEdit(campaign: any) {
   editingCampaign.value = campaign
   form.value = {
     projectId: campaign.projectId,
@@ -88,12 +90,13 @@ function openEdit(campaign) {
     utmCampaign: campaign.utmCampaign,
     utmContent: campaign.utmContent || '',
     utmTerm: campaign.utmTerm || '',
+    budget: campaign.budget || 0,
     active: campaign.active
   }
   showModal.value = true
 }
 
-function generateLink(campaign) {
+function generateLink(campaign: any) {
   if (!campaign.project) return ''
   const tenantSlug = campaign.tenant?.slug || 'demo'
   const projectSlug = campaign.project.slug
@@ -108,7 +111,7 @@ function generateLink(campaign) {
   return url
 }
 
-function copyLink(campaign) {
+function copyLink(campaign: any) {
   const url = generateLink(campaign)
   if (!url) return
   navigator.clipboard.writeText(url)
@@ -172,6 +175,9 @@ definePageMeta({
               </span>
             </td>
             <td class="text-right actions">
+              <NuxtLink :to="`/painel/campanhas/${campaign.id}`" class="btn btn-sm btn-outline">
+                Performance
+              </NuxtLink>
               <button class="btn btn-sm btn-outline" @click="copyLink(campaign)">
                 Copiar Link
               </button>
@@ -236,6 +242,14 @@ definePageMeta({
               <div class="form-group">
                 <label class="form-label">UTM Term</label>
                 <input v-model="form.utmTerm" type="text" class="form-input" placeholder="Ex: palavra_chave" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Verba Mensal Estimada (Opcional)</label>
+              <div class="input-with-prefix">
+                <span class="prefix">R$</span>
+                <input v-model.number="form.budget" type="number" step="0.01" class="form-input" placeholder="0,00" />
               </div>
             </div>
 

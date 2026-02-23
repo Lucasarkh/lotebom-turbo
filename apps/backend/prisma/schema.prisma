@@ -449,11 +449,27 @@ model Campaign {
   utmCampaign  String
   utmContent   String?
   utmTerm      String?
+  budget       Float?
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  investments CampaignInvestment[]
+
   @@index([tenantId])
   @@index([projectId])
+}
+
+model CampaignInvestment {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  amount      Float
+  date        DateTime @default(now())
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([campaignId])
 }
 

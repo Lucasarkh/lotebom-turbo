@@ -16,7 +16,7 @@ import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { CampaignsService } from './campaigns.service';
-import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaigns.dto';
+import { CreateCampaignDto, UpdateCampaignDto, CreateCampaignInvestmentDto, CampaignReportQueryDto } from './dto/campaigns.dto';
 
 @ApiTags('Campaigns')
 @ApiBearerAuth()
@@ -65,5 +65,49 @@ export class CampaignsController {
   @ApiOperation({ summary: 'Remover campanha' })
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.remove(tenantId, id);
+  }
+
+  // ─── INVESTMENTS ─────────────────────────────────────────
+
+  @Post(':id/investments')
+  @Roles('ADMIN', 'EDITOR')
+  @ApiOperation({ summary: 'Adicionar investimento na campanha' })
+  createInvestment(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateCampaignInvestmentDto,
+  ) {
+    return this.service.createInvestment(tenantId, id, dto);
+  }
+
+  @Get(':id/investments')
+  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @ApiOperation({ summary: 'Listar investimentos da campanha' })
+  getInvestments(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.service.getInvestments(tenantId, id);
+  }
+
+  @Delete(':id/investments/:investmentId')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Remover investimento da campanha' })
+  removeInvestment(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Param('investmentId') investmentId: string,
+  ) {
+    return this.service.removeInvestment(tenantId, id, investmentId);
+  }
+
+  // ─── PERFORMANCE ─────────────────────────────────────────
+
+  @Get(':id/performance')
+  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @ApiOperation({ summary: 'Buscar performance da campanha' })
+  getPerformance(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Query() query: CampaignReportQueryDto,
+  ) {
+    return this.service.getPerformance(tenantId, id, query);
   }
 }
