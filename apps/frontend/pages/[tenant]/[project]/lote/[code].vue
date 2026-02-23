@@ -43,6 +43,10 @@
               <span class="dot"></span>
               <span class="label">Galeria</span>
             </a>
+            <a v-if="details?.panoramaUrl" href="#vista-360" class="nav-dot" title="Vista 360°">
+              <span class="dot"></span>
+              <span class="label">360°</span>
+            </a>
             <a v-if="details?.areaM2 || details?.frontage || details?.depth || details?.sideLeft || details?.sideRight || details?.slope || details?.notes" href="#ficha" class="nav-dot" title="Ficha Técnica">
               <span class="dot"></span>
               <span class="label">Ficha</span>
@@ -102,6 +106,17 @@
                     <div class="play-btn">▶</div>
                   </div>
                 </div>
+              </div>
+            </section>
+
+            <!-- 360 View -->
+            <section v-if="lotPanorama" id="vista-360" class="section-v4">
+              <div class="section-title-v4">
+                <h2>Vista 360° do Lote</h2>
+                <div class="title-line"></div>
+              </div>
+              <div class="panorama-container-v4" style="height: 600px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border);">
+                <PanoramaViewer :panorama="lotPanorama" />
               </div>
             </section>
 
@@ -375,6 +390,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
+import type { Panorama } from '~/composables/panorama/types'
 
 definePageMeta({ layout: 'public' })
 
@@ -391,6 +408,33 @@ const loading = ref(true)
 const error = ref('')
 const project = ref<any>(null)
 const corretor = ref<any>(null)
+
+const lotPanorama = computed(() => {
+  if (!details.value?.panoramaUrl) return null
+  return {
+    id: 'lot-panorama',
+    tenantId: project.value?.tenantId || '',
+    projectId: project.value?.id || '',
+    title: 'Vista do Lote',
+    projection: 'EQUIRECTANGULAR',
+    published: true,
+    sunPathAngleDeg: 0,
+    sunPathLabelEnabled: false,
+    showImplantation: false,
+    snapshots: [{
+      id: 'lot-snap',
+      panoramaId: 'lot-panorama',
+      imageUrl: details.value.panoramaUrl,
+      label: 'Vista 360°',
+      sortOrder: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }],
+    beacons: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as Panorama
+})
 
 const projectUrl = computed(() => {
   const base = `/${tenantSlug}/${projectSlug}`
@@ -675,7 +719,7 @@ async function submitGateLead() {
   z-index: 100;
 }
 .header-inner {
-  max-width: 1100px;
+  max-width: 1300px;
   margin: 0 auto;
   padding: 0 22px;
   display: flex;
@@ -725,7 +769,7 @@ async function submitGateLead() {
 .nav-dot:hover .label { color: var(--v4-primary); }
 
 /* Split View Grid */
-.page-container-v4 { max-width: 1100px; margin: 0 auto; padding: 0 22px; }
+.page-container-v4 { max-width: 1300px; margin: 0 auto; padding: 0 22px; }
 .split-view { display: grid; grid-template-columns: 1fr 380px; gap: 40px; padding-top: 40px; padding-bottom: 80px; }
 @media (max-width: 1150px) { .split-view { grid-template-columns: 1fr; } }
 

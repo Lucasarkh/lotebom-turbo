@@ -61,6 +61,17 @@
         </div>
       </div>
 
+      <!-- Top right: buttons -->
+      <div class="panorama-top-right">
+        <button
+          class="panorama-ui-btn"
+          title="Alternar Tela Cheia"
+          @click="toggleFullscreen"
+        >
+          {{ isFullscreen ? '🗗 Sair Fullscreen' : '🗖 Tela Cheia' }}
+        </button>
+      </div>
+
       <!-- Bottom center: timeline -->
       <div v-if="panorama.snapshots.length > 1" class="panorama-bottom-center">
         <PanoramaTimeline
@@ -117,8 +128,32 @@ const imgH = ref(800)
 
 const showBeacons = ref(true)
 const showImplantation = ref(false)
+const isFullscreen = ref(false)
 
 const activeSnapshot = ref<PanoramaSnapshot | null>(null)
+
+// ── Fullscreen ──────────────────────────────────────
+
+async function toggleFullscreen() {
+  if (!containerRef.value) return
+  if (!document.fullscreenElement) {
+    try {
+      await containerRef.value.requestFullscreen()
+      isFullscreen.value = true
+    } catch (err) {
+      console.error('Fullscreen error', err)
+    }
+  } else {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen()
+        isFullscreen.value = false
+      }
+    } catch (err) {
+      console.error('Exit fullscreen error', err)
+    }
+  }
+}
 
 // ── Pannellum Logic ─────────────────────────────────
 
@@ -150,6 +185,8 @@ function initPannellum() {
     autoLoad: true,
     showControls: false,
     compass: false,
+    autoRotate: -2, // move slowly
+    autoRotateInactivityDelay: 3000, // wait 3s after user stops interacting
     hotSpots: props.panorama.beacons.map(b => ({
       pitch: (b.y - 0.5) * -180,
       yaw: (b.x - 0.5) * 360,
@@ -259,6 +296,8 @@ onMounted(() => {
   window.addEventListener('touchmove', onTouchMove, { passive: false })
   window.addEventListener('touchend', onTouchEnd)
 
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+
   if (props.panorama.projection === 'EQUIRECTANGULAR') {
     setTimeout(initPannellum, 1000)
   }
@@ -273,10 +312,20 @@ onBeforeUnmount(() => {
   window.removeEventListener('touchmove', onTouchMove)
   window.removeEventListener('touchend', onTouchEnd)
   
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
+  
   if (pviewer) {
     pviewer.destroy()
   }
 })
+
+function onFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement
+  if (pviewer) {
+    // Delay slightly to let the browser adjust the container size
+    setTimeout(() => pviewer.resize(), 100)
+  }
+}
 
 // ── Image load ───────────────────────────────────────
 

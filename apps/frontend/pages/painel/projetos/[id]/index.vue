@@ -291,6 +291,27 @@
             <input type="file" accept="image/*" style="display:none" @change="uploadLotMediaFile" :disabled="uploadingLotMedia" />
           </label>
 
+          <hr style="margin: var(--space-5) 0; border: 0; border-top: 1px solid var(--gray-200);" />
+
+          <h4 style="margin-bottom: var(--space-3);">🌄 Panorama 360° do Lote</h4>
+          <div v-if="lotForm.panoramaUrl" class="media-card-v4" style="max-width: 240px; margin-bottom: var(--space-4);">
+            <div class="relative group">
+              <img :src="lotForm.panoramaUrl" class="media-thumb-v4" style="aspect-ratio: 2/1;" />
+              <button class="media-delete-btn-v4" @click="lotForm.panoramaUrl = null">✕</button>
+              <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
+                <span class="text-white text-xs font-bold">Vista 360° Ativa</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state" style="padding: var(--space-4); background: var(--gray-50); border-radius: 12px; margin-bottom: var(--space-4);">
+            <p>Nenhuma imagem 360° enviada para este lote.</p>
+          </div>
+          
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer; width: fit-content;">
+            {{ uploadingPanorama ? 'Enviando...' : (lotForm.panoramaUrl ? 'Alterar Imagem 360°' : '+ Adicionar Imagem 360°') }}
+            <input type="file" accept="image/*" style="display:none" @change="uploadLotPanoramaFile" :disabled="uploadingPanorama" />
+          </label>
+
           <div class="modal-actions" style="margin-top: var(--space-6);">
             <button class="btn btn-secondary" @click="editingLot = null">Cancelar</button>
             <button class="btn btn-primary" :disabled="savingLot" @click="saveLotDetails">
@@ -675,12 +696,14 @@ const lotForm = ref({
   sideLeft: null,
   sideRight: null,
   slope: 'FLAT',
+  panoramaUrl: null as string | null,
   notes: '',
   conditionsText: '',
   paymentConditions: null as any
 })
 const savingLot = ref(false)
 const uploadingLotMedia = ref(false)
+const uploadingPanorama = ref(false)
 
 const editingLotSideMetrics = computed(() => {
   const raw = editingLot.value?.sideMetricsJson
@@ -714,6 +737,7 @@ const openEditLot = (lot: any) => {
     sideLeft: lot.sideLeft ?? null,
     sideRight: lot.sideRight ?? null,
     slope: lot.slope, 
+    panoramaUrl: lot.panoramaUrl || null,
     notes: lot.notes || '',
     conditionsText: Array.isArray(lot.conditionsJson) ? lot.conditionsJson.join('\n') : '',
     paymentConditions: lot.paymentConditions ? JSON.parse(JSON.stringify(lot.paymentConditions)) : null
@@ -733,6 +757,7 @@ const saveLotDetails = async () => {
       sideLeft: lotForm.value.sideLeft ?? undefined,
       sideRight: lotForm.value.sideRight ?? undefined,
       slope: lotForm.value.slope,
+      panoramaUrl: lotForm.value.panoramaUrl || null,
       notes: lotForm.value.notes || undefined,
       paymentConditions: lotForm.value.paymentConditions || undefined,
     }
@@ -822,6 +847,24 @@ const uploadLotMediaFile = async (e) => {
   }
   e.target.value = ''
   uploadingLotMedia.value = false
+}
+
+const uploadLotPanoramaFile = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file || !editingLot.value) return
+  uploadingPanorama.value = true
+  try {
+    const fd = new FormData(); fd.append('file', file)
+    // Upload it as media for this lot
+    const m = await uploadApi(`/projects/${projectId}/media?lotDetailsId=${editingLot.value.id}`, fd)
+    // Set the panoramaUrl to this media's URL
+    lotForm.value.panoramaUrl = m.url
+    toastSuccess('Imagem 360° enviada! Salve para concluir.')
+  } catch (err) {
+    toastFromError(err, 'Erro ao enviar imagem')
+  }
+  e.target.value = ''
+  uploadingPanorama.value = false
 }
 
 const removeLotMedia = async (id) => {

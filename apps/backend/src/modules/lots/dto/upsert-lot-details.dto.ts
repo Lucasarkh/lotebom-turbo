@@ -58,6 +58,11 @@ export class UpsertLotDetailsDto {
   @IsObject()
   sideMetricsJson?: any;
 
+  @ApiPropertyOptional({ example: 'https://...' })
+  @IsOptional()
+  @IsString()
+  panoramaUrl?: string;
+
   @ApiPropertyOptional({ example: 'Lote de esquina' })
   @IsOptional()
   @IsString()
