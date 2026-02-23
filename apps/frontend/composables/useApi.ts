@@ -73,5 +73,13 @@ export const useApi = () => {
     return txt ? JSON.parse(txt) : null;
   };
 
-  return { fetchApi, uploadApi };
+  return { 
+    fetchApi, 
+    uploadApi,
+    get: (url: string, options: any = {}) => fetchApi(url, { ...options, method: 'GET' }),
+    post: (url: string, body?: any, options: any = {}) => fetchApi(url, { ...options, method: 'POST', body: JSON.stringify(body) }),
+    put: (url: string, body?: any, options: any = {}) => fetchApi(url, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+    patch: (url: string, body?: any, options: any = {}) => fetchApi(url, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
+    delete: (url: string, options: any = {}) => fetchApi(url, { ...options, method: 'DELETE' }),
+  };
 };

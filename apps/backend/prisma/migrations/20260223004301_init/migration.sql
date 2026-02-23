@@ -28,6 +28,9 @@ CREATE TYPE "PlantHotspotType" AS ENUM ('LOTE', 'PORTARIA', 'QUADRA', 'AREA_COMU
 -- CreateEnum
 CREATE TYPE "PlantHotspotLinkType" AS ENUM ('LOTE_PAGE', 'PROJECT_PAGE', 'CUSTOM_URL', 'NONE');
 
+-- CreateEnum
+CREATE TYPE "PanoramaProjection" AS ENUM ('FLAT', 'EQUIRECTANGULAR');
+
 -- CreateTable
 CREATE TABLE "Tenant" (
     "id" TEXT NOT NULL,
@@ -66,7 +69,12 @@ CREATE TABLE "Project" (
     "mapData" JSONB,
     "highlightsJson" JSONB,
     "locationText" TEXT,
+    "address" TEXT,
+    "googleMapsUrl" TEXT,
     "showPaymentConditions" BOOLEAN NOT NULL DEFAULT false,
+    "startingPrice" DOUBLE PRECISION,
+    "maxInstallments" INTEGER,
+    "paymentConditionsSummary" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -108,6 +116,7 @@ CREATE TABLE "LotDetails" (
     "conditionsJson" JSONB,
     "sideMetricsJson" JSONB,
     "paymentConditions" JSONB,
+    "panoramaUrl" TEXT,
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -137,6 +146,7 @@ CREATE TABLE "Lead" (
     "projectId" TEXT NOT NULL,
     "mapElementId" TEXT,
     "realtorLinkId" TEXT,
+    "sessionId" TEXT,
     "name" TEXT NOT NULL,
     "email" TEXT,
     "phone" TEXT,
@@ -159,6 +169,7 @@ CREATE TABLE "RealtorLink" (
     "name" TEXT NOT NULL,
     "phone" TEXT,
     "email" TEXT,
+    "creci" TEXT,
     "photoUrl" TEXT,
     "code" TEXT NOT NULL,
     "enabled" BOOLEAN NOT NULL DEFAULT true,
@@ -167,6 +178,57 @@ CREATE TABLE "RealtorLink" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "RealtorLink_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Panorama" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "title" TEXT NOT NULL DEFAULT 'Vista Geral',
+    "projection" "PanoramaProjection" NOT NULL DEFAULT 'FLAT',
+    "published" BOOLEAN NOT NULL DEFAULT false,
+    "sunPathAngleDeg" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "sunPathLabelEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "showImplantation" BOOLEAN NOT NULL DEFAULT false,
+    "implantationUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Panorama_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PanoramaSnapshot" (
+    "id" TEXT NOT NULL,
+    "panoramaId" TEXT NOT NULL,
+    "imageUrl" TEXT NOT NULL,
+    "imageWidth" INTEGER,
+    "imageHeight" INTEGER,
+    "label" TEXT NOT NULL,
+    "date" TIMESTAMP(3),
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PanoramaSnapshot_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PanoramaBeacon" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "panoramaId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "x" DOUBLE PRECISION NOT NULL,
+    "y" DOUBLE PRECISION NOT NULL,
+    "style" TEXT NOT NULL DEFAULT 'default',
+    "visible" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PanoramaBeacon_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -209,6 +271,42 @@ CREATE TABLE "PlantHotspot" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "PlantHotspot_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TrackingSession" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT,
+    "projectId" TEXT,
+    "userId" TEXT,
+    "ip" TEXT,
+    "userAgent" TEXT,
+    "utmSource" TEXT,
+    "utmMedium" TEXT,
+    "utmCampaign" TEXT,
+    "utmContent" TEXT,
+    "utmTerm" TEXT,
+    "referrer" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TrackingSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TrackingEvent" (
+    "id" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "category" TEXT,
+    "action" TEXT,
+    "label" TEXT,
+    "value" DOUBLE PRECISION,
+    "metadata" JSONB,
+    "path" TEXT,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TrackingEvent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -260,6 +358,21 @@ CREATE INDEX "RealtorLink_tenantId_idx" ON "RealtorLink"("tenantId");
 CREATE UNIQUE INDEX "RealtorLink_tenantId_code_key" ON "RealtorLink"("tenantId", "code");
 
 -- CreateIndex
+CREATE INDEX "Panorama_tenantId_idx" ON "Panorama"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "Panorama_tenantId_projectId_idx" ON "Panorama"("tenantId", "projectId");
+
+-- CreateIndex
+CREATE INDEX "PanoramaSnapshot_panoramaId_idx" ON "PanoramaSnapshot"("panoramaId");
+
+-- CreateIndex
+CREATE INDEX "PanoramaBeacon_panoramaId_idx" ON "PanoramaBeacon"("panoramaId");
+
+-- CreateIndex
+CREATE INDEX "PanoramaBeacon_tenantId_idx" ON "PanoramaBeacon"("tenantId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PlantMap_projectId_key" ON "PlantMap"("projectId");
 
 -- CreateIndex
@@ -270,6 +383,21 @@ CREATE INDEX "PlantHotspot_plantMapId_idx" ON "PlantHotspot"("plantMapId");
 
 -- CreateIndex
 CREATE INDEX "PlantHotspot_tenantId_idx" ON "PlantHotspot"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "TrackingSession_tenantId_projectId_idx" ON "TrackingSession"("tenantId", "projectId");
+
+-- CreateIndex
+CREATE INDEX "TrackingSession_createdAt_idx" ON "TrackingSession"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "TrackingEvent_sessionId_idx" ON "TrackingEvent"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "TrackingEvent_type_category_idx" ON "TrackingEvent"("type", "category");
+
+-- CreateIndex
+CREATE INDEX "TrackingEvent_timestamp_idx" ON "TrackingEvent"("timestamp");
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -314,10 +442,28 @@ ALTER TABLE "Lead" ADD CONSTRAINT "Lead_mapElementId_fkey" FOREIGN KEY ("mapElem
 ALTER TABLE "Lead" ADD CONSTRAINT "Lead_realtorLinkId_fkey" FOREIGN KEY ("realtorLinkId") REFERENCES "RealtorLink"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Lead" ADD CONSTRAINT "Lead_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "TrackingSession"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Panorama" ADD CONSTRAINT "Panorama_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Panorama" ADD CONSTRAINT "Panorama_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PanoramaSnapshot" ADD CONSTRAINT "PanoramaSnapshot_panoramaId_fkey" FOREIGN KEY ("panoramaId") REFERENCES "Panorama"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PanoramaBeacon" ADD CONSTRAINT "PanoramaBeacon_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PanoramaBeacon" ADD CONSTRAINT "PanoramaBeacon_panoramaId_fkey" FOREIGN KEY ("panoramaId") REFERENCES "Panorama"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PlantMap" ADD CONSTRAINT "PlantMap_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -330,3 +476,12 @@ ALTER TABLE "PlantHotspot" ADD CONSTRAINT "PlantHotspot_tenantId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "PlantHotspot" ADD CONSTRAINT "PlantHotspot_plantMapId_fkey" FOREIGN KEY ("plantMapId") REFERENCES "PlantMap"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrackingSession" ADD CONSTRAINT "TrackingSession_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrackingSession" ADD CONSTRAINT "TrackingSession_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TrackingEvent" ADD CONSTRAINT "TrackingEvent_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "TrackingSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;

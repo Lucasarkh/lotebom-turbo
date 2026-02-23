@@ -1,15 +1,16 @@
 <script setup lang="ts">
-const { get } = useApi()
+const { fetchApi } = useApi()
 const toast = useToast()
 
-const projects = ref([])
+const projects = ref<any[]>([])
 const selectedProjectId = ref('all')
-const metrics = ref(null)
+const metrics = ref<any>(null)
 const loadingMetrics = ref(false)
 
 async function fetchProjects() {
   try {
-    projects.value = await get('/projects')
+    const res = await fetchApi('/projects')
+    projects.value = res.data
   } catch (error) {
     toast.error('Erro ao carregar projetos')
   }
@@ -21,7 +22,7 @@ async function fetchMetrics() {
     const url = selectedProjectId.value === 'all' 
       ? '/tracking/metrics' 
       : `/tracking/metrics?projectId=${selectedProjectId.value}`
-    metrics.value = await get(url)
+    metrics.value = await fetchApi(url)
   } catch (error) {
     toast.error('Erro ao carregar métricas')
   } finally {
