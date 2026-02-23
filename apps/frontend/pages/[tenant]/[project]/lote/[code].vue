@@ -100,9 +100,9 @@
                   class="gallery-tile" 
                   :class="{ 'main': i === 0 }"
                   @click="openLightbox(Number(i))">
-                  <img v-if="m.type === 'PHOTO'" :src="m.url" loading="lazy" />
+                  <img v-if="m.type === 'PHOTO'" :src="m.url" referrerpolicy="no-referrer" />
                   <div v-else class="video-preview-v4">
-                    <video :src="m.url"></video>
+                    <video :src="m.url" referrerpolicy="no-referrer"></video>
                     <div class="play-btn">▶</div>
                   </div>
                 </div>

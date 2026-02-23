@@ -16,6 +16,7 @@
         class="panorama-image"
         draggable="false"
         @load="onImageLoad"
+        referrerpolicy="no-referrer"
       />
 
       <!-- Implantation overlay -->
@@ -24,6 +25,7 @@
         :src="panorama.implantationUrl"
         class="panorama-implantation"
         draggable="false"
+        referrerpolicy="no-referrer"
       />
 
       <!-- Beacons layer -->
@@ -181,7 +183,7 @@ function initPannellum() {
 
   pviewer = (window as any).pannellum.viewer(elementId, {
     type: 'equirectangular',
-    panorama: activeSnapshot.value.imageUrl,
+    panorama: activeSnapshot.value.imageUrl + (activeSnapshot.value.imageUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now(),
     autoLoad: true,
     showControls: false,
     compass: false,

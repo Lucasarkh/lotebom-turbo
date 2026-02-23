@@ -18,16 +18,16 @@
       :style="contentStyle"
       :class="{ 'is-ready': imageLoaded }"
     >
-      <!-- Plant image (lazy, SSR-safe) -->
+      <!-- Plant image -->
       <img
         v-if="plantMap.imageUrl"
         :src="plantMap.imageUrl"
         class="plant-map-viewer__image"
         alt="Planta do loteamento"
         draggable="false"
-        loading="lazy"
         @load="onImageLoad"
         @error="imageError = true"
+        referrerpolicy="no-referrer"
       />
 
       <!-- SVG overlay (hotspots + sun path) -->

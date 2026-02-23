@@ -1,7 +1,7 @@
 <template>
   <div class="project-card" @click="$emit('click')">
     <div class="project-card__image">
-      <img v-if="project.bannerImageUrl" :src="project.bannerImageUrl" :alt="project.name" />
+      <img v-if="project.bannerImageUrl" :src="project.bannerImageUrl" :alt="project.name" referrerpolicy="no-referrer" />
       <div v-else class="project-card__placeholder">
         <span style="font-size: 2rem;">🏗️</span>
       </div>

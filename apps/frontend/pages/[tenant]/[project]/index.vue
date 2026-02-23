@@ -227,8 +227,8 @@
               :class="{'v4-gallery-item--large': i === 0}"
               @click="openLightbox(Number(i))"
             >
-              <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption || 'Foto'" loading="lazy" />
-              <video v-else :src="m.url" />
+              <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption || 'Foto'" referrerpolicy="no-referrer" />
+              <video v-else :src="m.url" referrerpolicy="no-referrer" />
               <div class="v4-gallery-overlay">
                 <span v-if="m.caption" class="v4-gallery-caption">{{ m.caption }}</span>
                 <span class="v4-gallery-expand">↗</span>
