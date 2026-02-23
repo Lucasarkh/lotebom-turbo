@@ -230,14 +230,14 @@ export class TrackingService {
         where: { ...whereEvent, category: 'LOT' },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
-        take: 20,
+        take: 50,
       }),
       this.prisma.trackingEvent.groupBy({
         by: ['label'],
         where: { ...whereEvent, category: 'REALTOR_LINK' },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
-        take: 20,
+        take: 30,
       }),
       // Raw daily stats need to be processed manually by date after fetching sessions or using raw query
       this.prisma.trackingSession.findMany({
@@ -310,20 +310,45 @@ export class TrackingService {
       select: { id: true, name: true }
     });
 
-    const topLotsProcessed = await Promise.all(topLots.map(async l => {
+    const lotGroups = new Map<string, number>();
+    for (const l of topLots) {
       let lotLabel = l.label || 'Desconhecido';
-      // If it looks like a CUID or ID, try to find the map element code
+      
+      // Remove common prefixes
+      lotLabel = lotLabel.replace(/^(Lote\s+|lote-|Lote:\s+)/i, '');
+      
+      let projectName = '';
+      let finalLotName = lotLabel;
+
+      // Try to resolve ID to a friendly name if it looks like a CUID/UUID
       if (lotLabel.length > 20) {
         const element = await this.prisma.mapElement.findUnique({
           where: { id: lotLabel },
-          select: { name: true, code: true }
+          select: { name: true, code: true, project: { select: { name: true } } }
         });
         if (element) {
-          lotLabel = element.code || element.name || lotLabel;
+          finalLotName = element.code || element.name || lotLabel;
+          projectName = element.project?.name || '';
         }
       }
-      return { label: lotLabel, count: l._count.id };
-    }));
+      
+      if (!projectName) {
+        const sampleEvent = await this.prisma.trackingEvent.findFirst({
+          where: { ...whereEvent, category: 'LOT', label: l.label },
+          select: { session: { select: { project: { select: { name: true } } } } }
+        });
+        projectName = sampleEvent?.session?.project?.name || '';
+      }
+
+      const label = projectName ? `${projectName} - ${finalLotName}` : finalLotName;
+      const count = lotGroups.get(label) || 0;
+      lotGroups.set(label, count + l._count.id);
+    }
+
+    const topLotsProcessed = Array.from(lotGroups.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
 
     return {
       summary: {

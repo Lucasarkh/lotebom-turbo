@@ -151,8 +151,14 @@ const formatDate = (dateStr: string) => {
           <div v-if="!metrics.history?.length" class="no-data">Nenhum dado no período</div>
         </div>
         <div class="chart-legend">
-          <div class="legend-item"><span class="legend-color views"></span> Visualizações</div>
-          <div class="legend-item"><span class="legend-color sessions"></span> Sessões</div>
+          <div class="legend-item" title="Número total de vezes que as páginas foram visualizadas">
+            <span class="legend-color views"></span> 
+            <strong>Visualizações</strong> (Cliques em links/páginas)
+          </div>
+          <div class="legend-item" title="Número de acessos/visitas individuais">
+            <span class="legend-color sessions"></span> 
+            <strong>Sessões</strong> (Visitantes únicos)
+          </div>
         </div>
       </div>
 
@@ -487,7 +493,7 @@ h1 {
 }
 
 .bar-value.views { color: #4f46e5; }
-.bar-value.sessions { color: #64748b; }
+.bar-value.sessions { color: #2563eb; }
 
 .bar {
   width: 100%;
@@ -496,8 +502,8 @@ h1 {
   min-height: 2px;
 }
 
-.views-bar { background: #4f46e5; opacity: 0.9; }
-.sessions-bar { background: #cbd5e1; }
+.views-bar { background: #4f46e5; opacity: 0.85; }
+.sessions-bar { background: #3b82f6; opacity: 0.6; }
 
 .chart-col .label {
   font-size: 10px;
@@ -509,21 +515,23 @@ h1 {
 .chart-legend {
   display: flex;
   gap: 24px;
-  margin-top: 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px dashed #e2e8f0;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 13px;
+  color: #475569;
+  cursor: help;
 }
 
-.legend-color { width: 12px; height: 12px; border-radius: 3px; }
+.legend-color { width: 14px; height: 14px; border-radius: 4px; }
 .legend-color.views { background: #4f46e5; }
-.legend-color.sessions { background: #cbd5e1; }
+.legend-color.sessions { background: #3b82f6; opacity: 0.7; }
 
 /* Details Grid */
 .details-grid {
