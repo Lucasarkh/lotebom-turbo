@@ -1,96 +1,177 @@
 <template>
   <div class="pub-page">
-    <!-- Loading -->
-    <div v-if="loading" class="pub-loading">
-      <div class="loading-spinner"></div>
-      <p>Carregando unidades...</p>
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="error" class="pub-error">
-      <div class="pub-error-card card">
-        <h2>Projeto não encontrado</h2>
-        <p>{{ error }}</p>
-        <NuxtLink :to="`/${tenantSlug}/${projectSlug}`" class="v4-btn-primary" style="display: inline-block; margin-top: 1rem;">Voltar ao projeto</NuxtLink>
-      </div>
-    </div>
-
-    <!-- Project -->
-    <template v-else-if="project">
-      <!-- Minimal Header -->
-      <nav class="v4-mini-header">
-        <div class="v4-container">
-          <div class="v4-mini-header-inner">
-            <NuxtLink :to="`/${tenantSlug}/${projectSlug}`" class="v4-back-link">
-              ← Voltar para o Projeto
-            </NuxtLink>
-            <div class="v4-mini-brand">
-              <strong>{{ project.name }}</strong>
-            </div>
+    <!-- Header -->
+    <nav class="v4-header-glass">
+      <div class="v4-container">
+        <div class="v4-header-inner">
+          <NuxtLink :to="`/${tenantSlug}/${projectSlug}`" class="v4-back-btn">
+            <span class="v4-icon">←</span> Ver Projeto
+          </NuxtLink>
+          <div v-if="project" class="v4-header-title">
+            <strong>{{ project.name }}</strong>
+            <span class="v4-dot"></span>
+            <span>Unidades</span>
           </div>
         </div>
-      </nav>
+      </div>
+    </nav>
 
-      <section class="v4-section" style="padding-top: 140px;">
+    <!-- Main Content -->
+    <main class="v4-main-content">
+      <!-- Search & Filters -->
+      <section class="v4-filter-section">
         <div class="v4-container">
-          <div class="v4-section-header">
-            <h2 class="v4-section-title">Todas as Unidades Disponíveis</h2>
-            <p class="v4-section-subtitle">Temos {{ unifiedAvailableLots.length }} unidades esperando por você. Explore as opções abaixo.</p>
-          </div>
+          <div class="v4-search-hero">
+            <h1>Encontre seu lote ideal</h1>
+            <p>Explore as melhores oportunidades disponíveis agora.</p>
 
-          <div class="v4-lots-grid">
-            <NuxtLink v-for="lot in paginatedAvailableLots" :key="lot.id" :to="lotPageUrl(lot)" class="v4-lot-card">
-              <div class="v4-lot-card-header">
-                <div class="v4-lot-id">
-                  <span class="v4-lot-label">Unidade</span>
-                  <span class="v4-lot-code">{{ lot.code || lot.name || lot.id }}</span>
-                </div>
-                <div class="v4-lot-status">Disponível</div>
+            <div class="v4-search-bar-wrapper">
+              <div class="v4-search-bar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="v4-search-icon" style="color: #86868b; margin-left: 12px; opacity: 0.7;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input 
+                  v-model="searchQuery" 
+                  type="text" 
+                  placeholder="Busque pelo código do lote (ex: L01, QUADRA A...)" 
+                  style="margin-left: 0;"
+                />
               </div>
-              
-              <div class="v4-lot-card-body">
-                <div class="v4-lot-info-row">
-                  <span class="v4-info-item">📐 {{ lot.lotDetails?.areaM2 || '---' }} m²</span>
-                  <span v-if="lot.lotDetails?.frontage" class="v4-info-item">↔ {{ lot.lotDetails.frontage }}m frente</span>
-                </div>
-                <div v-if="lot.lotDetails?.price" class="v4-lot-price">
-                  <span class="v4-price-label">Valor do investimento</span>
-                  <span class="v4-price-value">R$ {{ lot.lotDetails.price.toLocaleString('pt-BR') }}</span>
-                </div>
-              </div>
-              
-              <div class="v4-lot-card-footer">
-                <span>Ver detalhes do lote</span>
-                <span class="v4-icon">→</span>
-              </div>
-            </NuxtLink>
-          </div>
+            </div>
 
-          <div v-if="lotsMeta.totalPages > 1" style="margin-top: 60px; display: flex; justify-content: center;">
-            <CommonPagination :meta="lotsMeta" @change="lotsPage = $event" />
+            <!-- Tags Filter -->
+            <div v-if="allAvailableTags.length" class="v4-tags-filter">
+              <span class="v4-filter-label">Características:</span>
+              <div class="v4-tags-scroll">
+                <button 
+                  v-for="tag in allAvailableTags" 
+                  :key="tag"
+                  class="v4-filter-tag"
+                  :class="{ active: selectedFilters.includes(tag) }"
+                  @click="toggleFilter(tag)"
+                >
+                  {{ tag }}
+                </button>
+              </div>
+
+              <!-- Match Mode Toggle -->
+              <div v-if="selectedFilters.length > 1" class="v4-match-mode-toggle">
+                <span class="v4-mode-label">Lote deve conter</span>
+                <div class="v4-mode-btns">
+                  <button 
+                    class="v4-mode-btn" 
+                    :class="{ active: matchMode === 'any' }"
+                    @click="matchMode = 'any'"
+                  >
+                    Algum selo selecionado
+                  </button>
+                  <button 
+                    class="v4-mode-btn" 
+                    :class="{ active: matchMode === 'exact' }"
+                    @click="matchMode = 'exact'"
+                  >
+                    Todos os selos selecionados
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="v4-filter-stats" v-if="!loading && project">
+              <span>{{ filteredLots.length }} unidades encontradas</span>
+              <span v-if="selectedFilters.length || searchQuery" class="v4-clear-btn" @click="clearFilters">Limpar filtros</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Footer -->
-      <footer class="v4-footer">
+      <!-- Results Grid -->
+      <section class="v4-results-section">
         <div class="v4-container">
-          <div class="v4-footer-inner">
-            <div class="v4-footer-brand">
-              <span class="v4-footer-tenant">{{ project.tenant?.name }}</span>
-              <span class="v4-footer-project">Loteamento {{ project.name }}</span>
+          <!-- Loading -->
+          <div v-if="loading" class="v4-results-loading">
+            <div class="loading-spinner"></div>
+            <p>Sincronizando disponibilidade...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="filteredLots.length === 0" class="v4-empty-state">
+            <div class="v4-empty-icon" style="margin-bottom: 24px; opacity: 0.5;">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
-            <div class="v4-footer-copyright">
-              © {{ new Date().getFullYear() }} — Todos os direitos reservados.
+            <h3>Nenhum lote corresponde à sua busca</h3>
+            <p>Tente remover alguns filtros ou buscar por outro código.</p>
+            <button class="v4-btn-primary" @click="clearFilters">Limpar todos os filtros</button>
+          </div>
+
+          <!-- Grid -->
+          <div v-else class="v4-grid-wrap">
+            <div class="v4-lots-grid">
+              <NuxtLink 
+                v-for="lot in paginatedLots" 
+                :key="lot.id" 
+                :to="lotPageUrl(lot)"
+                class="v4-lot-card-v2"
+              >
+                <div class="v4-card-header">
+                  <div class="v4-card-id">
+                    <span class="v4-label">LOTE</span>
+                    <h3 class="v4-code">{{ lot.code || lot.name || lot.id }}</h3>
+                  </div>
+                  <div class="v4-card-status">Disponível</div>
+                </div>
+
+                <div class="v4-card-seals" v-if="lot.lotDetails?.tags?.length">
+                  <span v-for="tag in lot.lotDetails.tags" :key="tag" class="v4-seal">{{ tag }}</span>
+                </div>
+
+                <div class="v4-card-body">
+                  <div class="v4-metric">
+                    <span class="m-val">{{ lot.lotDetails?.areaM2 || '---' }}</span>
+                    <span class="m-unit">m² totais</span>
+                  </div>
+                  <div class="v4-metric" v-if="lot.lotDetails?.frontage">
+                    <span class="m-val">{{ lot.lotDetails.frontage }}</span>
+                    <span class="m-unit">m frente</span>
+                  </div>
+                </div>
+
+                <div class="v4-card-footer">
+                  <div class="v4-price" v-if="lot.lotDetails?.price">
+                    <span class="p-label">Investimento</span>
+                    <span class="p-val">R$ {{ lot.lotDetails.price.toLocaleString('pt-BR') }}</span>
+                  </div>
+                  <div class="v4-cta-arrow">
+                    <span>Detalhes</span>
+                    <span class="arrow">→</span>
+                  </div>
+                </div>
+              </NuxtLink>
+            </div>
+
+            <!-- Pagination -->
+            <div v-if="totalPages > 1" class="v4-pagination-wrap">
+              <CommonPagination :meta="paginationMeta" @change="lotsPage = $event" />
             </div>
           </div>
         </div>
-      </footer>
-    </template>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="v4-footer-clean">
+      <div class="v4-container">
+        <div class="v4-footer-content">
+          <p>&copy; {{ new Date().getFullYear() }} — {{ project?.tenant?.name }} · {{ project?.name }}</p>
+          <span class="v4-footer-badge">SISTEMA OFICIAL</span>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import CommonPagination from '~/components/common/Pagination.vue'
+
 definePageMeta({ layout: 'public' })
 
 const route = useRoute()
@@ -103,12 +184,16 @@ const corretorCode = route.query.c || ''
 const loading = ref(true)
 const error = ref('')
 const project = ref<any>(null)
-const corretor = ref<any>(null)
 
+const searchQuery = ref('')
+const selectedFilters = ref<string[]>([])
+const matchMode = ref<'any' | 'exact'>('any')
 const lotsPage = ref(1)
 const lotsPerPage = 12
 
-/** Duplicate logic from index.vue for now - ideally move to a composable */
+/** 
+ * Lógica de processamento de lotes unificada 
+ */
 function calcContractArea(lot: any): number | null {
   const poly: Array<{x:number,y:number}> = lot.polygon ?? []
   if (poly.length < 2) return null
@@ -126,14 +211,11 @@ function calcContractArea(lot: any): number | null {
     return (mv != null && mv > 0 && len > 0) ? mv / len : null
   })
   const validScales = scales.filter((s): s is number => s !== null)
-  if (validScales.length < Math.max(1, Math.ceil(sm.length * 0.5))) return null
+  if (validScales.length < Math.min(1, Math.ceil(sm.length * 0.5))) return null
   const product = validScales.reduce((a, b) => a * b, 1)
   const geometricMean = Math.pow(product, 1 / validScales.length)
   return (lot.area ?? 0) * geometricMean * geometricMean
 }
-
-const lotElements = computed(() => (project.value?.mapElements || []).filter((e: any) => e.type === 'LOT'))
-const availableLotElements = computed(() => lotElements.value.filter((e: any) => (e.lotDetails?.status || 'AVAILABLE') === 'AVAILABLE'))
 
 const mapDataLots = computed(() => {
   const raw = project.value?.mapData
@@ -146,13 +228,17 @@ const mapDataLots = computed(() => {
   } catch { return [] }
 })
 
-const hasMapData = computed(() => !!project.value?.mapData)
+const lotElements = computed(() => (project.value?.mapElements || []).filter((e: any) => e.type === 'LOT'))
+const availableLotElements = computed(() => lotElements.value.filter((e: any) => (e.lotDetails?.status || 'AVAILABLE') === 'AVAILABLE'))
 
 const unifiedAvailableLots = computed(() => {
+  if (!project.value) return []
   let list = []
-  if (hasMapData.value) {
+  
+  if (project.value.mapData) {
     const rawMapData = typeof project.value.mapData === 'string' ? JSON.parse(project.value.mapData) : project.value.mapData
     const PPM = Number(rawMapData.pixelsPerMeter) || 10
+    
     list = mapDataLots.value
       .filter((l: any) => l.status === 'available')
       .map((l: any) => {
@@ -161,27 +247,93 @@ const unifiedAvailableLots = computed(() => {
         if (l.manualAreaM2 != null) finalAreaM2 = Number(l.manualAreaM2)
         else if (contractArea !== null) finalAreaM2 = contractArea
         const finalFrontage = l.manualFrontage != null ? Number(l.manualFrontage) : (Number(l.frontage) > 0 ? (Number(l.frontage) / PPM) : 0)
-        return { id: l.id, name: l.label, code: l.code || l.label || l.id, lotDetails: { areaM2: parseFloat(finalAreaM2.toFixed(2)), frontage: parseFloat(finalFrontage.toFixed(2)), price: l.price } }
+        return { 
+          id: l.id, 
+          name: l.label, 
+          code: l.code || l.label || l.id, 
+          lotDetails: { 
+            areaM2: parseFloat(finalAreaM2.toFixed(2)), 
+            frontage: parseFloat(finalFrontage.toFixed(2)), 
+            price: l.price,
+            tags: l.tags || []
+          } 
+        }
       })
   } else {
-    list = availableLotElements.value
+    list = availableLotElements.value.map((e: any) => ({
+      ...e,
+      lotDetails: {
+        ...e.lotDetails,
+        tags: e.lotDetails?.tags || []
+      }
+    }))
   }
   return list
 })
 
-const paginatedAvailableLots = computed(() => {
-  const start = (lotsPage.value - 1) * lotsPerPage
-  const end = start + lotsPerPage
-  return unifiedAvailableLots.value.slice(start, end)
+const allAvailableTags = computed(() => {
+  const tags = new Set<string>()
+  unifiedAvailableLots.value.forEach((l: any) => {
+    if (l.lotDetails?.tags) {
+      l.lotDetails.tags.forEach((t: string) => tags.add(t))
+    }
+  })
+  return Array.from(tags).sort()
 })
 
-const lotsMeta = computed(() => ({
-  totalItems: unifiedAvailableLots.value.length,
-  itemCount: paginatedAvailableLots.value.length,
+const filteredLots = computed(() => {
+  let list = unifiedAvailableLots.value
+  
+  // Search query
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter((l: any) => 
+      (l.code || '').toLowerCase().includes(q) || 
+      (l.name || '').toLowerCase().includes(q)
+    )
+  }
+  
+  // Tags filter
+  if (selectedFilters.value.length > 0) {
+    list = list.filter((l: any) => {
+      const tags = l.lotDetails?.tags || []
+      if (matchMode.value === 'exact') {
+        return selectedFilters.value.every(f => tags.includes(f))
+      }
+      return selectedFilters.value.some(f => tags.includes(f))
+    })
+  }
+  
+  return list
+})
+
+const totalPages = computed(() => Math.ceil(filteredLots.value.length / lotsPerPage))
+const paginatedLots = computed(() => {
+  const start = (lotsPage.value - 1) * lotsPerPage
+  const end = start + lotsPerPage
+  return filteredLots.value.slice(start, end)
+})
+
+const paginationMeta = computed(() => ({
+  totalItems: filteredLots.value.length,
+  itemCount: paginatedLots.value.length,
   itemsPerPage: lotsPerPage,
-  totalPages: Math.ceil(unifiedAvailableLots.value.length / lotsPerPage),
+  totalPages: totalPages.value,
   currentPage: lotsPage.value
 }))
+
+function toggleFilter(tag: string) {
+  lotsPage.value = 1
+  const idx = selectedFilters.value.indexOf(tag)
+  if (idx > -1) selectedFilters.value.splice(idx, 1)
+  else selectedFilters.value.push(tag)
+}
+
+function clearFilters() {
+  searchQuery.value = ''
+  selectedFilters.value = []
+  lotsPage.value = 1
+}
 
 const lotPageUrl = (lot: any) => {
   const code = lot.code || lot.id || lot.name
@@ -194,57 +346,285 @@ onMounted(async () => {
     const p = await fetchPublic(`/p/${tenantSlug}/${projectSlug}`)
     if (p) {
       project.value = p
-      useHead({ title: `Unidades Disponíveis — ${p.name}` })
-    } else error.value = 'Projeto não encontrado'
+      useHead({ title: `Busca de Unidades — ${p.name}` })
+
+      // Handle Query Params
+      if (route.query.tags) {
+        selectedFilters.value = (route.query.tags as string).split(',')
+      }
+      if (route.query.match === 'exact') {
+        matchMode.value = 'exact'
+      }
+    } else {
+      error.value = 'Projeto não encontrado'
+    }
   } catch (e: any) {
-    error.value = e.message || 'Projeto não encontrado'
+    error.value = e.message || 'Erro ao carregar projeto'
   }
   loading.value = false
 })
 </script>
 
 <style scoped>
-/* Replicating V4 styles from index.vue - ideally these would be in a common CSS */
-.pub-page { --v4-primary: #0071e3; --v4-primary-hover: #0077ed; --v4-text: #1d1d1f; --v4-text-muted: #86868b; --v4-bg: #ffffff; --v4-bg-alt: #f5f5f7; --v4-border: #d2d2d7; --v4-radius-lg: 18px; --v4-shadow-soft: 0 10px 30px rgba(0,0,0,0.05); --v4-shadow-elevated: 0 20px 40px rgba(0,0,0,0.1); }
+.pub-page {
+  --v4-primary: #0071e3;
+  --v4-primary-hover: #0077ed;
+  --v4-text: #1d1d1f;
+  --v4-text-muted: #86868b;
+  --v4-bg: #ffffff;
+  --v4-bg-alt: #f5f5f7;
+  --v4-border: #d2d2d7;
+  --v4-radius-lg: 24px;
+  --v4-shadow-soft: 0 4px 24px rgba(0,0,0,0.04);
+  --v4-shadow-elevated: 0 20px 40px rgba(0,0,0,0.08);
+  
+  background: var(--v4-bg);
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
 
-.v4-container { width: 90%; max-width: 1200px; margin: 0 auto; }
-.v4-section { padding: 100px 0; }
-.v4-section-header { margin-bottom: 60px; text-align: center; }
-.v4-section-title { font-size: 48px; font-weight: 600; color: var(--v4-text); letter-spacing: -0.015em; margin-bottom: 16px; }
-.v4-section-subtitle { font-size: 21px; color: var(--v4-text-muted); line-height: 1.4; max-width: 700px; margin: 0 auto; }
+.v4-container {
+  width: 90%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
 
-.v4-mini-header { position: fixed; top: 0; left: 0; right: 0; background: rgba(255,255,255,0.8); backdrop-filter: saturate(180%) blur(20px); z-index: 1000; border-bottom: 1px solid var(--v4-border); padding: 20px 0; }
-.v4-mini-header-inner { display: flex; justify-content: space-between; align-items: center; }
-.v4-back-link { color: var(--v4-primary); text-decoration: none; font-weight: 600; font-size: 15px; }
-.v4-mini-brand { font-size: 17px; }
+/* Header V4 */
+.v4-header-glass {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  z-index: 1000;
+  border-bottom: 1px solid var(--v4-border);
+  padding: 16px 0;
+}
 
-.v4-lots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
-.v4-lot-card { background: white; border-radius: var(--v4-radius-lg); padding: 32px; text-decoration: none; color: inherit; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f2f2f2; display: flex; flex-direction: column; gap: 12px; }
-.v4-lot-card:hover { box-shadow: var(--v4-shadow-elevated); transform: translateY(-4px); border-color: var(--v4-primary); }
-.v4-lot-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-.v4-lot-id { display: flex; flex-direction: column; gap: 4px; }
-.v4-lot-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--v4-text-muted); letter-spacing: 0.1em; }
-.v4-lot-code { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--v4-text); }
-.v4-lot-status { font-size: 11px; font-weight: 700; color: #32d74b; background: rgba(50, 215, 75, 0.1); padding: 6px 14px; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.05em; }
-.v4-lot-info-row { display: flex; gap: 20px; margin-bottom: 20px; color: var(--v4-text-muted); font-size: 15px; align-items: center; }
-.v4-lot-price { margin-top: auto; border-top: 1px solid #f5f5f7; padding-top: 20px; }
-.v4-price-label { display: block; font-size: 12px; color: var(--v4-text-muted); margin-bottom: 4px; }
-.v4-price-value { font-size: 20px; font-weight: 600; color: var(--v4-text); }
-.v4-lot-card-footer { margin-top: 20px; font-size: 15px; color: var(--v4-primary); font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+.v4-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-.v4-btn-primary { background: var(--v4-primary); color: white; padding: 16px 32px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; transition: 0.2s; }
-.v4-btn-primary:hover { background: var(--v4-primary-hover); }
+.v4-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--v4-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.v4-back-btn:hover { color: var(--v4-primary); }
 
-.v4-footer { padding: 80px 0; border-top: 1px solid var(--v4-border); background: var(--v4-bg-alt); }
-.v4-footer-tenant { font-weight: 600; font-size: 17px; margin-bottom: 4px; display: block; }
-.v4-footer-copyright { font-size: 12px; color: var(--v4-text-muted); }
+.v4-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+}
+.v4-dot { width: 4px; height: 4px; background: var(--v4-border); border-radius: 50%; }
 
-.pub-loading, .pub-error { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; }
-@keyframes spinner { to { transform: rotate(360deg); } }
-.loading-spinner { width: 32px; height: 32px; border: 3px solid rgba(0, 113, 227, 0.1); border-top-color: var(--v4-primary); border-radius: 50%; animation: spinner 1s linear infinite; }
+/* Main Content Padding */
+.v4-main-content {
+  padding-top: 100px;
+}
+
+/* Filter Section */
+.v4-filter-section {
+  background: var(--v4-bg-alt);
+  padding: 80px 0 60px;
+  border-bottom: 1px solid var(--v4-border);
+}
+
+.v4-search-hero {
+  text-align: center;
+}
+.v4-search-hero h1 { font-size: 48px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+.v4-search-hero p { font-size: 21px; color: var(--v4-text-muted); margin-bottom: 40px; }
+
+.v4-search-bar-wrapper {
+  max-width: 600px;
+  margin: 0 auto 32px;
+}
+
+.v4-search-bar {
+  background: white;
+  border: 1px solid var(--v4-border);
+  border-radius: 100px;
+  padding: 4px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  transition: all 0.2s;
+}
+.v4-search-bar:focus-within {
+  border-color: var(--v4-primary);
+  box-shadow: 0 8px 30px rgba(0, 113, 227, 0.1);
+}
+.v4-search-bar input {
+  border: none;
+  flex: 1;
+  padding: 14px 0;
+  font-size: 17px;
+  outline: none;
+  background: transparent;
+}
+
+.v4-tags-filter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.v4-filter-label { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--v4-text-muted); letter-spacing: 0.1em; }
+
+.v4-tags-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 800px;
+}
+
+.v4-filter-tag {
+  background: white;
+  border: 1px solid var(--v4-border);
+  padding: 8px 18px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.v4-filter-tag:hover { border-color: var(--v4-primary); background: #f0f7ff; }
+.v4-filter-tag.active { background: var(--v4-primary); color: white; border-color: var(--v4-primary); }
+
+.v4-match-mode-toggle {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: #fdfdfd;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px dashed var(--v4-border);
+}
+.v4-mode-label { font-size: 11px; font-weight: 700; color: #86868b; text-transform: uppercase; }
+.v4-mode-btns { display: flex; gap: 8px; }
+.v4-mode-btn {
+  background: white;
+  border: 1px solid var(--v4-border);
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #86868b;
+}
+.v4-mode-btn.active {
+  background: #0071e3;
+  color: white;
+  border-color: #0071e3;
+}
+
+.v4-filter-stats {
+  margin-top: 32px;
+  font-size: 14px;
+  color: var(--v4-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.v4-clear-btn { color: var(--v4-primary); font-weight: 600; cursor: pointer; border-bottom: 1px dashed var(--v4-primary); }
+
+/* Results Section */
+.v4-results-section {
+  padding: 80px 0;
+}
+
+.v4-lots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 32px;
+}
+
+/* Lot Card V2 */
+.v4-lot-card-v2 {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: var(--v4-radius-lg);
+  padding: 32px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.v4-lot-card-v2:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--v4-shadow-elevated);
+  border-color: var(--v4-primary);
+}
+
+.v4-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.v4-card-id .v4-label { font-size: 10px; font-weight: 700; color: #86868b; letter-spacing: 0.1em; }
+.v4-card-id .v4-code { font-size: 28px; font-weight: 700; color: #1d1d1f; margin: 4px 0 0; }
+.v4-card-status { font-size: 11px; font-weight: 700; color: #32d74b; background: rgba(50, 215, 75, 0.1); padding: 4px 12px; border-radius: 100px; }
+
+.v4-card-seals { display: flex; flex-wrap: wrap; gap: 6px; }
+.v4-seal { background: #f0f7ff; color: #0071e3; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 64px; text-transform: capitalize; border: 1px solid #e0efff; }
+
+.v4-card-body { display: flex; gap: 24px; }
+.v4-metric { display: flex; flex-direction: column; }
+.v4-metric .m-val { font-size: 20px; font-weight: 600; color: #1d1d1f; }
+.v4-metric .m-unit { font-size: 11px; font-weight: 600; color: #86868b; text-transform: uppercase; margin-top: 2px; }
+
+.v4-card-footer {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #f5f5f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.v4-price .p-label { display: block; font-size: 11px; font-weight: 600; color: #86868b; margin-bottom: 2px; }
+.v4-price .p-val { font-size: 20px; font-weight: 700; color: var(--v4-primary); }
+
+.v4-cta-arrow { font-size: 13px; font-weight: 600; color: var(--v4-text-muted); display: flex; align-items: center; gap: 6px; }
+.v4-lot-card-v2:hover .v4-cta-arrow { color: var(--v4-primary); }
+.v4-lot-card-v2:hover .arrow { transform: translateX(4px); transition: transform 0.2s; }
+
+/* States */
+.v4-empty-state { text-align: center; padding: 120px 0; }
+.v4-empty-icon { font-size: 64px; margin-bottom: 24px; }
+.v4-empty-state h3 { font-size: 24px; font-weight: 600; margin-bottom: 12px; }
+.v4-empty-state p { color: var(--v4-text-muted); margin-bottom: 32px; }
+
+.v4-results-loading { text-align: center; padding: 100px 0; color: var(--v4-text-muted); }
+.loading-spinner { margin-inline: auto; margin-bottom: 16px; width: 40px; height: 40px; border: 4px solid rgba(0, 113, 227, 0.1); border-top-color: var(--v4-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Pagination */
+.v4-pagination-wrap { margin-top: 80px; display: flex; justify-content: center; }
+
+/* Footer */
+.v4-footer-clean { padding: 60px 0; border-top: 1px solid #f2f2f2; background: #fff; }
+.v4-footer-content { display: flex; justify-content: space-between; align-items: center; color: var(--v4-text-muted); font-size: 13px; }
+.v4-footer-badge { background: #000; color: #fff; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 10px; letter-spacing: 0.05em; }
 
 @media (max-width: 768px) {
-  .v4-section-title { font-size: 32px; }
-  .v4-section { padding: 60px 0; }
+  .v4-search-hero h1 { font-size: 32px; }
+  .v4-tags-scroll { padding: 0 16px; }
+  .v4-lots-grid { grid-template-columns: 1fr; }
+  .v4-search-hero p { font-size: 17px; }
+  .v4-filter-section { padding-top: 60px; }
 }
 </style>

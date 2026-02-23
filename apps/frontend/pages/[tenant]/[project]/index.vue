@@ -171,7 +171,7 @@
 
           <div class="v4-lots-grid">
             <NuxtLink 
-              v-for="lot in (selectedFilters.length > 0 ? unifiedAvailableLots : unifiedAvailableLots.slice(0, 6))" 
+              v-for="lot in unifiedAvailableLots.slice(0, 6)" 
               :key="lot.id" 
               :to="lotPageUrl(lot)" 
               class="v4-lot-card"
@@ -203,7 +203,7 @@
             </NuxtLink>
           </div>
 
-          <div v-if="unifiedAvailableLots.length > 6 && selectedFilters.length === 0" style="margin-top: 56px; display: flex; justify-content: center;">
+          <div v-if="unifiedAvailableLots.length > 6" style="margin-top: 56px; display: flex; justify-content: center;">
             <NuxtLink :to="`/${tenantSlug}/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver todos os lotes')">
               Ver todos os {{ unifiedAvailableLots.length }} lotes disponíveis
             </NuxtLink>
@@ -381,46 +381,65 @@
         <a v-if="unifiedAvailableLots.length" href="#lotes" class="v4-nav-item">Unidades</a>
         <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>
       </nav>
-      <!-- Floating Filter Button -->
-      <div v-if="allAvailableTags.length > 0" class="v4-floating-filter">
-        <button class="v4-filter-btn-float" @click="filterModalOpen = true">
-          <span v-if="selectedFilters.length" class="v4-filter-badge">{{ selectedFilters.length }}</span>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
-          <span class="v4-filter-label">Filtros</span>
+      <!-- Floating Search CTA -->
+      <div v-if="availableLotElements.length > 0 || mapDataLots.length > 0" class="v4-floating-cta">
+        <button class="v4-cta-btn-animated" @click="toggleFilterModal">
+          <div class="v4-cta-inner">
+            <span class="v4-cta-icon-spark">✨</span>
+            <span class="v4-cta-label">Busque o lote ideal com base nas suas preferências</span>
+            <span class="v4-cta-arrow-icon">→</span>
+          </div>
+          <div class="v4-cta-glow"></div>
         </button>
       </div>
 
-      <!-- Filter Modal -->
-      <Teleport to="body">
-        <div v-if="filterModalOpen" class="v4-modal-overlay" @click.self="filterModalOpen = false">
-          <div class="v4-modal-card">
+      <!-- Filter Selection Modal -->
+      <Transition name="fade">
+        <div v-if="isFilterModalOpen" class="v4-filter-modal-overlay" @click.self="toggleFilterModal">
+          <div class="v4-filter-modal-card">
             <div class="v4-modal-header">
-              <h3>Filtros de Lotes</h3>
-              <button class="v4-modal-close" @click="filterModalOpen = false">✕</button>
+              <h3 class="v4-modal-title">Lote Ideal</h3>
+              <button class="v4-modal-close" @click="toggleFilterModal">✕</button>
             </div>
+            
             <div class="v4-modal-body">
-              <p class="filter-group-title">Características desejadas:</p>
-              <div class="filter-tags-grid">
+              <p style="margin-bottom: 24px; color: #86868b; font-size: 15px;">Escolha as características que você deseja para o seu novo lote.</p>
+              
+              <span class="v4-modal-label">Características</span>
+              <div class="v4-modal-tags">
                 <button 
                   v-for="tag in allAvailableTags" 
                   :key="tag" 
-                  class="filter-tag-item"
-                  :class="{ active: selectedFilters.includes(tag) }"
-                  @click="toggleFilter(tag)"
+                  class="v4-modal-tag"
+                  :class="{ active: selectedFilterTags.includes(tag) }"
+                  @click="toggleFilterTag(tag)"
                 >
                   {{ tag }}
                 </button>
               </div>
+
+              <div class="v4-modal-options">
+                <label class="v4-modal-option">
+                  <input type="checkbox" v-model="exactMatchMode" />
+                  <div class="v4-option-info">
+                    <span class="v4-option-title">Correspondência Exata</span>
+                    <span class="v4-option-desc">Mostrar apenas lotes que possuem todos os selos selecionados.</span>
+                  </div>
+                </label>
+              </div>
             </div>
+
             <div class="v4-modal-footer">
-              <p v-if="unifiedAvailableLots.length === unfilteredTotal" class="filter-results-info">Mostrando todos os {{ unfilteredTotal }} lotes.</p>
-              <p v-else class="filter-results-info">Encontrados <strong>{{ unifiedAvailableLots.length }}</strong> lotes com estes filtros.</p>
-              <button class="v4-btn-primary full-width" @click="filterModalOpen = false">Ver Resultados</button>
-              <button v-if="selectedFilters.length" class="v4-btn-ghost" @click="selectedFilters = []">Limpar tudo</button>
+              <button class="v4-btn-modal-search" @click="applyFiltersAndSearch">
+                {{ selectedFilterTags.length ? `Ver ${filteredCount} unidades compatíveis` : 'Ver todas as unidades' }}
+              </button>
+              <button v-if="selectedFilterTags.length" class="v4-btn-modal-clear" @click="selectedFilterTags = []">
+                Limpar seleção
+              </button>
             </div>
           </div>
         </div>
-      </Teleport>
+      </Transition>
     </template>
   </div>
 </template>
@@ -461,6 +480,60 @@ const submitting = ref(false)
 const leadSuccess = ref(false)
 const leadError = ref('')
 const formRef = ref(null)
+
+const isFilterModalOpen = ref(false)
+const selectedFilterTags = ref<string[]>([])
+const exactMatchMode = ref(false)
+
+const allAvailableTags = computed(() => {
+  const tags = new Set<string>()
+  unifiedAvailableLots.value.forEach((l: any) => {
+    if (l.lotDetails?.tags) {
+      l.lotDetails.tags.forEach((t: string) => tags.add(t))
+    }
+  })
+  return Array.from(tags).sort()
+})
+
+const filteredCount = computed(() => {
+  if (selectedFilterTags.value.length === 0) return unifiedAvailableLots.value.length
+  return unifiedAvailableLots.value.filter((l: any) => {
+    const lotTags = l.lotDetails?.tags || []
+    if (exactMatchMode.value) {
+      return selectedFilterTags.value.every(t => lotTags.includes(t))
+    }
+    return selectedFilterTags.value.some(t => lotTags.includes(t))
+  }).length
+})
+
+const toggleFilterModal = () => {
+  isFilterModalOpen.value = !isFilterModalOpen.value
+}
+
+const toggleFilterTag = (tag: string) => {
+  const idx = selectedFilterTags.value.indexOf(tag)
+  if (idx > -1) selectedFilterTags.value.splice(idx, 1)
+  else selectedFilterTags.value.push(tag)
+}
+
+const applyFiltersAndSearch = () => {
+  const query: any = {}
+  if (selectedFilterTags.value.length) {
+    query.tags = selectedFilterTags.value.join(',')
+  }
+  if (exactMatchMode.value) {
+    query.match = 'exact'
+  }
+  if (corretorCode) {
+    query.c = corretorCode
+  }
+  
+  isFilterModalOpen.value = false
+  navigateTo({
+    path: `/${tenantSlug}/${projectSlug}/unidades`,
+    query
+  })
+}
 
 const lotsPage = ref(1)
 const lotsTeaserCount = 6
@@ -538,20 +611,7 @@ const mapDataLots = computed(() => {
 
 const hasMapData = computed(() => !!project.value?.mapData)
 
-const selectedFilters = ref<string[]>([])
-const filterModalOpen = ref(false)
-
-const allAvailableTags = computed(() => {
-  const tags = new Set<string>()
-  unifiedAvailableLotsUnfiltered.value.forEach((l: any) => {
-    if (l.lotDetails?.tags) {
-      l.lotDetails.tags.forEach((t: string) => tags.add(t))
-    }
-  })
-  return Array.from(tags).sort()
-})
-
-const unifiedAvailableLotsUnfiltered = computed(() => {
+const unifiedAvailableLots = computed(() => {
   let list = []
   if (hasMapData.value) {
     const rawMapData = typeof project.value.mapData === 'string' ? JSON.parse(project.value.mapData) : project.value.mapData
@@ -599,34 +659,6 @@ const unifiedAvailableLotsUnfiltered = computed(() => {
   }
   return list
 })
-
-const unifiedAvailableLots = computed(() => {
-  if (selectedFilters.value.length === 0) return unifiedAvailableLotsUnfiltered.value
-  return unifiedAvailableLotsUnfiltered.value.filter((l: any) => {
-    const tags = l.lotDetails?.tags || []
-    return selectedFilters.value.every(f => tags.includes(f))
-  })
-})
-
-function toggleFilter(tag: string) {
-  const idx = selectedFilters.value.indexOf(tag)
-  if (idx > -1) selectedFilters.value.splice(idx, 1)
-  else selectedFilters.value.push(tag)
-}
-
-const paginatedAvailableLots = computed(() => {
-  const start = (lotsPage.value - 1) * lotsPerPage
-  const end = start + lotsPerPage
-  return unifiedAvailableLots.value.slice(start, end)
-})
-
-const lotsMeta = computed(() => ({
-  totalItems: unifiedAvailableLots.value.length,
-  itemCount: paginatedAvailableLots.value.length,
-  itemsPerPage: lotsPerPage,
-  totalPages: Math.ceil(unifiedAvailableLots.value.length / lotsPerPage),
-  currentPage: lotsPage.value
-}))
 
 const formattedLocationText = computed(() => {
   const text = project.value?.locationText || ''
@@ -894,109 +926,214 @@ function openLightbox(idx: number) {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 113, 227, 0); }
 }
 
-/* Floating Filter */
-.v4-floating-filter {
+/* Floating Search CTA */
+.v4-floating-cta {
   position: fixed;
   bottom: 40px;
   right: 24px;
   z-index: 1000;
+  max-width: calc(100vw - 48px);
 }
 @media (max-width: 768px) {
-  .v4-floating-filter {
+  .v4-floating-cta {
     bottom: 100px;
     right: 16px;
   }
 }
-.v4-filter-btn-float {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+
+.v4-cta-btn-animated {
+  display: block;
+  text-decoration: none;
   background: white;
-  color: var(--v4-text);
-  border: 1px solid var(--v4-border);
-  padding: 12px 20px;
+  padding: 2px; /* For animated border */
   border-radius: 100px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-  transition: all 0.2s;
   position: relative;
-}
-.v4-filter-btn-float:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.16);
-  border-color: var(--v4-primary);
-}
-.v4-filter-badge {
-  position: absolute;
-  top: -8px;
-  right: -4px;
-  background: var(--v4-primary);
-  color: white;
-  font-size: 11px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid white;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+  border: none;
+  cursor: pointer;
 }
 
-/* Filter Modal */
-.v4-modal-overlay {
+.v4-cta-btn-animated:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* Animated Border Effect */
+.v4-cta-btn-animated::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    transparent, 
+    var(--v4-primary), 
+    #00c3ff, 
+    var(--v4-primary), 
+    transparent 30%
+  );
+  animation: rotate-border 4s linear infinite;
+  z-index: 1;
+}
+
+@keyframes rotate-border {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.v4-cta-inner {
+  position: relative;
+  z-index: 2;
+  background: white;
+  border-radius: 100px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.v4-cta-icon-spark { font-size: 18px; }
+.v4-cta-label { font-size: 14px; font-weight: 600; color: var(--v4-text); letter-spacing: -0.01em; }
+.v4-cta-arrow-icon { color: var(--v4-primary); font-weight: 700; transition: transform 0.2s; }
+
+.v4-cta-btn-animated:hover .v4-cta-arrow-icon {
+  transform: translateX(4px);
+}
+
+/* Modal Search Styles */
+.v4-filter-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
-@media (min-width: 768px) {
-  .v4-modal-overlay { align-items: center; }
-}
-.v4-modal-card {
+
+.v4-filter-modal-card {
   background: white;
   width: 100%;
   max-width: 500px;
-  border-radius: 24px 24px 0 0;
-  padding: 32px;
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+  border-radius: 28px;
+  padding: 40px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+  animation: modal-appear 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-@media (min-width: 768px) {
-  .v4-modal-card { border-radius: 24px; margin: 24px; }
+
+@keyframes modal-appear {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
 .v4-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 }
-.v4-modal-header h3 { font-size: 24px; font-weight: 600; margin: 0; }
-.v4-modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--v4-text-muted); }
+.v4-modal-title { font-size: 24px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.02em; }
+.v4-modal-close {
+  background: #f5f5f7;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #86868b;
+  transition: all 0.2s;
+}
+.v4-modal-close:hover { background: #e8e8ed; color: #1d1d1f; }
 
-.filter-group-title { font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--v4-text-muted); margin-bottom: 16px; letter-spacing: 0.05em; }
-.filter-tags-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
-.filter-tag-item {
-  background: white;
-  border: 1px solid var(--v4-border);
+.v4-modal-body { margin-bottom: 32px; }
+.v4-modal-label { font-size: 13px; font-weight: 700; color: #86868b; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 16px; }
+
+.v4-modal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.v4-modal-tag {
+  background: #f5f5f7;
+  border: 1px solid transparent;
   padding: 10px 18px;
   border-radius: 100px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  border: 1px solid #d2d2d7;
 }
-.filter-tag-item:hover { border-color: var(--v4-primary); background: #f0f7ff; }
-.filter-tag-item.active { background: var(--v4-primary); color: white; border-color: var(--v4-primary); }
+.v4-modal-tag:hover { background: #e8e8ed; }
+.v4-modal-tag.active { background: #0071e3; color: white; border-color: #0071e3; }
 
-.v4-modal-footer { border-top: 1px solid var(--v4-border); padding-top: 24px; display: flex; flex-direction: column; gap: 12px; }
-.filter-results-info { font-size: 14px; color: var(--v4-text-muted); margin: 0; text-align: center; }
-.v4-modal-footer .v4-btn-primary { border: none; cursor: pointer; width: 100%; }
-.v4-btn-ghost { background: none; border: none; color: var(--v4-text-muted); font-size: 14px; font-weight: 600; cursor: pointer; align-self: center; }
-.v4-btn-ghost:hover { color: var(--v4-primary); }
+.v4-modal-options {
+  background: #f5f5f7;
+  padding: 16px;
+  border-radius: 16px;
+}
+.v4-modal-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.v4-modal-option input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+.v4-option-info { display: flex; flex-direction: column; }
+.v4-option-title { font-size: 14px; font-weight: 600; color: #1d1d1f; }
+.v4-option-desc { font-size: 12px; color: #86868b; }
+
+.v4-modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.v4-btn-modal-search {
+  background: #0071e3;
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.v4-btn-modal-search:hover { background: #0077ed; transform: scale(1.02); }
+.v4-btn-modal-clear {
+  background: transparent;
+  color: #0071e3;
+  border: none;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Fade animation */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.v4-cta-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(0, 113, 227, 0.1), transparent);
+  z-index: 0;
+  pointer-events: none;
+}
 
 /* Navigation & Hero */
 .v4-hero {
