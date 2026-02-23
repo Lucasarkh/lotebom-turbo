@@ -36,6 +36,8 @@ export interface PlantHotspot {
   metaJson?: Record<string, any> | null
   createdAt: string
   updatedAt: string
+  /** Dynamic field from linked lot */
+  tags?: string[]
 }
 
 export interface PlantMap {

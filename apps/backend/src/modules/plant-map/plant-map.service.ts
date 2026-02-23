@@ -29,7 +29,11 @@ export class PlantMapService {
         hotspots: { orderBy: { createdAt: 'asc' } },
       },
     });
-    return plantMap;
+    if (!plantMap) return null;
+
+    // Attach tags from linked MapElements (Lots)
+    const hotspotsWithTags = await this._attachTagsToHotspots(plantMap.hotspots);
+    return { ...plantMap, hotspots: hotspotsWithTags };
   }
 
   /** Public access — no tenantId check (project uniqueness ensures isolation) */
@@ -40,7 +44,40 @@ export class PlantMapService {
         hotspots: { orderBy: { createdAt: 'asc' } },
       },
     });
-    return plantMap;
+    if (!plantMap) return null;
+
+    // Attach tags from linked MapElements (Lots)
+    const hotspotsWithTags = await this._attachTagsToHotspots(plantMap.hotspots);
+    return { ...plantMap, hotspots: hotspotsWithTags };
+  }
+
+  private async _attachTagsToHotspots(hotspots: any[]) {
+    // Collect all linkIds for LOTE_PAGE
+    const lotIds = hotspots
+      .filter((h) => h.linkType === 'LOTE_PAGE' && h.linkId)
+      .map((h) => h.linkId);
+
+    if (lotIds.length === 0) {
+      return hotspots.map(h => ({ ...h, tags: [] }));
+    }
+
+    // Fetch all lot details for these IDs
+    const lotDetails = await this.prisma.lotDetails.findMany({
+      where: { mapElementId: { in: lotIds } },
+      select: { mapElementId: true, tags: true },
+    });
+
+    const tagsMap = new Map<string, string[]>();
+    lotDetails.forEach((ld) => {
+      tagsMap.set(ld.mapElementId, ld.tags || []);
+    });
+
+    return hotspots.map((h) => {
+      if (h.linkType === 'LOTE_PAGE' && h.linkId) {
+        return { ...h, tags: tagsMap.get(h.linkId) || [] };
+      }
+      return { ...h, tags: [] };
+    });
   }
 
   async create(tenantId: string, projectId: string, dto: CreatePlantMapDto) {

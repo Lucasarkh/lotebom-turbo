@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import type { PlantMap, PlantHotspot } from '~/composables/plantMap/types'
 import { useZoomPan } from '~/composables/plantMap/useZoomPan'
 import HotspotPin from './HotspotPin.vue'
@@ -156,6 +156,14 @@ onMounted(() => {
       containerEl.value.style.cursor = 'default'
     }
   }
+
+  // Close popover on scroll since it uses position: fixed
+  window.addEventListener('scroll', handleContainerClick, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleContainerClick)
+  detach()
 })
 
 // Watch for interactive changes

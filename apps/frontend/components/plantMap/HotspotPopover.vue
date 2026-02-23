@@ -13,9 +13,12 @@
         <!-- Arrow -->
         <div class="hs-popover__arrow" :style="arrowStyle"></div>
 
-        <!-- Close button -->
+        <!-- Styled Close button -->
         <button class="hs-popover__close" aria-label="Fechar" @click="$emit('close')">
-          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
 
         <div class="hs-popover__body">
@@ -37,6 +40,17 @@
 
           <!-- Title -->
           <h3 class="hs-popover__title">{{ hotspot.title }}</h3>
+
+          <!-- Tags / Seals -->
+          <div v-if="hotspot.tags?.length" class="hs-popover__tags">
+            <span v-for="tag in hotspot.tags.slice(0, 5)" :key="tag" class="hs-popover__tag">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px; opacity:0.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              {{ tag }}
+            </span>
+            <span v-if="hotspot.tags.length > 5" class="hs-popover__tag" style="background: transparent; color: #86868b; border: 1px dashed #d2d2d7;">
+              +{{ hotspot.tags.length - 5 }}
+            </span>
+          </div>
 
           <!-- Meta Data Grid (like Area, Preis, etc.) -->
           <div v-if="hotspot.metaJson && Object.keys(hotspot.metaJson).length" class="hs-popover__meta">
@@ -61,7 +75,7 @@
             class="hs-popover__cta"
             @click="handleCta"
           >
-            Ver detalhes 
+            Ver Detalhes 
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" style="margin-left: 4px"><path d="M5 12h14m-7-7l7 7-7 7" /></svg>
           </button>
         </div>
@@ -117,17 +131,23 @@ const ctaLink = computed(() => {
   const { linkType, linkId, linkUrl } = props.hotspot
   const tenant = route.params.tenant as string
   const project = route.params.project as string
+  const realtorCode = route.query.c as string
   
+  let base = null
   if (linkType === 'LOTE_PAGE' && linkId) {
-    if (tenant && project) return `/${tenant}/${project}/lote/${linkId}`
-    return `/lotes/${linkId}`
+    if (tenant && project) base = `/${tenant}/${project}/lote/${linkId}`
+    else base = `/lotes/${linkId}`
   }
-  if (linkType === 'PROJECT_PAGE' && linkId) {
-    if (tenant) return `/${tenant}/${linkId}`
-    return `/${linkId}`
+  else if (linkType === 'PROJECT_PAGE' && linkId) {
+    if (tenant) base = `/${tenant}/${linkId}`
+    else base = `/${linkId}`
   }
-  if (linkType === 'CUSTOM_URL' && linkUrl) return linkUrl
-  return null
+  else if (linkType === 'CUSTOM_URL' && linkUrl) return linkUrl
+
+  if (base && realtorCode) {
+    return `${base}?c=${realtorCode}`
+  }
+  return base
 })
 
 const handleCta = () => {
@@ -196,11 +216,13 @@ const arrowStyle = computed(() => {
 
 <style scoped>
 .hs-popover {
-  background: white;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
   box-shadow: 
-    0 10px 15px -3px rgba(0, 0, 0, 0.1), 
-    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    0 20px 40px rgba(0, 0, 0, 0.12), 
     0 0 0 1px rgba(0, 0, 0, 0.05);
   user-select: none;
   pointer-events: auto;
@@ -208,48 +230,67 @@ const arrowStyle = computed(() => {
 
 .hs-popover__arrow {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  background: white;
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px) saturate(180%);
   z-index: -1;
-  box-shadow: 2px 2px 2px rgba(0,0,0,0.03);
-  border-right: 1px solid rgba(0,0,0,0.05);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-right: 1px solid rgba(0,0,0,0.08);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .hs-popover__close {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 24px;
-  height: 24px;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: rgba(0, 0, 0, 0.05);
   border: none;
   border-radius: 50%;
-  color: #6b7280;
+  color: #1d1d1f;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
   z-index: 10;
 }
 .hs-popover__close:hover {
-  background: #e5e7eb;
-  color: #111;
-  transform: rotate(90deg);
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.hs-popover__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.hs-popover__tag {
+  background: #f5f5f7;
+  color: #1d1d1f;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d2d2d7;
 }
 
 .hs-popover__body {
-  padding: 16px;
+  padding: 20px 16px 16px;
 }
 
 .hs-popover__top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start; /* Changed from space-between */
   margin-bottom: 12px;
   gap: 8px;
+  padding-right: 36px; /* Space for close button */
 }
 
 .hs-popover__badge {
@@ -262,6 +303,7 @@ const arrowStyle = computed(() => {
   border-radius: 8px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .hs-popover__status {
@@ -270,6 +312,7 @@ const arrowStyle = computed(() => {
   padding: 3px 8px;
   border-radius: 6px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .hs-popover__title {
