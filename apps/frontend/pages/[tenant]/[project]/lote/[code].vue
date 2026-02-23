@@ -317,11 +317,14 @@
                   <button type="submit" class="cta-submit-v4" :disabled="submitting">
                     {{ submitting ? 'Enviando...' : 'Quero Detalhes' }}
                   </button>
-                  <div class="form-divider-v4">ou</div>
-                  <a :href="`https://wa.me/${corretor?.phone?.replace(/\D/g, '') || project?.contactPhone?.replace(/\D/g, '')}`" 
-                     target="_blank" class="wa-btn-v4">
-                    Conversar via WhatsApp
-                  </a>
+                  
+                  <template v-if="corretor">
+                    <div class="form-divider-v4">ou</div>
+                    <a :href="`https://wa.me/${corretor.phone?.replace(/\D/g, '') || project?.contactPhone?.replace(/\D/g, '')}`" 
+                       target="_blank" class="wa-btn-v4">
+                      Conversar via WhatsApp
+                    </a>
+                  </template>
                 </form>
 
                 <div v-else class="form-success-v4">
@@ -756,10 +759,21 @@ async function submitGateLead() {
 
 /* Vertical Nav Guide */
 .side-navigation-guide {
-  position: sticky; top: 100px; height: fit-content; width: 70px; display: flex; flex-direction: column; padding: 24px 0;
-  background: white; border-radius: 50px; border: 1px solid var(--v4-border); margin: 40px 0 40px 40px; flex-shrink: 0; z-index: 50; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  position: fixed; 
+  top: 50%;
+  transform: translateY(-50%);
+  left: 30px;
+  width: 70px; 
+  display: flex; 
+  flex-direction: column; 
+  padding: 24px 0;
+  background: white; 
+  border-radius: 50px; 
+  border: 1px solid var(--v4-border); 
+  z-index: 150; 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
-@media (max-width: 1250px) { .side-navigation-guide { display: none; } }
+@media (max-width: 1400px) { .side-navigation-guide { display: none; } }
 
 .nav-stack { display: flex; flex-direction: column; position: relative; width: 100%; align-items: center; }
 .nav-dot { display: flex; flex-direction: column; align-items: center; text-decoration: none; width: 100%; padding: 12px 0; transition: all 0.3s; }

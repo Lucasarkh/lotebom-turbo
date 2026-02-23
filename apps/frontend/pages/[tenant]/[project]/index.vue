@@ -848,9 +848,9 @@ function openLightbox(idx: number) {
 .v4-hero-title {
   font-size: clamp(38px, 8vw, 72px); /* Slightly more balanced */
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  margin-bottom: 20px;
+  text-wrap: pretty;
+  line-height: 1;
+  margin-bottom: 48px;
   color: #ffffff;
   text-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
