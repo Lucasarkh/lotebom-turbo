@@ -21,14 +21,16 @@
 
       <div class="pe-toolbar-right">
         <template v-if="activePanorama">
-          <!-- Status badge -->
-          <span
-            class="badge"
-            :class="activePanorama.published ? 'badge-success' : 'badge-warning'"
+          <!-- Publication button -->
+          <button
+            class="btn btn-sm"
+            :class="activePanorama.published ? 'btn-outline-danger' : 'btn-outline-success'"
             style="margin-right: 8px;"
+            :title="activePanorama.published ? 'Clique para despublicar' : 'Clique para publicar'"
+            @click="togglePublication"
           >
-            {{ activePanorama.published ? 'Publicado' : 'Rascunho' }}
-          </span>
+            {{ activePanorama.published ? 'Despublicar' : 'Publicar' }}
+          </button>
 
           <!-- Mode buttons -->
           <button
@@ -138,6 +140,7 @@
         <div v-else-if="activePanorama.projection === 'EQUIRECTANGULAR' && (mode === 'view' || mode === 'add-beacon')" class="pe-canvas-view">
           <PanoramaViewer
             :panorama="activePanorama"
+            :active-snapshot-id="activeSnapshotId"
             :editable="mode === 'add-beacon'"
             @beaconClick="editBeacon"
             @viewClick="on360ViewClick"
@@ -303,23 +306,6 @@
               <option value="FLAT">Foto Estática (Plana)</option>
               <option value="EQUIRECTANGULAR">Panorama 360° (Equerretangular)</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label class="pe-checkbox-label">
-              <input type="checkbox" v-model="settingsForm.published" />
-              Publicado (visível no site público)
-            </label>
-          </div>
-          <div class="form-group">
-            <label class="pe-checkbox-label">
-              <input type="checkbox" v-model="settingsForm.showImplantation" />
-              Habilitar imagem de implantação
-            </label>
-          </div>
-          <div v-if="settingsForm.showImplantation" class="form-group">
-            <label>Imagem de implantação</label>
-            <input type="file" accept="image/*" class="form-input" @change="onImplantationFileSelect" />
-            <p v-if="activePanorama?.implantationUrl" class="pe-current-file">Imagem atual configurada ✓</p>
           </div>
           <div class="modal-actions" style="justify-content: space-between;">
             <button class="btn btn-danger btn-sm" @click="doDeletePanorama">🗑️ Excluir Panorama</button>
@@ -673,61 +659,60 @@ function onBeaconDragStart(beacon: PanoramaBeacon, e: MouseEvent) {
   dragBeaconOrigY = beacon.y
 }
 
+async function togglePublication() {
+  if (!activePanorama.value) return
+  const isPublished = activePanorama.value.published
+  const message = isPublished
+    ? 'Tem certeza que deseja despublicar este panorama? Ele não estará mais visível publicamente.'
+    : 'Tem certeza que deseja publicar este panorama? Ele ficará visível no site público.'
+
+  if (!confirm(message)) return
+
+  try {
+    const updated = await api.updatePanorama(activePanorama.value.id, {
+      published: !isPublished,
+    })
+
+    const idx = panoramas.value.findIndex(p => p.id === updated.id)
+    if (idx >= 0) panoramas.value[idx] = updated
+
+    toast.success(updated.published ? 'Panorama publicado!' : 'Panorama despublicado.')
+    emitUpdate()
+  } catch (e: any) {
+    toast.error(e.message || 'Erro ao alterar status de publicação')
+  }
+}
+
 // ── Settings ─────────────────────────────────────────
 
 const showSettings = ref(false)
 const savingSettings = ref(false)
-const implantationFile = ref<File | null>(null)
 
 const settingsForm = reactive({
   title: '',
   projection: 'FLAT' as PanoramaProjection,
-  published: true,
-  showImplantation: false,
 })
 
 watch(showSettings, (v) => {
   if (v && activePanorama.value) {
     settingsForm.title = activePanorama.value.title
     settingsForm.projection = activePanorama.value.projection ?? 'FLAT'
-    settingsForm.published = activePanorama.value.published ?? true
-    settingsForm.showImplantation = activePanorama.value.showImplantation
   }
 })
-
-function onImplantationFileSelect(e: Event) {
-  const input = e.target as HTMLInputElement
-  implantationFile.value = input.files?.[0] ?? null
-}
 
 async function doSaveSettings() {
   if (!activePanorama.value) return
   savingSettings.value = true
   try {
-    let implantationUrl = activePanorama.value.implantationUrl
-
-    if (implantationFile.value) {
-      const res = await api.uploadImplantation(
-        props.projectId,
-        activePanorama.value.id,
-        implantationFile.value,
-      )
-      implantationUrl = res.implantationUrl
-    }
-
     const updated = await api.updatePanorama(activePanorama.value.id, {
       title: settingsForm.title,
       projection: settingsForm.projection,
-      published: settingsForm.published,
-      showImplantation: settingsForm.showImplantation,
-      implantationUrl: implantationUrl ?? undefined,
     })
 
     const idx = panoramas.value.findIndex(p => p.id === updated.id)
     if (idx >= 0) panoramas.value[idx] = updated
 
     showSettings.value = false
-    implantationFile.value = null
     toast.success('Configurações salvas!')
     emitUpdate()
   } catch (e: any) {

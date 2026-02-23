@@ -19,15 +19,6 @@
         referrerpolicy="no-referrer"
       />
 
-      <!-- Implantation overlay -->
-      <img
-        v-if="panorama.showImplantation && panorama.implantationUrl && showImplantation"
-        :src="panorama.implantationUrl"
-        class="panorama-implantation"
-        draggable="false"
-        referrerpolicy="no-referrer"
-      />
-
       <!-- Beacons layer -->
       <div v-if="showBeacons" class="panorama-beacons-layer">
         <PanoramaBeaconPin
@@ -85,13 +76,6 @@
 
       <!-- Bottom right: implantation toggle -->
       <div class="panorama-bottom-right">
-        <button
-          v-if="panorama.showImplantation && panorama.implantationUrl"
-          class="panorama-ui-btn"
-          @click="showImplantation = !showImplantation"
-        >
-          {{ showImplantation ? '🏗️ Ocultar Implantação' : '🏗️ Mostrar Implantação' }}
-        </button>
       </div>
     </div>
   </div>
@@ -107,6 +91,7 @@ import PanoramaTimeline from './PanoramaTimeline.vue'
 const props = defineProps<{
   panorama: Panorama
   editable?: boolean // can clicking create a beacon?
+  activeSnapshotId?: string | null // externally control the active snapshot
 }>()
 
 const emit = defineEmits<{
@@ -129,7 +114,6 @@ const imgW = ref(1200)
 const imgH = ref(800)
 
 const showBeacons = ref(true)
-const showImplantation = ref(false)
 const isFullscreen = ref(false)
 
 const activeSnapshot = ref<PanoramaSnapshot | null>(null)
@@ -169,17 +153,20 @@ useHead({
 })
 
 function initPannellum() {
-  if (typeof window === 'undefined' || !(window as any).pannellum || !activeSnapshot.value) return
-  if (props.panorama.projection !== 'EQUIRECTANGULAR') return
+  if (typeof window === 'undefined' || !(window as any).pannellum) return
+
+  if (pviewer) {
+    try {
+      pviewer.destroy()
+    } catch (e) {}
+    pviewer = null
+  }
+
+  if (!activeSnapshot.value || props.panorama.projection !== 'EQUIRECTANGULAR') return
 
   const elementId = `panorama-360-view-${props.panorama.id}`
   const el = document.getElementById(elementId)
   if (!el) return
-
-  if (pviewer) {
-    try { pviewer.destroy() } catch (e) {}
-    pviewer = null
-  }
 
   pviewer = (window as any).pannellum.viewer(elementId, {
     type: 'equirectangular',
@@ -282,14 +269,41 @@ const sunLine = computed(() => {
 // ── Init ─────────────────────────────────────────────
 
 watch(
-  () => props.panorama,
-  (p) => {
-    if (p.snapshots.length && !activeSnapshot.value) {
-      // Set the last snapshot as default (most recent)
-      activeSnapshot.value = p.snapshots[p.snapshots.length - 1] ?? null
+  () => props.panorama.snapshots,
+  (snaps) => {
+    // 1. If currently selected snapshot no longer exists, clear it
+    if (activeSnapshot.value && !snaps.find(s => s.id === activeSnapshot.value?.id)) {
+      activeSnapshot.value = null
+    }
+
+    // 2. If we have an external override, use it
+    if (props.activeSnapshotId) {
+      const found = snaps.find(s => s.id === props.activeSnapshotId)
+      if (found) {
+        activeSnapshot.value = found
+        return
+      }
+    }
+
+    // 3. Fallback: if no active snapshot or it was just cleared, pick the last one
+    if (snaps.length && (!activeSnapshot.value || !snaps.find(s => s.id === activeSnapshot.value?.id))) {
+      activeSnapshot.value = snaps[snaps.length - 1] ?? null
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
+)
+
+// Also watch for direct prop changes to activeSnapshotId
+watch(
+  () => props.activeSnapshotId,
+  (newId) => {
+    if (newId) {
+      const found = props.panorama.snapshots.find(s => s.id === newId)
+      if (found) activeSnapshot.value = found
+    } else {
+      activeSnapshot.value = null
+    }
+  },
 )
 
 onMounted(() => {

@@ -213,9 +213,9 @@
             </div>
           </div>
 
-          <div style="margin-bottom: var(--space-4);">
-            <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-2);">Selos Customizados</h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+          <div style="margin-top: var(--space-6); margin-bottom: var(--space-6);">
+            <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-3);">Selos Customizados</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
               <div v-for="(tag, idx) in (lotForm.tags || [])" :key="idx" 
                    style="background: #eff6ff; color: #1d4ed8; padding: 3px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">
                 {{ tag }}
@@ -239,7 +239,7 @@
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" style="margin-top: var(--space-6);">
             <label class="form-label">Notas / Descrição</label>
             <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informações adicionais do lote..."></textarea>
           </div>
@@ -428,32 +428,6 @@
             </div>
           </section>
 
-          <!-- Section: Links & URLs -->
-          <section class="card" style="padding: var(--space-6);">
-            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
-              <div style="width: 40px; height: 40px; background: #fef3c7; color: #d97706; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🔗</div>
-              <div>
-                <h3 style="margin:0;">Link da Página Pública</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Compartilhe este link com seus clientes.</p>
-              </div>
-            </div>
-
-            <div v-if="project.status !== 'PUBLISHED'" class="alert alert-warning" style="margin-bottom: var(--space-4); background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: var(--space-3); border-radius: var(--radius-md); font-size: 0.875rem; display: flex; gap: 8px; align-items: center;">
-              <span>⚠️</span>
-              <div>O projeto está como rascunho. Publique-o para que a página fique visível.</div>
-            </div>
-
-            <div class="copy-url-bar" style="display: flex; gap: var(--space-2); align-items: stretch; background: var(--gray-100); padding: 8px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);">
-              <code style="flex: 1; padding: 0 12px; display: flex; align-items: center; color: var(--gray-700); font-weight: 500; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {{ publicUrl || '(publique o projeto para gerar o link)' }}
-              </code>
-              <div v-if="publicUrl" class="flex gap-2">
-                <button class="btn btn-sm btn-outline" style="background: white;" @click="copyLink(`${$config?.public?.baseUrl || ''}${publicUrl}`)">📋 Copiar</button>
-                <a :href="publicUrl" target="_blank" class="btn btn-sm btn-primary">🚀 Abrir</a>
-              </div>
-            </div>
-          </section>
-
           <!-- Section: Highlights -->
           <section class="card" style="padding: var(--space-6);">
             <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
@@ -507,7 +481,7 @@
 
             <div class="grid grid-cols-2" style="gap: var(--space-5); margin-bottom: var(--space-6);">
               <div class="form-group" style="margin:0;">
-                <label class="form-label">Investimento Inicial (R$)</label>
+                <label class="form-label">Investimento a partir de (R$)</label>
                 <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="Ex: 144000" :disabled="!authStore.canEdit" />
                 <small style="color:var(--gray-400); font-size:0.75rem;">Deixe em branco para calcular automaticamente dos lotes.</small>
               </div>
