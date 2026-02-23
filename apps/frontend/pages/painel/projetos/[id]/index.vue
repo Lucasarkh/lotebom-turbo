@@ -213,6 +213,32 @@
             </div>
           </div>
 
+          <div style="margin-bottom: var(--space-4);">
+            <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-2);">Selos Customizados</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+              <div v-for="(tag, idx) in (lotForm.tags || [])" :key="idx" 
+                   style="background: #eff6ff; color: #1d4ed8; padding: 3px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                {{ tag }}
+                <span @click="lotForm.tags.splice(idx, 1)" style="cursor: pointer; opacity: 0.6; font-size: 0.8rem;">✕</span>
+              </div>
+              <div v-if="!(lotForm.tags?.length)" style="color: var(--gray-400); font-size: 0.75rem;">Nenhum selo cadastrado.</div>
+            </div>
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+              <input v-model="newTag" @keyup.enter="addTag" type="text" class="form-input btn-sm" style="flex: 1; height: 32px; font-size: 0.85rem;" placeholder="Novo selo (ex: sol da manhã)..." />
+              <button @click="addTag" class="btn btn-sm btn-secondary" style="height: 32px; padding: 0 12px; font-size: 0.85rem;">Adicionar</button>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button v-for="suggestion in ['sol da manhã', 'esquina', 'vista livre', 'próximo à portaria', 'fundo para área verde']" 
+                      :key="suggestion"
+                      @click="addSuggestedTag(suggestion)"
+                      class="btn btn-xs btn-outline"
+                      style="font-size: 9px; padding: 2px 6px; color: var(--gray-500); border-color: var(--gray-300);">
+                + {{ suggestion }}
+              </button>
+            </div>
+          </div>
+
           <div class="form-group">
             <label class="form-label">Notas / Descrição</label>
             <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informações adicionais do lote..."></textarea>
@@ -687,6 +713,7 @@ const settingsError = ref('')
 const settingsSaved = ref(false)
 
 const editingLot = ref<any>(null)
+const newTag = ref('')
 const lotForm = ref({
   status: 'AVAILABLE',
   price: null,
@@ -698,9 +725,26 @@ const lotForm = ref({
   slope: 'FLAT',
   panoramaUrl: null as string | null,
   notes: '',
+  tags: [] as string[],
   conditionsText: '',
   paymentConditions: null as any
 })
+
+const addTag = () => {
+  if (!newTag.value) return
+  if (!lotForm.value.tags) lotForm.value.tags = []
+  if (!lotForm.value.tags.includes(newTag.value.trim().toLowerCase())) {
+    lotForm.value.tags.push(newTag.value.trim().toLowerCase())
+  }
+  newTag.value = ''
+}
+
+const addSuggestedTag = (tag: string) => {
+  if (!lotForm.value.tags) lotForm.value.tags = []
+  if (!lotForm.value.tags.includes(tag.toLowerCase())) {
+    lotForm.value.tags.push(tag.toLowerCase())
+  }
+}
 const savingLot = ref(false)
 const uploadingLotMedia = ref(false)
 const uploadingPanorama = ref(false)
@@ -739,6 +783,7 @@ const openEditLot = (lot: any) => {
     slope: lot.slope, 
     panoramaUrl: lot.panoramaUrl || null,
     notes: lot.notes || '',
+    tags: Array.isArray(lot.tags) ? [...lot.tags] : [],
     conditionsText: Array.isArray(lot.conditionsJson) ? lot.conditionsJson.join('\n') : '',
     paymentConditions: lot.paymentConditions ? JSON.parse(JSON.stringify(lot.paymentConditions)) : null
   }
@@ -759,6 +804,7 @@ const saveLotDetails = async () => {
       slope: lotForm.value.slope,
       panoramaUrl: lotForm.value.panoramaUrl || null,
       notes: lotForm.value.notes || undefined,
+      tags: lotForm.value.tags,
       paymentConditions: lotForm.value.paymentConditions || undefined,
     }
     // Only override areaM2 when the panel's trapezoid formula produces a result;

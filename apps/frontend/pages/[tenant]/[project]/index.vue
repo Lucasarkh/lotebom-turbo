@@ -171,7 +171,7 @@
 
           <div class="v4-lots-grid">
             <NuxtLink 
-              v-for="lot in unifiedAvailableLots.slice(0, 6)" 
+              v-for="lot in (selectedFilters.length > 0 ? unifiedAvailableLots : unifiedAvailableLots.slice(0, 6))" 
               :key="lot.id" 
               :to="lotPageUrl(lot)" 
               class="v4-lot-card"
@@ -203,7 +203,7 @@
             </NuxtLink>
           </div>
 
-          <div v-if="unifiedAvailableLots.length > 6" style="margin-top: 56px; display: flex; justify-content: center;">
+          <div v-if="unifiedAvailableLots.length > 6 && selectedFilters.length === 0" style="margin-top: 56px; display: flex; justify-content: center;">
             <NuxtLink :to="`/${tenantSlug}/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver todos os lotes')">
               Ver todos os {{ unifiedAvailableLots.length }} lotes disponíveis
             </NuxtLink>
@@ -381,6 +381,46 @@
         <a v-if="unifiedAvailableLots.length" href="#lotes" class="v4-nav-item">Unidades</a>
         <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>
       </nav>
+      <!-- Floating Filter Button -->
+      <div v-if="allAvailableTags.length > 0" class="v4-floating-filter">
+        <button class="v4-filter-btn-float" @click="filterModalOpen = true">
+          <span v-if="selectedFilters.length" class="v4-filter-badge">{{ selectedFilters.length }}</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+          <span class="v4-filter-label">Filtros</span>
+        </button>
+      </div>
+
+      <!-- Filter Modal -->
+      <Teleport to="body">
+        <div v-if="filterModalOpen" class="v4-modal-overlay" @click.self="filterModalOpen = false">
+          <div class="v4-modal-card">
+            <div class="v4-modal-header">
+              <h3>Filtros de Lotes</h3>
+              <button class="v4-modal-close" @click="filterModalOpen = false">✕</button>
+            </div>
+            <div class="v4-modal-body">
+              <p class="filter-group-title">Características desejadas:</p>
+              <div class="filter-tags-grid">
+                <button 
+                  v-for="tag in allAvailableTags" 
+                  :key="tag" 
+                  class="filter-tag-item"
+                  :class="{ active: selectedFilters.includes(tag) }"
+                  @click="toggleFilter(tag)"
+                >
+                  {{ tag }}
+                </button>
+              </div>
+            </div>
+            <div class="v4-modal-footer">
+              <p v-if="unifiedAvailableLots.length === unfilteredTotal" class="filter-results-info">Mostrando todos os {{ unfilteredTotal }} lotes.</p>
+              <p v-else class="filter-results-info">Encontrados <strong>{{ unifiedAvailableLots.length }}</strong> lotes com estes filtros.</p>
+              <button class="v4-btn-primary full-width" @click="filterModalOpen = false">Ver Resultados</button>
+              <button v-if="selectedFilters.length" class="v4-btn-ghost" @click="selectedFilters = []">Limpar tudo</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
     </template>
   </div>
 </template>
@@ -498,7 +538,20 @@ const mapDataLots = computed(() => {
 
 const hasMapData = computed(() => !!project.value?.mapData)
 
-const unifiedAvailableLots = computed(() => {
+const selectedFilters = ref<string[]>([])
+const filterModalOpen = ref(false)
+
+const allAvailableTags = computed(() => {
+  const tags = new Set<string>()
+  unifiedAvailableLotsUnfiltered.value.forEach((l: any) => {
+    if (l.lotDetails?.tags) {
+      l.lotDetails.tags.forEach((t: string) => tags.add(t))
+    }
+  })
+  return Array.from(tags).sort()
+})
+
+const unifiedAvailableLotsUnfiltered = computed(() => {
   let list = []
   if (hasMapData.value) {
     const rawMapData = typeof project.value.mapData === 'string' ? JSON.parse(project.value.mapData) : project.value.mapData
@@ -527,15 +580,39 @@ const unifiedAvailableLots = computed(() => {
           lotDetails: {
             areaM2: parseFloat(finalAreaM2.toFixed(2)),
             frontage: parseFloat(finalFrontage.toFixed(2)),
-            price: l.price
+            price: l.price,
+            status: 'AVAILABLE',
+            tags: l.tags || []
           }
         }
       })
   } else {
-    list = availableLotElements.value
+    list = availableLotElements.value.map((e: any) => ({
+      id: e.id,
+      name: e.name,
+      code: e.code || e.name || e.id,
+      lotDetails: {
+        ...e.lotDetails,
+        tags: e.lotDetails?.tags || []
+      }
+    }))
   }
   return list
 })
+
+const unifiedAvailableLots = computed(() => {
+  if (selectedFilters.value.length === 0) return unifiedAvailableLotsUnfiltered.value
+  return unifiedAvailableLotsUnfiltered.value.filter((l: any) => {
+    const tags = l.lotDetails?.tags || []
+    return selectedFilters.value.every(f => tags.includes(f))
+  })
+})
+
+function toggleFilter(tag: string) {
+  const idx = selectedFilters.value.indexOf(tag)
+  if (idx > -1) selectedFilters.value.splice(idx, 1)
+  else selectedFilters.value.push(tag)
+}
 
 const paginatedAvailableLots = computed(() => {
   const start = (lotsPage.value - 1) * lotsPerPage
@@ -816,6 +893,110 @@ function openLightbox(idx: number) {
   70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 113, 227, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 113, 227, 0); }
 }
+
+/* Floating Filter */
+.v4-floating-filter {
+  position: fixed;
+  bottom: 40px;
+  right: 24px;
+  z-index: 1000;
+}
+@media (max-width: 768px) {
+  .v4-floating-filter {
+    bottom: 100px;
+    right: 16px;
+  }
+}
+.v4-filter-btn-float {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  color: var(--v4-text);
+  border: 1px solid var(--v4-border);
+  padding: 12px 20px;
+  border-radius: 100px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  transition: all 0.2s;
+  position: relative;
+}
+.v4-filter-btn-float:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.16);
+  border-color: var(--v4-primary);
+}
+.v4-filter-badge {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  background: var(--v4-primary);
+  color: white;
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+/* Filter Modal */
+.v4-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2000;
+}
+@media (min-width: 768px) {
+  .v4-modal-overlay { align-items: center; }
+}
+.v4-modal-card {
+  background: white;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 24px 24px 0 0;
+  padding: 32px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+}
+@media (min-width: 768px) {
+  .v4-modal-card { border-radius: 24px; margin: 24px; }
+}
+.v4-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.v4-modal-header h3 { font-size: 24px; font-weight: 600; margin: 0; }
+.v4-modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--v4-text-muted); }
+
+.filter-group-title { font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--v4-text-muted); margin-bottom: 16px; letter-spacing: 0.05em; }
+.filter-tags-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
+.filter-tag-item {
+  background: white;
+  border: 1px solid var(--v4-border);
+  padding: 10px 18px;
+  border-radius: 100px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-tag-item:hover { border-color: var(--v4-primary); background: #f0f7ff; }
+.filter-tag-item.active { background: var(--v4-primary); color: white; border-color: var(--v4-primary); }
+
+.v4-modal-footer { border-top: 1px solid var(--v4-border); padding-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+.filter-results-info { font-size: 14px; color: var(--v4-text-muted); margin: 0; text-align: center; }
+.v4-modal-footer .v4-btn-primary { border: none; cursor: pointer; width: 100%; }
+.v4-btn-ghost { background: none; border: none; color: var(--v4-text-muted); font-size: 14px; font-weight: 600; cursor: pointer; align-self: center; }
+.v4-btn-ghost:hover { color: var(--v4-primary); }
 
 /* Navigation & Hero */
 .v4-hero {

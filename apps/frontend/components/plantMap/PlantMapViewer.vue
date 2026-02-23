@@ -119,10 +119,15 @@ const props = withDefaults(defineProps<{
   showLegend?: boolean
   /** Hide labels (useful on mobile or when too many hotspots) */
   hideLabels?: boolean
+  /** Disable zoom/pan interaction */
+  interactive?: boolean
+  /** Lot code to highlight and center on */
+  focusLotCode?: string
 }>(), {
   showControls: true,
   showLegend: true,
   hideLabels: false,
+  interactive: true,
 })
 
 // ── Zoom/pan ─────────────────────────────────────────────
@@ -134,7 +139,8 @@ const {
   fitToContainer,
   clampOffset,
   clampScale,
-  attach
+  attach,
+  detach
 } = useZoomPan({
   minScale: 0.3,
   maxScale: 8,
@@ -142,11 +148,50 @@ const {
 
 // Initialize on client only (SSR safe)
 onMounted(() => {
-  nextTick(() => attach())
+  if (props.interactive) {
+    nextTick(() => attach())
+  } else {
+    // If static, we might want to ensure cursor is default
+    if (containerEl.value) {
+      containerEl.value.style.cursor = 'default'
+    }
+  }
 })
 
+// Watch for interactive changes
+watch(() => props.interactive, (val) => {
+  if (val) attach()
+  else detach()
+})
+
+const zoomToHotspot = (lotCode: string): boolean => {
+  // Try matching by label (usually the code like L-01) or linkId (the UUID)
+  const hs = props.plantMap.hotspots.find(h => h.label === lotCode || h.linkId === lotCode)
+  if (!hs || !containerEl.value || !contentEl.value) return false
+
+  const cw = containerEl.value.clientWidth
+  const ch = containerEl.value.clientHeight
+  
+  // Target position on original image (normalizing normalized 0..1 to image pixels)
+  const targetX = hs.x * imgNaturalW.value
+  const targetY = hs.y * imgNaturalH.value
+
+  // Deterministic scale for focusing
+  const targetScale = clampScale(1.1)
+
+  // Center targetX, targetY in the container
+  const newX = (cw / 2) - (targetX * targetScale)
+  const newY = (ch / 2) - (targetY * targetScale)
+
+  transform.value = {
+    scale: targetScale,
+    ...clampOffset(targetScale, newX, newY)
+  }
+  return true
+}
+
 const zoomIn = () => {
-  if (!containerEl.value) return
+  if (!props.interactive || !containerEl.value) return
   const rect = containerEl.value.getBoundingClientRect()
   const cx = rect.width / 2
   const cy = rect.height / 2
@@ -163,7 +208,7 @@ const zoomIn = () => {
 }
 
 const zoomOut = () => {
-  if (!containerEl.value) return
+  if (!props.interactive || !containerEl.value) return
   const rect = containerEl.value.getBoundingClientRect()
   const cx = rect.width / 2
   const cy = rect.height / 2
@@ -182,6 +227,7 @@ const zoomOut = () => {
 const contentStyle = computed(() => ({
   transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.scale})`,
   transformOrigin: '0 0',
+  transition: props.interactive ? 'none' : 'transform 0.4s ease-out'
 }))
 
 // ── Image loading ─────────────────────────────────────────
@@ -197,7 +243,14 @@ const onImageLoad = (e: Event) => {
   imageLoaded.value = true
   
   nextTick(() => {
-    fitToContainer()
+    let focused = false
+    if (props.focusLotCode) {
+      focused = zoomToHotspot(props.focusLotCode)
+    } 
+    
+    if (!focused) {
+      fitToContainer()
+    }
   })
 }
 

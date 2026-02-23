@@ -67,4 +67,9 @@ export class UpsertLotDetailsDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ example: ['sol da manhã', 'esquina'] })
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 }

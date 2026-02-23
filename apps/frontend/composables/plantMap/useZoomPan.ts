@@ -223,7 +223,6 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
     el.removeEventListener('touchend', onTouchEnd)
   }
 
-  onMounted(attach)
   onUnmounted(detach)
 
   return {

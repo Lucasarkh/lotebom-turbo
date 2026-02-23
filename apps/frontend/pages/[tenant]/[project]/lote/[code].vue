@@ -43,6 +43,10 @@
               <span class="dot"></span>
               <span class="label">Galeria</span>
             </a>
+            <a v-if="lotPlantMap" href="#localizacao" class="nav-dot" :class="{ 'is-active': activeSection === 'localizacao' }" title="Localização">
+              <span class="dot"></span>
+              <span class="label">Planta</span>
+            </a>
             <a v-if="lotPanorama" href="#vista-360" class="nav-dot" :class="{ 'is-active': activeSection === 'vista-360' }" title="Vista 360°">
               <span class="dot"></span>
               <span class="label">360°</span>
@@ -68,6 +72,13 @@
                   {{ statusLabel }}
                 </div>
                 <h1 class="lot-code-title">{{ lot.name || lot.code }}</h1>
+                
+                <div v-if="details?.tags?.length" class="lot-seals-v4">
+                  <span v-for="tag in details.tags" :key="tag" class="seal-pill">
+                    {{ tag }}
+                  </span>
+                </div>
+
                 <div class="quick-metrics-v4">
                 <div class="q-item" v-if="details?.paymentConditions?.setor">
                   <span class="q-val">{{ details.paymentConditions.setor }}</span>
@@ -107,6 +118,31 @@
                   </div>
                 </div>
               </div>
+            </section>
+
+            <!-- Location Map -->
+            <section v-if="lotPlantMap" id="localizacao" class="section-v4">
+              <div class="section-title-v4">
+                <h2>Localização no Loteamento</h2>
+                <div class="title-line"></div>
+              </div>
+              <div style="height: 500px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border);">
+                <ClientOnly>
+                  <PlantMapViewer
+                    :plant-map="lotPlantMap"
+                    :show-controls="false"
+                    :show-legend="false"
+                    :interactive="false"
+                    :focus-lot-code="lot.code"
+                  />
+                  <template #fallback>
+                    <div class="loading-state-pm">Carregando planta...</div>
+                  </template>
+                </ClientOnly>
+              </div>
+              <p style="margin-top: 16px; color: var(--v4-text-muted); font-size: 14px; text-align: center;">
+                Localização exata do lote dentro do empreendimento.
+              </p>
             </section>
 
             <!-- 360 View -->
@@ -394,7 +430,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
+import PlantMapViewer from '~/components/plantMap/PlantMapViewer.vue'
+import { usePublicPlantMap } from '~/composables/plantMap/usePlantMapApi'
 import type { Panorama } from '~/composables/panorama/types'
+import type { PlantMap } from '~/composables/plantMap/types'
 
 definePageMeta({ layout: 'public' })
 
@@ -413,6 +452,26 @@ const loading = ref(true)
 const error = ref('')
 const project = ref<any>(null)
 const corretor = ref<any>(null)
+const plantMap = ref<PlantMap | null>(null)
+const { getPublicPlantMap } = usePublicPlantMap()
+
+const lotPlantMap = computed(() => {
+  if (!plantMap.value || !lot.value) return null
+  
+  // Find the hotspot that points to this lot
+  // Try matching by id first, then by code
+  const lotId = lot.value.id
+  const lotLabel = lot.value.code || lot.value.name
+  
+  const relevantHotspots = plantMap.value.hotspots.filter(h => 
+    h.linkId === lotId || (h.label && h.label === lotLabel)
+  )
+
+  return {
+    ...plantMap.value,
+    hotspots: relevantHotspots.length ? relevantHotspots : []
+  }
+})
 
 const lotPanorama = computed(() => {
   if (!details.value?.panoramaUrl) return null
@@ -545,6 +604,7 @@ const lot = computed(() => {
             sideMetricsJson: found.sideMetrics ?? [],
             slope: found.slope || 'FLAT',
             notes: found.notes || '',
+            tags: found.tags || [],
             conditionsJson: found.conditionsJson || [],
             paymentConditions: (typeof found.paymentConditions === 'string' ? JSON.parse(found.paymentConditions) : found.paymentConditions) || null,
             medias: []
@@ -620,7 +680,7 @@ const lightboxMedia = computed(() => details.value?.medias?.[lightboxIdx.value] 
 const activeSection = ref('hero')
 
 const handleScroll = () => {
-  const sections = ['hero', 'galeria', 'vista-360', 'ficha', 'financiamento']
+  const sections = ['hero', 'galeria', 'localizacao', 'vista-360', 'ficha', 'financiamento']
   for (const sectionId of [...sections].reverse()) {
     const el = document.getElementById(sectionId)
     if (el) {
@@ -647,28 +707,42 @@ onMounted(async () => {
       fetchPublic(`/p/${tenantSlug}/${projectSlug}`),
       corretorCode ? fetchPublic(`/p/${tenantSlug}/corretores/${corretorCode}`) : Promise.resolve(null),
     ])
+    
     if (p.status === 'fulfilled') {
       project.value = p.value
+      
       // Initialize tracking
       await tracking.initTracking({ 
         tenantId: p.value.tenantId, 
         projectId: p.value.id 
       })
+
       // Specific page view for the lot
       tracking.trackPageView({ 
         category: 'LOT', 
         label: lotCode 
       })
-    } else error.value = (p.reason as any)?.message || 'Loteamento não encontrado'
-    if (c.status === 'fulfilled' && c.value) corretor.value = c.value
+
+      // NEW: Fetch plant map using project id once we have it
+      getPublicPlantMap(p.value.id).then((pm) => {
+        plantMap.value = pm
+      }).catch(e => console.error('Error fetching plant map on lot page', e))
+    } else {
+      error.value = (p.reason as any)?.message || 'Loteamento não encontrado'
+    }
+
+    if (c.status === 'fulfilled' && c.value) {
+      corretor.value = c.value
+    }
   } catch (e: any) {
-    error.value = e.message || 'Erro ao carregar'
+    error.value = e.message || 'Erro ao carregar dados'
   }
+  
   loading.value = false
 
   // After load, validate lot exists
   if (!loading.value && project.value && !lot.value) {
-    error.value = 'Lote encontrado neste loteamento.'
+    error.value = 'Lote não encontrado neste loteamento.'
   }
 })
 
@@ -828,6 +902,20 @@ async function submitGateLead() {
   background: white; padding: 60px; border-radius: var(--v4-radius-lg); margin-bottom: 32px; border: 1px solid var(--v4-border); box-shadow: 0 4px 24px rgba(0,0,0,0.02);
 }
 .lot-code-title { font-size: 64px; font-weight: 600; margin-bottom: 24px; color: var(--v4-text); line-height: 1.1; letter-spacing: -0.02em; }
+
+/* Seals / Tags */
+.lot-seals-v4 { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.seal-pill { 
+  background: #f0f7ff; 
+  color: #0071e3; 
+  padding: 6px 14px; 
+  border-radius: 100px; 
+  font-size: 13px; 
+  font-weight: 600; 
+  text-transform: capitalize;
+  border: 1px solid #d0e7ff;
+}
+
 .quick-metrics-v4 { display: flex; gap: 48px; }
 .q-item { display: flex; flex-direction: column; }
 .q-val { font-size: 28px; font-weight: 600; color: var(--v4-text); }
