@@ -29,11 +29,16 @@ export class LeadsService {
     if (!project || project.status !== 'PUBLISHED')
       throw new NotFoundException('Project not found');
 
-    // Resolve optional realtor code → ID
+    // Resolve optional realtor code → ID (must be associated with this project)
     let realtorLinkId: string | undefined;
     if (dto.realtorCode) {
       const rl = await this.prisma.realtorLink.findFirst({
-        where: { tenantId: tenant.id, code: dto.realtorCode, enabled: true },
+        where: {
+          tenantId: tenant.id,
+          code: dto.realtorCode,
+          enabled: true,
+          projects: { some: { id: project.id } },
+        },
       });
       realtorLinkId = rl?.id;
     }

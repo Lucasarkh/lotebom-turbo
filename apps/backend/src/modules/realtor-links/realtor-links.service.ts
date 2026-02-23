@@ -12,13 +12,21 @@ export class RealtorLinksService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateRealtorLinkDto) {
+    const { projectIds, ...data } = dto;
     const existing = await this.prisma.realtorLink.findUnique({
       where: { tenantId_code: { tenantId, code: dto.code } },
     });
     if (existing) throw new ConflictException('Já existe um corretor com este código.');
 
     return this.prisma.realtorLink.create({
-      data: { tenantId, ...dto },
+      data: {
+        tenantId,
+        ...data,
+        projects: projectIds?.length
+          ? { connect: projectIds.map((id) => ({ id })) }
+          : undefined,
+      },
+      include: { projects: true },
     });
   }
 
@@ -26,9 +34,13 @@ export class RealtorLinksService {
     return this.prisma.realtorLink.findMany({
       where: {
         tenantId,
-        ...(projectId ? { OR: [{ projectId }, { projectId: null }] } : {}),
+        ...(projectId ? { projects: { some: { id: projectId } } } : {}),
       },
-      include: { _count: { select: { leads: true } } },
+      include: {
+        _count: { select: { leads: true } },
+        projects: { select: { id: true, name: true, slug: true } },
+        tenant: { select: { id: true, name: true, slug: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -36,7 +48,10 @@ export class RealtorLinksService {
   async findOne(tenantId: string, id: string) {
     const link = await this.prisma.realtorLink.findFirst({
       where: { id, tenantId },
-      include: { _count: { select: { leads: true } } },
+      include: {
+        _count: { select: { leads: true } },
+        projects: { select: { id: true, name: true, slug: true } },
+      },
     });
     if (!link) throw new NotFoundException('Link de corretor não encontrado.');
     return link;
@@ -51,13 +66,23 @@ export class RealtorLinksService {
 
     const link = await this.prisma.realtorLink.findFirst({
       where: { tenantId: tenant.id, code, enabled: true },
-      select: { id: true, name: true, phone: true, email: true, creci: true, photoUrl: true, code: true, projectId: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        creci: true,
+        photoUrl: true,
+        code: true,
+        projects: { select: { id: true, name: true, slug: true } },
+      },
     });
     if (!link) throw new NotFoundException('Link de corretor não encontrado ou desabilitado.');
     return link;
   }
 
   async update(tenantId: string, id: string, dto: UpdateRealtorLinkDto) {
+    const { projectIds, ...data } = dto;
     const link = await this.prisma.realtorLink.findFirst({ where: { id, tenantId } });
     if (!link) throw new NotFoundException('Link de corretor não encontrado.');
 
@@ -68,7 +93,16 @@ export class RealtorLinksService {
       if (conflict) throw new ConflictException('Código já utilizado por outro corretor.');
     }
 
-    return this.prisma.realtorLink.update({ where: { id }, data: dto });
+    return this.prisma.realtorLink.update({
+      where: { id },
+      data: {
+        ...data,
+        projects: projectIds
+          ? { set: projectIds.map((id) => ({ id })) }
+          : undefined,
+      },
+      include: { projects: true },
+    });
   }
 
   async remove(tenantId: string, id: string) {

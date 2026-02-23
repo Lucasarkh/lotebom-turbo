@@ -31,10 +31,10 @@ export class CreateRealtorLinkDto {
   @MaxLength(64)
   code: string;
 
-  @ApiPropertyOptional({ description: 'ID do projeto vinculado (null = válido para todos os projetos do tenant)' })
+  @ApiPropertyOptional({ description: 'IDs dos projetos vinculados (vazio = válido para todos os projetos do tenant)', type: [String] })
   @IsOptional()
-  @IsString()
-  projectId?: string;
+  @IsString({ each: true })
+  projectIds?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()
