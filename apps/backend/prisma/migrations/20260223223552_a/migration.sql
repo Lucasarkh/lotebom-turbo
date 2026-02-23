@@ -165,7 +165,6 @@ CREATE TABLE "Lead" (
 CREATE TABLE "RealtorLink" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
-    "projectId" TEXT,
     "name" TEXT NOT NULL,
     "phone" TEXT,
     "email" TEXT,
@@ -309,6 +308,46 @@ CREATE TABLE "TrackingEvent" (
     CONSTRAINT "TrackingEvent_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Campaign" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "utmSource" TEXT NOT NULL,
+    "utmMedium" TEXT,
+    "utmCampaign" TEXT NOT NULL,
+    "utmContent" TEXT,
+    "utmTerm" TEXT,
+    "budget" DOUBLE PRECISION,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Campaign_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CampaignInvestment" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CampaignInvestment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_ProjectToRealtorLink" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_ProjectToRealtorLink_AB_pkey" PRIMARY KEY ("A","B")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Tenant_slug_key" ON "Tenant"("slug");
 
@@ -399,6 +438,18 @@ CREATE INDEX "TrackingEvent_type_category_idx" ON "TrackingEvent"("type", "categ
 -- CreateIndex
 CREATE INDEX "TrackingEvent_timestamp_idx" ON "TrackingEvent"("timestamp");
 
+-- CreateIndex
+CREATE INDEX "Campaign_tenantId_idx" ON "Campaign"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "Campaign_projectId_idx" ON "Campaign"("projectId");
+
+-- CreateIndex
+CREATE INDEX "CampaignInvestment_campaignId_idx" ON "CampaignInvestment"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "_ProjectToRealtorLink_B_index" ON "_ProjectToRealtorLink"("B");
+
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -448,9 +499,6 @@ ALTER TABLE "Lead" ADD CONSTRAINT "Lead_sessionId_fkey" FOREIGN KEY ("sessionId"
 ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Panorama" ADD CONSTRAINT "Panorama_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -485,3 +533,18 @@ ALTER TABLE "TrackingSession" ADD CONSTRAINT "TrackingSession_projectId_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "TrackingEvent" ADD CONSTRAINT "TrackingEvent_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "TrackingSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CampaignInvestment" ADD CONSTRAINT "CampaignInvestment_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_ProjectToRealtorLink" ADD CONSTRAINT "_ProjectToRealtorLink_A_fkey" FOREIGN KEY ("A") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_ProjectToRealtorLink" ADD CONSTRAINT "_ProjectToRealtorLink_B_fkey" FOREIGN KEY ("B") REFERENCES "RealtorLink"("id") ON DELETE CASCADE ON UPDATE CASCADE;

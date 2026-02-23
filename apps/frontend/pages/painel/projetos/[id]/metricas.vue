@@ -89,19 +89,19 @@
         <div class="card metrics-card">
           <div class="card-header">
             <h3 class="card-title">Popularidade de Páginas</h3>
-            <p class="card-subtitle">Visualizações por caminho (URL)</p>
+            <p class="card-subtitle">Visualizações por página (identificada)</p>
           </div>
           <div class="card-content">
             <div v-if="!pageMetrics.length" class="empty-state">Nenhum acesso registrado</div>
             <div v-else class="metrics-list">
               <div v-for="(m, i) in pageMetrics" :key="i" class="metrics-item">
                 <div class="metrics-item-info">
-                  <span class="metrics-item-label path">{{ m.path }}</span>
+                  <span class="metrics-item-label path" :title="m.path">{{ m.label || m.path }}</span>
                   <div class="metrics-bar-bg">
-                    <div class="metrics-bar-fill page" :style="{ width: getPercentage(m._count.id, maxPageCount) + '%' }"></div>
+                    <div class="metrics-bar-fill page" :style="{ width: getPercentage(m.count || m._count?.id, maxPageCount) + '%' }"></div>
                   </div>
                 </div>
-                <div class="metrics-item-value">{{ m._count.id }} <span>views</span></div>
+                <div class="metrics-item-value">{{ m.count || m._count?.id }} <span>views</span></div>
               </div>
             </div>
           </div>
@@ -124,10 +124,10 @@ const realtorMetrics = ref<any[]>([])
 const pageMetrics = ref<any[]>([])
 const sourceMetrics = ref<any[]>([])
 
-const maxLotCount = computed(() => Math.max(...lotMetrics.value.map(m => m._count.id), 0))
-const maxRealtorCount = computed(() => Math.max(...realtorMetrics.value.map(m => m._count.id), 0))
-const maxPageCount = computed(() => Math.max(...pageMetrics.value.map(m => m._count.id), 0))
-const maxSourceCount = computed(() => Math.max(...sourceMetrics.value.map(m => m._count.id), 0))
+const maxLotCount = computed(() => Math.max(...lotMetrics.value.map(m => m.count || m._count?.id || 0), 0))
+const maxRealtorCount = computed(() => Math.max(...realtorMetrics.value.map(m => m.count || m._count?.id || 0), 0))
+const maxPageCount = computed(() => Math.max(...pageMetrics.value.map(m => m.count || m._count?.id || 0), 0))
+const maxSourceCount = computed(() => Math.max(...sourceMetrics.value.map(m => m.count || m._count?.id || 0), 0))
 
 function getPercentage(value: number, max: number) {
   if (max === 0) return 0

@@ -101,6 +101,14 @@ export const useTracking = () => {
     });
   };
 
+  const trackClick = (label: string, category: string = 'GENERAL_CLICK') => {
+    return trackEvent({
+      type: 'CLICK',
+      category,
+      label,
+    });
+  };
+
   return {
     initTracking,
     trackEvent,
@@ -108,5 +116,6 @@ export const useTracking = () => {
     trackLotClick,
     trackRealtorClick,
     trackToolUse,
+    trackClick,
   };
 };

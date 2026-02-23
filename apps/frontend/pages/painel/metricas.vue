@@ -23,8 +23,8 @@ async function fetchMetrics() {
   try {
     const params = new URLSearchParams({
       projectId: selectedProjectId.value,
-      startDate: startDate.value,
-      endDate: endDate.value
+      startDate: startDate.value || '',
+      endDate: endDate.value || ''
     })
     
     metrics.value = await fetchApi(`/tracking/metrics?${params.toString()}`)
@@ -177,7 +177,7 @@ const formatDate = (dateStr: string) => {
           <h3>Páginas mais Visitadas</h3>
           <div v-if="metrics.topPaths?.length" class="chart-list">
             <div v-for="item in metrics.topPaths" :key="item.label" class="chart-item">
-              <span class="item-label">{{ item.label }}</span>
+              <span class="item-label path-label" :title="item.label">{{ item.label }}</span>
               <div class="bar-container">
                 <div class="bar bg-blue" :style="{ width: `${metrics.summary.totalPageViews > 0 ? (item.count / metrics.summary.totalPageViews) * 100 : 0}%` }"></div>
               </div>
@@ -267,6 +267,29 @@ const formatDate = (dateStr: string) => {
                 </tr>
                 <tr v-if="!metrics.topLots?.length">
                   <td colspan="3" class="text-center py-8 text-muted">Ainda não há cliques em lotes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="details-card table-card">
+          <h3>Cliques em Links e Botões</h3>
+          <div class="table-container">
+            <table class="simple-table">
+              <thead>
+                <tr>
+                  <th>Link/Ação</th>
+                  <th class="text-right">Cliques</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="link in metrics.topLinks" :key="link.label">
+                  <td>{{ link.label }}</td>
+                  <td class="text-right">{{ link.count }}</td>
+                </tr>
+                <tr v-if="!metrics.topLinks?.length">
+                  <td colspan="2" class="text-center py-8 text-muted">Ainda não há cliques registrados</td>
                 </tr>
               </tbody>
             </table>
@@ -757,10 +780,16 @@ h1 {
 .item-label {
   font-size: 13px;
   color: #475569;
-  width: 120px;
+  width: 140px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.path-label {
+  width: 320px;
+  font-family: monospace;
+  font-size: 11px;
 }
 
 .bar-container {

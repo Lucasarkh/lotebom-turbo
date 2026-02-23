@@ -96,11 +96,10 @@ export class TrackingService {
 
   private getSessionWhere(query: TrackingReportQueryDto) {
     const { tenantId, projectId, startDate, endDate } = query;
-    const start = startDate ? new Date(startDate) : null;
-    if (start) start.setHours(0, 0, 0, 0);
     
-    const end = endDate ? new Date(endDate) : null;
-    if (end) end.setHours(23, 59, 59, 999);
+    // Use UTC boundaries for consistent filtering regardless of server timezone
+    const start = startDate ? new Date(`${startDate}T00:00:00.000Z`) : null;
+    const end = endDate ? new Date(`${endDate}T23:59:59.999Z`) : null;
 
     return {
       tenantId,
@@ -115,15 +114,17 @@ export class TrackingService {
   }
 
   private getEventWhere(query: TrackingReportQueryDto, type?: string, category?: string) {
-    const { startDate, endDate } = query;
-    const start = startDate ? new Date(startDate) : null;
-    if (start) start.setHours(0, 0, 0, 0);
+    const { tenantId, projectId, startDate, endDate } = query;
     
-    const end = endDate ? new Date(endDate) : null;
-    if (end) end.setHours(23, 59, 59, 999);
+    // Use UTC boundaries for consistent filtering regardless of server timezone
+    const start = startDate ? new Date(`${startDate}T00:00:00.000Z`) : null;
+    const end = endDate ? new Date(`${endDate}T23:59:59.999Z`) : null;
 
     return {
-      session: this.getSessionWhere(query),
+      session: {
+        tenantId,
+        ...(projectId && projectId !== 'all' ? { projectId } : {}),
+      },
       ...(type ? { type } : {}),
       ...(category ? { category } : {}),
       ...(start || end ? {
@@ -138,43 +139,48 @@ export class TrackingService {
   // Restore individual report methods for the controller
   async getMostAccessedLots(query: TrackingReportQueryDto) {
     const whereEvent = this.getEventWhere(query, undefined, 'LOT');
-    return this.prisma.trackingEvent.groupBy({
+    const res = await this.prisma.trackingEvent.groupBy({
       by: ['label'],
       where: whereEvent,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 20,
     });
+    return res.map(r => ({ label: r.label, count: r._count.id }));
   }
 
   async getPageViews(query: TrackingReportQueryDto) {
     const whereEvent = this.getEventWhere(query, 'PAGE_VIEW');
-    return this.prisma.trackingEvent.groupBy({
-      by: ['path'],
+    const raw = await this.prisma.trackingEvent.groupBy({
+      by: ['path', 'label', 'category'],
       where: whereEvent,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
+      take: 100,
     });
+    return await this.processTopPaths(raw);
   }
 
   async getRealtorLinkClicks(query: TrackingReportQueryDto) {
     const whereEvent = this.getEventWhere(query, undefined, 'REALTOR_LINK');
-    return this.prisma.trackingEvent.groupBy({
+    const res = await this.prisma.trackingEvent.groupBy({
       by: ['label'],
       where: whereEvent,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
     });
+    return res.map(r => ({ label: r.label, count: r._count.id }));
   }
 
   async getLeadSources(query: TrackingReportQueryDto) {
     const whereSession = this.getSessionWhere(query);
-    return this.prisma.trackingSession.groupBy({
+    const res = await this.prisma.trackingSession.groupBy({
       by: ['utmSource'],
       where: whereSession,
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
     });
+    return res.map(r => ({ utmSource: r.utmSource, count: r._count.id }));
   }
 
   async getMetrics(query: TrackingReportQueryDto) {
@@ -192,7 +198,8 @@ export class TrackingService {
       topRealtors,
       dailyStats,
       topProjects,
-      topPaths,
+      topPathsRaw,
+      topLinksRaw,
     ] = await Promise.all([
       this.prisma.trackingSession.count({ where: whereSession }),
       this.prisma.trackingEvent.count({
@@ -246,13 +253,25 @@ export class TrackingService {
         orderBy: { _count: { id: 'desc' } },
         take: 10,
       }),
-      // Page paths
+      // Page paths - Fetch more to allow in-memory cleaning transition
       this.prisma.trackingEvent.groupBy({
-        by: ['path'],
+        by: ['path', 'label', 'category'],
         where: { ...whereEvent, type: 'PAGE_VIEW' },
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
-        take: 10,
+        take: 500, // Large number to group query params in-memory
+      }),
+      // Other Links - Clicks that are not lots or realtor links
+      this.prisma.trackingEvent.groupBy({
+        by: ['label', 'path'],
+        where: { 
+          ...whereEvent, 
+          type: 'CLICK',
+          category: { notIn: ['LOT', 'REALTOR_LINK'] }
+        },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 20,
       }),
     ]);
 
@@ -339,7 +358,91 @@ export class TrackingService {
           count: p._count.id
         };
       }),
-      topPaths: topPaths.map(p => ({ label: p.path, count: p._count.id })),
+      topPaths: await this.processTopPaths(topPathsRaw),
+      topLinks: (topLinksRaw || []).map(l => ({ label: l.label || l.path, count: l._count.id })),
     };
+  }
+
+  private async processTopPaths(paths: any[]) {
+    // Map with label as key to group by their friendly names
+    const groupedByLabel = new Map<string, { count: number, path: string }>();
+
+    for (const p of paths) {
+      // Clean query and anchors for grouping
+      const rawPath = p.path || '/';
+      const cleanPath = rawPath.split('?')[0].split('#')[0];
+      
+      // Normalize label
+      let label = (p.label || cleanPath || 'Visitante').trim();
+
+      // IF IT LOOKS LIKE A NUXT ROUTE NAME (which is what we see in the screenshot)
+      const looksLikeRoute = /tenant|project|lote|code/i.test(label) && label.includes('-');
+      
+      if (looksLikeRoute || label === 'index') {
+         // Fix route names back to human readable names
+         if (cleanPath.includes('/lote/')) {
+            const parts = cleanPath.split('/').filter(Boolean);
+            label = `lote-${parts[parts.length - 1]}`;
+         } else if (cleanPath.includes('/lote-')) {
+            label = `lote-${cleanPath.split('/lote-')[1]}`;
+         } else if (cleanPath.includes('/painel')) {
+            label = 'Painel Administrativo';
+         } else if (cleanPath.split('/').length > 2) {
+            // Probably a project root
+            const parts = cleanPath.split('/').filter(Boolean);
+            label = parts[parts.length - 1] || 'Início';
+         } else if (label.includes('lote') || label.includes('code')) {
+            label = 'Visualização de Unidade';
+         } else {
+            label = 'Principal';
+         }
+      }
+
+      // Final sanitization for lot pages
+      if (cleanPath.includes('/lote/') || label.includes('lote-')) {
+        const parts = cleanPath.split('/').filter(Boolean);
+        // Normalize Lote labels to ensure grouping
+        let code = parts[parts.length - 1] || label.split('lote-')[1];
+        
+        // RESOLVE CUID TO CODE IF POSSIBLE
+        if (code && code.length > 20) {
+          const element = await this.prisma.mapElement.findUnique({
+            where: { id: code },
+            select: { code: true, name: true }
+          });
+          if (element) {
+            code = element.code || element.name || code;
+          }
+        }
+
+        if (code) {
+           // We want to show the path components as requested: url/empreendimento/lote-01
+           const tenantSlug = parts[0] || '---';
+           const projectSlug = parts[1] || '---';
+           label = `${tenantSlug}/${projectSlug}/${code}`;
+        }
+      } else if (cleanPath.split('/').filter(Boolean).length >= 2) {
+         // It's a project path, show as tenant/project
+         const parts = cleanPath.split('/').filter(Boolean);
+         if (parts.length === 2) {
+            label = `${parts[0]}/${parts[1]}`;
+         }
+      }
+
+      // Final TRIM and casing for the Map key to ensure deduplication
+      const mapKey = label.trim();
+
+      const existing = groupedByLabel.get(mapKey);
+      if (existing) {
+        existing.count += p._count.id;
+      } else {
+        groupedByLabel.set(mapKey, { count: p._count.id, path: cleanPath });
+      }
+    }
+
+    return Array.from(groupedByLabel.entries())
+      .map(([label, data]) => ({ label, path: data.path, count: data.count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
   }
 }

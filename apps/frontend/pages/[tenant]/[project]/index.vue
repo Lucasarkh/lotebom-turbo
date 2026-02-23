@@ -57,8 +57,8 @@
             </div>
 
             <div class="v4-hero-actions">
-              <a href="#planta" class="v4-btn-primary">Ver Planta Interativa</a>
-              <a href="#contato" class="v4-btn-white">Solicitar informações</a>
+              <a href="#planta" class="v4-btn-primary" @click="tracking.trackClick('Herói: Ver Planta')">Ver Planta Interativa</a>
+              <a href="#contato" class="v4-btn-white" @click="tracking.trackClick('Herói: Solicitar Info')">Solicitar informações</a>
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@
               <a v-if="corretor.phone" :href="`https://wa.me/${corretor.phone.replace(/\D/g,'')}`" target="_blank" class="v4-trust-btn v4-trust-btn--whatsapp" @click="tracking.trackRealtorClick(corretor.name, corretorCode as string)">
                 <span>WhatsApp</span>
               </a>
-              <a href="#contato" class="v4-trust-btn v4-trust-btn--primary">
+              <a href="#contato" class="v4-trust-btn v4-trust-btn--primary" @click="tracking.trackClick('CTA Flutuante: Tenho Interesse')">
                 <span>Tenho Interesse</span>
               </a>
             </div>
@@ -204,7 +204,7 @@
           </div>
 
           <div v-if="unifiedAvailableLots.length > 6" style="margin-top: 56px; display: flex; justify-content: center;">
-            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;">
+            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver todos os lotes')">
               Ver todos os {{ unifiedAvailableLots.length }} lotes disponíveis
             </NuxtLink>
           </div>
@@ -237,7 +237,7 @@
           </div>
 
           <div v-if="project.projectMedias.length > 9" style="margin-top: 56px; display: flex; justify-content: center;">
-            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/galeria`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;">
+            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/galeria`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver toda galeria')">
               Ver todos os {{ project.projectMedias.length }} arquivos de mídia
             </NuxtLink>
           </div>
@@ -337,7 +337,7 @@
 
                 <div v-if="leadError" class="v4-form-error">{{ leadError }}</div>
                 
-                <button type="submit" class="v4-btn-submit" :disabled="submitting">
+                <button type="submit" class="v4-btn-submit" :disabled="submitting" @click="tracking.trackClick('Formulário: Submit')">
                   {{ submitting ? 'Enviando...' : 'Falar com um consultor' }}
                 </button>
                 <p class="v4-form-privacy">Seus dados estão seguros conosco.</p>
