@@ -28,4 +28,9 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   realtorCode?: string;
+
+  @ApiPropertyOptional({ description: 'ID da sessão de tracking' })
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
 }

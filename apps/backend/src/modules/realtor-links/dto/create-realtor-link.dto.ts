@@ -16,6 +16,11 @@ export class CreateRealtorLinkDto {
   @IsEmail()
   email?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  creci?: string;
+
   @ApiPropertyOptional({ description: 'URL da foto do corretor' })
   @IsOptional()
   @IsString()

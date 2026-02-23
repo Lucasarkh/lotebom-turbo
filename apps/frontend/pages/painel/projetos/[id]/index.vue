@@ -1021,7 +1021,6 @@ const copyLink = (text) => {
 const tabs = [
   { key: 'lots', label: 'Lotes' },
   { key: 'public', label: 'Pág. Pública' },
-  { key: 'corretores', label: 'Corretores' },
   { key: 'settings', label: 'Configurações' },
 ]
 

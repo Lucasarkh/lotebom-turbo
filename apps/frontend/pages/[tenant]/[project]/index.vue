@@ -79,7 +79,7 @@
               </div>
             </div>
             <div class="v4-trust-actions">
-              <a v-if="corretor.phone" :href="`https://wa.me/${corretor.phone.replace(/\D/g,'')}`" target="_blank" class="v4-trust-btn v4-trust-btn--whatsapp">
+              <a v-if="corretor.phone" :href="`https://wa.me/${corretor.phone.replace(/\D/g,'')}`" target="_blank" class="v4-trust-btn v4-trust-btn--whatsapp" @click="tracking.trackRealtorClick(corretor.name, corretorCode as string)">
                 <span>WhatsApp</span>
               </a>
               <a href="#contato" class="v4-trust-btn v4-trust-btn--primary">
@@ -119,8 +119,7 @@
         <div class="v4-container">
           <div class="v4-section-header center">
             <h2 class="v4-section-title">Vista 360°</h2>
-            <p v-if="panoramas[0]?.description" class="v4-section-subtitle">{{ panoramas[0].description }}</p>
-            <p v-else class="v4-section-subtitle">Explore o empreendimento e seus arredores com vista panorâmica.</p>
+            <p class="v4-section-subtitle">Explore o empreendimento e seus arredores com vista panorâmica.</p>
           </div>
           <ClientOnly>
             <div
@@ -171,7 +170,13 @@
           </div>
 
           <div class="v4-lots-grid">
-            <NuxtLink v-for="lot in unifiedAvailableLots.slice(0, 6)" :key="lot.id" :to="lotPageUrl(lot)" class="v4-lot-card">
+            <NuxtLink 
+              v-for="lot in unifiedAvailableLots.slice(0, 6)" 
+              :key="lot.id" 
+              :to="lotPageUrl(lot)" 
+              class="v4-lot-card"
+              @click="tracking.trackLotClick(lot.code || lot.name || lot.id)"
+            >
               <div class="v4-lot-card-header">
                 <div class="v4-lot-id">
                   <span class="v4-lot-label">Lote</span>
@@ -253,7 +258,7 @@
               width="100%" 
               height="450" 
               style="border:0; display: block;" 
-              allowfullscreen="" 
+              :allowfullscreen="true" 
               loading="lazy" 
               referrerpolicy="no-referrer-when-downgrade"
             ></iframe>
@@ -285,6 +290,7 @@
                 <div class="v4-realtor-details">
                   <span class="v4-realtor-label">Consultor Atendimento</span>
                   <span class="v4-realtor-name">{{ corretor.name }}</span>
+                  <span v-if="corretor.creci" class="v4-realtor-creci">CRECI: {{ corretor.creci }}</span>
                 </div>
               </div>
             </div>
@@ -391,11 +397,15 @@ import ProjectSideMenu from '~/components/common/ProjectSideMenu.vue'
 import { usePublicPanorama } from '~/composables/panorama/usePanoramaApi'
 import type { Panorama } from '~/composables/panorama/types'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
+import { useTracking } from '~/composables/useTracking'
+import { useTrackingStore } from '~/stores/tracking'
 
 const tenantSlug = route.params.tenant
 const projectSlug = route.params.project
 const corretorCode = route.query.c || ''
 const { success: toastSuccess } = useToast()
+const tracking = useTracking()
+const trackingStore = useTrackingStore()
 
 const loading = ref(true)
 const error = ref('')
@@ -554,7 +564,7 @@ const formattedLocationText = computed(() => {
   // Converte quebras de linha em parágrafos, preservando linhas vazias como espaços
   return text
     .split('\n')
-    .map(t => `<p>${t.trim() || '&nbsp;'}</p>`)
+    .map((t: string) => `<p>${t.trim() || '&nbsp;'}</p>`)
     .join('')
 })
 
@@ -620,6 +630,14 @@ onMounted(async () => {
     ])
     if (p.status === 'fulfilled') {
       project.value = p.value
+      
+      // Initialize tracking
+      await tracking.initTracking({ 
+        tenantId: p.value.tenantId, 
+        projectId: p.value.id 
+      })
+      tracking.trackPageView({ label: 'Landing Page do Projeto' })
+
       useHead({
         title: `Loteamento ${p.value.name} — ${p.value.tenant?.name}`,
         meta: [
@@ -655,6 +673,7 @@ async function submitLead() {
       mapElementId: leadForm.value.mapElementId || undefined,
       message: leadForm.value.message || undefined,
       realtorCode: corretorCode || undefined,
+      sessionId: trackingStore.sessionId || undefined,
     }
     await fetchPublic(`/p/${tenantSlug}/${projectSlug}/leads`, {
       method: 'POST',
@@ -1314,6 +1333,7 @@ function openLightbox(idx: number) {
 }
 
 .v4-realtor-name { font-size: 21px; font-weight: 600; color: var(--v4-text); }
+.v4-realtor-creci { font-size: 14px; color: var(--v4-text-muted); display: block; margin-top: 2px; }
 
 /* Gallery */
 .v4-gallery-grid {

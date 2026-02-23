@@ -102,6 +102,7 @@ model Tenant {
   plantHotspots    PlantHotspot[]
   panoramas        Panorama[]
   panoramaBeacons  PanoramaBeacon[]
+  trackingSessions TrackingSession[]
 
   @@unique([slug])
 }
@@ -149,6 +150,7 @@ model Project {
   realtorLinks  RealtorLink[]
   plantMap      PlantMap?
   panoramas     Panorama[]
+  trackingSessions TrackingSession[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -235,6 +237,8 @@ model Lead {
   mapElement    MapElement? @relation(fields: [mapElementId], references: [id], onDelete: SetNull)
   realtorLinkId String?
   realtorLink   RealtorLink? @relation(fields: [realtorLinkId], references: [id], onDelete: SetNull)
+  sessionId     String?
+  session       TrackingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   name          String
   email         String?
   phone         String?
@@ -259,6 +263,7 @@ model RealtorLink {
   name        String
   phone       String?
   email       String?
+  creci       String?
   photoUrl    String?
   code        String
   enabled     Boolean  @default(true)
@@ -384,4 +389,49 @@ model PlantHotspot {
 
   @@index([plantMapId])
   @@index([tenantId])
+}
+
+// ─── ANALYTICS & TRACKING ────────────────────────────────
+
+model TrackingSession {
+  id           String   @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  userId       String?
+  ip           String?
+  userAgent    String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmContent   String?
+  utmTerm      String?
+  referrer     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  events TrackingEvent[]
+  leads  Lead[]
+
+  @@index([tenantId, projectId])
+  @@index([createdAt])
+}
+
+model TrackingEvent {
+  id        String          @id @default(cuid())
+  sessionId String
+  session   TrackingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type      String // PAGE_VIEW, CLICK, TOOL_USE, FORM_SUBMIT, etc.
+  category  String? // LOT, REALTOR_LINK, MAP_TOOL, etc.
+  action    String? // VIEW_DETAILS, OPEN_LINK, ZOOM, etc.
+  label     String? // Lot A-12, Corretor Joao, etc.
+  value     Float?
+  metadata  Json?
+  path      String?
+  timestamp DateTime        @default(now())
+
+  @@index([sessionId])
+  @@index([type, category])
+  @@index([timestamp])
 }

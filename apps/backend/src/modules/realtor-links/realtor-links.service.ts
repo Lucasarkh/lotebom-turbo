@@ -51,7 +51,7 @@ export class RealtorLinksService {
 
     const link = await this.prisma.realtorLink.findFirst({
       where: { tenantId: tenant.id, code, enabled: true },
-      select: { id: true, name: true, phone: true, email: true, photoUrl: true, code: true, projectId: true },
+      select: { id: true, name: true, phone: true, email: true, creci: true, photoUrl: true, code: true, projectId: true },
     });
     if (!link) throw new NotFoundException('Link de corretor não encontrado ou desabilitado.');
     return link;

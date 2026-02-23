@@ -38,7 +38,7 @@ export class LeadsService {
       realtorLinkId = rl?.id;
     }
 
-    const { realtorCode, mapElementId, ...leadData } = dto;
+    const { realtorCode, mapElementId, sessionId, ...leadData } = dto;
 
     // Validate if mapElementId exists within this project to avoid FK errors
     let validMapElementId: string | undefined;
@@ -59,6 +59,7 @@ export class LeadsService {
         ...leadData,
         ...(validMapElementId ? { mapElementId: validMapElementId } : {}),
         realtorLinkId,
+        sessionId,
         source: realtorCode ? `corretor:${realtorCode}` : 'website',
       },
     });
