@@ -4,6 +4,8 @@ const toast = useToast()
 
 const projects = ref<any[]>([])
 const selectedProjectId = ref('all')
+const startDate = ref(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) // 30 days ago
+const endDate = ref(new Date().toISOString().split('T')[0])
 const metrics = ref<any>(null)
 const loadingMetrics = ref(false)
 
@@ -19,10 +21,13 @@ async function fetchProjects() {
 async function fetchMetrics() {
   loadingMetrics.value = true
   try {
-    const url = selectedProjectId.value === 'all' 
-      ? '/tracking/metrics' 
-      : `/tracking/metrics?projectId=${selectedProjectId.value}`
-    metrics.value = await fetchApi(url)
+    const params = new URLSearchParams({
+      projectId: selectedProjectId.value,
+      startDate: startDate.value,
+      endDate: endDate.value
+    })
+    
+    metrics.value = await fetchApi(`/tracking/metrics?${params.toString()}`)
   } catch (error) {
     toast.error('Erro ao carregar métricas')
   } finally {
@@ -30,7 +35,7 @@ async function fetchMetrics() {
   }
 }
 
-watch(selectedProjectId, () => {
+watch([selectedProjectId, startDate, endDate], () => {
   fetchMetrics()
 })
 
@@ -42,6 +47,18 @@ onMounted(async () => {
 definePageMeta({
   layout: 'default'
 })
+
+// Helper for history chart maxHeight
+const maxHistoryValue = computed(() => {
+  if (!metrics.value?.history?.length) return 1
+  const max = Math.max(...metrics.value.history.map((h: any) => Math.max(h.sessions || 0, h.views || 0)))
+  return max > 0 ? max : 1
+})
+
+const formatDate = (dateStr: string) => {
+  const [y, m, d] = dateStr.split('-')
+  return `${d}/${m}`
+}
 </script>
 
 <template>
@@ -49,113 +66,595 @@ definePageMeta({
     <div class="header">
       <div>
         <h1>Métricas de Acesso</h1>
-        <p class="subtitle">Acompanhe o desempenho dos seus empreendimentos</p>
+        <p class="subtitle">Acompanhe detalhadamente o desempenho dos seus empreendimentos</p>
       </div>
       
-      <div class="filter">
-        <label>Filtrar por Projeto:</label>
-        <select v-model="selectedProjectId" class="project-select">
-          <option value="all">Todos os Projetos</option>
-          <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-        </select>
+      <div class="filter-actions">
+        <div class="filter-group">
+          <label>Data Início:</label>
+          <input type="date" v-model="startDate" class="date-input" />
+        </div>
+        <div class="filter-group">
+          <label>Data Fim:</label>
+          <input type="date" v-model="endDate" class="date-input" />
+        </div>
+        <div class="filter-group">
+          <label>Empreendimento:</label>
+          <select v-model="selectedProjectId" class="project-select">
+            <option value="all">Todos os Projetos</option>
+            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    <div v-if="loadingMetrics" class="loading">Carregando métricas...</div>
+    <div v-if="loadingMetrics && !metrics" class="loading">Carregando métricas...</div>
 
-    <div v-else-if="metrics" class="dashboard">
-      <!-- Top Cards -->
+    <div v-else-if="metrics" class="dashboard" :class="{ 'loading-overlay': loadingMetrics }">
+      <!-- Summary Cards -->
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-label">Total de Sessões</span>
-          <span class="stat-value">{{ metrics.summary.totalSessions }}</span>
+          <div class="stat-icon sessions">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total de Sessões</span>
+            <span class="stat-value text-blue">{{ metrics.summary.totalSessions }}</span>
+          </div>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Total de Visualizações</span>
-          <span class="stat-value">{{ metrics.summary.totalPageViews }}</span>
+          <div class="stat-icon views">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Visualizações de Página</span>
+            <span class="stat-value text-indigo">{{ metrics.summary.totalPageViews }}</span>
+          </div>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Cliques em Lotes</span>
-          <span class="stat-value">{{ metrics.summary.totalLotClicks }}</span>
+          <div class="stat-icon clicks">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Cliques em Lotes</span>
+            <span class="stat-value text-amber">{{ metrics.summary.totalLotClicks }}</span>
+          </div>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Cliques em Corretores</span>
-          <span class="stat-value">{{ metrics.summary.totalRealtorClicks }}</span>
+          <div class="stat-icon realtors">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Contatos c/ Corretores</span>
+            <span class="stat-value text-emerald">{{ metrics.summary.totalRealtorClicks }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Chart -->
+      <div class="details-card history-card full-width">
+        <h3>Histórico de Acessos</h3>
+        <div class="history-chart-container">
+          <div v-for="h in metrics.history" :key="h.date" class="chart-col">
+            <div class="bars">
+              <div class="bar-group">
+                <span class="bar-value views">{{ h.views }}</span>
+                <div class="bar views-bar" :style="{ height: `${(h.views / maxHistoryValue) * 100}%` }"></div>
+              </div>
+              <div class="bar-group">
+                <span class="bar-value sessions">{{ h.sessions }}</span>
+                <div class="bar sessions-bar" :style="{ height: `${(h.sessions / maxHistoryValue) * 100}%` }"></div>
+              </div>
+            </div>
+            <span class="label">{{ formatDate(h.date) }}</span>
+          </div>
+          <div v-if="!metrics.history?.length" class="no-data">Nenhum dado no período</div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-color views"></span> Visualizações</div>
+          <div class="legend-item"><span class="legend-color sessions"></span> Sessões</div>
         </div>
       </div>
 
       <div class="details-grid">
-        <!-- Top UTM Sources -->
-        <div class="details-card">
-          <h3>Origens de Tráfego (UTM Source)</h3>
-          <div class="chart-list">
-            <div v-for="item in metrics.topUtmSources" :key="item.utmSource" class="chart-item">
-              <span class="item-label">{{ item.utmSource || '(Direto/Orgânico)' }}</span>
+        <!-- Projects Breakdown (Only if all projects selected) -->
+        <div v-if="selectedProjectId === 'all'" class="details-card">
+          <h3>Acessos por Empreendimento</h3>
+          <div v-if="metrics.topProjects?.length" class="chart-list">
+            <div v-for="item in metrics.topProjects" :key="item.label" class="chart-item">
+              <span class="item-label">{{ item.label }}</span>
               <div class="bar-container">
-                <div class="bar" :style="{ width: `${(item._count.id / metrics.summary.totalSessions) * 100}%` }"></div>
+                <div class="bar bg-indigo" :style="{ width: `${metrics.summary.totalSessions > 0 ? (item.count / metrics.summary.totalSessions) * 100 : 0}%` }"></div>
               </div>
-              <span class="item-count">{{ item._count.id }}</span>
+              <span class="item-count">{{ item.count }}</span>
             </div>
+          </div>
+          <div v-else class="no-data-placeholder">Nenhum acesso registrado</div>
+        </div>
+
+        <!-- Page Views Breakdown -->
+        <div class="details-card">
+          <h3>Páginas mais Visitadas</h3>
+          <div v-if="metrics.topPaths?.length" class="chart-list">
+            <div v-for="item in metrics.topPaths" :key="item.label" class="chart-item">
+              <span class="item-label">{{ item.label }}</span>
+              <div class="bar-container">
+                <div class="bar bg-blue" :style="{ width: `${metrics.summary.totalPageViews > 0 ? (item.count / metrics.summary.totalPageViews) * 100 : 0}%` }"></div>
+              </div>
+              <span class="item-count">{{ item.count }}</span>
+            </div>
+          </div>
+          <div v-else class="no-data-placeholder">Nenhuma visualização de página</div>
+        </div>
+
+        <!-- Lead Sources -->
+        <div class="details-card">
+          <h3>Origens de Tráfego</h3>
+          <div v-if="metrics.topUtmSources?.length" class="chart-list">
+            <div v-for="item in metrics.topUtmSources" :key="item.label" class="chart-item">
+              <span class="item-label">{{ item.label }}</span>
+              <div class="bar-container">
+                <div class="bar bg-emerald" :style="{ width: `${metrics.summary.totalSessions > 0 ? (item.count / metrics.summary.totalSessions) * 100 : 0}%` }"></div>
+              </div>
+              <span class="item-count">{{ item.count }}</span>
+            </div>
+          </div>
+          <div v-else class="no-data-placeholder">Nenhuma origem identificada</div>
+        </div>
+
+        <!-- Campaigns -->
+        <div class="details-card">
+          <h3>Campanhas Ativas</h3>
+          <div v-if="metrics.topUtmCampaigns?.length" class="chart-list">
+            <div v-for="item in metrics.topUtmCampaigns" :key="item.utm" class="chart-item">
+              <span class="item-label">{{ item.label }}</span>
+              <div class="bar-container">
+                <div class="bar bg-purple" :style="{ width: `${metrics.summary.totalSessions > 0 ? (item.count / metrics.summary.totalSessions) * 100 : 0}%` }"></div>
+              </div>
+              <span class="item-count">{{ item.count }}</span>
+            </div>
+          </div>
+          <div v-else class="no-data-placeholder">Nenhuma campanha registrada</div>
+        </div>
+
+        <!-- Realtor Performance -->
+        <div class="details-card table-card">
+          <h3>Engajamento por Corretor</h3>
+          <div class="table-container">
+            <table class="simple-table">
+              <thead>
+                <tr>
+                  <th>Corretor</th>
+                  <th class="text-right">Acessos</th>
+                  <th class="text-right">% Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in metrics.topRealtors" :key="r.label">
+                  <td>{{ r.label || 'Direto/Sem Código' }}</td>
+                  <td class="text-right">{{ r.count }}</td>
+                  <td class="text-right text-muted">{{ metrics.summary.totalRealtorClicks > 0 ? ((r.count / metrics.summary.totalRealtorClicks) * 100).toFixed(1) : '0' }}%</td>
+                </tr>
+                <tr v-if="!metrics.topRealtors?.length">
+                  <td colspan="3" class="text-center py-8 text-muted">
+                    <div class="flex flex-col items-center gap-2">
+                      <span>Ainda não há interações com corretores</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Top UTM Campaigns -->
-        <div class="details-card">
-          <h3>Campanhas (UTM Campaign)</h3>
-          <div class="chart-list">
-            <div v-for="item in metrics.topUtmCampaigns" :key="item.utmCampaign" class="chart-item">
-              <span class="item-label">
-                {{ item.campaignName ? `${item.campaignName} (${item.utmCampaign})` : (item.utmCampaign || '(Indefinida)') }}
-              </span>
-              <div class="bar-container">
-                <div class="bar" :style="{ width: `${(item._count.id / metrics.summary.totalSessions) * 100}%` }"></div>
-              </div>
-              <span class="item-count">{{ item._count.id }}</span>
-            </div>
+        <!-- Lot Clicks -->
+        <div class="details-card table-card">
+          <h3>Interesse por Lote</h3>
+          <div class="table-container">
+            <table class="simple-table">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th class="text-right">Cliques</th>
+                  <th class="text-right">% Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="lot in metrics.topLots" :key="lot.label">
+                  <td>{{ lot.label }}</td>
+                  <td class="text-right">{{ lot.count }}</td>
+                  <td class="text-right text-muted">{{ metrics.summary.totalLotClicks > 0 ? ((lot.count / metrics.summary.totalLotClicks) * 100).toFixed(1) : '0' }}%</td>
+                </tr>
+                <tr v-if="!metrics.topLots?.length">
+                  <td colspan="3" class="text-center py-8 text-muted">Ainda não há cliques em lotes</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        <!-- Most Clicked Lots -->
-        <div class="details-card">
-          <h3>Lotes mais Clicados</h3>
-          <table class="simple-table">
-            <thead>
-              <tr>
-                <th>Lote</th>
-                <th class="text-right">Cliques</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="lot in metrics.topLots" :key="lot.lotId">
-                <td>Lote #{{ lot.lotId }}</td>
-                <td class="text-right">{{ lot._count.id }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Most Contacted Realtors -->
-        <div class="details-card">
-          <h3>Corretores mais Acessados</h3>
-          <table class="simple-table">
-            <thead>
-              <tr>
-                <th>Corretor</th>
-                <th class="text-right">Cliques</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in metrics.topRealtors" :key="r.realtorId">
-                <td>{{ r.realtorName || 'N/A' }}</td>
-                <td class="text-right">{{ r._count.id }}</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.metrics-page {
+  padding: 32px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 16px;
+  margin: 0;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 16px;
+  background: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-group label {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.project-select, .date-input {
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-select {
+  min-width: 200px;
+}
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  transition: opacity 0.2s;
+}
+
+.loading-overlay {
+  opacity: 0.7;
+}
+
+/* Stats Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.stat-card {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid #f1f5f9;
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon.sessions { background: #eff6ff; color: #2563eb; }
+.stat-icon.views { background: #eef2ff; color: #4f46e5; }
+.stat-icon.clicks { background: #fffbeb; color: #d97706; }
+.stat-icon.realtors { background: #ecfdf5; color: #059669; }
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.text-blue { color: #2563eb; }
+.text-indigo { color: #4f46e5; }
+.text-amber { color: #d97706; }
+.text-emerald { color: #059669; }
+
+/* History Chart */
+.history-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.history-chart-container {
+  height: 250px;
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  margin-top: 32px;
+  padding: 0 16px 32px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  overflow-x: auto;
+}
+
+.chart-col {
+  flex: 0 0 80px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 100%;
+  margin-bottom: 8px;
+}
+
+.bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+}
+
+.bar-value {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.bar-value.views { color: #4f46e5; }
+.bar-value.sessions { color: #64748b; }
+
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 2px;
+}
+
+.views-bar { background: #4f46e5; opacity: 0.9; }
+.sessions-bar { background: #cbd5e1; }
+
+.chart-col .label {
+  font-size: 10px;
+  text-align: center;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.legend-color { width: 12px; height: 12px; border-radius: 3px; }
+.legend-color.views { background: #4f46e5; }
+.legend-color.sessions { background: #cbd5e1; }
+
+/* Details Grid */
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(48%, 1fr));
+  gap: 32px;
+}
+
+.details-card {
+  background: white;
+  padding: 32px;
+  border-radius: 20px;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
+}
+
+.details-card h3 {
+  margin: 0 0 24px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chart-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.item-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-container {
+  flex: 1;
+  background: #f1f5f9;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 1s ease-out;
+}
+
+.bg-blue { background: #2563eb; }
+.bg-indigo { background: #4f46e5; }
+.bg-emerald { background: #10b981; }
+.bg-purple { background: #8b5cf6; }
+
+.item-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Tables */
+.table-card {
+  padding: 24px 0 0 0;
+}
+
+.table-card h3 {
+  padding-left: 24px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.simple-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 700;
+  padding: 12px 24px;
+  background: #f8fafc;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.simple-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.simple-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.text-muted { color: #94a3b8; font-size: 12px; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  font-size: 18px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.no-data {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.no-data-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+</style>
 
 <style scoped>
 .metrics-page {
