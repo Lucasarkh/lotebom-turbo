@@ -6,7 +6,7 @@
     <aside v-if="authStore.isLoggedIn" class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileMenuOpen }">
       <div class="sidebar-brand">
         <div class="brand-icon">L</div>
-        <span v-if="!sidebarCollapsed" class="brand-text">LotSaaS</span>
+        <span v-if="!sidebarCollapsed" class="brand-text">Lotio</span>
       </div>
 
       <div v-if="!sidebarCollapsed" class="user-card">
@@ -41,6 +41,11 @@
         <NuxtLink to="/painel/metricas" class="nav-item" :title="sidebarCollapsed ? 'Métricas' : undefined">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span v-if="!sidebarCollapsed">Métricas</span>
+        </NuxtLink>
+
+        <NuxtLink to="/painel/campanhas" class="nav-item" :title="sidebarCollapsed ? 'Campanhas' : undefined">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 15h2m-2-4h2m-2-4h2M9 21h6a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <span v-if="!sidebarCollapsed">Campanhas</span>
         </NuxtLink>
 
         <template v-if="authStore.isAdmin">

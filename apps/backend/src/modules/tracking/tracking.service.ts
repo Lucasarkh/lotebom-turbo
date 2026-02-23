@@ -180,7 +180,7 @@ export class TrackingService {
         where: whereSession,
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
-        take: 5,
+        take: 10,
       }),
       this.prisma.trackingEvent.groupBy({
         by: ['label'],
@@ -198,6 +198,24 @@ export class TrackingService {
       }),
     ]);
 
+    // Enrich UTM Campaigns with Campaign Names if available
+    const utmCampaignValues = topUtmCampaigns.map(c => c.utmCampaign).filter(Boolean);
+    const campaigns = await this.prisma.campaign.findMany({
+      where: {
+        tenantId: whereSession.tenantId,
+        utmCampaign: { in: (utmCampaignValues as string[]) },
+      },
+      select: { utmCampaign: true, name: true }
+    });
+
+    const enrichedUtmCampaigns = topUtmCampaigns.map(item => {
+      const camp = campaigns.find(c => c.utmCampaign === item.utmCampaign);
+      return {
+        ...item,
+        campaignName: camp ? camp.name : null
+      };
+    });
+
     return {
       summary: {
         totalSessions,
@@ -206,7 +224,7 @@ export class TrackingService {
         totalRealtorClicks,
       },
       topUtmSources,
-      topUtmCampaigns,
+      topUtmCampaigns: enrichedUtmCampaigns,
       topLots: topLots.map(l => ({ ...l, lotId: l.label })),
       topRealtors: topRealtors.map(r => ({ ...r, realtorId: r.label, realtorName: r.label })),
     };

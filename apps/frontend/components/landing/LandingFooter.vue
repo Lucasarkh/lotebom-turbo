@@ -5,7 +5,7 @@
         <div class="footer-brand">
           <div class="logo">
             <div class="logo-icon">L</div>
-            <span class="logo-text">LotSaaS</span>
+            <span class="logo-text">Lotio</span>
           </div>
           <p class="footer-desc">
             A plataforma definitiva para incorporadoras, loteadoras e corretores.
@@ -30,7 +30,7 @@
       </div>
 
       <div class="footer-bottom">
-        <p class="copyright">&copy; {{ new Date().getFullYear() }} LotSaaS. Todos os direitos reservados.</p>
+        <p class="copyright">&copy; {{ new Date().getFullYear() }} Lotio. Todos os direitos reservados.</p>
         <div class="footer-policy">
           <a href="#">Privacidade</a>
           <a href="#">Cookies</a>

@@ -4,7 +4,7 @@
       <div class="cta-box animate-float">
         <h2 class="cta-title">Pronto para digitalizar suas vendas?</h2>
         <p class="cta-subtitle">
-          Junte-se a centenas de loteadoras que já estão vendendo mais com LotSaaS.
+          Junte-se a centenas de loteadoras que já estão vendendo mais com Lotio.
         </p>
         <div class="cta-buttons">
           <NuxtLink to="/cadastro" class="btn btn-white btn-lg btn-rounded btn-shadow">

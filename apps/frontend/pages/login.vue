@@ -3,7 +3,7 @@
     <div class="auth-card">
       <div class="auth-brand">
         <div class="brand-icon">L</div>
-        <h1>LotSaaS</h1>
+        <h1>Lotio</h1>
         <p class="auth-subtitle">Entre na sua conta</p>
       </div>
 

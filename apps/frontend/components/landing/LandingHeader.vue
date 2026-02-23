@@ -3,7 +3,7 @@
     <div class="container container-landing">
       <div class="logo">
         <div class="logo-icon">L</div>
-        <span class="logo-text">LotSaaS</span>
+        <span class="logo-text">Lotio</span>
       </div>
 
       <!-- Desktop Nav -->

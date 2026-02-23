@@ -24,8 +24,8 @@ import LandingFooter from '@/components/landing/LandingFooter.vue'
 // navigateTo(authStore.isLoggedIn ? '/painel' : '/login')
 
 useSeoMeta({
-  title: 'LotSaaS - Gestão de Vendas para Loteadoras e Incorporadoras',
-  ogTitle: 'LotSaaS - Gestão de Vendas para Loteadoras e Incorporadoras',
+  title: 'Lotio - Gestão de Vendas para Loteadoras e Incorporadoras',
+  ogTitle: 'Lotio - Gestão de Vendas para Loteadoras e Incorporadoras',
   description: 'A plataforma definitiva para incorporadoras e loteadoras. Mapas interativos, gestão de leads em tempo real e controle total de estoque para seu empreendimento.',
   ogDescription: 'A plataforma definitiva para incorporadoras e loteadoras. Mapas interativos, gestão de leads em tempo real e controle total de estoque para seu empreendimento.',
   ogImage: '/og-image.jpg',

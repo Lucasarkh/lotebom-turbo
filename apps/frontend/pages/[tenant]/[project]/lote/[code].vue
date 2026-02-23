@@ -361,7 +361,7 @@
             </div>
             <div class="legal-v4">
               <p><strong>{{ project?.tenant?.name }}</strong> &middot; {{ project?.name }}</p>
-              <span>© 2026 LotSaaS &middot; O sistema oficial de gestão do loteamento</span>
+              <span>© 2026 Lotio &middot; O sistema oficial de gestão do loteamento</span>
             </div>
           </div>
         </footer>

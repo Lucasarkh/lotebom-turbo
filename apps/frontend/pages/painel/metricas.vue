@@ -104,7 +104,9 @@ definePageMeta({
           <h3>Campanhas (UTM Campaign)</h3>
           <div class="chart-list">
             <div v-for="item in metrics.topUtmCampaigns" :key="item.utmCampaign" class="chart-item">
-              <span class="item-label">{{ item.utmCampaign || '(Indefinida)' }}</span>
+              <span class="item-label">
+                {{ item.campaignName ? `${item.campaignName} (${item.utmCampaign})` : (item.utmCampaign || '(Indefinida)') }}
+              </span>
               <div class="bar-container">
                 <div class="bar" :style="{ width: `${(item._count.id / metrics.summary.totalSessions) * 100}%` }"></div>
               </div>

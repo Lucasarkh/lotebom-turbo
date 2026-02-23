@@ -11,6 +11,7 @@ import { RealtorLinksModule } from '@modules/realtor-links/realtor-links.module'
 import { PlantMapModule } from '@modules/plant-map/plant-map.module';
 import { PanoramaModule } from '@modules/panorama/panorama.module';
 import { TrackingModule } from '@modules/tracking/tracking.module';
+import { CampaignsModule } from '@modules/campaigns/campaigns.module';
 import { DbModule } from '@infra/db/db.module';
 
 @Module({
@@ -30,6 +31,7 @@ import { DbModule } from '@infra/db/db.module';
     PlantMapModule,
     PanoramaModule,
     TrackingModule,
+    CampaignsModule,
   ],
   controllers: [],
   providers: [],
