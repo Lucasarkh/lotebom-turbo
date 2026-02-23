@@ -17,8 +17,17 @@
 
     <!-- Project -->
     <template v-else-if="project">
+      <ProjectSideMenu 
+        :has-plant="!!plantMap"
+        :has-panorama="panoramas.length > 0" 
+        :has-info="highlights.length > 0 || !!project.locationText"
+        :has-lots="unifiedAvailableLots.length > 0"
+        :has-gallery="!!project.projectMedias?.length"
+        :has-location="!!project.googleMapsUrl || !!project.address"
+      />
+
       <!-- Hero section -->
-      <section class="v4-hero" :class="{ 'has-banner': !!project.bannerImageUrl }">
+      <section id="inicio" class="v4-hero" :class="{ 'has-banner': !!project.bannerImageUrl }">
         <div v-if="project.bannerImageUrl" class="v4-hero-bg" :style="{ backgroundImage: `url(${project.bannerImageUrl})` }"></div>
         <div class="v4-hero-overlay"></div>
         
@@ -30,15 +39,15 @@
             
             <div class="v4-hero-stats">
               <div class="v4-stat-card">
-                <span class="v4-stat-label">Terrenos Totais</span>
-                <span class="v4-stat-value">{{ totalLots }}</span>
-              </div>
-              <div class="v4-stat-card">
-                <span class="v4-stat-label">Unidades Disponíveis</span>
+                <span class="v4-stat-label">Lotes Disponíveis</span>
                 <span class="v4-stat-value">{{ availableLots }}</span>
               </div>
+              <div v-if="minArea" class="v4-stat-card">
+                <span class="v4-stat-label">Área a partir de</span>
+                <span class="v4-stat-value">{{ minArea }}m²</span>
+              </div>
               <div v-if="priceRange" class="v4-stat-card">
-                <span class="v4-stat-label">Investimento inicial</span>
+                <span class="v4-stat-label">A partir de</span>
                 <span class="v4-stat-value">R$ {{ priceRange }}</span>
                 <div v-if="project.maxInstallments || project.paymentConditionsSummary" class="v4-stat-meta">
                   <span v-if="project.maxInstallments" class="v4-stat-installments">em até {{ project.maxInstallments }}x</span>
@@ -157,7 +166,7 @@
       <section v-if="unifiedAvailableLots.length" class="v4-section" id="lotes">
         <div class="v4-container">
           <div class="v4-section-header">
-            <h2 class="v4-section-title">Unidades Disponíveis</h2>
+            <h2 class="v4-section-title">Lotes Disponíveis</h2>
             <p class="v4-section-subtitle">Selecione uma opção abaixo para ver metragens e condições.</p>
           </div>
 
@@ -165,7 +174,7 @@
             <NuxtLink v-for="lot in unifiedAvailableLots.slice(0, 6)" :key="lot.id" :to="lotPageUrl(lot)" class="v4-lot-card">
               <div class="v4-lot-card-header">
                 <div class="v4-lot-id">
-                  <span class="v4-lot-label">Unidade</span>
+                  <span class="v4-lot-label">Lote</span>
                   <span class="v4-lot-code">{{ lot.code || lot.name || lot.id }}</span>
                 </div>
                 <div class="v4-lot-status">Disponível</div>
@@ -191,7 +200,7 @@
 
           <div v-if="unifiedAvailableLots.length > 6" style="margin-top: 56px; display: flex; justify-content: center;">
             <NuxtLink :to="`/${tenantSlug}/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;">
-              Ver todas as {{ unifiedAvailableLots.length }} unidades disponíveis
+              Ver todos os {{ unifiedAvailableLots.length }} lotes disponíveis
             </NuxtLink>
           </div>
         </div>
@@ -378,6 +387,7 @@ const { fetchPublic } = usePublicApi()
 import { usePublicPlantMap } from '~/composables/plantMap/usePlantMapApi'
 import type { PlantMap } from '~/composables/plantMap/types'
 import PlantMapViewer from '~/components/plantMap/PlantMapViewer.vue'
+import ProjectSideMenu from '~/components/common/ProjectSideMenu.vue'
 import { usePublicPanorama } from '~/composables/panorama/usePanoramaApi'
 import type { Panorama } from '~/composables/panorama/types'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
@@ -563,6 +573,17 @@ const reservedLots = computed(() => {
 const soldLots = computed(() => {
   if (hasMapData.value) return mapDataLots.value.filter((l: any) => l.status === 'sold').length
   return lotElements.value.filter((e: any) => e.lotDetails?.status === 'SOLD').length
+})
+
+const minArea = computed(() => {
+  if (project.value?.startingArea) return project.value.startingArea
+  
+  const areas = unifiedAvailableLots.value
+    .map((l: any) => l.lotDetails?.areaM2)
+    .filter((a: number | null): a is number => a !== null && a > 0)
+  
+  if (!areas.length) return null
+  return Math.min(...areas)
 })
 
 const priceRange = computed(() => {
@@ -853,6 +874,7 @@ function openLightbox(idx: number) {
   margin-bottom: 48px;
   color: #ffffff;
   text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  text-transform: uppercase;
 }
 
 .v4-hero-desc {
@@ -868,53 +890,60 @@ function openLightbox(idx: number) {
 .v4-hero-stats {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin-bottom: 32px;
+  gap: 56px;
+  margin: 0 auto 48px;
   flex-wrap: wrap;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
 .v4-stat-card {
   text-align: center;
-  min-width: 120px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .v4-stat-label {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 4px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
   font-weight: 700;
 }
 
 .v4-stat-value {
-  font-size: 28px;
+  font-size: 52px;
   font-weight: 700;
   color: #ffffff;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .v4-stat-meta {
-  margin-top: 4px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.2;
+  margin-top: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+  max-width: 200px;
 }
 
 .v4-stat-installments {
   font-weight: 700;
-  color: #32d74b; /* Apple Green for highlights */
+  color: #32d74b;
   display: block;
+  font-size: 16px;
+  margin-bottom: 4px;
 }
 
 .v4-stat-summary {
   margin-top: 2px;
-  max-width: 150px;
-  margin-inline: auto;
+  opacity: 0.8;
+  color: #fff;
 }
 
 .v4-hero-actions {
@@ -1421,11 +1450,21 @@ function openLightbox(idx: number) {
 .loading-spinner { width: 32px; height: 32px; border: 3px solid rgba(0, 113, 227, 0.1); border-top-color: var(--v4-primary); border-radius: 50%; animation: spinner 1s linear infinite; }
 
 /* Responsive tweaks */
-@media (max-width: 640px) {
-  .v4-hero-content { padding-top: 60px; text-align: center; }
-  .v4-hero-stats { gap: 24px; }
+@media (max-width: 768px) {
+  .v4-hero-content { 
+    padding-top: 60px; 
+    text-align: center; 
+    border-radius: 0; 
+    border: none; 
+    background: transparent; 
+    backdrop-filter: none; 
+  }
+  .v4-hero-title { font-size: 40px; margin-bottom: 32px; }
+  .v4-hero-stats { gap: 24px; margin-bottom: 32px; }
+  .v4-stat-value { font-size: 32px; }
   .v4-stat-card { min-width: 100px; }
-  .v4-stat-value { font-size: 24px; }
+  .v4-stat-label { font-size: 10px; }
+  .v4-hero-actions { flex-direction: column; width: 100%; }
   .v4-btn-primary, .v4-btn-white { width: 100%; text-align: center; }
 }
 </style>

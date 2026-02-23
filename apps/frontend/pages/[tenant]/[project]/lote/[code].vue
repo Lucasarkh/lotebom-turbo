@@ -35,23 +35,23 @@
         <!-- Persistent Side Navigation Guide -->
         <aside class="side-navigation-guide">
           <div class="nav-stack">
-            <a href="#hero" class="nav-dot" title="Início">
+            <a href="#hero" class="nav-dot" :class="{ 'is-active': activeSection === 'hero' }" title="Início">
               <span class="dot"></span>
               <span class="label">Início</span>
             </a>
-            <a v-if="details?.medias?.length" href="#galeria" class="nav-dot" title="Galeria">
+            <a v-if="details?.medias?.length" href="#galeria" class="nav-dot" :class="{ 'is-active': activeSection === 'galeria' }" title="Galeria">
               <span class="dot"></span>
               <span class="label">Galeria</span>
             </a>
-            <a v-if="details?.panoramaUrl" href="#vista-360" class="nav-dot" title="Vista 360°">
+            <a v-if="lotPanorama" href="#vista-360" class="nav-dot" :class="{ 'is-active': activeSection === 'vista-360' }" title="Vista 360°">
               <span class="dot"></span>
               <span class="label">360°</span>
             </a>
-            <a v-if="details?.areaM2 || details?.frontage || details?.depth || details?.sideLeft || details?.sideRight || details?.slope || details?.notes" href="#ficha" class="nav-dot" title="Ficha Técnica">
+            <a v-if="details?.areaM2 || details?.frontage || details?.depth || details?.sideLeft || details?.sideRight || details?.slope || details?.notes" href="#ficha" class="nav-dot" :class="{ 'is-active': activeSection === 'ficha' }" title="Ficha Técnica">
               <span class="dot"></span>
               <span class="label">Ficha</span>
             </a>
-            <a v-if="details?.paymentConditions" href="#financiamento" class="nav-dot" title="Financiamento">
+            <a v-if="details?.paymentConditions" href="#financiamento" class="nav-dot" :class="{ 'is-active': activeSection === 'financiamento' }" title="Financiamento">
               <span class="dot"></span>
               <span class="label">Tabela</span>
             </a>
@@ -392,7 +392,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
 import type { Panorama } from '~/composables/panorama/types'
 
@@ -615,12 +615,31 @@ const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
 const lightboxMedia = computed(() => details.value?.medias?.[lightboxIdx.value] ?? null)
 
+const activeSection = ref('hero')
+
+const handleScroll = () => {
+  const sections = ['hero', 'galeria', 'vista-360', 'ficha', 'financiamento']
+  for (const sectionId of [...sections].reverse()) {
+    const el = document.getElementById(sectionId)
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      if (rect.top <= 150) {
+        activeSection.value = sectionId
+        break
+      }
+    }
+  }
+}
+
 function openLightbox(idx: number) {
   lightboxIdx.value = idx
   lightboxOpen.value = true
 }
 
 onMounted(async () => {
+  window.addEventListener('scroll', handleScroll)
+  handleScroll()
+  
   try {
     const [p, c] = await Promise.allSettled([
       fetchPublic(`/p/${tenantSlug}/${projectSlug}`),
@@ -636,8 +655,12 @@ onMounted(async () => {
 
   // After load, validate lot exists
   if (!loading.value && project.value && !lot.value) {
-    error.value = 'Lote não encontrado neste loteamento.'
+    error.value = 'Lote encontrado neste loteamento.'
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 
 async function submitLead() {
@@ -779,8 +802,8 @@ async function submitGateLead() {
 .nav-dot { display: flex; flex-direction: column; align-items: center; text-decoration: none; width: 100%; padding: 12px 0; transition: all 0.3s; }
 .nav-dot .dot { width: 8px; height: 8px; border-radius: 50%; background: #d2d2d7; transition: all 0.3s; }
 .nav-dot .label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: #86868b; margin-top: 8px; }
-.nav-dot:hover .dot { background: var(--v4-primary); transform: scale(1.2); }
-.nav-dot:hover .label { color: var(--v4-primary); }
+.nav-dot:hover .dot, .nav-dot.is-active .dot { background: var(--v4-primary); transform: scale(1.2); }
+.nav-dot:hover .label, .nav-dot.is-active .label { color: var(--v4-primary); }
 
 /* Split View Grid */
 .page-container-v4 { max-width: 1300px; margin: 0 auto; padding: 0 22px; }
