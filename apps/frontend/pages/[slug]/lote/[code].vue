@@ -358,7 +358,8 @@
                   <template v-if="corretor">
                     <div class="form-divider-v4">ou</div>
                     <a :href="`https://wa.me/${corretor.phone?.replace(/\D/g, '') || project?.contactPhone?.replace(/\D/g, '')}`" 
-                       target="_blank" class="wa-btn-v4">
+                       target="_blank" class="wa-btn-v4"
+                       @click="tracking.trackWhatsappClick({ lotCode, realtorName: corretor.name })">
                       Conversar via WhatsApp
                     </a>
                   </template>
@@ -772,6 +773,10 @@ async function submitLead() {
       method: 'POST',
       body: JSON.stringify(body),
     })
+    
+    // Track Lead Submit
+    tracking.trackLeadSubmit('FORM', { lotCode, source: 'full_form' })
+    
     leadSuccess.value = true
     financeUnlocked.value = true
     toastSuccess('Formulário enviado! Entraremos em contato.')
@@ -801,6 +806,10 @@ async function submitGateLead() {
       method: 'POST',
       body: JSON.stringify(body),
     })
+
+    // Track Lead Submit
+    tracking.trackLeadSubmit('FORM', { lotCode, source: 'gate_form' })
+
     financeUnlocked.value = true
     toastSuccess('Tabela liberada com sucesso!')
   } catch (e: any) {

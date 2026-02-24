@@ -13,19 +13,14 @@ export const useTracking = () => {
     projectSlug?: string;
     realtorCode?: string;
   }) => {
-    if (store.isInitialized) return;
+    const query = route.query;
+    const hasNewUtms = !!(query.utm_source || query.utm_medium || query.utm_campaign || query.c);
+    const projectChanged = params.projectSlug && store.currentProjectSlug !== params.projectSlug;
+    
+    if (store.isInitialized && !hasNewUtms && !projectChanged) return;
 
     store.loadFromStorage();
     
-    // Check if we are switching projects or don't have a session
-    const projectChanged = params.projectSlug && store.currentProjectSlug !== params.projectSlug;
-    
-    if (store.sessionId && !projectChanged) {
-      store.isInitialized = true;
-      return;
-    }
-    
-    const query = route.query;
     const utms = {
       utmSource: query.utm_source as string,
       utmMedium: query.utm_medium as string,
@@ -34,10 +29,12 @@ export const useTracking = () => {
       utmTerm: query.utm_term as string,
       realtorCode: params.realtorCode || (query.c as string),
       referrer: document.referrer || undefined,
+      landingPage: window.location.href, // Store current page as "landing" if it's new
     };
 
     try {
       const response = await api.post('/tracking/session', {
+        sessionId: store.sessionId, // Send existing session to backend if exists
         ...params,
         ...utms,
       });
@@ -91,13 +88,18 @@ export const useTracking = () => {
     });
   };
 
-  const trackLotClick = (lotCode: string, metadata?: any) => {
+  const trackLotClick = (lotCode: string, mapElementId?: string, metadata?: any) => {
     return trackEvent({
       type: 'CLICK',
       category: 'LOT',
       action: 'VIEW_DETAILS',
-      label: lotCode,
-      metadata,
+      label: `Lote ${lotCode}`,
+      metadata: { 
+        lotCode, 
+        lotId: mapElementId, // standardized name
+        mapElementId, // for back-compat
+        ...metadata 
+      },
     });
   };
 
@@ -107,6 +109,42 @@ export const useTracking = () => {
       category: 'REALTOR_LINK',
       action: 'OPEN_LINK',
       label: `${realtorName} (${realtorCode})`,
+      metadata: { realtorName, realtorCode },
+    });
+  };
+
+  const trackWhatsappClick = (
+    params: { 
+      lotCode?: string; 
+      lotId?: string; // standardized
+      mapElementId?: string; 
+      realtorName?: string; 
+      realtorCode?: string;
+    }, 
+    metadata?: any
+  ) => {
+    return trackEvent({
+      type: 'CLICK',
+      category: 'WHATSAPP',
+      action: 'OPEN_LINK',
+      label: params.lotCode ? `Lote: ${params.lotCode}` : 'Geral',
+      metadata: {
+        lotCode: params.lotCode,
+        lotId: params.lotId || params.mapElementId,
+        mapElementId: params.lotId || params.mapElementId,
+        realtorName: params.realtorName,
+        realtorCode: params.realtorCode,
+        ...metadata,
+      },
+    });
+  };
+
+  const trackLeadSubmit = (type: 'FORM' | 'WHATSAPP', metadata?: any) => {
+    return trackEvent({
+      type: 'LEAD_SUBMIT',
+      category: 'CONVERSION',
+      action: type,
+      metadata,
     });
   };
 
@@ -133,6 +171,8 @@ export const useTracking = () => {
     trackPageView,
     trackLotClick,
     trackRealtorClick,
+    trackWhatsappClick,
+    trackLeadSubmit,
     trackToolUse,
     trackClick,
   };

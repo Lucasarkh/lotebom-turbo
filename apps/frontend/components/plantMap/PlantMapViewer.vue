@@ -112,6 +112,7 @@ import { useZoomPan } from '~/composables/plantMap/useZoomPan'
 import HotspotPin from './HotspotPin.vue'
 import HotspotPopover from './HotspotPopover.vue'
 import SunPathLine from './SunPathLine.vue'
+import { useTracking } from '~/composables/useTracking'
 
 const props = withDefaults(defineProps<{
   plantMap: PlantMap
@@ -129,6 +130,8 @@ const props = withDefaults(defineProps<{
   hideLabels: false,
   interactive: true,
 })
+
+const tracking = useTracking()
 
 // ── Zoom/pan ─────────────────────────────────────────────
 const {
@@ -300,6 +303,16 @@ watch(() => transform.value, () => {
 const popoverAnchor = ref({ x: 0, y: 0 })
 
 const openPopover = (event: MouseEvent | KeyboardEvent | PlantHotspot, hotspot?: PlantHotspot) => {
+  const targetHotspot = hotspot || (event instanceof MouseEvent || event instanceof KeyboardEvent ? null : (event as PlantHotspot))
+
+  if (targetHotspot) {
+    if (targetHotspot.type === 'LOTE') {
+       tracking.trackLotClick(targetHotspot.label || targetHotspot.title, targetHotspot.linkId || undefined)
+    } else {
+       tracking.trackClick(`Hotspot: ${targetHotspot.title}`, 'MAP_HOTSPOT')
+    }
+  }
+
   if (event instanceof MouseEvent || event instanceof KeyboardEvent) {
     // If it's a keyboard event, we might want to center it, or use fixed position
     if (event instanceof MouseEvent) {

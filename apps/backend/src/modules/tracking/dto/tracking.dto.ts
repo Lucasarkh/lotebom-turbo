@@ -3,6 +3,10 @@ import { IsString, IsOptional, IsObject, IsNumber } from 'class-validator';
 export class CreateSessionDto {
   @IsOptional()
   @IsString()
+  sessionId?: string;
+
+  @IsOptional()
+  @IsString()
   tenantId?: string;
 
   @IsOptional()
@@ -44,6 +48,10 @@ export class CreateSessionDto {
   @IsOptional()
   @IsString()
   realtorCode?: string;
+
+  @IsOptional()
+  @IsString()
+  landingPage?: string;
 }
 
 export class CreateEventDto {

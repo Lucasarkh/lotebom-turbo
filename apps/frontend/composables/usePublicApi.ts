@@ -7,7 +7,11 @@ export const usePublicApi = () => {
 
   const fetchPublic = async (url: string, options: any = {}) => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', ...options.headers }
-    const res = await fetch(`${baseUrl}${url}`, { ...options, headers })
+    const res = await fetch(`${baseUrl}${url}`, { 
+      ...options, 
+      headers,
+      credentials: 'include' // Important for session cookies
+    })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: 'Erro na requisição' }))
       throw new Error(err.message || `Erro ${res.status}`)

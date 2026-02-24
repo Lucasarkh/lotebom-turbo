@@ -290,6 +290,21 @@ model Lead {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
+  // Attribution data
+  ftUtmSource   String?
+  ftUtmMedium   String?
+  ftUtmCampaign String?
+  ftUtmContent  String?
+  ftUtmTerm     String?
+  
+  ltUtmSource   String?
+  ltUtmMedium   String?
+  ltUtmCampaign String?
+  ltUtmContent  String?
+  ltUtmTerm     String?
+  ltReferrer    String?
+  isRecurrent   Boolean    @default(false)
+
   documents     LeadDocument[]
   payments      LeadPayment[]
   history       LeadHistory[]
@@ -491,22 +506,53 @@ model TrackingSession {
   realtorLinkId String?
   realtorLink   RealtorLink? @relation(fields: [realtorLinkId], references: [id], onDelete: SetNull)
   userId       String?
+  
+  // Basic info
   ip           String?
+  ipHash       String?
   userAgent    String?
+  deviceType   String?
+  landingPage  String?
+  
+  // Dates
+  firstSeenAt  DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // First Touch Attribution (Immutable)
+  ftUtmSource  String?
+  ftUtmMedium  String?
+  ftUtmCampaign String?
+  ftUtmContent String?
+  ftUtmTerm    String?
+  ftReferrer   String?
+  
+  // Last Touch Attribution (Mutable)
+  ltUtmSource  String?
+  ltUtmMedium  String?
+  ltUtmCampaign String?
+  ltUtmContent String?
+  ltUtmTerm    String?
+  ltReferrer   String?
+
+  // Current Attribution State (for legacy compatibility and convenient access)
   utmSource    String?
   utmMedium    String?
   utmCampaign  String?
   utmContent   String?
   utmTerm      String?
   referrer     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+
+  // Realtor Attribution (30-day window)
+  lastRealtorAt DateTime?
 
   events TrackingEvent[]
   leads  Lead[]
 
   @@index([tenantId, projectId])
   @@index([createdAt])
+  @@index([lastSeenAt])
 }
 
 model TrackingEvent {

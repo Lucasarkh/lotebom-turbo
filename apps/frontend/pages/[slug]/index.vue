@@ -79,7 +79,7 @@
               </div>
             </div>
             <div class="v4-trust-actions">
-              <a v-if="corretor.phone" :href="`https://wa.me/${corretor.phone.replace(/\D/g,'')}`" target="_blank" class="v4-trust-btn v4-trust-btn--whatsapp" @click="tracking.trackRealtorClick(corretor.name, corretorCode as string)">
+              <a v-if="corretor.phone" :href="`https://wa.me/${corretor.phone.replace(/\D/g,'')}`" target="_blank" class="v4-trust-btn v4-trust-btn--whatsapp" @click="tracking.trackWhatsappClick({ realtorName: corretor.name })">
                 <span>WhatsApp</span>
               </a>
               <a href="#contato" class="v4-trust-btn v4-trust-btn--primary" @click="tracking.trackClick('CTA Flutuante: Tenho Interesse')">
@@ -175,7 +175,7 @@
               :key="lot.id" 
               :to="lotPageUrl(lot)" 
               class="v4-lot-card"
-              @click="tracking.trackLotClick(lot.code || lot.name || lot.id)"
+              @click="tracking.trackLotClick(lot.code || lot.name || lot.id, lot.id)"
             >
               <div class="v4-lot-card-header">
                 <div class="v4-lot-id">
@@ -804,6 +804,10 @@ async function submitLead() {
       method: 'POST',
       body: JSON.stringify(body),
     })
+
+    // Track Lead Submit
+    tracking.trackLeadSubmit('FORM', { source: 'main_page' })
+
     leadSuccess.value = true
     toastSuccess('Formulário enviado com sucesso!')
     leadForm.value = { name: '', email: '', phone: '', mapElementId: '', message: '' }

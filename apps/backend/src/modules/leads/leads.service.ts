@@ -26,18 +26,66 @@ export class LeadsService {
 
     const tenantId = project.tenantId;
 
-    // Resolve optional realtor code → ID (must be associated with this project)
+    // 1. Deduplication logic (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const existingLead = await this.prisma.lead.findFirst({
+      where: {
+        tenantId,
+        projectId: project.id,
+        OR: [
+          ...(dto.email ? [{ email: { equals: dto.email, mode: 'insensitive' as any } }] : []),
+          ...(dto.phone ? [{ phone: dto.phone }] : [])
+        ],
+        createdAt: { gte: thirtyDaysAgo }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const isRecurrent = !!existingLead;
+
+    // 2. Attribution from Session
+    let attributionData: any = {};
+    let sessionRealtorLinkId: string | null = null;
+
+    if (dto.sessionId) {
+      const session = await this.prisma.trackingSession.findUnique({
+        where: { id: dto.sessionId }
+      });
+
+      if (session) {
+        sessionRealtorLinkId = session.realtorLinkId;
+        attributionData = {
+          ftUtmSource: session.ftUtmSource,
+          ftUtmMedium: session.ftUtmMedium,
+          ftUtmCampaign: session.ftUtmCampaign,
+          ftUtmContent: session.ftUtmContent,
+          ftUtmTerm: session.ftUtmTerm,
+          ltUtmSource: session.ltUtmSource,
+          ltUtmMedium: session.ltUtmMedium,
+          ltUtmCampaign: session.ltUtmCampaign,
+          ltUtmContent: session.ltUtmContent,
+          ltUtmTerm: session.ltUtmTerm,
+          ltReferrer: session.ltReferrer
+        };
+      }
+    }
+
+    // 3. Resolve Realtor (explicit code OR session attribution)
     let realtorLinkId: string | undefined;
     if (dto.realtorCode) {
       const rl = await this.prisma.realtorLink.findFirst({
         where: {
           tenantId,
           code: dto.realtorCode,
-          enabled: true,
-          projects: { some: { id: project.id } }
+          enabled: true
         }
       });
       realtorLinkId = rl?.id;
+    } else if (sessionRealtorLinkId) {
+      // Use realtor from session attribution if no explicit code provided
+      realtorLinkId = sessionRealtorLinkId;
     }
 
     const { realtorCode, mapElementId, sessionId, ...leadData } = dto;
@@ -58,17 +106,35 @@ export class LeadsService {
       }
     }
 
-    return this.prisma.lead.create({
+    const lead = await this.prisma.lead.create({
       data: {
         tenantId,
         projectId: project.id,
         ...leadData,
         ...(validMapElementId ? { mapElementId: validMapElementId } : {}),
-        realtorLinkId,
-        sessionId,
-        source: realtorCode ? `corretor:${realtorCode}` : 'website'
+        realtorLinkId: realtorLinkId || null,
+        sessionId: sessionId || null,
+        isRecurrent,
+        ...attributionData,
+        source: realtorCode
+          ? `corretor:${realtorCode}`
+          : realtorLinkId
+          ? 'corretor:atribuição'
+          : 'website'
       }
     });
+
+    // Record history for new leads
+    await this.prisma.leadHistory.create({
+      data: {
+        leadId: lead.id,
+        toStatus: LeadStatus.NEW,
+        notes: isRecurrent ? 'Lead recorrente detectado' : 'Lead criado via site',
+        createdBy: 'SYSTEM'
+      }
+    });
+
+    return lead;
   }
 
   /** Panel – create lead manually by Realtor or Developer */

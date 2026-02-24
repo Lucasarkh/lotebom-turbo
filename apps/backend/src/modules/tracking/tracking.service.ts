@@ -6,10 +6,30 @@ import {
   TrackingReportQueryDto
 } from './dto/tracking.dto';
 import { ProjectStatus, MapElementType } from '@prisma/client';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class TrackingService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private hashIp(ip: string): string {
+    return crypto.createHash('sha256').update(ip).digest('hex');
+  }
+
+  private getDeviceType(userAgent: string): string {
+    const ua = userAgent.toLowerCase();
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+      return 'tablet';
+    }
+    if (
+      /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Opera Mini/i.test(
+        ua
+      )
+    ) {
+      return 'mobile';
+    }
+    return 'desktop';
+  }
 
   /**
    * Returns high-level dashboard stats for a tenant:
@@ -48,12 +68,15 @@ export class TrackingService {
     return { projects, publishedProjects, totalLots, totalLeads };
   }
 
-  async createSession(dto: CreateSessionDto, ip?: string, userAgent?: string) {
-    const { tenantSlug, projectSlug, realtorCode, ...data } = dto;
+  async createSession(
+    dto: CreateSessionDto,
+    ip?: string,
+    userAgent?: string
+  ) {
+    const { tenantSlug, projectSlug, realtorCode, sessionId, ...data } = dto;
     let { tenantId, projectId } = data;
 
-    // Use projectSlug as the primary identifier if available
-    // Since slugs are now project-unique
+    // Resolve IDs
     if (!projectId && projectSlug) {
       const project = await this.prisma.project.findFirst({
         where: { slug: { equals: projectSlug, mode: 'insensitive' } },
@@ -65,18 +88,6 @@ export class TrackingService {
       }
     }
 
-    // Resolve tenantId if projectId is present but tenantId is not
-    if (projectId && !tenantId) {
-      const project = await this.prisma.project.findUnique({
-        where: { id: projectId },
-        select: { tenantId: true }
-      });
-      if (project) {
-        tenantId = project.tenantId;
-      }
-    }
-
-    // Fallback if only tenantSlug is provided (old behavior)
     if (!tenantId && tenantSlug) {
       const tenant = await this.prisma.tenant.findUnique({
         where: { slug: tenantSlug }
@@ -86,26 +97,20 @@ export class TrackingService {
       }
     }
 
-    // Improve UTM Detection
+    const hashedIp = ip ? this.hashIp(ip) : undefined;
+    const deviceType = userAgent ? this.getDeviceType(userAgent) : 'unknown';
+
+    // Normalize UTMs/Source
     let utmSource = data.utmSource;
     let utmMedium = data.utmMedium;
     let utmCampaign = data.utmCampaign;
-    let realtorLinkId = (data as any).realtorLinkId;
-
-    // Resolve realtorLinkId from realtorCode if not already present
-    if (!realtorLinkId && realtorCode && tenantId) {
-      const realtor = await this.prisma.realtorLink.findFirst({
-        where: { tenantId, code: realtorCode, enabled: true },
-        select: { id: true }
-      });
-      if (realtor) {
-        realtorLinkId = realtor.id;
-      }
-    }
+    let utmContent = data.utmContent || null;
+    let utmTerm = data.utmTerm || null;
+    let referrer = data.referrer || null;
 
     if (!utmSource) {
-      if (data.referrer) {
-        const ref = data.referrer.toLowerCase();
+      if (referrer) {
+        const ref = referrer.toLowerCase();
         if (
           ref.includes('google.com') ||
           ref.includes('bing.com') ||
@@ -131,52 +136,180 @@ export class TrackingService {
       }
     }
 
-    if (!utmCampaign) {
-      utmCampaign = '(Nenhuma)';
+    if (!utmCampaign) utmCampaign = '(Nenhuma)';
+
+    // 1. Try to find existing session (if it was created in the last 30 days)
+    let session = sessionId
+      ? await this.prisma.trackingSession.findUnique({
+          where: { id: sessionId }
+        })
+      : null;
+
+    // Check expiration (30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    if (session && session.lastSeenAt < thirtyDaysAgo) {
+      session = null; // Expired
     }
 
-    const session = await this.prisma.trackingSession.create({
-      data: {
-        ...data,
-        utmSource,
-        utmMedium,
-        utmCampaign,
-        tenantId,
-        projectId,
-        realtorLinkId,
-        ip,
-        userAgent
-      }
-    });
-
-    // Auto-track realtor link click if code provided
+    // 2. Resolve Realtor
+    let currentRealtorLinkId: string | null = null;
     if (realtorCode && tenantId) {
-      const realtor = await this.prisma.realtorLink.findUnique({
-        where: { tenantId_code: { tenantId, code: realtorCode } }
+      const realtor = await this.prisma.realtorLink.findFirst({
+        where: { tenantId, code: realtorCode, enabled: true },
+        select: { id: true, name: true, code: true }
       });
       if (realtor) {
-        await this.trackEvent({
-          sessionId: session.id,
-          type: 'REFERRAL',
-          category: 'REALTOR_LINK',
-          action: 'AUTOMATIC_LANDING',
-          label: `${realtor.name} (${realtor.code})`
-        });
+        currentRealtorLinkId = realtor.id;
       }
+    }
+
+    if (session) {
+      // 3. Update Existing Session
+      const isNewAttribution =
+        (utmSource && utmSource !== session.ltUtmSource) ||
+        (utmCampaign && utmCampaign !== session.ltUtmCampaign) ||
+        (currentRealtorLinkId &&
+          currentRealtorLinkId !== session.realtorLinkId);
+
+      // Check realtor attribution window if no new code is provided
+      let realtorIdToUse = currentRealtorLinkId || session.realtorLinkId;
+      let lastRealtorAt = currentRealtorLinkId
+        ? new Date()
+        : session.lastRealtorAt;
+
+      // If we have a realtor stored but it's older than 30 days and no NEW code was provided
+      if (
+        !currentRealtorLinkId &&
+        session.realtorLinkId &&
+        session.lastRealtorAt &&
+        session.lastRealtorAt < thirtyDaysAgo
+      ) {
+        realtorIdToUse = null;
+        lastRealtorAt = null;
+      }
+
+      session = await this.prisma.trackingSession.update({
+        where: { id: session.id },
+        data: {
+          lastSeenAt: new Date(),
+          userAgent,
+          deviceType,
+          ip, // Still store raw IP for legacy, but we have ipHash too
+          ipHash: hashedIp,
+          // Update Last-Touch if it changed
+          ...(isNewAttribution && {
+            ltUtmSource: utmSource,
+            ltUtmMedium: utmMedium,
+            ltUtmCampaign: utmCampaign,
+            ltUtmContent: utmContent,
+            ltUtmTerm: utmTerm,
+            ltReferrer: referrer,
+            // also update main utm fields for compatibility
+            utmSource,
+            utmMedium,
+            utmCampaign,
+            utmContent,
+            utmTerm,
+            referrer
+          }),
+          realtorLinkId: realtorIdToUse,
+          lastRealtorAt
+        }
+      });
+    } else {
+      // 4. Create New Session
+      session = await this.prisma.trackingSession.create({
+        data: {
+          tenantId,
+          projectId,
+          ip,
+          ipHash: hashedIp,
+          userAgent,
+          deviceType,
+          landingPage: data.landingPage || null,
+          firstSeenAt: new Date(),
+          lastSeenAt: new Date(),
+          // First Touch
+          ftUtmSource: utmSource,
+          ftUtmMedium: utmMedium,
+          ftUtmCampaign: utmCampaign,
+          ftUtmContent: utmContent,
+          ftUtmTerm: utmTerm,
+          ftReferrer: referrer,
+          // Last Touch
+          ltUtmSource: utmSource,
+          ltUtmMedium: utmMedium,
+          ltUtmCampaign: utmCampaign,
+          ltUtmContent: utmContent,
+          ltUtmTerm: utmTerm,
+          ltReferrer: referrer,
+          // Compatibility
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          utmContent,
+          utmTerm,
+          referrer,
+          // Realtor
+          realtorLinkId: currentRealtorLinkId,
+          lastRealtorAt: currentRealtorLinkId ? new Date() : null
+        }
+      });
+    }
+
+    // Auto-track realtor link click event if code provided
+    if (realtorCode && session.realtorLinkId) {
+      await this.trackEvent({
+        sessionId: session.id,
+        type: 'REFERRAL',
+        category: 'REALTOR_LINK',
+        action: 'AUTOMATIC_LANDING',
+        label: `Corretor Link: ${realtorCode}`
+      });
     }
 
     return session;
   }
 
   async trackEvent(dto: CreateEventDto) {
-    // Verify session existence to avoid foreign key errors and allow frontend to clear stale sessions
+    // Verify session existence
     const session = await this.prisma.trackingSession.findUnique({
       where: { id: dto.sessionId },
-      select: { id: true }
+      select: { id: true, lastSeenAt: true }
     });
 
     if (!session) {
       throw new BadRequestException('Invalid session ID');
+    }
+
+    // UPDATE: Update lastSeenAt on every event
+    await this.prisma.trackingSession.update({
+      where: { id: session.id },
+      data: { lastSeenAt: new Date() }
+    });
+
+    // DEDUPLICATION: check for similar event in the last 5 seconds to avoid duplicate clicks
+    if (dto.type !== 'PAGE_VIEW') {
+      const fiveSecondsAgo = new Date();
+      fiveSecondsAgo.setSeconds(fiveSecondsAgo.getSeconds() - 5);
+
+      const duplicate = await this.prisma.trackingEvent.findFirst({
+        where: {
+          sessionId: session.id,
+          type: dto.type,
+          category: dto.category || null,
+          action: dto.action || null,
+          label: dto.label || null,
+          timestamp: { gte: fiveSecondsAgo }
+        },
+        select: { id: true }
+      });
+
+      if (duplicate) {
+        return duplicate; // Skip creation if duplicate
+      }
     }
 
     return this.prisma.trackingEvent.create({

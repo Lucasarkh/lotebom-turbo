@@ -5,6 +5,7 @@ import {
   Get,
   Query,
   Req,
+  Res,
   UseGuards
 } from '@nestjs/common';
 import {
@@ -13,7 +14,7 @@ import {
   TrackingReportQueryDto
 } from './dto/tracking.dto';
 import { TrackingService } from './tracking.service';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { TenantGuard } from '@common/guards/tenant.guard';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
@@ -24,14 +25,38 @@ export class TrackingController {
   constructor(private readonly trackingService: TrackingService) {}
 
   @Post('session')
-  async createSession(@Body() dto: CreateSessionDto, @Req() req: Request) {
+  async createSession(
+    @Body() dto: CreateSessionDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    // 1. Prioritize body sessionId, then cookie sessionId
+    const cookieSessionId = req.cookies?.['tracking_session_id'];
+    if (!dto.sessionId && cookieSessionId) {
+      dto.sessionId = cookieSessionId;
+    }
+
     const ip = req.ip || (req.headers['x-forwarded-for'] as string);
-    const userAgent = req.headers['user-agent'];
-    return this.trackingService.createSession(dto, ip, userAgent);
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const session = await this.trackingService.createSession(dto, ip, userAgent);
+
+    // 2. Set Cookie (HttpOnly, 30 days)
+    res.cookie('tracking_session_id', session.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+
+    return session;
   }
 
   @Post('event')
-  async trackEvent(@Body() dto: CreateEventDto) {
+  async trackEvent(@Body() dto: CreateEventDto, @Req() req: Request) {
+    // Also check for cookie if body is missing sessionId
+    if (!dto.sessionId) {
+      dto.sessionId = req.cookies?.['tracking_session_id'];
+    }
     return this.trackingService.trackEvent(dto);
   }
 
