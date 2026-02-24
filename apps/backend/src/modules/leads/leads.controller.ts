@@ -18,6 +18,7 @@ import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { LeadsService } from './leads.service';
 import { LeadsQueryDto } from './dto/leads-query.dto';
+import { UpdateLeadDto } from './dto/update-lead.dto';
 import {
   CreateManualLeadDto,
   UpdateLeadStatusDto,
@@ -60,6 +61,17 @@ export class LeadsController {
     @CurrentUser() user: any
   ) {
     return this.leadsService.findOne(tenantId, id, user);
+  }
+
+  @Patch(':id')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  update(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateLeadDto,
+    @CurrentUser() user: any
+  ) {
+    return this.leadsService.update(tenantId, id, dto, user);
   }
 
   @Patch(':id/status')

@@ -193,10 +193,10 @@ export class LeadsService {
     query: LeadsQueryDto,
     user: { id: string; role: string }
   ): Promise<PaginatedResponse<any>> {
-    const { projectId, status, page = 1, limit = 10 } = query;
+    const { projectId, status, search, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
-    // If user is a realtor, filter by their realtorLink
+    // ... (rest of the realtor logic)
     let realtorLinkId: string | undefined;
     if (user.role === 'CORRETOR') {
       const realtor = await this.prisma.realtorLink.findUnique({
@@ -209,7 +209,14 @@ export class LeadsService {
       tenantId,
       ...(projectId && { projectId }),
       ...(status && { status }),
-      ...(realtorLinkId && { realtorLinkId })
+      ...(realtorLinkId && { realtorLinkId }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as any } },
+          { email: { contains: search, mode: 'insensitive' as any } },
+          { phone: { contains: search } }
+        ]
+      })
     };
 
     const [data, totalItems] = await Promise.all([
@@ -272,6 +279,38 @@ export class LeadsService {
     });
     if (!lead) throw new NotFoundException('Lead not found');
     return this.maskLeadData(lead, user);
+  }
+
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdateLeadDto,
+    user: { id: string; role: string; name: string }
+  ) {
+    const lead = await this.prisma.lead.findFirst({
+      where: { id, tenantId }
+    });
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    // Permission check for Realtor
+    if (user.role === 'CORRETOR') {
+      const realtor = await this.prisma.realtorLink.findUnique({
+        where: { userId: user.id }
+      });
+      if (lead.realtorLinkId !== realtor?.id) {
+        throw new ForbiddenException('You do not have access to this lead');
+      }
+    }
+
+    const { realtorCode, mapElementId, projectId, ...data } = dto;
+
+    return this.prisma.lead.update({
+      where: { id },
+      data: {
+        ...data,
+        ...(mapElementId ? { mapElementId } : {})
+      }
+    });
   }
 
   async updateStatus(

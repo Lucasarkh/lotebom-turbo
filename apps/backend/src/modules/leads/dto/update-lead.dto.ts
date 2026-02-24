@@ -1,10 +1,4 @@
-import { IsEnum, IsOptional } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadStatus } from '@prisma/client';
+import { PartialType } from '@nestjs/swagger';
+import { CreateManualLeadDto } from './manual-lead.dto';
 
-export class UpdateLeadDto {
-  @ApiPropertyOptional({ enum: LeadStatus, example: 'CONTACTED' })
-  @IsOptional()
-  @IsEnum(LeadStatus)
-  status?: LeadStatus;
-}
+export class UpdateLeadDto extends PartialType(CreateManualLeadDto) {}
