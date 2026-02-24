@@ -118,6 +118,7 @@ CREATE TABLE "LotDetails" (
     "paymentConditions" JSONB,
     "panoramaUrl" TEXT,
     "notes" TEXT,
+    "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -361,7 +362,7 @@ CREATE INDEX "User_tenantId_idx" ON "User"("tenantId");
 CREATE INDEX "Project_tenantId_idx" ON "Project"("tenantId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Project_tenantId_slug_key" ON "Project"("tenantId", "slug");
+CREATE UNIQUE INDEX "Project_slug_key" ON "Project"("slug");
 
 -- CreateIndex
 CREATE INDEX "MapElement_tenantId_projectId_code_idx" ON "MapElement"("tenantId", "projectId", "code");

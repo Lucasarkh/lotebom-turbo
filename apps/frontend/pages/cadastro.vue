@@ -11,12 +11,7 @@
         <div class="form-group">
           <label class="form-label">Nome da empresa</label>
           <input v-model="form.tenantName" class="form-input" placeholder="Loteadora XYZ" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Identificador da empresa</label>
-          <input v-model="form.tenantSlug" class="form-input" :class="{ 'input-error': slugTaken }" placeholder="loteadora-xyz" required @input="onSlugInput" />
-          <small v-if="slugTaken" style="color:var(--error-color); font-size:0.75rem">Este identificador já está em uso!</small>
-          <small v-else style="color:var(--gray-500);font-size:0.75rem">Identificador único da sua empresa na plataforma.</small>
+          <small v-if="slugTaken" style="color:var(--error-color); font-size:0.75rem">Este nome de empresa já está em uso!</small>
         </div>
         <div class="form-group">
           <label class="form-label">Seu nome</label>
@@ -58,7 +53,6 @@ const form = ref({
   password: '',
 })
 const confirmPassword = ref('')
-const slugManuallyEdited = ref(false)
 const slugTaken = ref(false)
 const checkingSlug = ref(false)
 const loading = ref(false)
@@ -88,18 +82,14 @@ watch(() => form.value.tenantSlug, (v) => {
   }, 500)
 })
 
-// Auto-generate slug from name, unless user edited it manually
+// Auto-generate slug from name
 watch(() => form.value.tenantName, (v) => {
-  if (!slugManuallyEdited.value) {
-    form.value.tenantSlug = v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-  }
+  form.value.tenantSlug = v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 })
-
-const onSlugInput = () => { slugManuallyEdited.value = true }
 
 const handleRegister = async () => {
   if (slugTaken.value) {
-    error.value = 'Este identificador já está em uso'
+    error.value = 'Este nome de empresa já está em uso'
     return
   }
   if (form.value.password !== confirmPassword.value) {

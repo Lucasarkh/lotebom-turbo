@@ -738,13 +738,7 @@ onMounted(async () => {
     if (p.status === 'fulfilled') {
       project.value = p.value
       
-      // Initialize tracking
-      await tracking.initTracking({ 
-        tenantId: p.value.tenantId, 
-        projectId: p.value.id 
-      })
-      tracking.trackPageView({ label: 'Landing Page do Projeto' })
-
+      // Initialize tracking handled by middleware
       useHead({
         title: `Loteamento ${p.value.name} — ${p.value.tenant?.name}`,
         meta: [

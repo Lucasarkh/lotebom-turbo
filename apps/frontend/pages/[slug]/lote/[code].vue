@@ -710,17 +710,7 @@ onMounted(async () => {
     if (p.status === 'fulfilled') {
       project.value = p.value
       
-      // Initialize tracking
-      await tracking.initTracking({ 
-        tenantId: p.value.tenantId, 
-        projectId: p.value.id 
-      })
-
-      // Specific page view for the lot
-      tracking.trackPageView({ 
-        category: 'LOT', 
-        label: lotCode 
-      })
+      // Initialize tracking handled by global middleware
 
       // NEW: Fetch plant map using project id once we have it
       getPublicPlantMap(p.value.id).then((pm) => {

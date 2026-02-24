@@ -17,6 +17,13 @@ export const useTracking = () => {
 
     store.loadFromStorage();
     
+    // If we already have a session ID from storage, we don't need to create a new one
+    // This prevents creating a new session record on every page reload
+    if (store.sessionId) {
+      store.isInitialized = true;
+      return;
+    }
+    
     const query = route.query;
     const utms = {
       utmSource: query.utm_source as string,
