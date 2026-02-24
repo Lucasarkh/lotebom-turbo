@@ -54,6 +54,13 @@ export class RealtorLinksController {
     return link;
   }
 
+  @Patch('me')
+  @Roles('CORRETOR')
+  @ApiOperation({ summary: 'Atualizar link do corretor logado' })
+  updateMe(@Request() req: any, @Body() dto: UpdateRealtorLinkDto) {
+    return this.service.updateMe(req.user.id, dto);
+  }
+
   @Get(':id')
   @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar link de corretor por ID' })

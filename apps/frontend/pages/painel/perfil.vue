@@ -10,17 +10,53 @@
     <div class="grid grid-cols-2 gap-8">
       <div class="card">
         <h2 style="margin-bottom: var(--space-4);">Dados Pessoais</h2>
-        <div class="form-group">
-          <label class="form-label">Nome</label>
-          <input :value="authStore.user?.name" class="form-input" disabled />
-        </div>
-        <div class="form-group">
-          <label class="form-label">E-mail</label>
-          <input :value="authStore.user?.email" class="form-input" disabled />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Perfil / Role</label>
-          <input :value="authStore.user?.role" class="form-input" disabled />
+        
+        <form v-if="authStore.user?.role === 'CORRETOR'" @submit.prevent="handleUpdateRealtor">
+          <div class="form-group">
+            <label class="form-label">Nome</label>
+            <input v-model="realtorForm.name" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">WhatsApp (com DDD)</label>
+            <input v-model="realtorForm.phone" class="form-input" placeholder="(00) 00000-0000" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Código de Compartilhamento (?c=...)</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span style="color: var(--text-muted); font-size: 0.9em;">.../?c=</span>
+              <input v-model="realtorForm.code" class="form-input" required pattern="^[a-zA-Z0-9-_]+$" title="Apenas letras, números, hífen e underline" />
+            </div>
+            <p class="form-help">Este código identifica você nos links de compartilhamento.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail de Contato</label>
+            <input v-model="realtorForm.email" class="form-input" type="email" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">CRECI</label>
+            <input v-model="realtorForm.creci" class="form-input" />
+          </div>
+
+          <div v-if="realtorError" class="alert alert-error">{{ realtorError }}</div>
+
+          <button type="submit" class="btn btn-primary" :disabled="realtorLoading">
+            {{ realtorLoading ? 'Salvando...' : 'Salvar Alterações' }}
+          </button>
+        </form>
+
+        <div v-else>
+          <div class="form-group">
+            <label class="form-label">Nome</label>
+            <input :value="authStore.user?.name" class="form-input" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input :value="authStore.user?.email" class="form-input" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Perfil / Role</label>
+            <input :value="authStore.user?.role" class="form-input" disabled />
+          </div>
         </div>
       </div>
 
@@ -55,12 +91,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 
 const authStore = useAuthStore()
 const { fetchApi } = useApi()
 const toast = useToast()
+const { maskPhone, unmask } = useMasks()
 
 const loading = ref(false)
 const error = ref('')
@@ -69,6 +106,75 @@ const passForm = ref({
   newPassword: '',
   confirmPassword: ''
 })
+
+// Realtor-specific state
+const realtorLoading = ref(false)
+const realtorError = ref('')
+const realtorForm = ref({
+  name: '',
+  phone: '',
+  email: '',
+  creci: '',
+  code: ''
+})
+
+onMounted(async () => {
+  if (authStore.user?.role === 'CORRETOR') {
+    fetchRealtorData()
+  }
+})
+
+// Watcher for phone masking
+watch(() => realtorForm.value.phone, (newVal) => {
+  if (newVal) {
+    const masked = maskPhone(newVal)
+    if (masked !== newVal) {
+      realtorForm.value.phone = masked
+    }
+  }
+})
+
+async function fetchRealtorData() {
+  try {
+    const data = await fetchApi('/realtor-links/me')
+    realtorForm.value = {
+      name: data.name || '',
+      phone: maskPhone(data.phone || ''),
+      email: data.email || '',
+      creci: data.creci || '',
+      code: data.code || ''
+    }
+  } catch (err) {
+    console.error('Falha ao carregar dados do corretor', err)
+  }
+}
+
+async function handleUpdateRealtor() {
+  realtorLoading.value = true
+  realtorError.value = ''
+  try {
+    const body = {
+      ...realtorForm.value,
+      phone: unmask(realtorForm.value.phone)
+    }
+    
+    await fetchApi('/realtor-links/me', {
+      method: 'PATCH',
+      body
+    })
+    
+    // Update name in auth store if changed
+    if (authStore.user) {
+      authStore.user.name = body.name
+    }
+    
+    toast.success('Perfil atualizado com sucesso!')
+  } catch (err) {
+    realtorError.value = err.data?.message || 'Erro ao atualizar perfil.'
+  } finally {
+    realtorLoading.value = false
+  }
+}
 
 async function handleChangePassword() {
   loading.value = true

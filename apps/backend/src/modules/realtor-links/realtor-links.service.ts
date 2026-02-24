@@ -107,6 +107,42 @@ export class RealtorLinksService {
     return link;
   }
 
+  async updateMe(userId: string, dto: UpdateRealtorLinkDto) {
+    const link = await this.prisma.realtorLink.findUnique({
+      where: { userId },
+    });
+    if (!link) throw new NotFoundException('Perfil de corretor não encontrado.');
+
+    // Remove fields that the realtor shouldn't be allowed to change themselves
+    // Corretor can change: name, phone, email, creci, photoUrl, code
+    const { projectIds, enabled, accountEmail, accountPassword, notes, ...data } = dto as any;
+
+    if (data.code && data.code !== link.code) {
+      const conflict = await this.prisma.realtorLink.findFirst({
+        where: {
+          tenantId: link.tenantId,
+          code: data.code,
+          NOT: { id: link.id },
+        },
+      });
+      if (conflict) throw new ConflictException('O novo código já está sendo utilizado por outro corretor.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (data.name) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { name: data.name },
+        });
+      }
+
+      return tx.realtorLink.update({
+        where: { id: link.id },
+        data,
+      });
+    });
+  }
+
   /** Public – resolve realtor by project slug + code for the public page */
   async findPublic(projectSlug: string, code: string) {
     const project = await this.prisma.project.findUnique({
