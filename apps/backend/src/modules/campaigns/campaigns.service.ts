@@ -25,11 +25,12 @@ export class CampaignsService {
     });
   }
 
-  async findAll(tenantId: string, projectId?: string) {
+  async findAll(tenantId: string, projectId?: string, user?: { id: string; role: string }) {
     return this.prisma.campaign.findMany({
       where: {
         tenantId,
         ...(projectId ? { projectId } : {}),
+        ...(user?.role === 'CORRETOR' && { userId: user.id }),
       },
       include: {
         tenant: { select: { id: true, name: true, slug: true } },
@@ -45,9 +46,13 @@ export class CampaignsService {
     });
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, user?: { id: string; role: string }) {
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id, tenantId },
+      where: { 
+        id, 
+        tenantId,
+        ...(user?.role === 'CORRETOR' && { userId: user.id }),
+      },
       include: {
         tenant: { select: { id: true, name: true, slug: true } },
         project: {

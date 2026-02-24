@@ -15,6 +15,7 @@ import { TenantGuard } from '@common/guards/tenant.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto, UpdateCampaignDto, CreateCampaignInvestmentDto, CampaignReportQueryDto } from './dto/campaigns.dto';
 
@@ -38,15 +39,20 @@ export class CampaignsController {
   findAll(
     @TenantId() tenantId: string,
     @Query('projectId') projectId?: string,
+    @CurrentUser() user: any,
   ) {
-    return this.service.findAll(tenantId, projectId);
+    return this.service.findAll(tenantId, projectId, user);
   }
 
   @Get(':id')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar campanha por ID' })
-  findOne(@TenantId() tenantId: string, @Param('id') id: string) {
-    return this.service.findOne(tenantId, id);
+  findOne(
+    @TenantId() tenantId: string, 
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.service.findOne(tenantId, id, user);
   }
 
   @Patch(':id')

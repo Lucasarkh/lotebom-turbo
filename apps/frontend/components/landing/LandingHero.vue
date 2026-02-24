@@ -47,8 +47,7 @@
 <style scoped>
 .hero {
   padding: 140px 0 80px;
-  background: radial-gradient(circle at top right, var(--primary-50) 0%, transparent 40%),
-              radial-gradient(circle at bottom left, var(--primary-50) 0%, transparent 40%);
+  background: url('~/static/img/banner-hero.jpg') center/cover no-repeat;
   overflow: hidden;
 }
 

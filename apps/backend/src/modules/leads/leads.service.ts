@@ -68,17 +68,30 @@ export class LeadsService {
   async findAll(
     tenantId: string,
     query: LeadsQueryDto,
+    user?: { id: string; role: string },
   ): Promise<PaginatedResponse<any>> {
     const { projectId, status, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
+    // If user is a realtor, filter by their realtorLink
+    let realtorLinkId: string | undefined;
+    if (user?.role === 'CORRETOR') {
+      const realtor = await this.prisma.realtorLink.findUnique({
+        where: { userId: user.id },
+      });
+      realtorLinkId = realtor?.id || 'none'; // 'none' to ensure no leads are found if realtor link is missing
+    }
+
+    const where = {
+      tenantId,
+      ...(projectId && { projectId }),
+      ...(status && { status }),
+      ...(realtorLinkId && { realtorLinkId }),
+    };
+
     const [data, totalItems] = await Promise.all([
       this.prisma.lead.findMany({
-        where: {
-          tenantId,
-          ...(projectId && { projectId }),
-          ...(status && { status }),
-        },
+        where,
         include: {
           project: true,
           mapElement: true,
@@ -88,13 +101,7 @@ export class LeadsService {
         skip,
         take: limit,
       }),
-      this.prisma.lead.count({
-        where: {
-          tenantId,
-          ...(projectId && { projectId }),
-          ...(status && { status }),
-        },
-      }),
+      this.prisma.lead.count({ where }),
     ]);
 
     return {
@@ -109,9 +116,22 @@ export class LeadsService {
     };
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string, user?: { id: string; role: string }) {
+    // If user is a realtor, they can only see their own lead
+    let realtorLinkId: string | undefined;
+    if (user?.role === 'CORRETOR') {
+      const realtor = await this.prisma.realtorLink.findUnique({
+        where: { userId: user.id },
+      });
+      realtorLinkId = realtor?.id || 'none';
+    }
+
     const lead = await this.prisma.lead.findFirst({
-      where: { id, tenantId },
+      where: {
+        id,
+        tenantId,
+        ...(realtorLinkId && { realtorLinkId }),
+      },
       include: { project: true, mapElement: true, realtorLink: true },
     });
     if (!lead) throw new NotFoundException('Lead not found');

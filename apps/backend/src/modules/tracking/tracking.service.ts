@@ -11,7 +11,16 @@ export class TrackingService {
    * Returns high-level dashboard stats for a tenant:
    * project counts, lot/map-element count, lead count.
    */
-  async getDashboardStats(tenantId: string) {
+  async getDashboardStats(tenantId: string, user?: { id: string; role: string }) {
+    // If user is a realtor, filter by their realtorLink
+    let realtorLinkId: string | undefined;
+    if (user?.role === 'CORRETOR') {
+      const realtor = await this.prisma.realtorLink.findUnique({
+        where: { userId: user.id },
+      });
+      realtorLinkId = realtor?.id || 'none';
+    }
+
     const [
       projects,
       publishedProjects,
@@ -21,7 +30,12 @@ export class TrackingService {
       this.prisma.project.count({ where: { tenantId } }),
       this.prisma.project.count({ where: { tenantId, status: ProjectStatus.PUBLISHED } }),
       this.prisma.mapElement.count({ where: { tenantId, type: MapElementType.LOT } }),
-      this.prisma.lead.count({ where: { tenantId } }),
+      this.prisma.lead.count({ 
+        where: { 
+          tenantId,
+          ...(realtorLinkId && { realtorLinkId }),
+        } 
+      }),
     ]);
 
     return { projects, publishedProjects, totalLots, totalLeads };
@@ -67,6 +81,18 @@ export class TrackingService {
     let utmSource = data.utmSource;
     let utmMedium = data.utmMedium;
     let utmCampaign = data.utmCampaign;
+    let realtorLinkId = (data as any).realtorLinkId;
+
+    // Resolve realtorLinkId from realtorCode if not already present
+    if (!realtorLinkId && realtorCode && tenantId) {
+      const realtor = await this.prisma.realtorLink.findFirst({
+        where: { tenantId, code: realtorCode, enabled: true },
+        select: { id: true }
+      });
+      if (realtor) {
+        realtorLinkId = realtor.id;
+      }
+    }
 
     if (!utmSource) {
       if (data.referrer) {
@@ -99,6 +125,7 @@ export class TrackingService {
         utmCampaign,
         tenantId,
         projectId,
+        realtorLinkId,
         ip,
         userAgent,
       },
@@ -141,7 +168,17 @@ export class TrackingService {
     });
   }
 
-  private getSessionWhere(query: TrackingReportQueryDto) {
+  private async getRealtorIdFromUser(user?: { id: string; role: string }) {
+    if (user?.role === 'CORRETOR') {
+      const realtor = await this.prisma.realtorLink.findUnique({
+        where: { userId: user.id },
+      });
+      return realtor?.id || 'none';
+    }
+    return undefined;
+  }
+
+  private getSessionWhere(query: TrackingReportQueryDto, realtorLinkId?: string) {
     const { tenantId, projectId, startDate, endDate } = query;
     
     // Use UTC boundaries for consistent filtering regardless of server timezone
@@ -151,6 +188,7 @@ export class TrackingService {
     return {
       tenantId,
       ...(projectId && projectId !== 'all' ? { projectId } : {}),
+      ...(realtorLinkId && { realtorLinkId }),
       ...(start || end ? {
         createdAt: {
           ...(start ? { gte: start } : {}),
@@ -160,7 +198,7 @@ export class TrackingService {
     };
   }
 
-  private getEventWhere(query: TrackingReportQueryDto, type?: string, category?: string) {
+  private getEventWhere(query: TrackingReportQueryDto, realtorLinkId?: string, type?: string, category?: string) {
     const { tenantId, projectId, startDate, endDate } = query;
     
     // Use UTC boundaries for consistent filtering regardless of server timezone
@@ -171,6 +209,7 @@ export class TrackingService {
       session: {
         tenantId,
         ...(projectId && projectId !== 'all' ? { projectId } : {}),
+        ...(realtorLinkId && { realtorLinkId }),
       },
       ...(type ? { type } : {}),
       ...(category ? { category } : {}),
@@ -184,8 +223,9 @@ export class TrackingService {
   }
 
   // Restore individual report methods for the controller
-  async getMostAccessedLots(query: TrackingReportQueryDto) {
-    const whereEvent = this.getEventWhere(query, undefined, 'LOT');
+  async getMostAccessedLots(query: TrackingReportQueryDto, user?: { id: string; role: string }) {
+    const realtorLinkId = await this.getRealtorIdFromUser(user);
+    const whereEvent = this.getEventWhere(query, realtorLinkId, undefined, 'LOT');
     const res = await this.prisma.trackingEvent.groupBy({
       by: ['label'],
       where: whereEvent,
@@ -196,8 +236,9 @@ export class TrackingService {
     return res.map(r => ({ label: r.label, count: r._count.id }));
   }
 
-  async getPageViews(query: TrackingReportQueryDto) {
-    const whereEvent = this.getEventWhere(query, 'PAGE_VIEW');
+  async getPageViews(query: TrackingReportQueryDto, user?: { id: string; role: string }) {
+    const realtorLinkId = await this.getRealtorIdFromUser(user);
+    const whereEvent = this.getEventWhere(query, realtorLinkId, 'PAGE_VIEW');
     const raw = await this.prisma.trackingEvent.groupBy({
       by: ['path', 'label', 'category'],
       where: whereEvent,
@@ -208,8 +249,9 @@ export class TrackingService {
     return await this.processTopPaths(raw);
   }
 
-  async getRealtorLinkClicks(query: TrackingReportQueryDto) {
-    const whereEvent = this.getEventWhere(query, undefined, 'REALTOR_LINK');
+  async getRealtorLinkClicks(query: TrackingReportQueryDto, user?: { id: string; role: string }) {
+    const realtorLinkId = await this.getRealtorIdFromUser(user);
+    const whereEvent = this.getEventWhere(query, realtorLinkId, undefined, 'REALTOR_LINK');
     const res = await this.prisma.trackingEvent.groupBy({
       by: ['label'],
       where: whereEvent,
@@ -219,8 +261,9 @@ export class TrackingService {
     return res.map(r => ({ label: r.label, count: r._count.id }));
   }
 
-  async getLeadSources(query: TrackingReportQueryDto) {
-    const whereSession = this.getSessionWhere(query);
+  async getLeadSources(query: TrackingReportQueryDto, user?: { id: string; role: string }) {
+    const realtorLinkId = await this.getRealtorIdFromUser(user);
+    const whereSession = this.getSessionWhere(query, realtorLinkId);
     const res = await this.prisma.trackingSession.groupBy({
       by: ['utmSource'],
       where: whereSession,
@@ -230,9 +273,10 @@ export class TrackingService {
     return res.map(r => ({ utmSource: r.utmSource, count: r._count.id }));
   }
 
-  async getMetrics(query: TrackingReportQueryDto) {
-    const whereSession = this.getSessionWhere(query);
-    const whereEvent = this.getEventWhere(query);
+  async getMetrics(query: TrackingReportQueryDto, user?: { id: string; role: string }) {
+    const realtorLinkId = await this.getRealtorIdFromUser(user);
+    const whereSession = this.getSessionWhere(query, realtorLinkId);
+    const whereEvent = this.getEventWhere(query, realtorLinkId);
 
     const [
       totalSessions,
@@ -259,7 +303,13 @@ export class TrackingService {
       this.prisma.trackingEvent.count({
         where: { ...whereEvent, type: 'CLICK', category: 'REALTOR_LINK' },
       }),
-      this.prisma.lead.count({ where: whereSession as any }),
+      this.prisma.lead.count({ 
+        where: {
+          tenantId: whereSession.tenantId,
+          ...(whereSession.projectId && { projectId: whereSession.projectId }),
+          ...(realtorLinkId && { realtorLinkId }),
+        } as any 
+      }),
       this.prisma.trackingSession.groupBy({
         by: ['utmSource'],
         where: whereSession,

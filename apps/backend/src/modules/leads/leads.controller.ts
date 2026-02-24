@@ -14,6 +14,7 @@ import { TenantGuard } from '@common/guards/tenant.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { LeadsService } from './leads.service';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LeadStatus } from '@prisma/client';
@@ -31,14 +32,19 @@ export class LeadsController {
   findAll(
     @TenantId() tenantId: string,
     @Query() query: LeadsQueryDto,
+    @CurrentUser() user: any,
   ) {
-    return this.leadsService.findAll(tenantId, query);
+    return this.leadsService.findAll(tenantId, query, user);
   }
 
   @Get(':id')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
-  findOne(@TenantId() tenantId: string, @Param('id') id: string) {
-    return this.leadsService.findOne(tenantId, id);
+  findOne(
+    @TenantId() tenantId: string, 
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.leadsService.findOne(tenantId, id, user);
   }
 
   @Patch(':id')
