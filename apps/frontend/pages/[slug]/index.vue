@@ -483,6 +483,12 @@ const panoramas = ref<Panorama[]>([])
 const { getPublicPanoramas } = usePublicPanorama()
 
 const leadForm = ref({ name: '', email: '', phone: '', mapElementId: '', message: '' })
+const { maskPhone, validateEmail, validatePhone, unmask } = useMasks()
+
+watch(() => leadForm.value.phone, (v) => {
+  if (v) leadForm.value.phone = maskPhone(v)
+})
+
 const submitting = ref(false)
 const leadSuccess = ref(false)
 const leadError = ref('')
@@ -773,13 +779,22 @@ onMounted(async () => {
 })
 
 async function submitLead() {
+  if (!validatePhone(leadForm.value.phone)) {
+    leadError.value = 'Telefone inválido (mínimo 10 dígitos)'
+    return
+  }
+  if (!validateEmail(leadForm.value.email)) {
+    leadError.value = 'E-mail inválido'
+    return
+  }
+
   submitting.value = true
   leadError.value = ''
   try {
     const body = {
       name: leadForm.value.name,
       email: leadForm.value.email,
-      phone: leadForm.value.phone,
+      phone: unmask(leadForm.value.phone),
       mapElementId: leadForm.value.mapElementId || undefined,
       message: leadForm.value.message || undefined,
       realtorCode: corretorCode || undefined,

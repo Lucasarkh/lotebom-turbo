@@ -348,8 +348,9 @@
                     <input v-model="leadForm.phone" type="tel" placeholder="WhatsApp" required />
                   </div>
                   <div class="f-field">
-                    <input v-model="leadForm.email" type="email" placeholder="E-mail (opcional)" />
+                    <input v-model="leadForm.email" type="email" placeholder="E-mail" required />
                   </div>
+                  <div v-if="leadError" class="f-error">{{ leadError }}</div>
                   <button type="submit" class="cta-submit-v4" :disabled="submitting">
                     {{ submitting ? 'Enviando...' : 'Quero Detalhes' }}
                   </button>
@@ -666,6 +667,12 @@ const otherLotUrl = (l: any) => {
 
 const leadForm = ref({ name: '', email: '', phone: '', message: '' })
 const gateLeadForm = ref({ name: '', phone: '' })
+
+const { maskPhone, validateEmail, validatePhone, unmask } = useMasks()
+
+watch(() => leadForm.value.phone, (v) => { if (v) leadForm.value.phone = maskPhone(v) })
+watch(() => gateLeadForm.value.phone, (v) => { if (v) gateLeadForm.value.phone = maskPhone(v) })
+
 const submitting = ref(false)
 const submittingGate = ref(false)
 const leadSuccess = ref(false)
@@ -740,16 +747,26 @@ onUnmounted(() => {
 })
 
 async function submitLead() {
+  if (!validatePhone(leadForm.value.phone)) {
+    leadError.value = 'Telefone inválido (mínimo 10 dígitos)'
+    return
+  }
+  if (!validateEmail(leadForm.value.email)) {
+    leadError.value = 'E-mail inválido'
+    return
+  }
+
   submitting.value = true
   leadError.value = ''
   try {
     const body: any = {
       name: leadForm.value.name,
       email: leadForm.value.email,
-      phone: leadForm.value.phone,
+      phone: unmask(leadForm.value.phone),
       mapElementId: lot.value?.id,
       message: leadForm.value.message || `Quero mais informações sobre o lote ${lotCode}`,
       realtorCode: corretorCode || undefined,
+      sessionId: trackingStore.sessionId || undefined,
     }
     await fetchPublic(`/p/${projectSlug}/leads`, {
       method: 'POST',
@@ -765,14 +782,20 @@ async function submitLead() {
 }
 
 async function submitGateLead() {
+  if (!validatePhone(gateLeadForm.value.phone)) {
+    toastSuccess('Telefone inválido (mínimo 10 dígitos)') // use generic for fast gate
+    return
+  }
+
   submittingGate.value = true
   try {
     const body: any = {
       name: gateLeadForm.value.name,
-      phone: gateLeadForm.value.phone,
+      phone: unmask(gateLeadForm.value.phone),
       mapElementId: lot.value?.id,
       message: `Liberou a tabela de preços do lote ${lotCode}`,
       realtorCode: corretorCode || undefined,
+      sessionId: trackingStore.sessionId || undefined,
     }
     await fetchPublic(`/p/${projectSlug}/leads`, {
       method: 'POST',
@@ -1006,6 +1029,14 @@ async function submitGateLead() {
 .f-field { margin-bottom: 12px; }
 .f-field input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--v4-border); background: #f5f5f7; font-size: 16px; transition: all 0.2s; }
 .f-field input:focus { border-color: var(--v4-primary); outline: none; background: white; }
+.f-error {
+  color: #ff453a;
+  font-size: 13px;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 500;
+}
 .cta-submit-v4 { width: 100%; padding: 16px; background: var(--v4-primary); color: white; border: none; border-radius: 12px; font-weight: 600; font-size: 17px; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
 .cta-submit-v4:hover { background: var(--v4-primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2); }
 

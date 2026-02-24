@@ -8,6 +8,8 @@ const loading = ref(true)
 const showModal = ref(false)
 const editingRealtor = ref(null)
 
+const { maskPhone } = useMasks()
+
 const form = ref({
   name: '',
   phone: '',
@@ -15,6 +17,8 @@ const form = ref({
   code: '',
   projectIds: []
 })
+
+watch(() => form.value.phone, (v) => { if (v) form.value.phone = maskPhone(v) })
 
 const slugManuallyEdited = ref(false)
 
