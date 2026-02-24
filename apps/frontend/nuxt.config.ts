@@ -5,7 +5,8 @@ export default defineNuxtConfig({
   modules: ['@pinia/nuxt'],
   css: [
     '@/assets/css/main.css',
-    'vue3-toastify/dist/index.css'
+    'vue3-toastify/dist/index.css',
+    'primeicons/primeicons.css'
   ],
   runtimeConfig: {
     public: {

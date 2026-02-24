@@ -7,24 +7,100 @@
           Junte-se a centenas de loteadoras que já estão vendendo mais com Lotio.
         </p>
         <div class="cta-buttons">
-          <NuxtLink to="/cadastro" class="btn btn-white btn-lg btn-rounded btn-shadow">
+          <button v-if="settings?.contactWhatsapp" @click="openWhatsapp" class="btn btn-white btn-lg btn-rounded btn-shadow">
+            Falar pelo WhatsApp
+          </button>
+          <button v-else @click="showContactForm = true" class="btn btn-white btn-lg btn-rounded btn-shadow">
             Começar Agora
-          </NuxtLink>
+          </button>
           <NuxtLink to="/login" class="btn btn-outline-white btn-lg btn-rounded">
             Acessar Painel
           </NuxtLink>
         </div>
-        <div class="cta-meta">
-          <span>✓ Sem cartão de crédito</span>
-          <span>✓ Configure em 5 minutos</span>
-          <span>✓ Suporte em português</span>
+
+        <!-- Contact Form Modal (Reuse from Hero logic if needed, or implement here) -->
+        <div v-if="showContactForm" class="modal-overlay" @click.self="showContactForm = false">
+          <div class="modal-content animate-scale-in">
+            <button class="modal-close" @click="showContactForm = false">&times;</button>
+            <h2 class="modal-title">Comece Agora</h2>
+            <p class="modal-subtitle">Preencha os campos e nossa equipe entrará em contato.</p>
+            <form @submit.prevent="submitContact" class="contact-form">
+              <input v-model="form.name" type="text" placeholder="Nome" required>
+              <input v-model="form.email" type="email" placeholder="E-mail" required>
+              <input v-model="form.phone" type="tel" placeholder="WhatsApp" v-maska="'(##) #####-####'" required>
+              <button type="submit" class="btn btn-primary btn-block" :disabled="submitting">
+                {{ submitting ? 'Enviando...' : 'Enviar' }}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
   </section>
 </template>
 
+<script setup>
+const { get, post } = usePublicApi()
+const toast = useToast()
+
+const settings = ref(null)
+const showContactForm = ref(false)
+const submitting = ref(false)
+const form = ref({ name: '', email: '', phone: '' })
+
+onMounted(async () => {
+  try {
+    settings.value = await get('/p/settings')
+  } catch (e) {
+    console.error('Erro ao carregar configurações:', e)
+  }
+})
+
+const openWhatsapp = () => {
+  if (!settings.value?.contactWhatsapp) return
+  const phone = settings.value.contactWhatsapp.replace(/\D/g, '')
+  const text = encodeURIComponent('Olá! Vim pelo site da Lotio e gostaria de mais informações.')
+  window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+}
+
+const submitContact = async () => {
+  submitting.value = true
+  try {
+    await post('/p/settings/contact', form.value)
+    toast.success('Recebemos sua solicitação! Entraremos em contato em breve.')
+    showContactForm.value = false
+    form.value = { name: '', email: '', phone: '' }
+  } catch (e) {
+    toast.error('Ocorreu um erro. Tente novamente.')
+  } finally {
+    submitting.value = false
+  }
+}
+</script>
+
 <style scoped>
+/* Add modal styles similar to Hero here for consistency */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  color: #333;
+}
+.modal-content {
+  background: white; padding: 40px; border-radius: 20px; width: 400px;
+  position: relative;
+}
+.modal-close {
+  position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer;
+}
+.modal-title { margin-bottom: 10px; font-size: 1.5rem; font-weight: 700; color: #111; }
+.modal-subtitle { margin-bottom: 25px; color: #666; font-size: 0.9rem; }
+.contact-form { display: flex; flex-direction: column; gap: 15px; }
+.contact-form input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+.btn-block { width: 100%; }
+
 .cta {
   padding: 80px 0 120px;
   background-color: white;

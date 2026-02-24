@@ -14,6 +14,7 @@ import { TrackingModule } from '@modules/tracking/tracking.module';
 import { CampaignsModule } from '@modules/campaigns/campaigns.module';
 import { TenantsModule } from '@modules/tenants/tenants.module';
 import { DbModule } from '@infra/db/db.module';
+import { SystemSettingsModule } from '@modules/system-settings/system-settings.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { DbModule } from '@infra/db/db.module';
     PanoramaModule,
     TrackingModule,
     CampaignsModule,
+    SystemSettingsModule,
   ],
   controllers: [],
   providers: [],

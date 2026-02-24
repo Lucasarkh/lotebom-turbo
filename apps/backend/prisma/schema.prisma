@@ -486,3 +486,23 @@ model CampaignInvestment {
   @@index([campaignId])
 }
 
+model SystemSetting {
+  id               String   @id @default(cuid())
+  contactWhatsapp  String?
+  contactEmail     String?
+  leadFormEnabled  Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model SystemLead {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  message   String?  @db.Text
+  status    LeadStatus @default(NEW)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
