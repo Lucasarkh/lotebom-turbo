@@ -8,6 +8,16 @@ async function main() {
 
   const passwordHash = await bcrypt.hash('admin123', 10);
 
+  // ─── SysAdmin (Default) ──────────────────────────────────
+  await prisma.user.create({
+    data: {
+      name: 'Sistema Admin',
+      email: 'admin@sistema.com',
+      passwordHash,
+      role: UserRole.SYSADMIN,
+    },
+  });
+
   // ─── Tenant 1 ───────────────────────────────────────────
   const tenant1 = await prisma.tenant.create({
     data: {
@@ -22,7 +32,7 @@ async function main() {
       name: 'Carlos Admin',
       email: 'admin@vistaverde.com',
       passwordHash,
-      role: UserRole.ADMIN,
+      role: UserRole.LOTEADORA,
     },
   });
 
@@ -32,7 +42,7 @@ async function main() {
       name: 'Ana Editora',
       email: 'editor@vistaverde.com',
       passwordHash,
-      role: UserRole.EDITOR,
+      role: UserRole.LOTEADORA,
     },
   });
 
@@ -271,7 +281,7 @@ async function main() {
       name: 'Roberto Admin',
       email: 'admin@solnascente.com',
       passwordHash,
-      role: UserRole.ADMIN,
+      role: UserRole.LOTEADORA,
     },
   });
 
@@ -289,10 +299,10 @@ async function main() {
   console.log('');
   console.log('📋 Test accounts:');
   console.log('   Tenant 1 (Vista Verde):');
-  console.log('   - admin@vistaverde.com / admin123 (ADMIN)');
-  console.log('   - editor@vistaverde.com / admin123 (EDITOR)');
+  console.log('   - admin@vistaverde.com / admin123 (LOTEADORA)');
+  console.log('   - editor@vistaverde.com / admin123 (LOTEADORA)');
   console.log('   Tenant 2 (Sol Nascente):');
-  console.log('   - admin@solnascente.com / admin123 (ADMIN)');
+  console.log('   - admin@solnascente.com / admin123 (LOTEADORA)');
 }
 
 main()

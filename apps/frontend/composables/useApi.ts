@@ -44,6 +44,10 @@ export const useApi = () => {
   /** Standard JSON request */
   const fetchApi = async (url: string, options: any = {}) => {
     const headers = buildHeaders(options.headers);
+    // Auto-stringify object bodies for JSON requests
+    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+      options.body = JSON.stringify(options.body);
+    }
     try {
       const res = await fetch(`${baseUrl}${url}`, { ...options, headers });
       if (res.status === 401) return handleUnauthorized(url, { ...options, headers });

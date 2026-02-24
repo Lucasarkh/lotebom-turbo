@@ -359,7 +359,7 @@ tbody tr:hover {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: var(--space-6);
+  padding: var(--space-4);
   backdrop-filter: blur(4px);
 }
 
@@ -372,6 +372,70 @@ tbody tr:hover {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.modal-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: var(--space-6);
+  color: var(--gray-900);
+}
+
+/* ─── Project/Checkbox Grid ────────────────────────── */
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.project-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.project-checkbox:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.project-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.project-checkbox span {
+  font-size: 0.875rem;
+  color: var(--gray-700);
+  font-weight: 500;
 }
 
 .modal h2 {
@@ -403,7 +467,7 @@ tbody tr:hover {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: var(--space-6);
+  padding: var(--space-4);
   backdrop-filter: blur(4px);
 }
 

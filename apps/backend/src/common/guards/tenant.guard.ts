@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 
 /**
  * TenantGuard ensures that the authenticated user's tenantId
@@ -18,6 +19,13 @@ export class TenantGuard implements CanActivate {
 
     if (!user) {
       throw new ForbiddenException('Usuário não autenticado.');
+    }
+
+    if (user.role === UserRole.SYSADMIN) {
+      // Sysadmins can access any tenant but might need to specify one
+      // in query params or headers if needed. For global actions, no tenantId.
+      request.tenantId = request.query.tenantId || request.headers['x-tenant-id'];
+      return true;
     }
 
     if (!user.tenantId) {

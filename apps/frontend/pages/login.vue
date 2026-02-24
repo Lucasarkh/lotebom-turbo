@@ -23,7 +23,7 @@
           {{ loading ? 'Entrando...' : 'Entrar' }}
         </button>
         <p class="auth-footer-link">
-          Quer cadastrar sua loteadora? <NuxtLink to="/cadastro">Cadastre-se aqui</NuxtLink>
+          Entre com as credenciais fornecidas pela sua empresa.
         </p>
       </form>
     </div>

@@ -7,13 +7,13 @@ export default defineNuxtRouteMiddleware((to) => {
     authStore.loadFromStorage();
   }
 
-  // Public routes: login, cadastro, root, or any tenant/project page
-  const publicRoutes = ['/login', '/cadastro'];
+  // Public routes: login, root, or any tenant/project page
+  const publicRoutes = ['/login'];
   const isPainel = to.path.startsWith('/painel');
   const isPublic = publicRoutes.includes(to.path) || !isPainel;
 
   if (isPublic) {
-    if (authStore.isLoggedIn && ['/login', '/cadastro'].includes(to.path)) {
+    if (authStore.isLoggedIn && ['/login'].includes(to.path)) {
       return navigateTo('/painel');
     }
     return;
@@ -25,7 +25,10 @@ export default defineNuxtRouteMiddleware((to) => {
   }
 
   // Role-based route protection
-  if (to.path.startsWith('/painel/usuarios') && !authStore.isAdmin) {
+  if (to.path.startsWith('/painel/tenants') && !authStore.canManageTenants) {
+    return navigateTo('/painel');
+  }
+  if (to.path.startsWith('/painel/usuarios') && !authStore.canManageUsers) {
     return navigateTo('/painel');
   }
 });

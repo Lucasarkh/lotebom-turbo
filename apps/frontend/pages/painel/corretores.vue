@@ -15,7 +15,9 @@ const form = ref({
   phone: '',
   creci: '',
   code: '',
-  projectIds: []
+  projectIds: [],
+  accountEmail: '',
+  accountPassword: ''
 })
 
 watch(() => form.value.phone, (v) => { if (v) form.value.phone = maskPhone(v) })
@@ -52,7 +54,14 @@ async function saveRealtor() {
       phone: form.value.phone.replace(/\D/g, '')
     }
 
+    // Don't send empty account fields
+    if (!payload.accountEmail) delete payload.accountEmail
+    if (!payload.accountPassword) delete payload.accountPassword
+
     if (editingRealtor.value) {
+      // Remove account fields on edit (cannot change via this form)
+      delete payload.accountEmail
+      delete payload.accountPassword
       await patch(`/realtor-links/${editingRealtor.value.id}`, payload)
       toast.success('Corretor atualizado com sucesso')
     } else {
@@ -63,7 +72,7 @@ async function saveRealtor() {
     slugManuallyEdited.value = false
     fetchData()
   } catch (error) {
-    toast.error('Erro ao salvar corretor')
+    toast.error(error?.data?.message || 'Erro ao salvar corretor')
   }
 }
 
@@ -80,7 +89,7 @@ async function removeRealtor(id: string) {
 
 function openCreate() {
   editingRealtor.value = null
-  form.value = { name: '', phone: '', creci: '', code: '', projectIds: [] }
+  form.value = { name: '', phone: '', creci: '', code: '', projectIds: [], accountEmail: '', accountPassword: '' }
   slugManuallyEdited.value = false
   showModal.value = true
 }
@@ -92,7 +101,9 @@ function openEdit(realtor) {
     phone: realtor.phone,
     creci: realtor.creci || '',
     code: realtor.code,
-    projectIds: realtor.projects?.map(p => p.id) || []
+    projectIds: realtor.projects?.map(p => p.id) || [],
+    accountEmail: '',
+    accountPassword: ''
   }
   slugManuallyEdited.value = true
   showModal.value = true
@@ -154,6 +165,7 @@ definePageMeta({
             <th>CRECI</th>
             <th>Projetos / Links</th>
             <th>Telefone</th>
+            <th>Conta</th>
             <th class="text-right">Ações</th>
           </tr>
         </thead>
@@ -181,6 +193,10 @@ definePageMeta({
               <div v-else class="text-muted">Nenhum projeto selecionado</div>
             </td>
             <td>{{ realtor.phone }}</td>
+            <td>
+              <span v-if="realtor.user" class="badge badge-success">{{ realtor.user.email }}</span>
+              <span v-else class="badge badge-neutral">Sem conta</span>
+            </td>
             <td class="text-right actions vertical-actions">
               <button class="btn-icon" @click="openEdit(realtor)" title="Editar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -201,27 +217,49 @@ definePageMeta({
           <h2>{{ editingRealtor ? 'Editar Corretor' : 'Novo Corretor' }}</h2>
           <form @submit.prevent="saveRealtor" class="form">
             <div class="form-grid">
-              <div class="form-group">
-                <label>Nome do Corretor *</label>
-                <input v-model="form.name" type="text" placeholder="Nome completo" required @input="onNameInput">
+              <div class="form-group span-2">
+                <label class="form-label">Nome do Corretor *</label>
+                <input v-model="form.name" type="text" class="form-input" placeholder="Nome completo" required @input="onNameInput">
               </div>
               <div class="form-group">
-                <label>Código de Indicação (Slug) *</label>
-                <input v-model="form.code" type="text" placeholder="joao-corretor" required>
+                <label class="form-label">Código de Indicação (Slug) *</label>
+                <input v-model="form.code" type="text" class="form-input" placeholder="joao-corretor" required>
                 <small class="help-text">Usado no link: ?c={{ form.code || '...' }}</small>
               </div>
               <div class="form-group">
-                <label>CRECI</label>
-                <input v-model="form.creci" type="text" placeholder="Ex: 12345-F">
+                <label class="form-label">CRECI</label>
+                <input v-model="form.creci" type="text" class="form-input" placeholder="Ex: 12345-F">
               </div>
-              <div class="form-group">
-                <label>Telefone (WhatsApp) *</label>
-                <input v-model="form.phone" type="text" placeholder="(DD) 9XXXX-XXXX" required>
+              <div class="form-group span-2">
+                <label class="form-label">Telefone (WhatsApp) *</label>
+                <input v-model="form.phone" type="text" class="form-input" placeholder="(DD) 9XXXX-XXXX" required>
               </div>
             </div>
 
+            <!-- Account credentials section (only for new corretores) -->
+            <div v-if="!editingRealtor" class="form-section">
+              <h3 class="form-section-title">Conta de Acesso</h3>
+              <p class="help-text" style="margin-bottom: 12px;">Crie uma conta para o corretor acessar o painel e acompanhar seus leads e campanhas.</p>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Email de Acesso *</label>
+                  <input v-model="form.accountEmail" type="email" class="form-input" placeholder="corretor@email.com" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Senha Inicial *</label>
+                  <input v-model="form.accountPassword" type="password" class="form-input" placeholder="Mín. 6 caracteres" required minlength="6" autocomplete="new-password">
+                  <small class="help-text">O corretor poderá alterar depois no painel.</small>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="editingRealtor && editingRealtor.user" class="form-section">
+              <h3 class="form-section-title">Conta de Acesso</h3>
+              <p class="help-text">{{ editingRealtor.user.email }} — Conta ativa</p>
+            </div>
+
             <div class="form-group projects-selection">
-              <label>Empreendimentos Vinculados</label>
+              <label class="form-label">Empreendimentos Vinculados</label>
               <div class="projects-grid">
                 <label v-for="p in projects" :key="p.id" class="project-checkbox">
                   <input type="checkbox" :value="p.id" v-model="form.projectIds">
@@ -374,69 +412,20 @@ h1 {
   cursor: pointer;
   padding: 4px;
   color: #64748b;
-}
-
-.btn-icon:hover {
-  color: #1e293b;
-}
-
-.btn-icon.text-danger:hover {
-  color: #ef4444;
-}
-
-.modal-content {
-  max-width: 600px;
-  width: 100%;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.form-grid .form-group:first-child {
-  grid-column: span 2;
-}
-
-.projects-selection {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.projects-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 6px;
-}
-
-.project-checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.help-text {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 8px;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
 .btn-icon:hover {
+  background: #f1f5f9;
   color: #2563eb;
 }
 
-.text-danger:hover {
+.btn-icon.text-danger:hover {
+  background: #fef2f2;
   color: #ef4444;
 }
 
@@ -445,79 +434,79 @@ h1 {
   height: 18px;
 }
 
-.text-right {
-  text-align: right;
+/* Modal form specifics */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+.span-2 {
+  grid-column: span 2;
 }
 
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  width: 100%;
-  max-width: 500px;
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .span-2 {
+    grid-column: span 1;
+  }
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.form-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.form-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #1e293b;
 }
 
-.form-group label {
-  font-weight: 500;
-}
-
-input, select {
-  padding: 10px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+.help-text {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 12px;
-}
-
-.btn {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: #2563eb;
-  color: white;
-  border: none;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid #e2e8f0;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .empty-state {
   padding: 48px;
   text-align: center;
   color: #64748b;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-neutral {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.text-right {
+  text-align: right;
 }
 </style>

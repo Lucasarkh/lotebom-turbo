@@ -28,7 +28,7 @@ export class UploadController {
   // ── Project Banner ──────────────────────────────────────
 
   @Post('banner-image')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -46,7 +46,7 @@ export class UploadController {
   }
 
   @Delete('banner-image')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   removeBannerImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -57,7 +57,7 @@ export class UploadController {
   // ── Project media (gallery) ─────────────────────────────
 
   @Get('media')
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   listMedia(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -66,7 +66,7 @@ export class UploadController {
   }
 
   @Post('media')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -89,7 +89,7 @@ export class UploadController {
   }
 
   @Delete('media/:mediaId')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   removeMedia(
     @TenantId() tenantId: string,
     @Param('mediaId') mediaId: string,
@@ -100,7 +100,7 @@ export class UploadController {
   // ── Presigned URL (for frontend-direct S3 upload) ───────
 
   @Get('presigned-upload')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   getPresignedUrl(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,

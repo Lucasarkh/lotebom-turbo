@@ -42,12 +42,19 @@ export class AuthService {
 
   async registerTenant(dto: RegisterTenantDto) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: dto.email.toLowerCase() },
     });
     if (existingUser) throw new ConflictException('Email já cadastrado.');
 
+    const slug = dto.tenantSlug
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
     const existingTenant = await this.prisma.tenant.findUnique({
-      where: { slug: dto.tenantSlug },
+      where: { slug },
     });
     if (existingTenant) throw new ConflictException('Slug de tenant já em uso.');
 
@@ -57,7 +64,7 @@ export class AuthService {
       const tenant = await tx.tenant.create({
         data: {
           name: dto.tenantName,
-          slug: dto.tenantSlug.toLowerCase().replace(/\s+/g, '-'),
+          slug,
         },
       });
 
@@ -67,7 +74,7 @@ export class AuthService {
           email: dto.email.toLowerCase(),
           passwordHash,
           name: dto.name,
-          role: UserRole.ADMIN,
+          role: UserRole.LOTEADORA,
         },
         select: {
           id: true,
@@ -158,6 +165,24 @@ export class AuthService {
       where: { id: userId },
       data: { refreshToken: null },
     });
+  }
+
+  async changePassword(userId: string, currentPass: string, newPass: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+
+    const isValid = await bcrypt.compare(currentPass, user.passwordHash);
+    if (!isValid) throw new UnauthorizedException('Senha atual incorreta');
+
+    const passwordHash = await bcrypt.hash(newPass, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { success: true };
   }
 
   async me(userId: string) {

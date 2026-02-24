@@ -44,7 +44,7 @@
       
       <div v-if="meta.totalPages > 1" style="margin-top: var(--space-4); padding: 0 var(--space-4) var(--space-4);">
         <CommonPagination 
-          :current-page="meta.page" 
+          :current-page="meta.currentPage" 
           :total-pages="meta.totalPages" 
           @change="loadUsers" 
         />
@@ -76,9 +76,8 @@
             <div class="form-group">
               <label class="form-label">Papel</label>
               <select v-model="form.role" class="form-select" required>
-                <option value="ADMIN">Administrador</option>
-                <option value="EDITOR">Editor</option>
-                <option value="VIEWER">Visualizador</option>
+                <option value="LOTEADORA">Loteadora (Admin)</option>
+                <option value="CORRETOR">Corretor</option>
               </select>
             </div>
             <div v-if="formError" class="alert alert-error">{{ formError }}</div>
@@ -110,10 +109,10 @@ const showCreate = ref(false)
 const editingUser = ref(null)
 const formLoading = ref(false)
 const formError = ref('')
-const form = ref({ name: '', email: '', password: '', role: 'EDITOR' })
+const form = ref({ name: '', email: '', password: '', role: 'CORRETOR' })
 
-const roleBadge = (r) => ({ ADMIN: 'badge-danger', EDITOR: 'badge-primary', VIEWER: 'badge-neutral' }[r] || 'badge-neutral')
-const roleLabel = (r) => ({ ADMIN: 'Administrador', EDITOR: 'Editor', VIEWER: 'Visualizador' }[r] || r)
+const roleBadge = (r) => ({ SYSADMIN: 'badge-danger', LOTEADORA: 'badge-primary', CORRETOR: 'badge-neutral' }[r] || 'badge-neutral')
+const roleLabel = (r) => ({ SYSADMIN: 'System Admin', LOTEADORA: 'Loteadora', CORRETOR: 'Corretor' }[r] || r)
 
 const loadUsers = async (page = 1) => {
   loading.value = true
@@ -131,7 +130,7 @@ const loadUsers = async (page = 1) => {
 
 const closeModal = () => {
   showCreate.value = false; editingUser.value = null; formError.value = ''
-  form.value = { name: '', email: '', password: '', role: 'EDITOR' }
+  form.value = { name: '', email: '', password: '', role: 'CORRETOR' }
 }
 
 const createUser = async () => {

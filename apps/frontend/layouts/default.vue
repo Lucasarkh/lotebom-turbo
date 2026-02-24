@@ -18,43 +18,70 @@
       </div>
 
       <nav class="sidebar-nav">
+        <!-- Dashboard always present -->
         <NuxtLink to="/painel" class="nav-item" :title="sidebarCollapsed ? 'Dashboard' : undefined">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span v-if="!sidebarCollapsed">Dashboard</span>
         </NuxtLink>
 
-        <NuxtLink to="/painel/projetos" class="nav-item" :title="sidebarCollapsed ? 'Projetos' : undefined">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-          <span v-if="!sidebarCollapsed">Projetos</span>
-        </NuxtLink>
+        <!-- SYSADMIN Menu -->
+        <template v-if="authStore.isSysAdmin">
+          <NuxtLink to="/painel/tenants" class="nav-item" :title="sidebarCollapsed ? 'Loteadoras' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7M4 21v-4m5 4v-4m5 4v-4m5 4v-4m-11-7a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v2z"/></svg>
+            <span v-if="!sidebarCollapsed">Loteadoras</span>
+          </NuxtLink>
+        </template>
 
-        <NuxtLink to="/painel/leads" class="nav-item" :title="sidebarCollapsed ? 'Leads' : undefined">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          <span v-if="!sidebarCollapsed">Leads</span>
-        </NuxtLink>
+        <!-- LOTEADORA Menu -->
+        <template v-if="authStore.isLoteadora">
+          <NuxtLink to="/painel/projetos" class="nav-item" :title="sidebarCollapsed ? 'Projetos' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <span v-if="!sidebarCollapsed">Projetos</span>
+          </NuxtLink>
 
-        <NuxtLink to="/painel/corretores" class="nav-item" :title="sidebarCollapsed ? 'Corretores' : undefined">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          <span v-if="!sidebarCollapsed">Corretores</span>
-        </NuxtLink>
+          <NuxtLink to="/painel/leads" class="nav-item" :title="sidebarCollapsed ? 'Leads' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <span v-if="!sidebarCollapsed">Leads</span>
+          </NuxtLink>
 
-        <NuxtLink to="/painel/metricas" class="nav-item" :title="sidebarCollapsed ? 'Métricas' : undefined">
+          <NuxtLink to="/painel/corretores" class="nav-item" :title="sidebarCollapsed ? 'Corretores' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <span v-if="!sidebarCollapsed">Corretores</span>
+          </NuxtLink>
+        </template>
+
+        <!-- CORRETOR Menu -->
+        <template v-if="authStore.isCorretor">
+           <NuxtLink to="/painel/leads" class="nav-item" :title="sidebarCollapsed ? 'Meus Leads' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <span v-if="!sidebarCollapsed">Meus Leads</span>
+          </NuxtLink>
+
+          <NuxtLink to="/painel/campanhas" class="nav-item" :title="sidebarCollapsed ? 'Campanhas' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 15h2m-2-4h2m-2-4h2M9 21h6a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <span v-if="!sidebarCollapsed">Campanhas</span>
+          </NuxtLink>
+        </template>
+
+        <!-- Common items like Metrics if allowed -->
+        <NuxtLink v-if="!authStore.isSysAdmin" to="/painel/metricas" class="nav-item" :title="sidebarCollapsed ? 'Métricas' : undefined">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span v-if="!sidebarCollapsed">Métricas</span>
         </NuxtLink>
 
-        <NuxtLink to="/painel/campanhas" class="nav-item" :title="sidebarCollapsed ? 'Campanhas' : undefined">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 15h2m-2-4h2m-2-4h2M9 21h6a2 2 0 002-2V5a2 2 0 00-2-2H9a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-          <span v-if="!sidebarCollapsed">Campanhas</span>
-        </NuxtLink>
-
-        <template v-if="authStore.isAdmin">
-          <div class="nav-group-label" v-if="!sidebarCollapsed">Administração</div>
+        <!-- User Management -->
+        <template v-if="authStore.canManageUsers">
+          <div class="nav-group-label" v-if="!sidebarCollapsed">Configurações</div>
           <NuxtLink to="/painel/usuarios" class="nav-item" :title="sidebarCollapsed ? 'Usuários' : undefined">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span v-if="!sidebarCollapsed">Usuários</span>
+            <span v-if="!sidebarCollapsed">Gerenciar Usuários</span>
           </NuxtLink>
         </template>
+
+        <NuxtLink to="/painel/perfil" class="nav-item" :title="sidebarCollapsed ? 'Perfil' : undefined">
+           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+           <span v-if="!sidebarCollapsed">Meu Perfil</span>
+        </NuxtLink>
       </nav>
 
       <div class="sidebar-footer">
@@ -90,12 +117,20 @@ const mobileMenuOpen = ref(false)
 
 const initials = computed(() => {
   const n = authStore.user?.name ?? ''
-  return n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  if (!n) return '?'
+  const parts = n.split(' ').filter(Boolean)
+  return parts.length > 1 
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0][0].toUpperCase()
 })
 
 const roleLabel = computed(() => {
-  const map = { ADMIN: 'Administrador', EDITOR: 'Editor', VIEWER: 'Visualizador' }
-  return map[authStore.user?.role] ?? ''
+  const map = { 
+    SYSADMIN: 'System Admin', 
+    LOTEADORA: 'Loteadora', 
+    CORRETOR: 'Corretor' 
+  }
+  return map[authStore.user?.role] ?? 'Usuário'
 })
 
 const handleLogout = async () => {

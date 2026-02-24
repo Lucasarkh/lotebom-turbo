@@ -40,7 +40,7 @@ export class PanoramaController {
   constructor(private readonly panoramaService: PanoramaService) {}
 
   @Get()
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Listar panoramas do projeto' })
   findAll(
     @TenantId() tenantId: string,
@@ -50,7 +50,7 @@ export class PanoramaController {
   }
 
   @Post()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar panorama do projeto' })
   create(
     @TenantId() tenantId: string,
@@ -61,7 +61,7 @@ export class PanoramaController {
   }
 
   @Post(':panoramaId/upload-image')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Upload de imagem de snapshot do panorama' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -86,7 +86,7 @@ export class PanoramaController {
   }
 
   @Post(':panoramaId/upload-implantation')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Upload da imagem de implantação' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -120,7 +120,7 @@ export class PanoramaItemController {
   constructor(private readonly panoramaService: PanoramaService) {}
 
   @Get()
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar panorama por ID' })
   findOne(
     @TenantId() tenantId: string,
@@ -130,7 +130,7 @@ export class PanoramaItemController {
   }
 
   @Put()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar panorama' })
   update(
     @TenantId() tenantId: string,
@@ -141,7 +141,7 @@ export class PanoramaItemController {
   }
 
   @Delete()
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Deletar panorama' })
   remove(
     @TenantId() tenantId: string,
@@ -151,7 +151,7 @@ export class PanoramaItemController {
   }
 
   @Post('snapshots')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar snapshot no panorama' })
   createSnapshot(
     @TenantId() tenantId: string,
@@ -162,7 +162,7 @@ export class PanoramaItemController {
   }
 
   @Post('beacons')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar beacon no panorama' })
   createBeacon(
     @TenantId() tenantId: string,
@@ -182,7 +182,7 @@ export class PanoramaSnapshotController {
   constructor(private readonly panoramaService: PanoramaService) {}
 
   @Put()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar snapshot' })
   update(
     @TenantId() tenantId: string,
@@ -193,7 +193,7 @@ export class PanoramaSnapshotController {
   }
 
   @Delete()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Deletar snapshot' })
   remove(
     @TenantId() tenantId: string,
@@ -212,7 +212,7 @@ export class PanoramaBeaconController {
   constructor(private readonly panoramaService: PanoramaService) {}
 
   @Put()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar beacon' })
   update(
     @TenantId() tenantId: string,
@@ -223,7 +223,7 @@ export class PanoramaBeaconController {
   }
 
   @Delete()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Deletar beacon' })
   remove(
     @TenantId() tenantId: string,

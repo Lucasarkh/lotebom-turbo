@@ -35,7 +35,7 @@ export class ProjectsController {
   }
 
   @Post()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar projeto' })
   create(@TenantId() tenantId: string, @Body() dto: CreateProjectDto) {
     return this.projectsService.create(tenantId, dto);
@@ -57,7 +57,7 @@ export class ProjectsController {
   }
 
   @Put(':id')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar projeto (PUT)' })
   update(
     @TenantId() tenantId: string,
@@ -68,7 +68,7 @@ export class ProjectsController {
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar projeto (PATCH)' })
   patch(
     @TenantId() tenantId: string,
@@ -79,21 +79,21 @@ export class ProjectsController {
   }
 
   @Patch(':id/publish')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Publicar projeto' })
   publish(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.projectsService.publish(tenantId, id);
   }
 
   @Patch(':id/unpublish')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Despublicar projeto' })
   unpublish(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.projectsService.unpublish(tenantId, id);
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Remover projeto' })
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.projectsService.remove(tenantId, id);

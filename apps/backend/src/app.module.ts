@@ -12,6 +12,7 @@ import { PlantMapModule } from '@modules/plant-map/plant-map.module';
 import { PanoramaModule } from '@modules/panorama/panorama.module';
 import { TrackingModule } from '@modules/tracking/tracking.module';
 import { CampaignsModule } from '@modules/campaigns/campaigns.module';
+import { TenantsModule } from '@modules/tenants/tenants.module';
 import { DbModule } from '@infra/db/db.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { DbModule } from '@infra/db/db.module';
     DbModule,
     AuthModule,
     UserModule,
+    TenantsModule,
     ProjectsModule,
     MapElementsModule,
     LotsModule,

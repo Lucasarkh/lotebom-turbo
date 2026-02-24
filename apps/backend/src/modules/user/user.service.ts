@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,7 +22,7 @@ export class UserService {
 
   async create(tenantId: string, dto: CreateUserDto) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: dto.email.toLowerCase() },
     });
     if (existingUser) {
       throw new ConflictException('Email já cadastrado');
@@ -30,13 +30,55 @@ export class UserService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
+    // If role is LOTEADORA and no tenantId is provided, create a new tenant
+    if (dto.role === UserRole.LOTEADORA && !tenantId) {
+      return this.prisma.$transaction(async (tx) => {
+        const slug = dto.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+
+        // Check if tenant slug already exists, if so append random suffix
+        let uniqueSlug = slug;
+        const existingTenant = await tx.tenant.findUnique({ where: { slug: uniqueSlug } });
+        if (existingTenant) {
+          uniqueSlug = `${slug}-${Math.floor(Math.random() * 1000)}`;
+        }
+
+        const tenant = await tx.tenant.create({
+          data: {
+            name: dto.name,
+            slug: uniqueSlug,
+          },
+        });
+
+        return tx.user.create({
+          data: {
+            tenantId: tenant.id,
+            name: dto.name,
+            email: dto.email.toLowerCase(),
+            passwordHash,
+            role: UserRole.LOTEADORA,
+          },
+          select: USER_SELECT,
+        });
+      });
+    }
+
+    // For CORRETOR, tenantId is mandatory
+    if (dto.role === UserRole.CORRETOR && !tenantId) {
+      throw new BadRequestException('Um tenant é obrigatório para o papel de corretor.');
+    }
+
     return this.prisma.user.create({
       data: {
         tenantId,
         name: dto.name,
         email: dto.email.toLowerCase(),
         passwordHash,
-        role: dto.role ?? UserRole.VIEWER,
+        role: dto.role ?? UserRole.CORRETOR,
       },
       select: USER_SELECT,
     });

@@ -34,7 +34,7 @@ export class MapElementsController {
   }
 
   @Put('bulk')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Salvar todos os elementos do mapa (bulk upsert)' })
   bulkUpsert(
     @TenantId() tenantId: string,
@@ -45,7 +45,7 @@ export class MapElementsController {
   }
 
   @Post()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar um elemento no mapa' })
   create(
     @TenantId() tenantId: string,
@@ -62,7 +62,7 @@ export class MapElementsController {
   }
 
   @Put(':id')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar elemento' })
   update(
     @TenantId() tenantId: string,
@@ -73,7 +73,7 @@ export class MapElementsController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Remover elemento' })
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.mapElementsService.remove(tenantId, id);

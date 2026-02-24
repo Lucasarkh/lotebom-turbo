@@ -27,7 +27,7 @@ export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
 
   @Get()
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   findAll(
     @TenantId() tenantId: string,
     @Query() query: LeadsQueryDto,
@@ -36,13 +36,13 @@ export class LeadsController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.leadsService.findOne(tenantId, id);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -52,7 +52,7 @@ export class LeadsController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.leadsService.remove(tenantId, id);
   }

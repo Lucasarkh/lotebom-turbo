@@ -8,6 +8,8 @@ import {
   Post,
   Query,
   UseGuards,
+  Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -27,14 +29,14 @@ export class RealtorLinksController {
   constructor(private readonly service: RealtorLinksService) {}
 
   @Post()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar link de corretor' })
   create(@TenantId() tenantId: string, @Body() dto: CreateRealtorLinkDto) {
     return this.service.create(tenantId, dto);
   }
 
   @Get()
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Listar links de corretores' })
   findAll(
     @TenantId() tenantId: string,
@@ -43,15 +45,24 @@ export class RealtorLinksController {
     return this.service.findAll(tenantId, projectId);
   }
 
+  @Get('me')
+  @Roles('CORRETOR')
+  @ApiOperation({ summary: 'Buscar link do corretor logado' })
+  async findMe(@Request() req: any) {
+    const link = await this.service.findByUserId(req.user.id);
+    if (!link) throw new NotFoundException('Realtor link not found for this user');
+    return link;
+  }
+
   @Get(':id')
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar link de corretor por ID' })
   findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.findOne(tenantId, id);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar link de corretor' })
   update(
     @TenantId() tenantId: string,
@@ -62,7 +73,7 @@ export class RealtorLinksController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Remover link de corretor' })
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.remove(tenantId, id);

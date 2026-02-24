@@ -26,14 +26,14 @@ export class CampaignsController {
   constructor(private readonly service: CampaignsService) {}
 
   @Post()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar campanha' })
   create(@TenantId() tenantId: string, @Body() dto: CreateCampaignDto) {
     return this.service.create(tenantId, dto);
   }
 
   @Get()
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Listar campanhas' })
   findAll(
     @TenantId() tenantId: string,
@@ -43,14 +43,14 @@ export class CampaignsController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar campanha por ID' })
   findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.findOne(tenantId, id);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar campanha' })
   update(
     @TenantId() tenantId: string,
@@ -61,7 +61,7 @@ export class CampaignsController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Remover campanha' })
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.remove(tenantId, id);
@@ -70,7 +70,7 @@ export class CampaignsController {
   // ─── INVESTMENTS ─────────────────────────────────────────
 
   @Post(':id/investments')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Adicionar investimento na campanha' })
   createInvestment(
     @TenantId() tenantId: string,
@@ -81,14 +81,14 @@ export class CampaignsController {
   }
 
   @Get(':id/investments')
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Listar investimentos da campanha' })
   getInvestments(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.getInvestments(tenantId, id);
   }
 
   @Delete(':id/investments/:investmentId')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Remover investimento da campanha' })
   removeInvestment(
     @TenantId() tenantId: string,
@@ -101,7 +101,7 @@ export class CampaignsController {
   // ─── PERFORMANCE ─────────────────────────────────────────
 
   @Get(':id/performance')
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar performance da campanha' })
   getPerformance(
     @TenantId() tenantId: string,

@@ -26,7 +26,7 @@ export class LotsController {
   constructor(private readonly lotsService: LotsService) {}
 
   @Get()
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   findAll(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -36,7 +36,7 @@ export class LotsController {
   }
 
   @Get(':mapElementId')
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   findOne(
     @TenantId() tenantId: string,
     @Param('mapElementId') mapElementId: string,
@@ -45,7 +45,7 @@ export class LotsController {
   }
 
   @Put(':mapElementId')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   upsert(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -56,7 +56,7 @@ export class LotsController {
   }
 
   @Delete(':mapElementId')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   remove(
     @TenantId() tenantId: string,
     @Param('mapElementId') mapElementId: string,

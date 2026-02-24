@@ -22,6 +22,12 @@ export class TrackingController {
     return this.trackingService.trackEvent(dto);
   }
 
+  @Get('stats')
+  @UseGuards(AuthGuard('jwt'), TenantGuard)
+  async getDashboardStats(@TenantId() tenantId: string) {
+    return this.trackingService.getDashboardStats(tenantId);
+  }
+
   @Get('metrics')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   async getMetrics(@TenantId() tenantId: string, @Query() query: TrackingReportQueryDto) {

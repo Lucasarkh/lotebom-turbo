@@ -1,10 +1,31 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@infra/db/prisma.service';
 import { CreateSessionDto, CreateEventDto, TrackingReportQueryDto } from './dto/tracking.dto';
+import { ProjectStatus, MapElementType } from '@prisma/client';
 
 @Injectable()
 export class TrackingService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Returns high-level dashboard stats for a tenant:
+   * project counts, lot/map-element count, lead count.
+   */
+  async getDashboardStats(tenantId: string) {
+    const [
+      projects,
+      publishedProjects,
+      totalLots,
+      totalLeads,
+    ] = await Promise.all([
+      this.prisma.project.count({ where: { tenantId } }),
+      this.prisma.project.count({ where: { tenantId, status: ProjectStatus.PUBLISHED } }),
+      this.prisma.mapElement.count({ where: { tenantId, type: MapElementType.LOT } }),
+      this.prisma.lead.count({ where: { tenantId } }),
+    ]);
+
+    return { projects, publishedProjects, totalLots, totalLeads };
+  }
 
   async createSession(dto: CreateSessionDto, ip?: string, userAgent?: string) {
     const { tenantSlug, projectSlug, realtorCode, ...data } = dto;

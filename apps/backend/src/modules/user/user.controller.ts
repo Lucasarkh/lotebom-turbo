@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -28,14 +29,14 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar usuário no tenant' })
   create(@TenantId() tenantId: string, @Body() dto: CreateUserDto) {
     return this.userService.create(tenantId, dto);
   }
 
   @Get()
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Listar usuários do tenant' })
   findAll(
     @TenantId() tenantId: string,
@@ -45,14 +46,14 @@ export class UserController {
   }
 
   @Get(':id')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar usuário por ID' })
   findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.userService.findById(tenantId, id);
   }
 
   @Put(':id')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar usuário' })
   update(
     @TenantId() tenantId: string,
@@ -62,8 +63,19 @@ export class UserController {
     return this.userService.update(tenantId, id, dto);
   }
 
+  @Patch(':id')
+  @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Atualizar usuário (parcial)' })
+  patch(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.userService.update(tenantId, id, dto);
+  }
+
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Remover usuário' })
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.userService.remove(tenantId, id);

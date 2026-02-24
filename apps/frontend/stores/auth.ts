@@ -4,8 +4,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'EDITOR' | 'VIEWER';
-  tenantId: string;
+  role: 'SYSADMIN' | 'LOTEADORA' | 'CORRETOR';
+  tenantId?: string;
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -17,10 +17,12 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isLoggedIn: (state) => !!state.accessToken,
-    isAdmin: (state) => state.user?.role === 'ADMIN',
-    isEditor: (state) => state.user?.role === 'EDITOR',
-    isViewer: (state) => state.user?.role === 'VIEWER',
-    canEdit: (state) => ['ADMIN', 'EDITOR'].includes(state.user?.role ?? ''),
+    isSysAdmin: (state) => state.user?.role === 'SYSADMIN',
+    isLoteadora: (state) => state.user?.role === 'LOTEADORA',
+    isCorretor: (state) => state.user?.role === 'CORRETOR',
+    canManageTenants: (state) => state.user?.role === 'SYSADMIN',
+    canManageUsers: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
+    canEdit: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
     userRole: (state) => state.user?.role ?? null,
   },
 

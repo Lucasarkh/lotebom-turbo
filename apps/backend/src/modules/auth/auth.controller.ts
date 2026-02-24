@@ -30,7 +30,7 @@ export class AuthController {
   }
 
   @Post('register-tenant')
-  @ApiOperation({ summary: 'Cadastro de loteadora (cria tenant + admin user)' })
+  @ApiOperation({ summary: 'Registrar nova loteadora (tenant + admin)' })
   async registerTenant(@Body() dto: RegisterTenantDto) {
     return this.authService.registerTenant(dto);
   }
@@ -61,6 +61,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout' })
   async logout(@Body() logoutDto: LogoutDto) {
     return this.authService.logout(logoutDto.id);
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Alterar senha do usuário logado' })
+  async changePassword(@Request() req: any, @Body() dto: any) {
+    return this.authService.changePassword(
+      req.user.id,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 
   @Get('me')

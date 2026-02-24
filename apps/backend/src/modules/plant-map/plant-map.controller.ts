@@ -39,7 +39,7 @@ export class PlantMapController {
 
   // GET admin/projects/:projectId/plant-map
   @Get()
-  @Roles('ADMIN', 'EDITOR', 'VIEWER')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar planta do projeto (admin)' })
   findByProject(
     @TenantId() tenantId: string,
@@ -50,7 +50,7 @@ export class PlantMapController {
 
   // POST admin/projects/:projectId/plant-map
   @Post()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar planta do projeto' })
   create(
     @TenantId() tenantId: string,
@@ -62,7 +62,7 @@ export class PlantMapController {
 
   // POST admin/projects/:projectId/plant-map/upload-image
   @Post('upload-image')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Upload da imagem da planta' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -91,7 +91,7 @@ export class PlantMapItemController {
 
   // PUT plant-maps/:plantMapId
   @Put()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar configurações da planta' })
   update(
     @TenantId() tenantId: string,
@@ -103,7 +103,7 @@ export class PlantMapItemController {
 
   // DELETE plant-maps/:plantMapId
   @Delete()
-  @Roles('ADMIN')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Deletar planta' })
   remove(
     @TenantId() tenantId: string,
@@ -114,7 +114,7 @@ export class PlantMapItemController {
 
   // POST plant-maps/:plantMapId/hotspots
   @Post('hotspots')
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar hotspot na planta' })
   createHotspot(
     @TenantId() tenantId: string,
@@ -135,7 +135,7 @@ export class PlantHotspotController {
 
   // PUT plant-hotspots/:hotspotId
   @Put()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar hotspot' })
   update(
     @TenantId() tenantId: string,
@@ -147,7 +147,7 @@ export class PlantHotspotController {
 
   // DELETE plant-hotspots/:hotspotId
   @Delete()
-  @Roles('ADMIN', 'EDITOR')
+  @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Deletar hotspot' })
   remove(
     @TenantId() tenantId: string,

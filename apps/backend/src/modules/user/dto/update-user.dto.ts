@@ -14,7 +14,7 @@ export class UpdateUserDto {
   @MinLength(6, { message: 'Senha deve ter pelo menos 6 caracteres' })
   password?: string;
 
-  @ApiPropertyOptional({ enum: UserRole, example: 'EDITOR' })
+  @ApiPropertyOptional({ enum: UserRole, example: 'LOTEADORA' })
   @IsOptional()
   @IsEnum(UserRole, { message: 'Role inválida' })
   role?: UserRole;
