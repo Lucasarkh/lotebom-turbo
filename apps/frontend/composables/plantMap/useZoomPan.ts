@@ -38,20 +38,22 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
   const clampScale = (s: number) => {
     if (!containerEl.value || !contentEl.value) return Math.min(maxScale, Math.max(minScale, s))
     
-    // Calculate minimum scale to "cover" or at least fill viewport
+    // Calculate minimum scale to "cover" the viewport completely (no background gaps)
     const cw = containerEl.value.clientWidth
     const ch = containerEl.value.clientHeight
     const iw = contentEl.value.offsetWidth || 1
     const ih = contentEl.value.offsetHeight || 1
     
     const minS = Math.max(cw / iw, ch / ih)
-    return Math.min(maxScale, Math.max(minS * 0.9, s)) // allowing slight bounce out of 90%
+    return Math.min(maxScale, Math.max(minS, s))
   }
 
   const clampOffset = (s: number, x: number, y: number) => {
     if (!containerEl.value || !contentEl.value) return { x, y }
     const cw = containerEl.value.clientWidth
     const ch = containerEl.value.clientHeight
+    
+    // We use the contentEl's actual rendered size
     const iw = contentEl.value.offsetWidth || 1
     const ih = contentEl.value.offsetHeight || 1
     
@@ -60,9 +62,11 @@ export const useZoomPan = (options: UseZoomPanOptions = {}) => {
     let newX = x
     let newY = y
 
+    // If content is larger than container, keep it within bounds (no gaps at edges)
     if (contentW > cw) {
       newX = Math.min(0, Math.max(cw - contentW, newX))
     } else {
+      // If it should have been covered by clampScale, it will be >= cw
       newX = (cw - contentW) / 2
     }
 

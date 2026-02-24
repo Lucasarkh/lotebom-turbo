@@ -506,7 +506,7 @@ const onWheel = (e: WheelEvent) => {
   
   // Calculate minimum scale to keep image covering area
   const minS = Math.max(rect.width / imgW.value, rect.height / imgH.value)
-  const newScale = Math.min(10, Math.max(minS * 0.8, scale.value + delta * scale.value))
+  const newScale = Math.min(10, Math.max(minS, scale.value + delta * scale.value))
   
   const ratio = newScale / scale.value
   const newX = ox - ratio * (ox - offset.value.x)
@@ -576,7 +576,7 @@ const onTouchMove = (e: TouchEvent) => {
     const cx = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left
     const cy = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
     const minS = Math.max(rect.width / imgW.value, rect.height / imgH.value)
-    const newScale = Math.min(10, Math.max(minS * 0.8, scale.value + delta * scale.value))
+    const newScale = Math.min(10, Math.max(minS, scale.value + delta * scale.value))
     const ratio = newScale / scale.value
     const newX = cx - ratio * (cx - offset.value.x)
     const newY = cy - ratio * (cy - offset.value.y)
@@ -1006,8 +1006,9 @@ const showError = (msg: string) => {
 .pme__canvas-wrap.mode-move { cursor: default; }
 
 .pme__canvas-content {
-  position: relative;
-  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 0;
   transform-origin: 0 0;
   will-change: transform;
 }

@@ -15,7 +15,7 @@
     <div
       ref="contentEl"
       class="plant-map-viewer__content"
-      :style="contentStyle"
+      :style="[contentStyle, { opacity: imageLoaded ? 1 : 0 }]"
       :class="{ 'is-ready': imageLoaded }"
     >
       <!-- Plant image -->
@@ -150,13 +150,8 @@ const {
 onMounted(() => {
   if (props.interactive) {
     nextTick(() => attach())
-  } else {
-    // If static, we might want to ensure cursor is default
-    if (containerEl.value) {
-      containerEl.value.style.cursor = 'default'
-    }
   }
-
+  
   // Close popover on scroll since it uses position: fixed
   window.addEventListener('scroll', handleContainerClick, { passive: true })
 })
@@ -180,14 +175,20 @@ const zoomToHotspot = (lotCode: string): boolean => {
   const cw = containerEl.value.clientWidth
   const ch = containerEl.value.clientHeight
   
-  // Target position on original image (normalizing normalized 0..1 to image pixels)
-  const targetX = hs.x * imgNaturalW.value
-  const targetY = hs.y * imgNaturalH.value
+  // Use natural dimensions to ensure calculation is accurate regardless of current element size
+  const iw = imgNaturalW.value
+  const ih = imgNaturalH.value
 
-  // Deterministic scale for focusing
-  const targetScale = clampScale(1.1)
+  // We want the image to at least cover the container (no background gaps)
+  const coverScale = Math.max(cw / iw, ch / ih)
+  
+  // Choose a high quality zoom level centered on the lot
+  const targetScale = clampScale(Math.max(coverScale, coverScale * 3.5))
 
   // Center targetX, targetY in the container
+  const targetX = hs.x * iw
+  const targetY = hs.y * ih
+
   const newX = (cw / 2) - (targetX * targetScale)
   const newY = (ch / 2) - (targetY * targetScale)
 
@@ -198,8 +199,11 @@ const zoomToHotspot = (lotCode: string): boolean => {
   return true
 }
 
+const isInitializing = ref(true)
+
 const zoomIn = () => {
   if (!props.interactive || !containerEl.value) return
+  isInitializing.value = false
   const rect = containerEl.value.getBoundingClientRect()
   const cx = rect.width / 2
   const cy = rect.height / 2
@@ -217,6 +221,7 @@ const zoomIn = () => {
 
 const zoomOut = () => {
   if (!props.interactive || !containerEl.value) return
+  isInitializing.value = false
   const rect = containerEl.value.getBoundingClientRect()
   const cx = rect.width / 2
   const cy = rect.height / 2
@@ -235,7 +240,7 @@ const zoomOut = () => {
 const contentStyle = computed(() => ({
   transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.scale})`,
   transformOrigin: '0 0',
-  transition: props.interactive ? 'none' : 'transform 0.4s ease-out'
+  transition: isInitializing.value ? 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
 }))
 
 // ── Image loading ─────────────────────────────────────────
@@ -248,9 +253,9 @@ const onImageLoad = (e: Event) => {
   const img = e.target as HTMLImageElement
   imgNaturalW.value = img.naturalWidth || props.plantMap.imageWidth || 1200
   imgNaturalH.value = img.naturalHeight || props.plantMap.imageHeight || 800
-  imageLoaded.value = true
   
   nextTick(() => {
+    imageLoaded.value = true
     let focused = false
     if (props.focusLotCode) {
       focused = zoomToHotspot(props.focusLotCode)
@@ -259,6 +264,11 @@ const onImageLoad = (e: Event) => {
     if (!focused) {
       fitToContainer()
     }
+
+    // Allow interaction after initial zoom transition
+    setTimeout(() => {
+      isInitializing.value = false
+    }, 900)
   })
 }
 
@@ -342,9 +352,9 @@ const handleContainerClick = () => {
 }
 
 .plant-map-viewer__content {
-  position: relative;
-  display: inline-block;
-  transition: none;
+  position: absolute;
+  top: 0;
+  left: 0;
   will-change: transform;
 }
 

@@ -126,13 +126,13 @@
                 <h2>Localização no Loteamento</h2>
                 <div class="title-line"></div>
               </div>
-              <div style="height: 500px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border);">
+              <div style="height: 500px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border); position: relative;">
                 <ClientOnly>
                   <PlantMapViewer
                     :plant-map="lotPlantMap"
-                    :show-controls="false"
+                    :show-controls="true"
                     :show-legend="false"
-                    :interactive="false"
+                    :interactive="true"
                     :focus-lot-code="lot.code"
                   />
                   <template #fallback>
