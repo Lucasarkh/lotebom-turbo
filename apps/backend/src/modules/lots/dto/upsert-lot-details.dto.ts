@@ -1,4 +1,10 @@
-import { IsEnum, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { LotStatus, SlopeType } from '@prisma/client';
 
@@ -43,12 +49,16 @@ export class UpsertLotDetailsDto {
   @IsEnum(SlopeType)
   slope?: SlopeType;
 
-  @ApiPropertyOptional({ description: 'Condições de pagamento customizadas (ex: lista)' })
+  @ApiPropertyOptional({
+    description: 'Condições de pagamento customizadas (ex: lista)'
+  })
   @IsOptional()
   @IsObject()
   conditionsJson?: any;
 
-  @ApiPropertyOptional({ description: 'Tabela de financiamento/preço do lote (JSON structured)' })
+  @ApiPropertyOptional({
+    description: 'Tabela de financiamento/preço do lote (JSON structured)'
+  })
   @IsOptional()
   @IsObject()
   paymentConditions?: any;

@@ -4,7 +4,7 @@ import {
   IsOptional,
   IsString,
   Max,
-  Min,
+  Min
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -18,19 +18,30 @@ export class CreateBeaconDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'Posição X normalizada [0..1]', minimum: 0, maximum: 1 })
+  @ApiProperty({
+    description: 'Posição X normalizada [0..1]',
+    minimum: 0,
+    maximum: 1
+  })
   @IsNumber()
   @Min(0)
   @Max(1)
   x: number;
 
-  @ApiProperty({ description: 'Posição Y normalizada [0..1]', minimum: 0, maximum: 1 })
+  @ApiProperty({
+    description: 'Posição Y normalizada [0..1]',
+    minimum: 0,
+    maximum: 1
+  })
   @IsNumber()
   @Min(0)
   @Max(1)
   y: number;
 
-  @ApiPropertyOptional({ description: 'Estilo do beacon (default, highlight, subtle)', default: 'default' })
+  @ApiPropertyOptional({
+    description: 'Estilo do beacon (default, highlight, subtle)',
+    default: 'default'
+  })
   @IsOptional()
   @IsString()
   style?: string;

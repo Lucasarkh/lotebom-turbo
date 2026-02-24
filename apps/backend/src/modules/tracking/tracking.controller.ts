@@ -1,5 +1,17 @@
-import { Body, Controller, Post, Get, Query, Req, UseGuards } from '@nestjs/common';
-import { CreateSessionDto, CreateEventDto, TrackingReportQueryDto } from './dto/tracking.dto';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Query,
+  Req,
+  UseGuards
+} from '@nestjs/common';
+import {
+  CreateSessionDto,
+  CreateEventDto,
+  TrackingReportQueryDto
+} from './dto/tracking.dto';
 import { TrackingService } from './tracking.service';
 import type { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
@@ -13,7 +25,7 @@ export class TrackingController {
 
   @Post('session')
   async createSession(@Body() dto: CreateSessionDto, @Req() req: Request) {
-    const ip = req.ip || req.headers['x-forwarded-for'] as string;
+    const ip = req.ip || (req.headers['x-forwarded-for'] as string);
     const userAgent = req.headers['user-agent'];
     return this.trackingService.createSession(dto, ip, userAgent);
   }
@@ -25,14 +37,17 @@ export class TrackingController {
 
   @Get('stats')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
-  async getDashboardStats(@TenantId() tenantId: string, @CurrentUser() user: any) {
+  async getDashboardStats(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: any
+  ) {
     return this.trackingService.getDashboardStats(tenantId, user);
   }
 
   @Get('metrics')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   async getMetrics(
-    @TenantId() tenantId: string, 
+    @TenantId() tenantId: string,
     @Query() query: TrackingReportQueryDto,
     @CurrentUser() user: any
   ) {
@@ -43,7 +58,7 @@ export class TrackingController {
   @Get('report/lots')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   async getLotReport(
-    @TenantId() tenantId: string, 
+    @TenantId() tenantId: string,
     @Query() query: TrackingReportQueryDto,
     @CurrentUser() user: any
   ) {
@@ -54,7 +69,7 @@ export class TrackingController {
   @Get('report/pages')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   async getPageReport(
-    @TenantId() tenantId: string, 
+    @TenantId() tenantId: string,
     @Query() query: TrackingReportQueryDto,
     @CurrentUser() user: any
   ) {
@@ -65,7 +80,7 @@ export class TrackingController {
   @Get('report/realtors')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   async getRealtorReport(
-    @TenantId() tenantId: string, 
+    @TenantId() tenantId: string,
     @Query() query: TrackingReportQueryDto,
     @CurrentUser() user: any
   ) {
@@ -76,7 +91,7 @@ export class TrackingController {
   @Get('report/sources')
   @UseGuards(AuthGuard('jwt'), TenantGuard)
   async getSourceReport(
-    @TenantId() tenantId: string, 
+    @TenantId() tenantId: string,
     @Query() query: TrackingReportQueryDto,
     @CurrentUser() user: any
   ) {

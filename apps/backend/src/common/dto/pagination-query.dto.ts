@@ -6,7 +6,7 @@ export class PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Current page number',
     minimum: 1,
-    default: 1,
+    default: 1
   })
   @Type(() => Number)
   @IsInt()
@@ -18,7 +18,7 @@ export class PaginationQueryDto {
     description: 'Number of items per page',
     minimum: 1,
     maximum: 100,
-    default: 10,
+    default: 10
   })
   @Type(() => Number)
   @IsInt()

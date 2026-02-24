@@ -7,7 +7,7 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -17,7 +17,12 @@ import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { CampaignsService } from './campaigns.service';
-import { CreateCampaignDto, UpdateCampaignDto, CreateCampaignInvestmentDto, CampaignReportQueryDto } from './dto/campaigns.dto';
+import {
+  CreateCampaignDto,
+  UpdateCampaignDto,
+  CreateCampaignInvestmentDto,
+  CampaignReportQueryDto
+} from './dto/campaigns.dto';
 
 @ApiTags('Campaigns')
 @ApiBearerAuth()
@@ -38,8 +43,8 @@ export class CampaignsController {
   @ApiOperation({ summary: 'Listar campanhas' })
   findAll(
     @TenantId() tenantId: string,
-    @Query('projectId') projectId?: string,
     @CurrentUser() user: any,
+    @Query('projectId') projectId?: string
   ) {
     return this.service.findAll(tenantId, projectId, user);
   }
@@ -48,9 +53,9 @@ export class CampaignsController {
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar campanha por ID' })
   findOne(
-    @TenantId() tenantId: string, 
+    @TenantId() tenantId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.service.findOne(tenantId, id, user);
   }
@@ -61,7 +66,7 @@ export class CampaignsController {
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateCampaignDto,
+    @Body() dto: UpdateCampaignDto
   ) {
     return this.service.update(tenantId, id, dto);
   }
@@ -81,7 +86,7 @@ export class CampaignsController {
   createInvestment(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: CreateCampaignInvestmentDto,
+    @Body() dto: CreateCampaignInvestmentDto
   ) {
     return this.service.createInvestment(tenantId, id, dto);
   }
@@ -99,7 +104,7 @@ export class CampaignsController {
   removeInvestment(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Param('investmentId') investmentId: string,
+    @Param('investmentId') investmentId: string
   ) {
     return this.service.removeInvestment(tenantId, id, investmentId);
   }
@@ -112,7 +117,7 @@ export class CampaignsController {
   getPerformance(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Query() query: CampaignReportQueryDto,
+    @Query() query: CampaignReportQueryDto
   ) {
     return this.service.getPerformance(tenantId, id, query);
   }

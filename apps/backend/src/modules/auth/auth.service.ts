@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -13,14 +17,14 @@ export class AuthService {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
-    private prisma: PrismaService,
+    private prisma: PrismaService
   ) {
     this.jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email }
     });
 
     if (user && (await bcrypt.compare(pass, user.passwordHash))) {
@@ -35,14 +39,14 @@ export class AuthService {
    */
   async checkTenantSlugAvailability(slug: string) {
     const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: slug.toLowerCase().replace(/\s+/g, '-') },
+      where: { slug: slug.toLowerCase().replace(/\s+/g, '-') }
     });
     return { available: !tenant };
   }
 
   async registerTenant(dto: RegisterTenantDto) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+      where: { email: dto.email.toLowerCase() }
     });
     if (existingUser) throw new ConflictException('Email já cadastrado.');
 
@@ -54,9 +58,10 @@ export class AuthService {
       .replace(/^-|-$/g, '');
 
     const existingTenant = await this.prisma.tenant.findUnique({
-      where: { slug },
+      where: { slug }
     });
-    if (existingTenant) throw new ConflictException('Slug de tenant já em uso.');
+    if (existingTenant)
+      throw new ConflictException('Slug de tenant já em uso.');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
@@ -64,8 +69,8 @@ export class AuthService {
       const tenant = await tx.tenant.create({
         data: {
           name: dto.tenantName,
-          slug,
-        },
+          slug
+        }
       });
 
       const user = await tx.user.create({
@@ -74,18 +79,21 @@ export class AuthService {
           email: dto.email.toLowerCase(),
           passwordHash,
           name: dto.name,
-          role: UserRole.LOTEADORA,
+          role: UserRole.LOTEADORA
         },
         select: {
           id: true,
           email: true,
           name: true,
           role: true,
-          tenantId: true,
-        },
+          tenantId: true
+        }
       });
 
-      return { user, tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug } };
+      return {
+        user,
+        tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug }
+      };
     });
 
     return result;
@@ -96,26 +104,26 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId,
+      tenantId: user.tenantId
     };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.jwtSecret,
-      expiresIn: '8h',
+      expiresIn: '8h'
     });
 
     const refreshToken = this.jwtService.sign(
       { sub: user.id },
       {
         secret: this.jwtSecret,
-        expiresIn: '7d',
-      },
+        expiresIn: '7d'
+      }
     );
 
     // Save hashed refresh token in DB
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken: await bcrypt.hash(refreshToken, 10) },
+      data: { refreshToken: await bcrypt.hash(refreshToken, 10) }
     });
 
     return {
@@ -126,21 +134,24 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        tenantId: user.tenantId,
-      },
+        tenantId: user.tenantId
+      }
     };
   }
 
   async refresh(id: string, refreshToken: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where: { id }
     });
 
     if (!user || !user.refreshToken) {
       throw new UnauthorizedException('Acesso negado');
     }
 
-    const refreshTokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
+    const refreshTokenMatches = await bcrypt.compare(
+      refreshToken,
+      user.refreshToken
+    );
     if (!refreshTokenMatches) {
       throw new UnauthorizedException('Acesso negado');
     }
@@ -149,27 +160,27 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId,
+      tenantId: user.tenantId
     };
 
     return {
       access_token: this.jwtService.sign(payload, {
         secret: this.jwtSecret,
-        expiresIn: '8h',
-      }),
+        expiresIn: '8h'
+      })
     };
   }
 
   async logout(userId: string) {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { refreshToken: null },
+      data: { refreshToken: null }
     });
   }
 
   async changePassword(userId: string, currentPass: string, newPass: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId }
     });
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
 
@@ -179,7 +190,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(newPass, 10);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: { passwordHash }
     });
 
     return { success: true };
@@ -194,8 +205,8 @@ export class AuthService {
         name: true,
         role: true,
         tenantId: true,
-        tenant: { select: { id: true, name: true, slug: true } },
-      },
+        tenant: { select: { id: true, name: true, slug: true } }
+      }
     });
 
     if (!user) throw new UnauthorizedException('Usuário não encontrado');

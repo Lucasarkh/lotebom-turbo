@@ -48,14 +48,14 @@ export class ClusterService {
 
   private handleExit(worker: Worker, code: number, signal: string | null) {
     this.logger.warn(
-      `Worker PID ${worker.process.pid} exited with code ${code} and signal ${signal}. Restarting...`,
+      `Worker PID ${worker.process.pid} exited with code ${code} and signal ${signal}. Restarting...`
     );
     cluster.fork();
   }
 
   private handleMessage(worker: Worker, message: any) {
     this.logger.log(
-      `Message from worker PID ${worker.process.pid}: ${JSON.stringify(message)}`,
+      `Message from worker PID ${worker.process.pid}: ${JSON.stringify(message)}`
     );
   }
 

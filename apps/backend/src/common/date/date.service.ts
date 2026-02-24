@@ -31,19 +31,19 @@ export class DateService {
       if (diffMinutes < 1) return 'Agora mesmo';
       return `Há ${diffMinutes} minuto${diffMinutes > 1 ? 's' : ''}`;
     }
-    
+
     if (diffHours < 24) {
       return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
     }
-    
+
     if (diffDays === 1) {
       return 'Ontem';
     }
-    
+
     if (diffDays < 7) {
       return `Há ${diffDays} dias`;
     }
-    
+
     return target.format('DD/MM/YYYY');
   }
 }

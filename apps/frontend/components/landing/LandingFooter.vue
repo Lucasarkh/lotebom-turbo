@@ -1,38 +1,48 @@
 <template>
   <footer class="footer">
     <div class="container-landing">
-      <div class="footer-top">
+      <div class="footer-grid">
         <div class="footer-brand">
-          <div class="logo">
-            <div class="logo-icon">L</div>
+          <NuxtLink to="/" class="logo">
+            <div class="logo-icon">
+              <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="40" height="40" rx="10" fill="currentColor"/>
+                <path d="M12 12V28M12 28H28M12 20H24" stroke="white" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
             <span class="logo-text">Lotio</span>
-          </div>
+          </NuxtLink>
           <p class="footer-desc">
-            A plataforma definitiva para incorporadoras, loteadoras e corretores.
-            Gestão de vendas e mapas interativos em um só lugar.
+            A nova fronteira digital para o mercado imobiliário. Transformando mapas em vendas, um lote por vez.
           </p>
         </div>
 
         <div class="footer-links">
           <div class="link-group">
             <h4 class="link-title">Plataforma</h4>
-            <NuxtLink to="/painel" class="link-item">Painel</NuxtLink>
-            <NuxtLink to="/login" class="link-item">Login</NuxtLink>
-            <NuxtLink to="/cadastro" class="link-item">Cadastro</NuxtLink>
+            <NuxtLink to="/painel" class="link-item">Painel de Controle</NuxtLink>
+            <NuxtLink to="/login" class="link-item">Acesso Restrito</NuxtLink>
           </div>
           <div class="link-group">
             <h4 class="link-title">Soluções</h4>
-            <a href="#" class="link-item">Incorporadoras</a>
-            <a href="#" class="link-item">Loteadoras</a>
-            <a href="#" class="link-item">Imobiliárias</a>
+            <a href="#" class="link-item">Para Loteadoras</a>
+            <a href="#" class="link-item">Para Incorporadoras</a>
+            <a href="#" class="link-item">Gestão de Leads</a>
+          </div>
+          <div class="link-group">
+            <h4 class="link-title">Suporte</h4>
+            <a href="#" class="link-item">Central de Ajuda</a>
+            <a href="#" class="link-item">Contato Comercial</a>
+            <a href="#" class="link-item">Documentação</a>
           </div>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p class="copyright">&copy; {{ new Date().getFullYear() }} Lotio. Todos os direitos reservados.</p>
+        <p class="copyright">&copy; {{ new Date().getFullYear() }} Lotio. Tecnologia para o futuro imobiliário.</p>
         <div class="footer-policy">
           <a href="#">Privacidade</a>
+          <a href="#">Termos de Uso</a>
           <a href="#">Cookies</a>
         </div>
       </div>
@@ -42,84 +52,64 @@
 
 <style scoped>
 .footer {
-  background-color: var(--gray-900);
-  color: white;
-  padding: 80px 0 40px;
+  background-color: var(--gray-50);
+  color: var(--gray-900);
+  padding: 100px 0 40px;
+  border-top: 1px solid var(--gray-200);
 }
 
-.footer-top {
+.footer-grid {
   display: flex;
   flex-direction: column;
-  gap: 60px;
-  margin-bottom: 60px;
+  gap: 64px;
+  margin-bottom: 80px;
 }
 
 @media (min-width: 1024px) {
-  .footer-top {
+  .footer-grid {
     flex-direction: row;
     justify-content: space-between;
   }
 }
 
 .footer-brand {
-  max-width: 320px;
+  max-width: 300px;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  text-decoration: none;
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
-  background: var(--primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-weight: 800;
-  font-size: 1.25rem;
+  width: 24px;
+  height: 24px;
+  color: var(--gray-900);
 }
 
 .logo-text {
-  color: white;
-  font-weight: 800;
-  font-size: 1.5rem;
+  color: var(--gray-900);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
 }
 
 .footer-desc {
-  color: var(--gray-400);
-  margin-top: 0;
-  font-size: 1rem;
-}
-
-.social-links {
-  display: flex;
-  gap: 16px;
-}
-
-.social-link {
-  color: var(--gray-400);
-  transition: color 0.2s;
-}
-
-.social-link:hover {
-  color: white;
-}
-
-.social-link svg {
-  width: 24px;
-  height: 24px;
+  color: var(--gray-500);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
 }
 
 .footer-links {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 40px;
+  gap: 48px;
+  flex-grow: 1;
+  max-width: 600px;
 }
 
 @media (min-width: 640px) {
@@ -129,17 +119,20 @@
 }
 
 .link-title {
-  color: white;
+  color: var(--gray-900);
   margin-bottom: 24px;
-  font-size: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .link-item {
   display: block;
-  color: var(--gray-400);
+  color: var(--gray-500);
   text-decoration: none;
   margin-bottom: 12px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   transition: color 0.2s;
 }
 
@@ -148,8 +141,8 @@
 }
 
 .footer-bottom {
-  padding-top: 40px;
-  border-top: 1px solid var(--gray-800);
+  padding-top: 32px;
+  border-top: 1px solid var(--gray-200);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -166,8 +159,8 @@
 }
 
 .copyright {
-  color: var(--gray-500);
-  font-size: 0.9rem;
+  color: var(--gray-400);
+  font-size: 0.85rem;
 }
 
 .footer-policy {
@@ -176,8 +169,13 @@
 }
 
 .footer-policy a {
-  color: var(--gray-500);
-  font-size: 0.9rem;
+  color: var(--gray-400);
+  font-size: 0.85rem;
   text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-policy a:hover {
+  color: var(--gray-600);
 }
 </style>

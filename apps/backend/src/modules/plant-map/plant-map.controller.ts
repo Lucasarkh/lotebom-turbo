@@ -8,7 +8,7 @@ import {
   Put,
   UploadedFile,
   UseGuards,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -16,7 +16,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
-  ApiTags,
+  ApiTags
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { TenantGuard } from '@common/guards/tenant.guard';
@@ -43,7 +43,7 @@ export class PlantMapController {
   @ApiOperation({ summary: 'Buscar planta do projeto (admin)' })
   findByProject(
     @TenantId() tenantId: string,
-    @Param('projectId') projectId: string,
+    @Param('projectId') projectId: string
   ) {
     return this.plantMapService.findByProject(tenantId, projectId);
   }
@@ -55,7 +55,7 @@ export class PlantMapController {
   create(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
-    @Body() dto: CreatePlantMapDto,
+    @Body() dto: CreatePlantMapDto
   ) {
     return this.plantMapService.create(tenantId, projectId, dto);
   }
@@ -68,14 +68,14 @@ export class PlantMapController {
   @ApiBody({
     schema: {
       type: 'object',
-      properties: { file: { type: 'string', format: 'binary' } },
-    },
+      properties: { file: { type: 'string', format: 'binary' } }
+    }
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File
   ) {
     return this.plantMapService.uploadImage(tenantId, projectId, file);
   }
@@ -96,7 +96,7 @@ export class PlantMapItemController {
   update(
     @TenantId() tenantId: string,
     @Param('plantMapId') plantMapId: string,
-    @Body() dto: UpdatePlantMapDto,
+    @Body() dto: UpdatePlantMapDto
   ) {
     return this.plantMapService.update(tenantId, plantMapId, dto);
   }
@@ -107,7 +107,7 @@ export class PlantMapItemController {
   @ApiOperation({ summary: 'Deletar planta' })
   remove(
     @TenantId() tenantId: string,
-    @Param('plantMapId') plantMapId: string,
+    @Param('plantMapId') plantMapId: string
   ) {
     return this.plantMapService.remove(tenantId, plantMapId);
   }
@@ -119,7 +119,7 @@ export class PlantMapItemController {
   createHotspot(
     @TenantId() tenantId: string,
     @Param('plantMapId') plantMapId: string,
-    @Body() dto: CreateHotspotDto,
+    @Body() dto: CreateHotspotDto
   ) {
     return this.plantMapService.createHotspot(tenantId, plantMapId, dto);
   }
@@ -140,7 +140,7 @@ export class PlantHotspotController {
   update(
     @TenantId() tenantId: string,
     @Param('hotspotId') hotspotId: string,
-    @Body() dto: UpdateHotspotDto,
+    @Body() dto: UpdateHotspotDto
   ) {
     return this.plantMapService.updateHotspot(tenantId, hotspotId, dto);
   }
@@ -149,10 +149,7 @@ export class PlantHotspotController {
   @Delete()
   @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Deletar hotspot' })
-  remove(
-    @TenantId() tenantId: string,
-    @Param('hotspotId') hotspotId: string,
-  ) {
+  remove(@TenantId() tenantId: string, @Param('hotspotId') hotspotId: string) {
     return this.plantMapService.removeHotspot(tenantId, hotspotId);
   }
 }

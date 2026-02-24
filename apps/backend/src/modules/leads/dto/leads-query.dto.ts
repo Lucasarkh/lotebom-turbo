@@ -9,7 +9,10 @@ export class LeadsQueryDto extends PaginationQueryDto {
   @IsString()
   projectId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by lead status', enum: LeadStatus })
+  @ApiPropertyOptional({
+    description: 'Filter by lead status',
+    enum: LeadStatus
+  })
   @IsOptional()
   @IsEnum(LeadStatus)
   status?: LeadStatus;

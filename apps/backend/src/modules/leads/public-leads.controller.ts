@@ -11,7 +11,7 @@ export class PublicLeadsController {
   @Post()
   create(
     @Param('projectSlug') projectSlug: string,
-    @Body() dto: CreateLeadDto,
+    @Body() dto: CreateLeadDto
   ) {
     return this.leadsService.createPublic(projectSlug, dto);
   }

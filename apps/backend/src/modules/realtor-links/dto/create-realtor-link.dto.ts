@@ -1,4 +1,11 @@
-import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateRealtorLinkDto {
@@ -26,12 +33,19 @@ export class CreateRealtorLinkDto {
   @IsString()
   photoUrl?: string;
 
-  @ApiProperty({ example: 'joao-corretor', description: 'Código curto usado na URL (?c=CODIGO)' })
+  @ApiProperty({
+    example: 'joao-corretor',
+    description: 'Código curto usado na URL (?c=CODIGO)'
+  })
   @IsString()
   @MaxLength(64)
   code: string;
 
-  @ApiPropertyOptional({ description: 'IDs dos projetos vinculados (vazio = válido para todos os projetos do tenant)', type: [String] })
+  @ApiPropertyOptional({
+    description:
+      'IDs dos projetos vinculados (vazio = válido para todos os projetos do tenant)',
+    type: [String]
+  })
   @IsOptional()
   @IsString({ each: true })
   projectIds?: string[];
@@ -46,12 +60,16 @@ export class CreateRealtorLinkDto {
   @IsString()
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'Email para criar conta de acesso do corretor' })
+  @ApiPropertyOptional({
+    description: 'Email para criar conta de acesso do corretor'
+  })
   @IsOptional()
   @IsEmail({}, { message: 'Email da conta inválido' })
   accountEmail?: string;
 
-  @ApiPropertyOptional({ description: 'Senha para criar conta de acesso do corretor' })
+  @ApiPropertyOptional({
+    description: 'Senha para criar conta de acesso do corretor'
+  })
   @IsOptional()
   @IsString()
   @MinLength(6, { message: 'Senha deve ter pelo menos 6 caracteres' })

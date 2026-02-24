@@ -11,7 +11,7 @@ export class PublicRealtorLinksController {
   @ApiOperation({ summary: 'Buscar dados públicos do corretor pelo código' })
   findPublic(
     @Param('projectSlug') projectSlug: string,
-    @Param('code') code: string,
+    @Param('code') code: string
   ) {
     return this.service.findPublic(projectSlug, code);
   }

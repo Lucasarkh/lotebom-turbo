@@ -6,7 +6,7 @@ import {
   Param,
   Put,
   Query,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -30,7 +30,7 @@ export class LotsController {
   findAll(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
-    @Query() pagination: PaginationQueryDto,
+    @Query() pagination: PaginationQueryDto
   ) {
     return this.lotsService.findByProject(tenantId, projectId, pagination);
   }
@@ -39,7 +39,7 @@ export class LotsController {
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   findOne(
     @TenantId() tenantId: string,
-    @Param('mapElementId') mapElementId: string,
+    @Param('mapElementId') mapElementId: string
   ) {
     return this.lotsService.findByMapElement(tenantId, mapElementId);
   }
@@ -50,7 +50,7 @@ export class LotsController {
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
     @Param('mapElementId') mapElementId: string,
-    @Body() dto: UpsertLotDetailsDto,
+    @Body() dto: UpsertLotDetailsDto
   ) {
     return this.lotsService.upsert(tenantId, projectId, mapElementId, dto);
   }
@@ -59,7 +59,7 @@ export class LotsController {
   @Roles('LOTEADORA', 'SYSADMIN')
   remove(
     @TenantId() tenantId: string,
-    @Param('mapElementId') mapElementId: string,
+    @Param('mapElementId') mapElementId: string
   ) {
     return this.lotsService.remove(tenantId, mapElementId);
   }

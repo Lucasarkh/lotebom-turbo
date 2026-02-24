@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException
+} from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -10,7 +14,7 @@ export class TenantsService {
 
   async create(dto: RegisterTenantDto) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+      where: { email: dto.email.toLowerCase() }
     });
     if (existingUser) throw new ConflictException('Email já cadastrado.');
 
@@ -22,9 +26,10 @@ export class TenantsService {
       .replace(/^-|-$/g, '');
 
     const existingTenant = await this.prisma.tenant.findUnique({
-      where: { slug },
+      where: { slug }
     });
-    if (existingTenant) throw new ConflictException('Slug de tenant já em uso.');
+    if (existingTenant)
+      throw new ConflictException('Slug de tenant já em uso.');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
@@ -32,8 +37,8 @@ export class TenantsService {
       const tenant = await tx.tenant.create({
         data: {
           name: dto.tenantName,
-          slug,
-        },
+          slug
+        }
       });
 
       await tx.user.create({
@@ -42,8 +47,8 @@ export class TenantsService {
           email: dto.email.toLowerCase(),
           passwordHash,
           name: dto.name,
-          role: UserRole.LOTEADORA,
-        },
+          role: UserRole.LOTEADORA
+        }
       });
 
       return tenant;
@@ -57,14 +62,14 @@ export class TenantsService {
           select: {
             users: { where: { role: UserRole.CORRETOR } },
             projects: true,
-            leads: true,
-          },
-        },
-      },
+            leads: true
+          }
+        }
+      }
     });
 
     // We can also compute metrics here or in a separate call
-    return tenants.map(t => ({
+    return tenants.map((t) => ({
       id: t.id,
       name: t.name,
       slug: t.slug,
@@ -73,7 +78,7 @@ export class TenantsService {
       metrics: {
         brokers: t._count.users,
         projects: t._count.projects,
-        leads: t._count.leads,
+        leads: t._count.leads
       }
     }));
   }
@@ -84,7 +89,7 @@ export class TenantsService {
 
     return this.prisma.tenant.update({
       where: { id },
-      data: { isActive },
+      data: { isActive }
     });
   }
 

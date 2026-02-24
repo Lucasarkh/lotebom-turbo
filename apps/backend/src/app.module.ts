@@ -19,7 +19,7 @@ import { SystemSettingsModule } from '@modules/system-settings/system-settings.m
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
+      isGlobal: true
     }),
     DbModule,
     AuthModule,
@@ -35,9 +35,9 @@ import { SystemSettingsModule } from '@modules/system-settings/system-settings.m
     PanoramaModule,
     TrackingModule,
     CampaignsModule,
-    SystemSettingsModule,
+    SystemSettingsModule
   ],
   controllers: [],
-  providers: [],
+  providers: []
 })
 export class AppModule {}

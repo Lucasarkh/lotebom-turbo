@@ -9,9 +9,7 @@ export class PublicProjectsController {
 
   @Get(':projectSlug')
   @ApiOperation({ summary: 'Dados públicos do projeto (mapa + lotes + mídia)' })
-  findPublic(
-    @Param('projectSlug') projectSlug: string,
-  ) {
+  findPublic(@Param('projectSlug') projectSlug: string) {
     return this.projectsService.findBySlug(projectSlug);
   }
 }

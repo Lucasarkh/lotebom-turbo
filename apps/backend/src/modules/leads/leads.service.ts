@@ -11,12 +11,9 @@ export class LeadsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Public – anyone can create a lead for a published project */
-  async createPublic(
-    projectSlug: string,
-    dto: CreateLeadDto,
-  ) {
+  async createPublic(projectSlug: string, dto: CreateLeadDto) {
     const project = await this.prisma.project.findUnique({
-      where: { slug: projectSlug },
+      where: { slug: projectSlug }
     });
     if (!project || project.status !== 'PUBLISHED')
       throw new NotFoundException('Project not found');
@@ -31,8 +28,8 @@ export class LeadsService {
           tenantId,
           code: dto.realtorCode,
           enabled: true,
-          projects: { some: { id: project.id } },
-        },
+          projects: { some: { id: project.id } }
+        }
       });
       realtorLinkId = rl?.id;
     }
@@ -41,10 +38,14 @@ export class LeadsService {
 
     // Validate if mapElementId exists within this project to avoid FK errors
     let validMapElementId: string | undefined;
-    if (mapElementId && typeof mapElementId === 'string' && mapElementId.trim().length > 0) {
+    if (
+      mapElementId &&
+      typeof mapElementId === 'string' &&
+      mapElementId.trim().length > 0
+    ) {
       const exists = await this.prisma.mapElement.findFirst({
         where: { id: mapElementId, projectId: project.id, tenantId },
-        select: { id: true },
+        select: { id: true }
       });
       if (exists) {
         validMapElementId = exists.id;
@@ -59,8 +60,8 @@ export class LeadsService {
         ...(validMapElementId ? { mapElementId: validMapElementId } : {}),
         realtorLinkId,
         sessionId,
-        source: realtorCode ? `corretor:${realtorCode}` : 'website',
-      },
+        source: realtorCode ? `corretor:${realtorCode}` : 'website'
+      }
     });
   }
 
@@ -68,7 +69,7 @@ export class LeadsService {
   async findAll(
     tenantId: string,
     query: LeadsQueryDto,
-    user?: { id: string; role: string },
+    user?: { id: string; role: string }
   ): Promise<PaginatedResponse<any>> {
     const { projectId, status, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -77,7 +78,7 @@ export class LeadsService {
     let realtorLinkId: string | undefined;
     if (user?.role === 'CORRETOR') {
       const realtor = await this.prisma.realtorLink.findUnique({
-        where: { userId: user.id },
+        where: { userId: user.id }
       });
       realtorLinkId = realtor?.id || 'none'; // 'none' to ensure no leads are found if realtor link is missing
     }
@@ -86,7 +87,7 @@ export class LeadsService {
       tenantId,
       ...(projectId && { projectId }),
       ...(status && { status }),
-      ...(realtorLinkId && { realtorLinkId }),
+      ...(realtorLinkId && { realtorLinkId })
     };
 
     const [data, totalItems] = await Promise.all([
@@ -95,13 +96,13 @@ export class LeadsService {
         include: {
           project: true,
           mapElement: true,
-          realtorLink: { select: { name: true, code: true, phone: true } },
+          realtorLink: { select: { name: true, code: true, phone: true } }
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: limit
       }),
-      this.prisma.lead.count({ where }),
+      this.prisma.lead.count({ where })
     ]);
 
     return {
@@ -111,17 +112,21 @@ export class LeadsService {
         itemCount: data.length,
         itemsPerPage: limit,
         totalPages: Math.ceil(totalItems / limit),
-        currentPage: page,
-      },
+        currentPage: page
+      }
     };
   }
 
-  async findOne(tenantId: string, id: string, user?: { id: string; role: string }) {
+  async findOne(
+    tenantId: string,
+    id: string,
+    user?: { id: string; role: string }
+  ) {
     // If user is a realtor, they can only see their own lead
     let realtorLinkId: string | undefined;
     if (user?.role === 'CORRETOR') {
       const realtor = await this.prisma.realtorLink.findUnique({
-        where: { userId: user.id },
+        where: { userId: user.id }
       });
       realtorLinkId = realtor?.id || 'none';
     }
@@ -130,9 +135,9 @@ export class LeadsService {
       where: {
         id,
         tenantId,
-        ...(realtorLinkId && { realtorLinkId }),
+        ...(realtorLinkId && { realtorLinkId })
       },
-      include: { project: true, mapElement: true, realtorLink: true },
+      include: { project: true, mapElement: true, realtorLink: true }
     });
     if (!lead) throw new NotFoundException('Lead not found');
     return lead;
@@ -140,7 +145,7 @@ export class LeadsService {
 
   async update(tenantId: string, id: string, dto: UpdateLeadDto) {
     const lead = await this.prisma.lead.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId }
     });
     if (!lead) throw new NotFoundException('Lead not found');
     return this.prisma.lead.update({ where: { id }, data: dto });
@@ -148,7 +153,7 @@ export class LeadsService {
 
   async remove(tenantId: string, id: string) {
     const lead = await this.prisma.lead.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId }
     });
     if (!lead) throw new NotFoundException('Lead not found');
     return this.prisma.lead.delete({ where: { id } });

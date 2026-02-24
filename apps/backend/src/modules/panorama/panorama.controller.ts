@@ -8,7 +8,7 @@ import {
   Put,
   UploadedFile,
   UseGuards,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -16,7 +16,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
-  ApiTags,
+  ApiTags
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { TenantGuard } from '@common/guards/tenant.guard';
@@ -42,10 +42,7 @@ export class PanoramaController {
   @Get()
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Listar panoramas do projeto' })
-  findAll(
-    @TenantId() tenantId: string,
-    @Param('projectId') projectId: string,
-  ) {
+  findAll(@TenantId() tenantId: string, @Param('projectId') projectId: string) {
     return this.panoramaService.findAllByProject(tenantId, projectId);
   }
 
@@ -55,7 +52,7 @@ export class PanoramaController {
   create(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
-    @Body() dto: CreatePanoramaDto,
+    @Body() dto: CreatePanoramaDto
   ) {
     return this.panoramaService.create(tenantId, projectId, dto);
   }
@@ -67,21 +64,21 @@ export class PanoramaController {
   @ApiBody({
     schema: {
       type: 'object',
-      properties: { file: { type: 'string', format: 'binary' } },
-    },
+      properties: { file: { type: 'string', format: 'binary' } }
+    }
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadSnapshotImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
     @Param('panoramaId') panoramaId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File
   ) {
     return this.panoramaService.uploadSnapshotImage(
       tenantId,
       projectId,
       panoramaId,
-      file,
+      file
     );
   }
 
@@ -92,21 +89,21 @@ export class PanoramaController {
   @ApiBody({
     schema: {
       type: 'object',
-      properties: { file: { type: 'string', format: 'binary' } },
-    },
+      properties: { file: { type: 'string', format: 'binary' } }
+    }
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadImplantation(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
     @Param('panoramaId') panoramaId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File
   ) {
     return this.panoramaService.uploadImplantation(
       tenantId,
       projectId,
       panoramaId,
-      file,
+      file
     );
   }
 }
@@ -124,7 +121,7 @@ export class PanoramaItemController {
   @ApiOperation({ summary: 'Buscar panorama por ID' })
   findOne(
     @TenantId() tenantId: string,
-    @Param('panoramaId') panoramaId: string,
+    @Param('panoramaId') panoramaId: string
   ) {
     return this.panoramaService.findOne(tenantId, panoramaId);
   }
@@ -135,7 +132,7 @@ export class PanoramaItemController {
   update(
     @TenantId() tenantId: string,
     @Param('panoramaId') panoramaId: string,
-    @Body() dto: UpdatePanoramaDto,
+    @Body() dto: UpdatePanoramaDto
   ) {
     return this.panoramaService.update(tenantId, panoramaId, dto);
   }
@@ -145,7 +142,7 @@ export class PanoramaItemController {
   @ApiOperation({ summary: 'Deletar panorama' })
   remove(
     @TenantId() tenantId: string,
-    @Param('panoramaId') panoramaId: string,
+    @Param('panoramaId') panoramaId: string
   ) {
     return this.panoramaService.remove(tenantId, panoramaId);
   }
@@ -156,7 +153,7 @@ export class PanoramaItemController {
   createSnapshot(
     @TenantId() tenantId: string,
     @Param('panoramaId') panoramaId: string,
-    @Body() dto: CreateSnapshotDto,
+    @Body() dto: CreateSnapshotDto
   ) {
     return this.panoramaService.createSnapshot(tenantId, panoramaId, dto);
   }
@@ -167,7 +164,7 @@ export class PanoramaItemController {
   createBeacon(
     @TenantId() tenantId: string,
     @Param('panoramaId') panoramaId: string,
-    @Body() dto: CreateBeaconDto,
+    @Body() dto: CreateBeaconDto
   ) {
     return this.panoramaService.createBeacon(tenantId, panoramaId, dto);
   }
@@ -187,7 +184,7 @@ export class PanoramaSnapshotController {
   update(
     @TenantId() tenantId: string,
     @Param('snapshotId') snapshotId: string,
-    @Body() dto: UpdateSnapshotDto,
+    @Body() dto: UpdateSnapshotDto
   ) {
     return this.panoramaService.updateSnapshot(tenantId, snapshotId, dto);
   }
@@ -197,7 +194,7 @@ export class PanoramaSnapshotController {
   @ApiOperation({ summary: 'Deletar snapshot' })
   remove(
     @TenantId() tenantId: string,
-    @Param('snapshotId') snapshotId: string,
+    @Param('snapshotId') snapshotId: string
   ) {
     return this.panoramaService.removeSnapshot(tenantId, snapshotId);
   }
@@ -217,7 +214,7 @@ export class PanoramaBeaconController {
   update(
     @TenantId() tenantId: string,
     @Param('beaconId') beaconId: string,
-    @Body() dto: UpdateBeaconDto,
+    @Body() dto: UpdateBeaconDto
   ) {
     return this.panoramaService.updateBeacon(tenantId, beaconId, dto);
   }
@@ -225,10 +222,7 @@ export class PanoramaBeaconController {
   @Delete()
   @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Deletar beacon' })
-  remove(
-    @TenantId() tenantId: string,
-    @Param('beaconId') beaconId: string,
-  ) {
+  remove(@TenantId() tenantId: string, @Param('beaconId') beaconId: string) {
     return this.panoramaService.removeBeacon(tenantId, beaconId);
   }
 }

@@ -1,29 +1,36 @@
 <template>
   <header :class="{ 'scrolled': isScrolled }" class="header">
-    <div class="container container-landing">
-      <div class="logo">
-        <div class="logo-icon">L</div>
+    <div class="container-landing">
+      <NuxtLink to="/" class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="currentColor"/>
+            <path d="M12 12V28M12 28H28M12 20H24" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
         <span class="logo-text">Lotio</span>
-      </div>
+      </NuxtLink>
 
       <!-- Desktop Nav -->
       <nav class="nav-desktop">
-        <a href="#features" class="nav-link">Funcionalidades</a>
-        <a href="#benefits" class="nav-link">Benefícios</a>
-        <a href="#about" class="nav-link">Soluções</a>
-        <div class="nav-divider"></div>
+        <ul class="nav-list">
+          <li><a href="#features" class="nav-link">Funcionalidades</a></li>
+          <li><a href="#about" class="nav-link">Diferenciais</a></li>
+          <li><a href="#cta" class="nav-link">Contato</a></li>
+        </ul>
         
-        <template v-if="!authStore.isLoggedIn">
-          <NuxtLink to="/login" class="nav-link">Login</NuxtLink>
-          <NuxtLink to="/cadastro" class="btn btn-primary btn-sm btn-rounded">
-            Criar conta
-          </NuxtLink>
-        </template>
-        <template v-else>
-          <NuxtLink to="/painel" class="btn btn-primary btn-sm btn-rounded shadow-sm">
-            Ir para o Painel
-          </NuxtLink>
-        </template>
+        <div class="nav-actions">
+          <template v-if="!authStore.isLoggedIn">
+            <NuxtLink to="/login" class="btn btn-primary btn-apple">
+              Acessar Plataforma
+            </NuxtLink>
+          </template>
+          <template v-else>
+            <NuxtLink to="/painel" class="btn btn-primary btn-apple">
+              Ir para o Painel
+            </NuxtLink>
+          </template>
+        </div>
       </nav>
 
       <!-- Mobile Nav Toggle -->
@@ -48,9 +55,8 @@
           <div class="nav-divider"></div>
           
           <template v-if="!authStore.isLoggedIn">
-            <NuxtLink to="/login" class="nav-link" @click="mobileMenuOpen = false">Entrar</NuxtLink>
-            <NuxtLink to="/cadastro" class="btn btn-primary btn-block" @click="mobileMenuOpen = false">
-              Experimente Grátis
+            <NuxtLink to="/login" class="btn btn-primary btn-block" @click="mobileMenuOpen = false">
+              Acessar Plataforma
             </NuxtLink>
           </template>
           <template v-else>
@@ -91,19 +97,20 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 72px;
+  height: 64px;
   z-index: 1000;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
   display: flex;
   align-items: center;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .header.scrolled {
-  background-color: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px);
-  height: 64px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  background-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 }
 
 .container-landing {
@@ -111,7 +118,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -119,25 +126,24 @@ onUnmounted(() => {
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  text-decoration: none;
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
-  background: var(--primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-weight: 800;
-  font-size: 1.25rem;
+  width: 28px;
+  height: 28px;
+  color: var(--gray-900);
+  transition: transform 0.3s ease;
+}
+
+.logo:hover .logo-icon {
+  transform: scale(1.05);
 }
 
 .logo-text {
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-size: 1.2rem;
+  font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--gray-900);
 }
@@ -145,7 +151,7 @@ onUnmounted(() => {
 .nav-desktop {
   display: none;
   align-items: center;
-  gap: 32px;
+  gap: 40px;
 }
 
 @media (min-width: 1024px) {
@@ -154,27 +160,46 @@ onUnmounted(() => {
   }
 }
 
+.nav-list {
+  display: flex;
+  list-style: none;
+  gap: 32px;
+}
+
 .nav-link {
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 400;
   color: var(--gray-700);
-  transition: color 0.2s;
-  cursor: pointer;
+  transition: color 0.3s ease;
+  text-decoration: none;
+  letter-spacing: -0.01em;
 }
 
 .nav-link:hover {
   color: var(--primary);
 }
 
-.nav-divider {
-  width: 1px;
-  height: 20px;
-  background-color: var(--gray-200);
+.login-link {
+  padding: 0 16px;
 }
 
-.btn-rounded {
-  border-radius: 100px;
-  padding: 8px 20px;
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-apple {
+  border-radius: 980px;
+  font-size: 0.85rem;
+  padding: 6px 18px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-apple:hover {
+  opacity: 0.85;
+  transform: translateY(0) scale(1.02);
 }
 
 .mobile-toggle {

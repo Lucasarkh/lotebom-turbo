@@ -7,7 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
-  Patch,
+  Patch
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { RegisterTenantDto } from '../auth/dto/register-tenant.dto';

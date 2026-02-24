@@ -22,16 +22,16 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
-      defaultModelsExpandDepth: -1,
-    },
+      defaultModelsExpandDepth: -1
+    }
   });
 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
-    }),
+      forbidNonWhitelisted: true
+    })
   );
 
   app.setGlobalPrefix('api');
@@ -40,11 +40,11 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-      'http://localhost:5173',
+      'http://localhost:5173'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
-    credentials: true,
+    credentials: true
   });
   app.use(cookieParser());
 

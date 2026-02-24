@@ -6,13 +6,13 @@ import {
   IsOptional,
   IsString,
   Max,
-  Min,
+  Min
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   LotStatus,
   PlantHotspotLinkType,
-  PlantHotspotType,
+  PlantHotspotType
 } from '@prisma/client';
 
 export class UpdateHotspotDto {

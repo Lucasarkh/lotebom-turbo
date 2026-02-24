@@ -6,6 +6,6 @@ import { PublicProjectsController } from './public-projects.controller';
 @Module({
   controllers: [ProjectsController, PublicProjectsController],
   providers: [ProjectsService],
-  exports: [ProjectsService],
+  exports: [ProjectsService]
 })
 export class ProjectsModule {}

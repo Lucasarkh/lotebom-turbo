@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsString,
   Max,
-  Min,
+  Min
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PanoramaProjection } from '@prisma/client';

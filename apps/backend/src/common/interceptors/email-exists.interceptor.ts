@@ -12,7 +12,10 @@ import { Observable } from 'rxjs';
 export class EmailExistsInterceptor implements NestInterceptor {
   constructor(private prisma: PrismaService) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler
+  ): Promise<Observable<any>> {
     const req = context.switchToHttp().getRequest();
     const email: string | undefined = req?.body?.email;
 
@@ -20,7 +23,9 @@ export class EmailExistsInterceptor implements NestInterceptor {
 
     const normalized = String(email).toLowerCase();
 
-    const user = await this.prisma.user.findUnique({ where: { email: normalized } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalized }
+    });
 
     if (user) {
       throw new ConflictException('Email já cadastrado');

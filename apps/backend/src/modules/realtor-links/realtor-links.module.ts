@@ -6,6 +6,6 @@ import { PublicRealtorLinksController } from './public-realtor-links.controller'
 @Module({
   controllers: [RealtorLinksController, PublicRealtorLinksController],
   providers: [RealtorLinksService],
-  exports: [RealtorLinksService],
+  exports: [RealtorLinksService]
 })
 export class RealtorLinksModule {}

@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
   Request,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -40,7 +40,7 @@ export class RealtorLinksController {
   @ApiOperation({ summary: 'Listar links de corretores' })
   findAll(
     @TenantId() tenantId: string,
-    @Query('projectId') projectId?: string,
+    @Query('projectId') projectId?: string
   ) {
     return this.service.findAll(tenantId, projectId);
   }
@@ -50,7 +50,8 @@ export class RealtorLinksController {
   @ApiOperation({ summary: 'Buscar link do corretor logado' })
   async findMe(@Request() req: any) {
     const link = await this.service.findByUserId(req.user.id);
-    if (!link) throw new NotFoundException('Realtor link not found for this user');
+    if (!link)
+      throw new NotFoundException('Realtor link not found for this user');
     return link;
   }
 
@@ -74,7 +75,7 @@ export class RealtorLinksController {
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateRealtorLinkDto,
+    @Body() dto: UpdateRealtorLinkDto
   ) {
     return this.service.update(tenantId, id, dto);
   }

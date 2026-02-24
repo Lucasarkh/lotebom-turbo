@@ -6,13 +6,13 @@ import {
   IsOptional,
   IsString,
   Max,
-  Min,
+  Min
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   LotStatus,
   PlantHotspotLinkType,
-  PlantHotspotType,
+  PlantHotspotType
 } from '@prisma/client';
 
 export class CreateHotspotDto {
@@ -29,19 +29,29 @@ export class CreateHotspotDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'Posição X normalizada [0..1]', minimum: 0, maximum: 1 })
+  @ApiProperty({
+    description: 'Posição X normalizada [0..1]',
+    minimum: 0,
+    maximum: 1
+  })
   @IsNumber()
   @Min(0)
   @Max(1)
   x: number;
 
-  @ApiProperty({ description: 'Posição Y normalizada [0..1]', minimum: 0, maximum: 1 })
+  @ApiProperty({
+    description: 'Posição Y normalizada [0..1]',
+    minimum: 0,
+    maximum: 1
+  })
   @IsNumber()
   @Min(0)
   @Max(1)
   y: number;
 
-  @ApiPropertyOptional({ description: 'Rótulo exibido sobre o pino (ex: L-12)' })
+  @ApiPropertyOptional({
+    description: 'Rótulo exibido sobre o pino (ex: L-12)'
+  })
   @IsOptional()
   @IsString()
   label?: string;
@@ -56,7 +66,10 @@ export class CreateHotspotDto {
   @IsNumber()
   labelOffsetX?: number;
 
-  @ApiPropertyOptional({ default: -24, description: 'Offset Y do rótulo em px' })
+  @ApiPropertyOptional({
+    default: -24,
+    description: 'Offset Y do rótulo em px'
+  })
   @IsOptional()
   @IsNumber()
   labelOffsetY?: number;
@@ -66,17 +79,24 @@ export class CreateHotspotDto {
   @IsEnum(PlantHotspotLinkType)
   linkType?: PlantHotspotLinkType;
 
-  @ApiPropertyOptional({ description: 'ID do lote ou outro recurso referenciado' })
+  @ApiPropertyOptional({
+    description: 'ID do lote ou outro recurso referenciado'
+  })
   @IsOptional()
   @IsString()
   linkId?: string;
 
-  @ApiPropertyOptional({ description: 'URL customizada (se linkType=CUSTOM_URL)' })
+  @ApiPropertyOptional({
+    description: 'URL customizada (se linkType=CUSTOM_URL)'
+  })
   @IsOptional()
   @IsString()
   linkUrl?: string;
 
-  @ApiPropertyOptional({ enum: LotStatus, description: 'Status do lote (somente type=LOTE)' })
+  @ApiPropertyOptional({
+    enum: LotStatus,
+    description: 'Status do lote (somente type=LOTE)'
+  })
   @IsOptional()
   @IsEnum(LotStatus)
   loteStatus?: LotStatus;

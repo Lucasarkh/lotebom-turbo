@@ -7,7 +7,7 @@ import {
   Query,
   UploadedFile,
   UseGuards,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
@@ -33,14 +33,14 @@ export class UploadController {
   @ApiBody({
     schema: {
       type: 'object',
-      properties: { file: { type: 'string', format: 'binary' } },
-    },
+      properties: { file: { type: 'string', format: 'binary' } }
+    }
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadBannerImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File
   ) {
     return this.uploadService.uploadBannerImage(tenantId, projectId, file);
   }
@@ -49,7 +49,7 @@ export class UploadController {
   @Roles('LOTEADORA', 'SYSADMIN')
   removeBannerImage(
     @TenantId() tenantId: string,
-    @Param('projectId') projectId: string,
+    @Param('projectId') projectId: string
   ) {
     return this.uploadService.removeBannerImage(tenantId, projectId);
   }
@@ -60,7 +60,7 @@ export class UploadController {
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   listMedia(
     @TenantId() tenantId: string,
-    @Param('projectId') projectId: string,
+    @Param('projectId') projectId: string
   ) {
     return this.uploadService.listMedia(tenantId, projectId);
   }
@@ -73,9 +73,9 @@ export class UploadController {
       type: 'object',
       properties: {
         file: { type: 'string', format: 'binary' },
-        caption: { type: 'string' },
-      },
-    },
+        caption: { type: 'string' }
+      }
+    }
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadMedia(
@@ -83,17 +83,20 @@ export class UploadController {
     @Param('projectId') projectId: string,
     @UploadedFile() file: Express.Multer.File,
     @Query('caption') caption?: string,
-    @Query('lotDetailsId') lotDetailsId?: string,
+    @Query('lotDetailsId') lotDetailsId?: string
   ) {
-    return this.uploadService.uploadMedia(tenantId, projectId, file, caption, lotDetailsId);
+    return this.uploadService.uploadMedia(
+      tenantId,
+      projectId,
+      file,
+      caption,
+      lotDetailsId
+    );
   }
 
   @Delete('media/:mediaId')
   @Roles('LOTEADORA', 'SYSADMIN')
-  removeMedia(
-    @TenantId() tenantId: string,
-    @Param('mediaId') mediaId: string,
-  ) {
+  removeMedia(@TenantId() tenantId: string, @Param('mediaId') mediaId: string) {
     return this.uploadService.removeMedia(tenantId, mediaId);
   }
 
@@ -106,14 +109,14 @@ export class UploadController {
     @Param('projectId') projectId: string,
     @Query('folder') folder: string,
     @Query('fileName') fileName: string,
-    @Query('contentType') contentType: string,
+    @Query('contentType') contentType: string
   ) {
     return this.uploadService.getPresignedUploadUrl(
       tenantId,
       projectId,
       folder,
       fileName,
-      contentType,
+      contentType
     );
   }
 }

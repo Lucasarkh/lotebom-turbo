@@ -5,18 +5,24 @@ import {
   IsOptional,
   IsString,
   Max,
-  Min,
+  Min
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PanoramaProjection } from '@prisma/client';
 
 export class CreatePanoramaDto {
-  @ApiPropertyOptional({ description: 'Título do panorama', default: 'Vista Geral' })
+  @ApiPropertyOptional({
+    description: 'Título do panorama',
+    default: 'Vista Geral'
+  })
   @IsOptional()
   @IsString()
   title?: string;
 
-  @ApiPropertyOptional({ enum: PanoramaProjection, default: PanoramaProjection.FLAT })
+  @ApiPropertyOptional({
+    enum: PanoramaProjection,
+    default: PanoramaProjection.FLAT
+  })
   @IsOptional()
   @IsEnum(PanoramaProjection)
   projection?: PanoramaProjection;

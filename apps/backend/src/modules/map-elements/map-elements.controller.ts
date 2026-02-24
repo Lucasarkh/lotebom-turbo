@@ -6,7 +6,7 @@ import {
   Delete,
   Body,
   Param,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { MapElementsService } from './map-elements.service';
 import { BulkMapElementsDto, MapElementDto } from './dto/map-element.dto';
@@ -26,10 +26,7 @@ export class MapElementsController {
 
   @Get()
   @ApiOperation({ summary: 'Listar elementos do mapa de um projeto' })
-  findAll(
-    @TenantId() tenantId: string,
-    @Param('projectId') projectId: string,
-  ) {
+  findAll(@TenantId() tenantId: string, @Param('projectId') projectId: string) {
     return this.mapElementsService.findAllByProject(tenantId, projectId);
   }
 
@@ -39,7 +36,7 @@ export class MapElementsController {
   bulkUpsert(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
-    @Body() dto: BulkMapElementsDto,
+    @Body() dto: BulkMapElementsDto
   ) {
     return this.mapElementsService.bulkUpsert(tenantId, projectId, dto);
   }
@@ -50,7 +47,7 @@ export class MapElementsController {
   create(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
-    @Body() dto: MapElementDto,
+    @Body() dto: MapElementDto
   ) {
     return this.mapElementsService.create(tenantId, projectId, dto);
   }
@@ -67,7 +64,7 @@ export class MapElementsController {
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: MapElementDto,
+    @Body() dto: MapElementDto
   ) {
     return this.mapElementsService.update(tenantId, id, dto);
   }

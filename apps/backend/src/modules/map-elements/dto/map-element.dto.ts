@@ -5,14 +5,16 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MapElementType, GeometryType } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class MapElementDto {
-  @ApiPropertyOptional({ description: 'ID existente para upsert, omitir para criar' })
+  @ApiPropertyOptional({
+    description: 'ID existente para upsert, omitir para criar'
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -41,7 +43,9 @@ export class MapElementDto {
   @IsNotEmpty()
   geometryJson: any;
 
-  @ApiPropertyOptional({ description: 'JSON de estilo (fill, stroke, opacity, zIndex)' })
+  @ApiPropertyOptional({
+    description: 'JSON de estilo (fill, stroke, opacity, zIndex)'
+  })
   @IsOptional()
   styleJson?: any;
 

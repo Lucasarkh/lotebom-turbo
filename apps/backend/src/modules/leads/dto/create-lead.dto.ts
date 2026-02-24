@@ -14,7 +14,9 @@ export class CreateLeadDto {
   @IsString()
   phone: string;
 
-  @ApiPropertyOptional({ description: 'ID do elemento do mapa (lote) de interesse' })
+  @ApiPropertyOptional({
+    description: 'ID do elemento do mapa (lote) de interesse'
+  })
   @IsOptional()
   @IsString()
   mapElementId?: string;
@@ -24,7 +26,9 @@ export class CreateLeadDto {
   @IsString()
   message?: string;
 
-  @ApiPropertyOptional({ description: 'Código do corretor (parâmetro ?c= da URL pública)' })
+  @ApiPropertyOptional({
+    description: 'Código do corretor (parâmetro ?c= da URL pública)'
+  })
   @IsOptional()
   @IsString()
   realtorCode?: string;

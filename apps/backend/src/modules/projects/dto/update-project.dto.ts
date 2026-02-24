@@ -32,15 +32,21 @@ export class UpdateProjectDto {
   @IsOptional()
   mapData?: any;
 
-  @ApiPropertyOptional({ description: 'Destaques/diferenciais do loteamento [{icon, label, value}]' })
+  @ApiPropertyOptional({
+    description: 'Destaques/diferenciais do loteamento [{icon, label, value}]'
+  })
   @IsOptional()
   highlightsJson?: any;
 
-  @ApiPropertyOptional({ description: 'Exibe tabela de condições de pagamento nas páginas públicas' })
+  @ApiPropertyOptional({
+    description: 'Exibe tabela de condições de pagamento nas páginas públicas'
+  })
   @IsOptional()
   showPaymentConditions?: boolean;
 
-  @ApiPropertyOptional({ description: 'Valor inicial do investimento (ex: 144000)' })
+  @ApiPropertyOptional({
+    description: 'Valor inicial do investimento (ex: 144000)'
+  })
   @IsOptional()
   startingPrice?: number;
 
@@ -48,12 +54,17 @@ export class UpdateProjectDto {
   @IsOptional()
   maxInstallments?: number;
 
-  @ApiPropertyOptional({ description: 'Resumo das condições de pagamento (ex: Entrada facilitada em 6x)' })
+  @ApiPropertyOptional({
+    description:
+      'Resumo das condições de pagamento (ex: Entrada facilitada em 6x)'
+  })
   @IsOptional()
   @IsString()
   paymentConditionsSummary?: string;
 
-  @ApiPropertyOptional({ description: 'Texto de localização e infraestrutura do entorno' })
+  @ApiPropertyOptional({
+    description: 'Texto de localização e infraestrutura do entorno'
+  })
   @IsOptional()
   @IsString()
   locationText?: string;

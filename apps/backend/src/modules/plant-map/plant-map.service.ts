@@ -1,7 +1,7 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { PrismaService } from '@infra/db/prisma.service';
 import { S3Service } from '@infra/s3/s3.service';
@@ -17,7 +17,7 @@ const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20 MB
 export class PlantMapService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly s3: S3Service,
+    private readonly s3: S3Service
   ) {}
 
   // ── PlantMap CRUD ──────────────────────────────────────
@@ -26,13 +26,15 @@ export class PlantMapService {
     const plantMap = await this.prisma.plantMap.findFirst({
       where: { projectId, tenantId },
       include: {
-        hotspots: { orderBy: { createdAt: 'asc' } },
-      },
+        hotspots: { orderBy: { createdAt: 'asc' } }
+      }
     });
     if (!plantMap) return null;
 
     // Attach tags from linked MapElements (Lots)
-    const hotspotsWithTags = await this._attachTagsToHotspots(plantMap.hotspots);
+    const hotspotsWithTags = await this._attachTagsToHotspots(
+      plantMap.hotspots
+    );
     return { ...plantMap, hotspots: hotspotsWithTags };
   }
 
@@ -41,13 +43,15 @@ export class PlantMapService {
     const plantMap = await this.prisma.plantMap.findFirst({
       where: { projectId },
       include: {
-        hotspots: { orderBy: { createdAt: 'asc' } },
-      },
+        hotspots: { orderBy: { createdAt: 'asc' } }
+      }
     });
     if (!plantMap) return null;
 
     // Attach tags from linked MapElements (Lots)
-    const hotspotsWithTags = await this._attachTagsToHotspots(plantMap.hotspots);
+    const hotspotsWithTags = await this._attachTagsToHotspots(
+      plantMap.hotspots
+    );
     return { ...plantMap, hotspots: hotspotsWithTags };
   }
 
@@ -58,13 +62,13 @@ export class PlantMapService {
       .map((h) => h.linkId);
 
     if (lotIds.length === 0) {
-      return hotspots.map(h => ({ ...h, tags: [] }));
+      return hotspots.map((h) => ({ ...h, tags: [] }));
     }
 
     // Fetch all lot details for these IDs
     const lotDetails = await this.prisma.lotDetails.findMany({
       where: { mapElementId: { in: lotIds } },
-      select: { mapElementId: true, tags: true },
+      select: { mapElementId: true, tags: true }
     });
 
     const tagsMap = new Map<string, string[]>();
@@ -82,16 +86,16 @@ export class PlantMapService {
 
   async create(tenantId: string, projectId: string, dto: CreatePlantMapDto) {
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, tenantId },
+      where: { id: projectId, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
     const existing = await this.prisma.plantMap.findFirst({
-      where: { projectId, tenantId },
+      where: { projectId, tenantId }
     });
     if (existing) {
       throw new BadRequestException(
-        'Já existe uma planta para este projeto. Use PUT para atualizar.',
+        'Já existe uma planta para este projeto. Use PUT para atualizar.'
       );
     }
 
@@ -99,9 +103,9 @@ export class PlantMapService {
       data: {
         tenantId,
         projectId,
-        ...dto,
+        ...dto
       },
-      include: { hotspots: true },
+      include: { hotspots: true }
     });
   }
 
@@ -111,7 +115,7 @@ export class PlantMapService {
     return this.prisma.plantMap.update({
       where: { id: plantMap.id },
       data: dto,
-      include: { hotspots: { orderBy: { createdAt: 'asc' } } },
+      include: { hotspots: { orderBy: { createdAt: 'asc' } } }
     });
   }
 
@@ -132,11 +136,11 @@ export class PlantMapService {
   async uploadImage(
     tenantId: string,
     projectId: string,
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ) {
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
       throw new BadRequestException(
-        'Tipo de arquivo inválido. Use JPG, PNG ou WebP.',
+        'Tipo de arquivo inválido. Use JPG, PNG ou WebP.'
       );
     }
     if (file.size > MAX_IMAGE_SIZE) {
@@ -144,14 +148,14 @@ export class PlantMapService {
     }
 
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, tenantId },
+      where: { id: projectId, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
     const key = this.s3.buildKey(
       tenantId,
       `projects/${projectId}/plant-map`,
-      file.originalname,
+      file.originalname
     );
     const url = await this.s3.upload(file.buffer, key, file.mimetype);
     return { imageUrl: url };
@@ -162,7 +166,7 @@ export class PlantMapService {
   async createHotspot(
     tenantId: string,
     plantMapId: string,
-    dto: CreateHotspotDto,
+    dto: CreateHotspotDto
   ) {
     const plantMap = await this._findMap(tenantId, plantMapId);
 
@@ -182,8 +186,8 @@ export class PlantMapService {
             code: dto.label || dto.title,
             geometryType: 'POLYGON', // Mantido para compatibilidade com o sistema de páginas
             geometryJson: { points: [] },
-            styleJson: {},
-          },
+            styleJson: {}
+          }
         });
 
         await tx.lotDetails.create({
@@ -191,8 +195,8 @@ export class PlantMapService {
             tenantId,
             projectId: plantMap.projectId,
             mapElementId: mapElement.id,
-            status: dto.loteStatus || 'AVAILABLE',
-          },
+            status: dto.loteStatus || 'AVAILABLE'
+          }
         });
 
         linkId = mapElement.id;
@@ -205,8 +209,8 @@ export class PlantMapService {
           plantMapId: plantMap.id,
           ...dto,
           linkId,
-          linkType,
-        },
+          linkType
+        }
       });
     });
   }
@@ -214,41 +218,40 @@ export class PlantMapService {
   async updateHotspot(
     tenantId: string,
     hotspotId: string,
-    dto: UpdateHotspotDto,
+    dto: UpdateHotspotDto
   ) {
     const hotspot = await this._findHotspot(tenantId, hotspotId);
 
     return this.prisma.$transaction(async (tx) => {
       const updatedHotspot = await tx.plantHotspot.update({
         where: { id: hotspot.id },
-        data: dto,
+        data: dto
       });
 
       // Synchronize linked MapElement and LotDetails
-      if (
-        updatedHotspot.linkType === 'LOTE_PAGE' &&
-        updatedHotspot.linkId
-      ) {
+      if (updatedHotspot.linkType === 'LOTE_PAGE' && updatedHotspot.linkId) {
         // 1. Update MapElement (Name, Code/Label, Type)
-        await tx.mapElement.update({
-          where: { id: updatedHotspot.linkId },
-          data: {
-            name: updatedHotspot.title,
-            code: updatedHotspot.label || updatedHotspot.title,
-            type: updatedHotspot.type === 'LOTE' ? 'LOT' : 'LABEL',
-          }
-        }).catch(() => null); // Ignore if already deleted or non-existent
+        await tx.mapElement
+          .update({
+            where: { id: updatedHotspot.linkId },
+            data: {
+              name: updatedHotspot.title,
+              code: updatedHotspot.label || updatedHotspot.title,
+              type: updatedHotspot.type === 'LOTE' ? 'LOT' : 'LABEL'
+            }
+          })
+          .catch(() => null); // Ignore if already deleted or non-existent
 
         // 2. Update LotDetails (Status)
         if (dto.loteStatus) {
           await tx.lotDetails.updateMany({
             where: {
               mapElementId: updatedHotspot.linkId,
-              tenantId,
+              tenantId
             },
             data: {
-              status: dto.loteStatus,
-            },
+              status: dto.loteStatus
+            }
           });
         }
       }
@@ -259,7 +262,7 @@ export class PlantMapService {
 
   async removeHotspot(tenantId: string, hotspotId: string) {
     const hotspot = await this._findHotspot(tenantId, hotspotId);
-    
+
     return this.prisma.$transaction(async (tx) => {
       // If we have a linked LOTE_PAGE, we delete it (MapElement and LotDetails will cascade if correctly configured, otherwise we do it manually)
       if (hotspot.linkType === 'LOTE_PAGE' && hotspot.linkId) {
@@ -270,13 +273,17 @@ export class PlantMapService {
 
         if (others === 0) {
           // Delete its lot details first (prismacolumn cascade usually handles, but let's be explicit)
-          await tx.lotDetails.deleteMany({
-            where: { mapElementId: hotspot.linkId }
-          }).catch(() => {});
+          await tx.lotDetails
+            .deleteMany({
+              where: { mapElementId: hotspot.linkId }
+            })
+            .catch(() => {});
 
-          await tx.mapElement.delete({
-            where: { id: hotspot.linkId }
-          }).catch(() => {});
+          await tx.mapElement
+            .delete({
+              where: { id: hotspot.linkId }
+            })
+            .catch(() => {});
         }
       }
 
@@ -288,7 +295,7 @@ export class PlantMapService {
 
   private async _findMap(tenantId: string, plantMapId: string) {
     const plantMap = await this.prisma.plantMap.findFirst({
-      where: { id: plantMapId, tenantId },
+      where: { id: plantMapId, tenantId }
     });
     if (!plantMap) throw new NotFoundException('PlantMap não encontrado.');
     return plantMap;
@@ -296,7 +303,7 @@ export class PlantMapService {
 
   private async _findHotspot(tenantId: string, hotspotId: string) {
     const hotspot = await this.prisma.plantHotspot.findFirst({
-      where: { id: hotspotId, tenantId },
+      where: { id: hotspotId, tenantId }
     });
     if (!hotspot) throw new NotFoundException('Hotspot não encontrado.');
     return hotspot;

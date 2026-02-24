@@ -8,7 +8,7 @@ import {
   Body,
   Param,
   UseGuards,
-  Query,
+  Query
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -40,7 +40,7 @@ export class UserController {
   @ApiOperation({ summary: 'Listar usuários do tenant' })
   findAll(
     @TenantId() tenantId: string,
-    @Query() pagination: PaginationQueryDto,
+    @Query() pagination: PaginationQueryDto
   ) {
     return this.userService.findAll(tenantId, pagination);
   }
@@ -58,7 +58,7 @@ export class UserController {
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
+    @Body() dto: UpdateUserDto
   ) {
     return this.userService.update(tenantId, id, dto);
   }
@@ -69,7 +69,7 @@ export class UserController {
   patch(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
+    @Body() dto: UpdateUserDto
   ) {
     return this.userService.update(tenantId, id, dto);
   }

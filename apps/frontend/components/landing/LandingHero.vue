@@ -1,23 +1,25 @@
 <template>
   <section class="hero">
+    <div class="hero-overlay"></div>
     <div class="container-landing">
       <div class="hero-content">
-        <div class="hero-badge animate-fade-in">Mestre em Vendas Imobiliárias</div>
         <h1 class="hero-title animate-slide-up">
-          O futuro do loteamento é <span class="text-gradient">interativo</span>.
+          O futuro do loteamento é <span class="text-primary">interativo</span>.
         </h1>
         <p class="hero-subtitle animate-slide-up-delay-1">
-          Transforme seus mapas estáticos em ferramentas de venda poderosas. 
-          Gerencie seu estoque de lotes, capture leads em tempo real e conecte corretores com o que há de mais moderno.
+          Transforme mapas estáticos em ferramentas de venda imersivas. 
+          Gestão de estoque, captura de leads e automação para corretores em uma única plataforma.
         </p>
         <div class="hero-actions animate-slide-up-delay-2">
-          <button v-if="settings?.contactWhatsapp" @click="openWhatsapp" class="btn btn-whatsapp btn-lg btn-rounded btn-shadow">
-            <i class="pi pi-whatsapp mr-2"></i>
-            Falar pelo WhatsApp
+          <button v-if="settings?.contactWhatsapp" @click="openWhatsapp" class="btn btn-primary btn-apple-lg btn-shadow">
+            Falar com especialista
           </button>
-          <button v-else @click="showContactForm = true" class="btn btn-primary btn-lg btn-rounded btn-shadow">
-            Comece agora
+          <button v-else @click="showContactForm = true" class="btn btn-primary btn-apple-lg btn-shadow">
+            Começar agora
           </button>
+          <a href="#features" class="btn btn-secondary btn-apple-lg btn-ghost">
+            Saiba mais <i class="pi pi-chevron-right ml-2 text-xs"></i>
+          </a>
         </div>
       </div>
     </div>
@@ -101,15 +103,26 @@ const submitContact = async () => {
 
 <style scoped>
 .hero {
-  min-height: 100vh;
+  min-height: 90vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 100px 0;
-  background: 
-    linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.65)),
-    url('~/static/img/banner-hero.jpg') center/cover no-repeat fixed;
+  justify-content: center;
+  padding: 120px 0 60px;
+  background-color: var(--gray-50);
+  background-image: url('~/assets/img/banner-hero.jpg');
+  background-size: cover;
+  background-position: center;
   overflow: hidden;
   position: relative;
+}
+
+.hero-overlay {
+  display: block;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+  z-index: 1;
 }
 
 .hero-content {
@@ -117,179 +130,74 @@ const submitContact = async () => {
   flex-direction: column !important;
   align-items: center !important;
   text-align: center;
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
-}
-
-.hero-badge {
-  display: inline-block;
-  background-color: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  backdrop-filter: blur(8px);
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 24px;
+  position: relative;
+  z-index: 10;
 }
 
 .hero-title {
-  font-size: 2.75rem;
-  line-height: 1.1;
-  letter-spacing: -1.5px;
-  font-weight: 800;
+  font-size: 3.5rem;
+  line-height: 1.05;
+  letter-spacing: -2.5px;
+  font-weight: 700;
   margin-bottom: 24px;
-  color: white;
+  color: var(--gray-900);
 }
 
 @media (min-width: 768px) {
   .hero-title {
-    font-size: 4.5rem;
+    font-size: 5.5rem;
   }
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
 .hero-subtitle {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.25rem;
+  color: var(--gray-600);
   margin-bottom: 40px;
-  max-width: 650px;
-}
-
-.btn-whatsapp {
-  background-color: #25d366;
-  color: white !important;
-}
-.btn-whatsapp:hover {
-  background-color: #128c7e;
-  transform: translateY(-2px);
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  width: 100%;
-  max-width: 500px;
-  border-radius: 24px;
-  padding: 40px;
-  position: relative;
-  box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.5);
-}
-
-.modal-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
-  color: var(--gray-400);
-}
-
-.modal-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: var(--gray-900);
-}
-
-.modal-subtitle {
-  color: var(--gray-500);
-  margin-bottom: 32px;
-}
-
-.contact-form .form-group {
-  margin-bottom: 20px;
-}
-
-.contact-form label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--gray-700);
-}
-
-.contact-form input,
-.contact-form textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.contact-form input:focus,
-.contact-form textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-}
-
-.contact-form textarea {
-  height: 100px;
-  resize: none;
-}
-
-.btn-block {
-  width: 100%;
-  margin-top: 12px;
+  max-width: 600px;
+  line-height: 1.4;
+  letter-spacing: -0.015em;
 }
 
 @media (min-width: 768px) {
   .hero-subtitle {
-    font-size: 1.35rem;
+    font-size: 1.6rem;
   }
+}
+
+.btn-apple-lg {
+  border-radius: 980px;
+  padding: 14px 32px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.btn-secondary.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: none;
 }
 
 .hero-actions {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
 }
 
-@media (min-width: 640px) {
-  .hero-actions {
-    flex-direction: row;
-    justify-content: center;
-    width: auto;
-  }
+/* Animations */
+.animate-slide-up {
+  animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
 }
 
-.btn-lg {
-  padding: 16px 36px;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
+.animate-slide-up-delay-1 { animation-delay: 0.1s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
+.animate-slide-up-delay-2 { animation-delay: 0.2s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
+.animate-slide-up-delay-3 { animation-delay: 0.3s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
 
-.btn-shadow {
-  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
-}
-
-.hero-visual {
-  display: none;
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 </style>

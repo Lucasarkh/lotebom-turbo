@@ -1,14 +1,14 @@
 import {
   Injectable,
   Logger,
-  ServiceUnavailableException,
+  ServiceUnavailableException
 } from '@nestjs/common';
 import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
-  GetObjectCommand,
+  GetObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
@@ -29,8 +29,8 @@ export class S3Service {
       region: this.region,
       credentials: {
         accessKeyId: this.configService.get('AWS_ACCESS_KEY_ID', ''),
-        secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY', ''),
-      },
+        secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY', '')
+      }
     });
   }
 
@@ -55,7 +55,7 @@ export class S3Service {
   async upload(
     buffer: Buffer,
     key: string,
-    contentType: string,
+    contentType: string
   ): Promise<string> {
     try {
       await this.s3Client.send(
@@ -63,8 +63,8 @@ export class S3Service {
           Bucket: this.bucketName,
           Key: key,
           Body: buffer,
-          ContentType: contentType,
-        }),
+          ContentType: contentType
+        })
       );
       const url = this.publicUrl(key);
       this.logger.log(`Uploaded ${key}`);
@@ -80,7 +80,7 @@ export class S3Service {
   async delete(key: string): Promise<void> {
     try {
       await this.s3Client.send(
-        new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }),
+        new DeleteObjectCommand({ Bucket: this.bucketName, Key: key })
       );
       this.logger.log(`Deleted ${key}`);
     } catch (err) {
@@ -94,15 +94,17 @@ export class S3Service {
   async presignedUploadUrl(
     key: string,
     contentType: string,
-    expiresInSec = 300,
+    expiresInSec = 300
   ): Promise<{ url: string; key: string; publicUrl: string }> {
     try {
       const cmd = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: key,
-        ContentType: contentType,
+        ContentType: contentType
       });
-      const url = await getSignedUrl(this.s3Client, cmd, { expiresIn: expiresInSec });
+      const url = await getSignedUrl(this.s3Client, cmd, {
+        expiresIn: expiresInSec
+      });
       return { url, key, publicUrl: this.publicUrl(key) };
     } catch (err) {
       this.logger.error('Presigned upload URL failed', err);
@@ -113,7 +115,9 @@ export class S3Service {
   async presignedDownloadUrl(key: string, expiresInSec = 300): Promise<string> {
     try {
       const cmd = new GetObjectCommand({ Bucket: this.bucketName, Key: key });
-      return await getSignedUrl(this.s3Client, cmd, { expiresIn: expiresInSec });
+      return await getSignedUrl(this.s3Client, cmd, {
+        expiresIn: expiresInSec
+      });
     } catch (err) {
       this.logger.error('Presigned download URL failed', err);
       throw new ServiceUnavailableException('Falha ao gerar URL de download');
@@ -125,7 +129,7 @@ export class S3Service {
   async exists(key: string): Promise<boolean> {
     try {
       await this.s3Client.send(
-        new HeadObjectCommand({ Bucket: this.bucketName, Key: key }),
+        new HeadObjectCommand({ Bucket: this.bucketName, Key: key })
       );
       return true;
     } catch (err: any) {

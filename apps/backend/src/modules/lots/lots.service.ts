@@ -11,7 +11,7 @@ export class LotsService {
 
   async findByMapElement(tenantId: string, mapElementId: string) {
     const lot = await this.prisma.lotDetails.findFirst({
-      where: { tenantId, mapElementId },
+      where: { tenantId, mapElementId }
     });
     if (!lot) throw new NotFoundException('LotDetails not found');
     return lot;
@@ -20,7 +20,7 @@ export class LotsService {
   async findByProject(
     tenantId: string,
     projectId: string,
-    query: PaginationQueryDto,
+    query: PaginationQueryDto
   ): Promise<PaginatedResponse<LotDetails>> {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -30,15 +30,15 @@ export class LotsService {
         where: { tenantId, projectId },
         include: {
           mapElement: true,
-          medias: { orderBy: { createdAt: 'desc' } },
+          medias: { orderBy: { createdAt: 'desc' } }
         },
         orderBy: { mapElement: { code: 'asc' } },
         skip,
-        take: limit,
+        take: limit
       }),
       this.prisma.lotDetails.count({
-        where: { tenantId, projectId },
-      }),
+        where: { tenantId, projectId }
+      })
     ]);
 
     return {
@@ -48,8 +48,8 @@ export class LotsService {
         itemCount: data.length,
         itemsPerPage: limit,
         totalPages: Math.ceil(totalItems / limit),
-        currentPage: page,
-      },
+        currentPage: page
+      }
     };
   }
 
@@ -57,11 +57,11 @@ export class LotsService {
     tenantId: string,
     projectId: string,
     mapElementId: string,
-    dto: UpsertLotDetailsDto,
+    dto: UpsertLotDetailsDto
   ) {
     // Validate that mapElement exists and belongs to tenant/project
     const el = await this.prisma.mapElement.findFirst({
-      where: { id: mapElementId, tenantId, projectId },
+      where: { id: mapElementId, tenantId, projectId }
     });
     if (!el) throw new NotFoundException('MapElement not found');
 
@@ -71,15 +71,15 @@ export class LotsService {
         tenantId,
         projectId,
         mapElementId,
-        ...dto,
+        ...dto
       },
-      update: dto,
+      update: dto
     });
   }
 
   async remove(tenantId: string, mapElementId: string) {
     const lot = await this.prisma.lotDetails.findFirst({
-      where: { tenantId, mapElementId },
+      where: { tenantId, mapElementId }
     });
     if (!lot) throw new NotFoundException('LotDetails not found');
     return this.prisma.lotDetails.delete({ where: { id: lot.id } });

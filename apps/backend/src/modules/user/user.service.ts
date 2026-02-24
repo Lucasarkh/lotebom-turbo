@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException
+} from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -13,7 +18,7 @@ const USER_SELECT = {
   name: true,
   role: true,
   tenantId: true,
-  createdAt: true,
+  createdAt: true
 };
 
 @Injectable()
@@ -22,7 +27,7 @@ export class UserService {
 
   async create(tenantId: string, dto: CreateUserDto) {
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+      where: { email: dto.email.toLowerCase() }
     });
     if (existingUser) {
       throw new ConflictException('Email já cadastrado');
@@ -42,7 +47,9 @@ export class UserService {
 
         // Check if tenant slug already exists, if so append random suffix
         let uniqueSlug = slug;
-        const existingTenant = await tx.tenant.findUnique({ where: { slug: uniqueSlug } });
+        const existingTenant = await tx.tenant.findUnique({
+          where: { slug: uniqueSlug }
+        });
         if (existingTenant) {
           uniqueSlug = `${slug}-${Math.floor(Math.random() * 1000)}`;
         }
@@ -50,8 +57,8 @@ export class UserService {
         const tenant = await tx.tenant.create({
           data: {
             name: dto.name,
-            slug: uniqueSlug,
-          },
+            slug: uniqueSlug
+          }
         });
 
         return tx.user.create({
@@ -60,16 +67,18 @@ export class UserService {
             name: dto.name,
             email: dto.email.toLowerCase(),
             passwordHash,
-            role: UserRole.LOTEADORA,
+            role: UserRole.LOTEADORA
           },
-          select: USER_SELECT,
+          select: USER_SELECT
         });
       });
     }
 
     // For CORRETOR, tenantId is mandatory
     if (dto.role === UserRole.CORRETOR && !tenantId) {
-      throw new BadRequestException('Um tenant é obrigatório para o papel de corretor.');
+      throw new BadRequestException(
+        'Um tenant é obrigatório para o papel de corretor.'
+      );
     }
 
     return this.prisma.user.create({
@@ -78,9 +87,9 @@ export class UserService {
         name: dto.name,
         email: dto.email.toLowerCase(),
         passwordHash,
-        role: dto.role ?? UserRole.CORRETOR,
+        role: dto.role ?? UserRole.CORRETOR
       },
-      select: USER_SELECT,
+      select: USER_SELECT
     });
   }
 
@@ -94,11 +103,11 @@ export class UserService {
         select: USER_SELECT,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'desc' }
       }),
       this.prisma.user.count({
-        where: { tenantId },
-      }),
+        where: { tenantId }
+      })
     ]);
 
     return {
@@ -108,15 +117,15 @@ export class UserService {
         itemCount: data.length,
         itemsPerPage: limit,
         totalPages: Math.ceil(total / limit),
-        currentPage: page,
-      },
+        currentPage: page
+      }
     };
   }
 
   async findById(tenantId: string, id: string) {
     const user = await this.prisma.user.findFirst({
       where: { id, tenantId },
-      select: USER_SELECT,
+      select: USER_SELECT
     });
 
     if (!user) throw new NotFoundException('Usuário não encontrado');
@@ -125,7 +134,7 @@ export class UserService {
 
   async update(tenantId: string, id: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId }
     });
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
@@ -137,13 +146,13 @@ export class UserService {
     return this.prisma.user.update({
       where: { id },
       data,
-      select: USER_SELECT,
+      select: USER_SELECT
     });
   }
 
   async remove(tenantId: string, id: string) {
     const user = await this.prisma.user.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId }
     });
     if (!user) throw new NotFoundException('Usuário não encontrado');
 

@@ -5,7 +5,7 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -25,7 +25,15 @@ export class PublicSettingsController {
   }
 
   @Post('contact')
-  createLead(@Body() dto: { name: string; email?: string; phone?: string; message?: string }) {
+  createLead(
+    @Body()
+    dto: {
+      name: string;
+      email?: string;
+      phone?: string;
+      message?: string;
+    }
+  ) {
     return this.service.createLead(dto);
   }
 }
@@ -39,7 +47,14 @@ export class AdminSettingsController {
 
   @Patch()
   @Roles('SYSADMIN')
-  updateSettings(@Body() dto: { contactWhatsapp?: string; contactEmail?: string; leadFormEnabled?: boolean }) {
+  updateSettings(
+    @Body()
+    dto: {
+      contactWhatsapp?: string;
+      contactEmail?: string;
+      leadFormEnabled?: boolean;
+    }
+  ) {
     return this.service.updateSettings(dto);
   }
 
@@ -51,7 +66,10 @@ export class AdminSettingsController {
 
   @Patch('leads/:id')
   @Roles('SYSADMIN')
-  updateLeadStatus(@Param('id') id: string, @Body('status') status: LeadStatus) {
+  updateLeadStatus(
+    @Param('id') id: string,
+    @Body('status') status: LeadStatus
+  ) {
     return this.service.updateLeadStatus(id, status);
   }
 }

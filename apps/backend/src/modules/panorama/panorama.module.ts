@@ -4,7 +4,7 @@ import {
   PanoramaController,
   PanoramaItemController,
   PanoramaSnapshotController,
-  PanoramaBeaconController,
+  PanoramaBeaconController
 } from './panorama.controller';
 import { PublicPanoramaController } from './public-panorama.controller';
 import { S3Module } from '@infra/s3/s3.module';
@@ -16,9 +16,9 @@ import { S3Module } from '@infra/s3/s3.module';
     PanoramaItemController,
     PanoramaSnapshotController,
     PanoramaBeaconController,
-    PublicPanoramaController,
+    PublicPanoramaController
   ],
   providers: [PanoramaService],
-  exports: [PanoramaService],
+  exports: [PanoramaService]
 })
 export class PanoramaModule {}

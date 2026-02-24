@@ -8,7 +8,7 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -45,7 +45,7 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Listar projetos do tenant' })
   findAll(
     @TenantId() tenantId: string,
-    @Query() pagination: PaginationQueryDto,
+    @Query() pagination: PaginationQueryDto
   ) {
     return this.projectsService.findAll(tenantId, pagination);
   }
@@ -62,7 +62,7 @@ export class ProjectsController {
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateProjectDto,
+    @Body() dto: UpdateProjectDto
   ) {
     return this.projectsService.update(tenantId, id, dto);
   }
@@ -73,7 +73,7 @@ export class ProjectsController {
   patch(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateProjectDto,
+    @Body() dto: UpdateProjectDto
   ) {
     return this.projectsService.update(tenantId, id, dto);
   }

@@ -4,7 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsDateString,
+  IsDateString
 } from 'class-validator';
 
 export class CreateCampaignDto {

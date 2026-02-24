@@ -6,6 +6,6 @@ import { PublicLeadsController } from './public-leads.controller';
 @Module({
   controllers: [LeadsController, PublicLeadsController],
   providers: [LeadsService],
-  exports: [LeadsService],
+  exports: [LeadsService]
 })
 export class LeadsModule {}

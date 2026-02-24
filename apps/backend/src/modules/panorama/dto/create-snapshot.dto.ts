@@ -1,9 +1,4 @@
-import {
-  IsDateString,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateSnapshotDto {
@@ -21,7 +16,10 @@ export class CreateSnapshotDto {
   @IsNumber()
   imageHeight?: number;
 
-  @ApiProperty({ description: 'Rótulo do período (ex: Novembro/25)', example: 'Novembro/25' })
+  @ApiProperty({
+    description: 'Rótulo do período (ex: Novembro/25)',
+    example: 'Novembro/25'
+  })
   @IsString()
   label: string;
 

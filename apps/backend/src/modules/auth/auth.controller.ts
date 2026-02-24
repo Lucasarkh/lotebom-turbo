@@ -8,7 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  Request,
+  Request
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -41,7 +41,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     const user = await this.authService.validateUser(
       loginDto.email,
-      loginDto.password,
+      loginDto.password
     );
     if (!user) {
       throw new UnauthorizedException('Credenciais inválidas');
@@ -72,7 +72,7 @@ export class AuthController {
     return this.authService.changePassword(
       req.user.id,
       dto.currentPassword,
-      dto.newPassword,
+      dto.newPassword
     );
   }
 

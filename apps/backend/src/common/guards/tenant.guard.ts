@@ -2,7 +2,7 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
+  ForbiddenException
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 
@@ -24,7 +24,8 @@ export class TenantGuard implements CanActivate {
     if (user.role === UserRole.SYSADMIN) {
       // Sysadmins can access any tenant but might need to specify one
       // in query params or headers if needed. For global actions, no tenantId.
-      request.tenantId = request.query.tenantId || request.headers['x-tenant-id'];
+      request.tenantId =
+        request.query.tenantId || request.headers['x-tenant-id'];
       return true;
     }
 

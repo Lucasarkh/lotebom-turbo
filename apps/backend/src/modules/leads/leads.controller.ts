@@ -6,7 +6,7 @@ import {
   Param,
   Patch,
   Query,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -32,7 +32,7 @@ export class LeadsController {
   findAll(
     @TenantId() tenantId: string,
     @Query() query: LeadsQueryDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.leadsService.findAll(tenantId, query, user);
   }
@@ -40,9 +40,9 @@ export class LeadsController {
   @Get(':id')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   findOne(
-    @TenantId() tenantId: string, 
+    @TenantId() tenantId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     return this.leadsService.findOne(tenantId, id, user);
   }
@@ -52,7 +52,7 @@ export class LeadsController {
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateLeadDto,
+    @Body() dto: UpdateLeadDto
   ) {
     return this.leadsService.update(tenantId, id, dto);
   }

@@ -5,6 +5,6 @@ import { MapElementsController } from './map-elements.controller';
 @Module({
   controllers: [MapElementsController],
   providers: [MapElementsService],
-  exports: [MapElementsService],
+  exports: [MapElementsService]
 })
 export class MapElementsModule {}

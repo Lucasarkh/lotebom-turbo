@@ -1,7 +1,7 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { PrismaService } from '@infra/db/prisma.service';
 import { S3Service } from '@infra/s3/s3.service';
@@ -19,7 +19,7 @@ const MAX_IMAGE_SIZE = 30 * 1024 * 1024; // 30 MB (panoramas can be large)
 export class PanoramaService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly s3: S3Service,
+    private readonly s3: S3Service
   ) {}
 
   // ── Panorama CRUD ──────────────────────────────────────
@@ -29,9 +29,9 @@ export class PanoramaService {
       where: { projectId, tenantId },
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
-        beacons: { orderBy: { createdAt: 'asc' } },
+        beacons: { orderBy: { createdAt: 'asc' } }
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'asc' }
     });
   }
 
@@ -42,10 +42,10 @@ export class PanoramaService {
         snapshots: { orderBy: { sortOrder: 'asc' } },
         beacons: {
           where: { visible: true },
-          orderBy: { createdAt: 'asc' },
-        },
+          orderBy: { createdAt: 'asc' }
+        }
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'asc' }
     });
   }
 
@@ -54,8 +54,8 @@ export class PanoramaService {
       where: { id: panoramaId, tenantId },
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
-        beacons: { orderBy: { createdAt: 'asc' } },
-      },
+        beacons: { orderBy: { createdAt: 'asc' } }
+      }
     });
     if (!panorama) throw new NotFoundException('Panorama não encontrado.');
     return panorama;
@@ -63,7 +63,7 @@ export class PanoramaService {
 
   async create(tenantId: string, projectId: string, dto: CreatePanoramaDto) {
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, tenantId },
+      where: { id: projectId, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
@@ -77,9 +77,9 @@ export class PanoramaService {
         sunPathAngleDeg: dto.sunPathAngleDeg ?? 0,
         sunPathLabelEnabled: dto.sunPathLabelEnabled ?? true,
         showImplantation: dto.showImplantation ?? false,
-        implantationUrl: dto.implantationUrl,
+        implantationUrl: dto.implantationUrl
       },
-      include: { snapshots: true, beacons: true },
+      include: { snapshots: true, beacons: true }
     });
   }
 
@@ -91,8 +91,8 @@ export class PanoramaService {
       data: dto,
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
-        beacons: { orderBy: { createdAt: 'asc' } },
-      },
+        beacons: { orderBy: { createdAt: 'asc' } }
+      }
     });
   }
 
@@ -101,7 +101,7 @@ export class PanoramaService {
 
     // Cleanup S3 images for all snapshots
     const snapshots = await this.prisma.panoramaSnapshot.findMany({
-      where: { panoramaId: panorama.id },
+      where: { panoramaId: panorama.id }
     });
     for (const snap of snapshots) {
       if (snap.imageUrl) {
@@ -124,7 +124,7 @@ export class PanoramaService {
   async createSnapshot(
     tenantId: string,
     panoramaId: string,
-    dto: CreateSnapshotDto,
+    dto: CreateSnapshotDto
   ) {
     const panorama = await this._findPanorama(tenantId, panoramaId);
 
@@ -132,7 +132,7 @@ export class PanoramaService {
     if (dto.sortOrder === undefined) {
       const maxSort = await this.prisma.panoramaSnapshot.aggregate({
         where: { panoramaId: panorama.id },
-        _max: { sortOrder: true },
+        _max: { sortOrder: true }
       });
       dto.sortOrder = (maxSort._max.sortOrder ?? -1) + 1;
     }
@@ -145,15 +145,15 @@ export class PanoramaService {
         imageHeight: dto.imageHeight,
         label: dto.label,
         date: dto.date ? new Date(dto.date) : undefined,
-        sortOrder: dto.sortOrder,
-      },
+        sortOrder: dto.sortOrder
+      }
     });
   }
 
   async updateSnapshot(
     tenantId: string,
     snapshotId: string,
-    dto: UpdateSnapshotDto,
+    dto: UpdateSnapshotDto
   ) {
     const snapshot = await this._findSnapshot(tenantId, snapshotId);
 
@@ -161,8 +161,8 @@ export class PanoramaService {
       where: { id: snapshot.id },
       data: {
         ...dto,
-        date: dto.date ? new Date(dto.date) : undefined,
-      },
+        date: dto.date ? new Date(dto.date) : undefined
+      }
     });
   }
 
@@ -184,24 +184,26 @@ export class PanoramaService {
     tenantId: string,
     projectId: string,
     panoramaId: string,
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ) {
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
-      throw new BadRequestException('Tipo de arquivo inválido. Use JPG, PNG ou WebP.');
+      throw new BadRequestException(
+        'Tipo de arquivo inválido. Use JPG, PNG ou WebP.'
+      );
     }
     if (file.size > MAX_IMAGE_SIZE) {
       throw new BadRequestException('Arquivo muito grande. Máximo 30 MB.');
     }
 
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, tenantId },
+      where: { id: projectId, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
     const key = this.s3.buildKey(
       tenantId,
       `projects/${projectId}/panorama/${panoramaId}`,
-      file.originalname,
+      file.originalname
     );
     const url = await this.s3.upload(file.buffer, key, file.mimetype);
     return { imageUrl: url };
@@ -211,24 +213,26 @@ export class PanoramaService {
     tenantId: string,
     projectId: string,
     panoramaId: string,
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ) {
     if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
-      throw new BadRequestException('Tipo de arquivo inválido. Use JPG, PNG ou WebP.');
+      throw new BadRequestException(
+        'Tipo de arquivo inválido. Use JPG, PNG ou WebP.'
+      );
     }
     if (file.size > MAX_IMAGE_SIZE) {
       throw new BadRequestException('Arquivo muito grande. Máximo 30 MB.');
     }
 
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, tenantId },
+      where: { id: projectId, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
     const key = this.s3.buildKey(
       tenantId,
       `projects/${projectId}/panorama/${panoramaId}/implantation`,
-      file.originalname,
+      file.originalname
     );
     const url = await this.s3.upload(file.buffer, key, file.mimetype);
     return { implantationUrl: url };
@@ -239,7 +243,7 @@ export class PanoramaService {
   async createBeacon(
     tenantId: string,
     panoramaId: string,
-    dto: CreateBeaconDto,
+    dto: CreateBeaconDto
   ) {
     const panorama = await this._findPanorama(tenantId, panoramaId);
 
@@ -252,21 +256,17 @@ export class PanoramaService {
         x: dto.x,
         y: dto.y,
         style: dto.style ?? 'default',
-        visible: dto.visible ?? true,
-      },
+        visible: dto.visible ?? true
+      }
     });
   }
 
-  async updateBeacon(
-    tenantId: string,
-    beaconId: string,
-    dto: UpdateBeaconDto,
-  ) {
+  async updateBeacon(tenantId: string, beaconId: string, dto: UpdateBeaconDto) {
     const beacon = await this._findBeacon(tenantId, beaconId);
 
     return this.prisma.panoramaBeacon.update({
       where: { id: beacon.id },
-      data: dto,
+      data: dto
     });
   }
 
@@ -279,7 +279,7 @@ export class PanoramaService {
 
   private async _findPanorama(tenantId: string, panoramaId: string) {
     const panorama = await this.prisma.panorama.findFirst({
-      where: { id: panoramaId, tenantId },
+      where: { id: panoramaId, tenantId }
     });
     if (!panorama) throw new NotFoundException('Panorama não encontrado.');
     return panorama;
@@ -288,7 +288,7 @@ export class PanoramaService {
   private async _findSnapshot(tenantId: string, snapshotId: string) {
     const snapshot = await this.prisma.panoramaSnapshot.findFirst({
       where: { id: snapshotId },
-      include: { panorama: true },
+      include: { panorama: true }
     });
     if (!snapshot || snapshot.panorama.tenantId !== tenantId) {
       throw new NotFoundException('Snapshot não encontrado.');
@@ -298,7 +298,7 @@ export class PanoramaService {
 
   private async _findBeacon(tenantId: string, beaconId: string) {
     const beacon = await this.prisma.panoramaBeacon.findFirst({
-      where: { id: beaconId, tenantId },
+      where: { id: beaconId, tenantId }
     });
     if (!beacon) throw new NotFoundException('Beacon não encontrado.');
     return beacon;

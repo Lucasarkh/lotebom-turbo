@@ -10,14 +10,14 @@ export class MapElementsService {
     return this.prisma.mapElement.findMany({
       where: { tenantId, projectId },
       include: { lotDetails: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'asc' }
     });
   }
 
   async findOne(tenantId: string, id: string) {
     const el = await this.prisma.mapElement.findFirst({
       where: { id, tenantId },
-      include: { lotDetails: true },
+      include: { lotDetails: true }
     });
     if (!el) throw new NotFoundException('Elemento não encontrado.');
     return el;
@@ -28,10 +28,14 @@ export class MapElementsService {
    * Elements with an existing `id` are updated, new ones are created.
    * Elements in DB that are NOT in the payload are deleted.
    */
-  async bulkUpsert(tenantId: string, projectId: string, dto: BulkMapElementsDto) {
+  async bulkUpsert(
+    tenantId: string,
+    projectId: string,
+    dto: BulkMapElementsDto
+  ) {
     // Verify project belongs to tenant
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, tenantId },
+      where: { id: projectId, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
@@ -47,8 +51,8 @@ export class MapElementsService {
         where: {
           tenantId,
           projectId,
-          ...(incomingIds.length > 0 ? { id: { notIn: incomingIds } } : {}),
-        },
+          ...(incomingIds.length > 0 ? { id: { notIn: incomingIds } } : {})
+        }
       });
 
       const results: any[] = [];
@@ -66,7 +70,7 @@ export class MapElementsService {
               geometryType: el.geometryType,
               geometryJson: el.geometryJson,
               styleJson: el.styleJson ?? undefined,
-              metaJson: el.metaJson ?? undefined,
+              metaJson: el.metaJson ?? undefined
             },
             create: {
               id: el.id,
@@ -78,8 +82,8 @@ export class MapElementsService {
               geometryType: el.geometryType,
               geometryJson: el.geometryJson,
               styleJson: el.styleJson,
-              metaJson: el.metaJson,
-            },
+              metaJson: el.metaJson
+            }
           });
         } else {
           // Create new (no id provided)
@@ -93,21 +97,21 @@ export class MapElementsService {
               geometryType: el.geometryType,
               geometryJson: el.geometryJson,
               styleJson: el.styleJson,
-              metaJson: el.metaJson,
-            },
+              metaJson: el.metaJson
+            }
           });
         }
 
         // 2. Synchronize LotDetails for LOT elements
         if (element.type === 'LOT') {
-          const lotMeta = (element.metaJson as any) || {};
+          const lotMeta = element.metaJson || {};
           await tx.lotDetails.upsert({
             where: { mapElementId: element.id },
             update: {
               // Only update fields from metaJson if they exist
               areaM2: lotMeta.areaM2 || lotMeta.area || undefined,
               frontage: lotMeta.frontage || undefined,
-              price: lotMeta.price || undefined,
+              price: lotMeta.price || undefined
             },
             create: {
               tenantId,
@@ -116,8 +120,8 @@ export class MapElementsService {
               status: 'AVAILABLE',
               areaM2: lotMeta.areaM2 || lotMeta.area || null,
               frontage: lotMeta.frontage || null,
-              price: lotMeta.price || null,
-            },
+              price: lotMeta.price || null
+            }
           });
         }
         results.push(element);
@@ -129,7 +133,7 @@ export class MapElementsService {
 
   async create(tenantId: string, projectId: string, dto: MapElementDto) {
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, tenantId },
+      where: { id: projectId, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
@@ -143,14 +147,14 @@ export class MapElementsService {
         geometryType: dto.geometryType,
         geometryJson: dto.geometryJson,
         styleJson: dto.styleJson,
-        metaJson: dto.metaJson,
-      },
+        metaJson: dto.metaJson
+      }
     });
   }
 
   async update(tenantId: string, id: string, dto: Partial<MapElementDto>) {
     const el = await this.prisma.mapElement.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId }
     });
     if (!el) throw new NotFoundException('Elemento não encontrado.');
 
@@ -163,14 +167,14 @@ export class MapElementsService {
         ...(dto.geometryType && { geometryType: dto.geometryType }),
         ...(dto.geometryJson && { geometryJson: dto.geometryJson }),
         ...(dto.styleJson !== undefined && { styleJson: dto.styleJson }),
-        ...(dto.metaJson !== undefined && { metaJson: dto.metaJson }),
-      },
+        ...(dto.metaJson !== undefined && { metaJson: dto.metaJson })
+      }
     });
   }
 
   async remove(tenantId: string, id: string) {
     const el = await this.prisma.mapElement.findFirst({
-      where: { id, tenantId },
+      where: { id, tenantId }
     });
     if (!el) throw new NotFoundException('Elemento não encontrado.');
 

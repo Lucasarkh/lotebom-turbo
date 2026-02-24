@@ -1,7 +1,11 @@
-import { registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
+import {
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments
+} from 'class-validator';
 
 export function IsCuid(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isCuid',
       target: object.constructor,
@@ -14,16 +18,16 @@ export function IsCuid(validationOptions?: ValidationOptions) {
           }
 
           const cuid = value.trim();
-          
+
           const cuidV1Pattern = /^c[a-z0-9]{24}$/;
-          
+
           return cuid.length === 25 && cuidV1Pattern.test(cuid);
         },
-        
+
         defaultMessage(args: ValidationArguments) {
           return `${args.property} deve ser um CUID válido.`;
-        },
-      },
+        }
+      }
     });
   };
 }

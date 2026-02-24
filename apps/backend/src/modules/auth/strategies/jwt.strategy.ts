@@ -9,13 +9,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'secret',
+      secretOrKey: process.env.JWT_SECRET || 'secret'
     });
   }
 
   async validate(payload: any) {
     const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
+      where: { id: payload.sub }
     });
 
     if (!user) {
@@ -26,7 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId,
+      tenantId: user.tenantId
     };
   }
 }

@@ -5,6 +5,6 @@ import { TenantsController } from './tenants.controller';
 @Module({
   controllers: [TenantsController],
   providers: [TenantsService],
-  exports: [TenantsService],
+  exports: [TenantsService]
 })
 export class TenantsModule {}

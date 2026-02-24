@@ -3,7 +3,7 @@ import { PlantMapService } from './plant-map.service';
 import {
   PlantHotspotController,
   PlantMapController,
-  PlantMapItemController,
+  PlantMapItemController
 } from './plant-map.controller';
 import { PublicPlantMapController } from './public-plant-map.controller';
 import { S3Module } from '@infra/s3/s3.module';
@@ -14,9 +14,9 @@ import { S3Module } from '@infra/s3/s3.module';
     PlantMapController,
     PlantMapItemController,
     PlantHotspotController,
-    PublicPlantMapController,
+    PublicPlantMapController
   ],
   providers: [PlantMapService],
-  exports: [PlantMapService],
+  exports: [PlantMapService]
 })
 export class PlantMapModule {}
