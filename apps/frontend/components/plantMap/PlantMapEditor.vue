@@ -148,7 +148,7 @@
             <!-- Hotspot pins -->
             <g v-if="showBeacons">
               <g
-                v-for="hs in localHotspots"
+                v-for="hs in visibleHotspots"
                 :key="hs.id"
                 class="pme__hs-group"
               >
@@ -279,13 +279,23 @@
             >Excluir</button>
           </div>
 
+          <!-- Quick Search -->
+          <div class="pme__sidebar-search" v-if="localHotspots.length > 10">
+            <input 
+              v-model="hotspotSearch" 
+              class="pme__input pme__input--sm" 
+              placeholder="🔍 Buscar hotspot..."
+              style="margin-bottom: 12px; font-size: 13px;"
+            />
+          </div>
+
           <div v-if="!localHotspots.length" class="pme__sidebar-empty">
             Nenhum hotspot ainda.<br/>Use o modo "+ Adicionar".
           </div>
 
-          <div class="pme__hs-list">
+          <div class="pme__hs-list" v-else>
             <div
-              v-for="hs in localHotspots"
+              v-for="hs in filteredHotspots"
               :key="hs.id"
               class="pme__hs-item"
               :class="{ selected: selectedHotspotId === hs.id }"
@@ -401,10 +411,47 @@ const savingBatch = ref(false)
 const hotspotError = ref<string | null>(null)
 const errorMsg = ref<string | null>(null)
 const successMsg = ref<string | null>(null)
+const hotspotSearch = ref('')
 const showModal = ref(false)
 const editingHotspot = ref<PlantHotspot | null>(null)
 const newHotspotPos = reactive({ x: 0.5, y: 0.5 })
 const fileInput = ref<HTMLInputElement | null>(null)
+
+// ── Search & Filters ──────────────────────────────────────
+const filteredHotspots = computed(() => {
+  const search = hotspotSearch.value.toLowerCase().trim()
+  if (!search) return localHotspots.value
+  return localHotspots.value.filter(h => 
+    (h.label?.toLowerCase().includes(search)) || 
+    (h.title?.toLowerCase().includes(search)) ||
+    (h.id.toLowerCase().includes(search))
+  )
+})
+
+// ── Performance optimization (Viewport Culling) ──────────
+const visibleHotspots = computed(() => {
+  if (!canvasWrapEl.value || !localHotspots.value.length) return localHotspots.value
+  
+  const rect = canvasWrapEl.value.getBoundingClientRect()
+  const cw = rect.width
+  const ch = rect.height
+  const currentScale = scale.value
+  const currentOffset = offset.value
+  
+  const margin = 100 
+
+  return localHotspots.value.filter(hs => {
+    const vx = hs.x * imgW.value * currentScale + currentOffset.x
+    const vy = hs.y * imgH.value * currentScale + currentOffset.y
+    
+    return (
+      vx >= -margin &&
+      vy >= -margin &&
+      vx <= cw + margin &&
+      vy <= ch + margin
+    )
+  })
+})
 
 // ── Image / canvas ────────────────────────────────────────
 const imgLoaded = ref(false)

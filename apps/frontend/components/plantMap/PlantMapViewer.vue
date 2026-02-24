@@ -53,7 +53,7 @@
         <!-- Hotspot pins -->
         <template v-if="showBeacons">
           <HotspotPin
-            v-for="hs in plantMap.hotspots"
+            v-for="hs in visibleHotspots"
             :key="hs.id"
             :hotspot="hs"
             :container-width="imgNaturalW"
@@ -147,6 +147,37 @@ const {
 } = useZoomPan({
   minScale: 0.3,
   maxScale: 8,
+})
+
+// ── Performance optimization (Viewport Culling) ──────────
+/**
+ * Only render hotspots currently visible in the container viewport.
+ * This prevents DOM overhead when there are hundreds or thousands of pins.
+ */
+const visibleHotspots = computed(() => {
+  if (!containerEl.value || !props.plantMap?.hotspots?.length) return props.plantMap?.hotspots || []
+  
+  const { x, y, scale } = transform.value
+  const cw = containerEl.value.clientWidth
+  const ch = containerEl.value.clientHeight
+  const iw = imgNaturalW.value
+  const ih = imgNaturalH.value
+  
+  // Use a margin in pixels to prevent pins from popping in/out at the very edge
+  const margin = 100 
+
+  return props.plantMap.hotspots.filter(hs => {
+    // Convert normalized (0-1) coordinates to screen pixels
+    const vx = hs.x * iw * scale + x
+    const vy = hs.y * ih * scale + y
+    
+    return (
+      vx >= -margin &&
+      vy >= -margin &&
+      vx <= cw + margin &&
+      vy <= ch + margin
+    )
+  })
 })
 
 // Initialize on client only (SSR safe)

@@ -23,13 +23,36 @@ export class PlantMapService {
   // ── PlantMap CRUD ──────────────────────────────────────
 
   async findByProject(tenantId: string, projectId: string) {
-    const plantMap = await this.prisma.plantMap.findFirst({
-      where: { projectId, tenantId },
+    const plantMap = await this.prisma.plantMap.findUnique({
+      where: { projectId },
       include: {
-        hotspots: { orderBy: { createdAt: 'asc' } }
+        hotspots: { 
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            x: true,
+            y: true,
+            label: true,
+            labelEnabled: true,
+            labelOffsetX: true,
+            labelOffsetY: true,
+            linkType: true,
+            linkId: true,
+            linkUrl: true,
+            loteStatus: true,
+            // Only fetch what's needed for the list/map
+            // We keep description and metaJson for the popover but maybe we could lazy fetch them?
+            // To stick to "no interference", let's keep them and focus on query performance.
+            description: true,
+            metaJson: true,
+            createdAt: true,
+          }
+        }
       }
     });
-    if (!plantMap) return null;
+    if (!plantMap || plantMap.tenantId !== tenantId) return null;
 
     // Attach tags from linked MapElements (Lots)
     const hotspotsWithTags = await this._attachTagsToHotspots(
@@ -40,10 +63,29 @@ export class PlantMapService {
 
   /** Public access — no tenantId check (project uniqueness ensures isolation) */
   async findByProjectPublic(projectId: string) {
-    const plantMap = await this.prisma.plantMap.findFirst({
+    const plantMap = await this.prisma.plantMap.findUnique({
       where: { projectId },
       include: {
-        hotspots: { orderBy: { createdAt: 'asc' } }
+        hotspots: { 
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            x: true,
+            y: true,
+            label: true,
+            labelEnabled: true,
+            labelOffsetX: true,
+            labelOffsetY: true,
+            linkType: true,
+            linkId: true,
+            linkUrl: true,
+            loteStatus: true,
+            description: true,
+            metaJson: true,
+          }
+        }
       }
     });
     if (!plantMap) return null;
