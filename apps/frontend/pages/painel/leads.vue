@@ -19,7 +19,7 @@
         <option value="CONTACTED">Contatado</option>
         <option value="QUALIFIED">Qualificado</option>
         <option value="NEGOTIATING">Negociando</option>
-        <option value="CONVERTED">Convertido</option>
+        <option value="WON">Convertido</option>
         <option value="LOST">Perdido</option>
       </select>
     </div>
@@ -71,7 +71,7 @@
                 <option value="CONTACTED">Contatado</option>
                 <option value="QUALIFIED">Qualificado</option>
                 <option value="NEGOTIATING">Negociando</option>
-                <option value="CONVERTED">Convertido</option>
+                <option value="WON">Convertido</option>
                 <option value="LOST">Perdido</option>
               </select>
               <span v-else class="badge" :class="statusBadge(lead.status)">{{ statusLabel(lead.status) }}</span>
@@ -125,12 +125,12 @@ const filters = ref({ projectId: '', status: '' })
 
 const statusBadge = (s) => ({
   NEW: 'badge-info', CONTACTED: 'badge-warning', QUALIFIED: 'badge-primary',
-  NEGOTIATING: 'badge-warning', CONVERTED: 'badge-success', LOST: 'badge-danger',
+  NEGOTIATING: 'badge-warning', WON: 'badge-success', LOST: 'badge-danger',
 }[s] || 'badge-neutral')
 
 const statusLabel = (s) => ({
   NEW: 'Novo', CONTACTED: 'Contatado', QUALIFIED: 'Qualificado',
-  NEGOTIATING: 'Negociando', CONVERTED: 'Convertido', LOST: 'Perdido',
+  NEGOTIATING: 'Negociando', WON: 'Convertido', LOST: 'Perdido',
 }[s] || s)
 
 const loadLeads = async (page = 1) => {

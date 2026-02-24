@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@infra/db/prisma.service';
 import { CreateSessionDto, CreateEventDto, TrackingReportQueryDto } from './dto/tracking.dto';
 
@@ -13,12 +13,23 @@ export class TrackingService {
     // Use projectSlug as the primary identifier if available
     // Since slugs are now project-unique
     if (!projectId && projectSlug) {
-      const project = await this.prisma.project.findUnique({
-        where: { slug: projectSlug },
+      const project = await this.prisma.project.findFirst({
+        where: { slug: { equals: projectSlug, mode: 'insensitive' } },
         include: { tenant: true }
       });
       if (project) {
         projectId = project.id;
+        tenantId = project.tenantId;
+      }
+    }
+
+    // Resolve tenantId if projectId is present but tenantId is not
+    if (projectId && !tenantId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { tenantId: true }
+      });
+      if (project) {
         tenantId = project.tenantId;
       }
     }
@@ -80,9 +91,9 @@ export class TrackingService {
       if (realtor) {
         await this.trackEvent({
           sessionId: session.id,
-          type: 'CLICK',
+          type: 'REFERRAL',
           category: 'REALTOR_LINK',
-          action: 'OPEN_LINK',
+          action: 'AUTOMATIC_LANDING',
           label: `${realtor.name} (${realtor.code})`,
         });
       }
@@ -92,6 +103,16 @@ export class TrackingService {
   }
 
   async trackEvent(dto: CreateEventDto) {
+    // Verify session existence to avoid foreign key errors and allow frontend to clear stale sessions
+    const session = await this.prisma.trackingSession.findUnique({
+      where: { id: dto.sessionId },
+      select: { id: true }
+    });
+
+    if (!session) {
+      throw new BadRequestException('Invalid session ID');
+    }
+
     return this.prisma.trackingEvent.create({
       data: {
         ...dto,
@@ -197,6 +218,7 @@ export class TrackingService {
       totalPageViews,
       totalLotClicks,
       totalRealtorClicks,
+      totalLeads,
       topUtmSources,
       topUtmCampaigns,
       topLots,
@@ -211,11 +233,12 @@ export class TrackingService {
         where: { ...whereEvent, type: 'PAGE_VIEW' },
       }),
       this.prisma.trackingEvent.count({
-        where: { ...whereEvent, category: 'LOT' },
+        where: { ...whereEvent, type: 'CLICK', category: 'LOT' },
       }),
       this.prisma.trackingEvent.count({
-        where: { ...whereEvent, category: 'REALTOR_LINK' },
+        where: { ...whereEvent, type: 'CLICK', category: 'REALTOR_LINK' },
       }),
+      this.prisma.lead.count({ where: whereSession as any }),
       this.prisma.trackingSession.groupBy({
         by: ['utmSource'],
         where: whereSession,
@@ -361,6 +384,7 @@ export class TrackingService {
         totalPageViews,
         totalLotClicks,
         totalRealtorClicks,
+        totalLeads,
       },
       history: Object.keys(history).sort().map(date => ({
         date,
@@ -397,6 +421,34 @@ export class TrackingService {
     // Map with label as key to group by their friendly names
     const groupedByLabel = new Map<string, { count: number, path: string }>();
 
+    // 1. Collect all potential IDs for batch lookup
+    const potentialIds = new Set<string>();
+    for (const p of paths) {
+      const rawPath = p.path || '/';
+      const cleanPath = rawPath.split('?')[0].split('#')[0];
+      const parts = cleanPath.split('/').filter(Boolean);
+      const code = parts[parts.length - 1] || (p.label && p.label.startsWith('lote-') ? p.label.split('lote-')[1] : null);
+      
+      if (code && code.length > 20) {
+        potentialIds.add(code);
+      }
+      
+      // Also check if label itself is an ID
+      if (p.label && p.label.length > 20) {
+        potentialIds.add(p.label);
+      }
+    }
+
+    // 2. Batch lookup
+    const elements = potentialIds.size > 0 
+      ? await this.prisma.mapElement.findMany({
+          where: { id: { in: Array.from(potentialIds) } },
+          select: { id: true, code: true, name: true }
+        })
+      : [];
+    
+    const elementMap = new Map(elements.map(e => [e.id, e.code || e.name]));
+
     for (const p of paths) {
       // Clean query and anchors for grouping
       const rawPath = p.path || '/';
@@ -432,17 +484,11 @@ export class TrackingService {
       if (cleanPath.includes('/lote/') || label.includes('lote-')) {
         const parts = cleanPath.split('/').filter(Boolean);
         // Normalize Lote labels to ensure grouping
-        let code = parts[parts.length - 1] || label.split('lote-')[1];
+        let code = parts[parts.length - 1] || (label.includes('lote-') ? label.split('lote-')[1] : '');
         
-        // RESOLVE CUID TO CODE IF POSSIBLE
+        // RESOLVE CUID TO CODE IF POSSIBLE via local map
         if (code && code.length > 20) {
-          const element = await this.prisma.mapElement.findUnique({
-            where: { id: code },
-            select: { code: true, name: true }
-          });
-          if (element) {
-            code = element.code || element.name || code;
-          }
+          code = elementMap.get(code) || code;
         }
 
         if (code) {

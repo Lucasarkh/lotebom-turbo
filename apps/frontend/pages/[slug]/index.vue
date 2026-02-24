@@ -297,9 +297,18 @@
 
             <div class="v4-conversion-form-wrapper">
               <div v-if="leadSuccess" class="v4-form-success">
-                <div class="v4-success-icon">✓</div>
+                <div class="v4-success-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:32px; height:32px">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
                 <h3>Mensagem enviada!</h3>
-                <p>Nossa equipe entrará em contato em breve através do telefone informado.</p>
+                <p>Recebemos seus dados e logo um consultor entrará em contato.</p>
+                <div style="margin-top: 32px;">
+                  <button @click="leadSuccess = false" class="v4-trust-btn v4-trust-btn--primary" style="padding: 12px 32px; border: none; cursor: pointer;">
+                    OK
+                  </button>
+                </div>
               </div>
               <form v-else class="v4-form" @submit.prevent="submitLead" ref="formRef">
                 <h3 class="v4-form-title">Preencha seus dados</h3>
@@ -782,6 +791,7 @@ async function submitLead() {
     })
     leadSuccess.value = true
     toastSuccess('Formulário enviado com sucesso!')
+    leadForm.value = { name: '', email: '', phone: '', mapElementId: '', message: '' }
   } catch (e: any) {
     leadError.value = e.message || 'Erro ao enviar'
   }
@@ -1796,5 +1806,70 @@ function openLightbox(idx: number) {
   .v4-stat-label { font-size: 10px; }
   .v4-hero-actions { flex-direction: column; width: 100%; }
   .v4-btn-primary, .v4-btn-white { width: 100%; text-align: center; }
+}
+
+/* Success Message Improvements */
+.v4-form-success {
+  text-align: center;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  animation: v4-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.v4-success-icon {
+  width: 72px;
+  height: 72px;
+  background: #32d74b;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 24px rgba(50, 215, 75, 0.25);
+  position: relative;
+}
+
+.v4-success-icon::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border: 2px solid #32d74b;
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: v4-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.v4-form-success h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.v4-form-success p {
+  font-size: 17px;
+  line-height: 1.5;
+  color: #86868b;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+@keyframes v4-fade-in {
+  from { opacity: 0; transform: scale(0.95) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes v4-ping {
+  75%, 100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
 }
 </style>

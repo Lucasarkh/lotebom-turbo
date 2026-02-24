@@ -17,9 +17,10 @@ export const useTracking = () => {
 
     store.loadFromStorage();
     
-    // If we already have a session ID from storage, we don't need to create a new one
-    // This prevents creating a new session record on every page reload
-    if (store.sessionId) {
+    // Check if we are switching projects or don't have a session
+    const projectChanged = params.projectSlug && store.currentProjectSlug !== params.projectSlug;
+    
+    if (store.sessionId && !projectChanged) {
       store.isInitialized = true;
       return;
     }
@@ -43,10 +44,15 @@ export const useTracking = () => {
 
       if (response && response.id) {
         store.setSessionId(response.id);
+        if (params.projectSlug) {
+          store.setCurrentProjectSlug(params.projectSlug);
+        }
         store.isInitialized = true;
       }
     } catch (error) {
       console.error('Failed to init tracking', error);
+      // If initialization fails (probably invalid session ID), clear it to try again on next page
+      store.setSessionId(null as any);
     }
   };
 
@@ -67,7 +73,12 @@ export const useTracking = () => {
         ...event,
         path: event.path || route.fullPath,
       });
-    } catch (error) {
+    } catch (error: any) {
+      // If we get a 400/404/500 that might indicate an invalid session (e.g. after DB reset)
+      // clear the session so it can be re-created
+      if (error?.response?.status === 400 || error?.response?.status === 404) {
+        store.setSessionId(null as any);
+      }
       // Fail silently to not disrupt the user
       // console.error('Failed to track event', error);
     }

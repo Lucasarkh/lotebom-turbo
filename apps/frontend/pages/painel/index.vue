@@ -103,11 +103,11 @@ const stats = ref({ projects: 0, publishedProjects: 0, totalLots: 0, totalLeads:
 
 const leadBadge = (s) => ({
   NEW: 'badge-primary', CONTACTED: 'badge-warning', QUALIFIED: 'badge-primary',
-  NEGOTIATING: 'badge-warning', CONVERTED: 'badge-success', LOST: 'badge-danger',
+  NEGOTIATING: 'badge-warning', WON: 'badge-success', LOST: 'badge-danger',
 }[s] || 'badge-neutral')
 const leadLabel = (s) => ({
   NEW: 'Novo', CONTACTED: 'Contatado', QUALIFIED: 'Qualificado',
-  NEGOTIATING: 'Negociando', CONVERTED: 'Convertido', LOST: 'Perdido',
+  NEGOTIATING: 'Negociando', WON: 'Convertido', LOST: 'Perdido',
 }[s] || s)
 const formatDate = (d) => new Date(d).toLocaleDateString('pt-BR')
 

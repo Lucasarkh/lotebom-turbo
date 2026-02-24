@@ -59,6 +59,16 @@ const formatDate = (dateStr: string) => {
   const [y, m, d] = dateStr.split('-')
   return `${d}/${m}`
 }
+
+const pagesPerSession = computed(() => {
+  if (!metrics.value?.summary?.totalSessions) return '0'
+  return (metrics.value.summary.totalPageViews / metrics.value.summary.totalSessions).toFixed(1)
+})
+
+const conversionRate = computed(() => {
+  if (!metrics.value?.summary?.totalSessions) return '0'
+  return ((metrics.value.summary.totalLeads / metrics.value.summary.totalSessions) * 100).toFixed(1)
+})
 </script>
 
 <template>
@@ -103,6 +113,15 @@ const formatDate = (dateStr: string) => {
           </div>
         </div>
         <div class="stat-card">
+          <div class="stat-icon avg-pages">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Páginas por Sessão</span>
+            <span class="stat-value text-teal">{{ pagesPerSession }}</span>
+          </div>
+        </div>
+        <div class="stat-card">
           <div class="stat-icon views">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </div>
@@ -112,21 +131,12 @@ const formatDate = (dateStr: string) => {
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon clicks">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <div class="stat-icon leads">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
           </div>
           <div class="stat-content">
-            <span class="stat-label">Cliques em Lotes</span>
-            <span class="stat-value text-amber">{{ metrics.summary.totalLotClicks }}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon realtors">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">Contatos c/ Corretores</span>
-            <span class="stat-value text-emerald">{{ metrics.summary.totalRealtorClicks }}</span>
+            <span class="stat-label">Leads: Taxa de Conv.</span>
+            <span class="stat-value text-emerald">{{ metrics.summary.totalLeads }} ({{ conversionRate }}%)</span>
           </div>
         </div>
       </div>
@@ -221,62 +231,6 @@ const formatDate = (dateStr: string) => {
             </div>
           </div>
           <div v-else class="no-data-placeholder">Nenhuma campanha registrada</div>
-        </div>
-
-        <!-- Realtor Performance -->
-        <div class="details-card table-card">
-          <h3>Engajamento por Corretor</h3>
-          <div class="table-container">
-            <table class="simple-table">
-              <thead>
-                <tr>
-                  <th>Corretor</th>
-                  <th class="text-right">Acessos</th>
-                  <th class="text-right">% Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in metrics.topRealtors" :key="r.label">
-                  <td>{{ r.label || 'Direto/Sem Código' }}</td>
-                  <td class="text-right">{{ r.count }}</td>
-                  <td class="text-right text-muted">{{ metrics.summary.totalRealtorClicks > 0 ? ((r.count / metrics.summary.totalRealtorClicks) * 100).toFixed(1) : '0' }}%</td>
-                </tr>
-                <tr v-if="!metrics.topRealtors?.length">
-                  <td colspan="3" class="text-center py-8 text-muted">
-                    <div class="flex flex-col items-center gap-2">
-                      <span>Ainda não há interações com corretores</span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Lot Clicks -->
-        <div class="details-card table-card">
-          <h3>Interesse por Lote</h3>
-          <div class="table-container">
-            <table class="simple-table">
-              <thead>
-                <tr>
-                  <th>Lote</th>
-                  <th class="text-right">Cliques</th>
-                  <th class="text-right">% Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="lot in metrics.topLots" :key="lot.label">
-                  <td>{{ lot.label }}</td>
-                  <td class="text-right">{{ lot.count }}</td>
-                  <td class="text-right text-muted">{{ metrics.summary.totalLotClicks > 0 ? ((lot.count / metrics.summary.totalLotClicks) * 100).toFixed(1) : '0' }}%</td>
-                </tr>
-                <tr v-if="!metrics.topLots?.length">
-                  <td colspan="3" class="text-center py-8 text-muted">Ainda não há cliques em lotes</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
 
         <div class="details-card table-card">
@@ -393,32 +347,37 @@ h1 {
 
 .stat-card {
   background: white;
-  padding: 24px;
+  padding: 32px 24px;
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 20px;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
   border: 1px solid #f1f5f9;
 }
 
 .stat-icon {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 4px;
 }
 
 .stat-icon.sessions { background: #eff6ff; color: #2563eb; }
 .stat-icon.views { background: #eef2ff; color: #4f46e5; }
-.stat-icon.clicks { background: #fffbeb; color: #d97706; }
-.stat-icon.realtors { background: #ecfdf5; color: #059669; }
+.stat-icon.avg-pages { background: #f0fdfa; color: #0d9488; }
+.stat-icon.leads { background: #ecfdf5; color: #059669; }
 
 .stat-content {
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .stat-label {
@@ -436,7 +395,7 @@ h1 {
 
 .text-blue { color: #2563eb; }
 .text-indigo { color: #4f46e5; }
-.text-amber { color: #d97706; }
+.text-teal { color: #0d9488; }
 .text-emerald { color: #059669; }
 
 /* History Chart */

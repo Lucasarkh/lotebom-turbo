@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 
 export const useTrackingStore = defineStore('tracking', () => {
   const sessionId = ref<string | null>(null);
+  const currentProjectSlug = ref<string | null>(null);
   const utmParams = ref({
     source: null as string | null,
     medium: null as string | null,
@@ -16,7 +17,22 @@ export const useTrackingStore = defineStore('tracking', () => {
   const setSessionId = (id: string) => {
     sessionId.value = id;
     if (process.client) {
-      localStorage.setItem('tracking_session_id', id);
+      if (id) {
+        localStorage.setItem('tracking_session_id', id);
+      } else {
+        localStorage.removeItem('tracking_session_id');
+      }
+    }
+  };
+
+  const setCurrentProjectSlug = (slug: string | null) => {
+    currentProjectSlug.value = slug;
+    if (process.client) {
+      if (slug) {
+        localStorage.setItem('tracking_project_slug', slug);
+      } else {
+        localStorage.removeItem('tracking_project_slug');
+      }
     }
   };
 
@@ -24,14 +40,19 @@ export const useTrackingStore = defineStore('tracking', () => {
     if (process.client) {
       const stored = localStorage.getItem('tracking_session_id');
       if (stored) sessionId.value = stored;
+      
+      const storedSlug = localStorage.getItem('tracking_project_slug');
+      if (storedSlug) currentProjectSlug.value = storedSlug;
     }
   };
 
   return {
     sessionId,
+    currentProjectSlug,
     utmParams,
     isInitialized,
     setSessionId,
+    setCurrentProjectSlug,
     loadFromStorage,
   };
 });
