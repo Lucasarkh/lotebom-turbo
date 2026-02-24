@@ -5,8 +5,10 @@
 
     <aside v-if="authStore.isLoggedIn" class="sidebar" :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileMenuOpen }">
       <div class="sidebar-brand">
-        <div class="brand-icon">L</div>
-        <span v-if="!sidebarCollapsed" class="brand-text">Lotio</span>
+        <NuxtLink to="/painel" class="sidebar-logo-link">
+          <img v-if="sidebarCollapsed" src="/img/logo-icon.svg" alt="Lotio" class="sidebar-logo-icon" />
+          <img v-else src="/img/logo.svg" alt="Lotio" class="sidebar-logo" />
+        </NuxtLink>
       </div>
 
       <div v-if="!sidebarCollapsed" class="user-card">
@@ -171,18 +173,21 @@ const handleLogout = async () => {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
   padding: var(--space-5) var(--space-4);
   border-bottom: 1px solid var(--gray-100);
 }
-.brand-icon {
-  width: 36px; height: 36px;
-  background: var(--primary);
-  color: white;
-  border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 1.1rem;
-  flex-shrink: 0;
+.sidebar-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  width: 100%;
+}
+.sidebar-logo {
+  height: 32px;
+}
+.sidebar-logo-icon {
+  height: 32px;
+  width: 32px;
 }
 .brand-text { font-weight: 700; font-size: 1.1rem; color: var(--gray-900); }
 

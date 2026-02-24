@@ -4,13 +4,7 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <NuxtLink to="/" class="logo">
-            <div class="logo-icon">
-              <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="40" height="40" rx="10" fill="currentColor"/>
-                <path d="M12 12V28M12 28H28M12 20H24" stroke="white" stroke-width="3" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <span class="logo-text">Lotio</span>
+            <img src="/img/logo.svg" alt="Lotio" class="logo-img" />
           </NuxtLink>
           <p class="footer-desc">
             A nova fronteira digital para o mercado imobiliário. Transformando mapas em vendas, um lote por vez.
@@ -84,17 +78,8 @@
   text-decoration: none;
 }
 
-.logo-icon {
-  width: 24px;
+.logo-img {
   height: 24px;
-  color: var(--gray-900);
-}
-
-.logo-text {
-  color: var(--gray-900);
-  font-weight: 700;
-  font-size: 1.25rem;
-  letter-spacing: -0.5px;
 }
 
 .footer-desc {

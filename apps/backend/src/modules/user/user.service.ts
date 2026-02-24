@@ -10,7 +10,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '@prisma/client';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
-import { PaginatedResponse } from '@common/dto/paginated-response.dto';
+import { EmailQueueService } from '@infra/email-queue/email-queue.service';
 
 const USER_SELECT = {
   id: true,
@@ -23,7 +23,10 @@ const USER_SELECT = {
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailQueueService: EmailQueueService
+  ) {}
 
   async create(tenantId: string, dto: CreateUserDto) {
     const existingUser = await this.prisma.user.findUnique({
@@ -37,7 +40,7 @@ export class UserService {
 
     // If role is LOTEADORA and no tenantId is provided, create a new tenant
     if (dto.role === UserRole.LOTEADORA && !tenantId) {
-      return this.prisma.$transaction(async (tx) => {
+      const user = await this.prisma.$transaction(async (tx) => {
         const slug = dto.name
           .toLowerCase()
           .normalize('NFD')
@@ -45,7 +48,6 @@ export class UserService {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '');
 
-        // Check if tenant slug already exists, if so append random suffix
         let uniqueSlug = slug;
         const existingTenant = await tx.tenant.findUnique({
           where: { slug: uniqueSlug }
@@ -69,19 +71,24 @@ export class UserService {
             passwordHash,
             role: UserRole.LOTEADORA
           },
-          select: USER_SELECT
+          select: { ...USER_SELECT, tenant: { select: { name: true } } }
         });
       });
-    }
 
-    // For CORRETOR, tenantId is mandatory
-    if (dto.role === UserRole.CORRETOR && !tenantId) {
-      throw new BadRequestException(
-        'Um tenant é obrigatório para o papel de corretor.'
+      await this.emailQueueService.queueWelcomeTenantEmail(
+        user.email,
+        user.name,
+        user.tenant?.name || dto.name
       );
+
+      return user;
     }
 
-    return this.prisma.user.create({
+    if (dto.role === UserRole.CORRETOR && !tenantId) {
+      throw new BadRequestException('Um tenant é obrigatório para o papel de corretor.');
+    }
+
+    const user = await this.prisma.user.create({
       data: {
         tenantId,
         name: dto.name,
@@ -89,8 +96,21 @@ export class UserService {
         passwordHash,
         role: dto.role ?? UserRole.CORRETOR
       },
-      select: USER_SELECT
+      select: { ...USER_SELECT, tenant: { select: { name: true } } }
     });
+
+    // Send correct welcome email based on role
+    if (user.role === UserRole.CORRETOR) {
+      await this.emailQueueService.queueWelcomeRealtorEmail(user.email, user.name);
+    } else if (user.role === UserRole.LOTEADORA && tenantId) {
+      await this.emailQueueService.queueWelcomeTenantEmail(
+        user.email,
+        user.name,
+        user.tenant?.name || 'sua empresa'
+      );
+    }
+
+    return user;
   }
 
   async findAll(tenantId: string, query: PaginationQueryDto) {
@@ -156,7 +176,8 @@ export class UserService {
     });
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    await this.prisma.user.delete({ where: { id } });
-    return { message: 'Usuário removido com sucesso' };
+    return this.prisma.user.delete({
+      where: { id }
+    });
   }
 }

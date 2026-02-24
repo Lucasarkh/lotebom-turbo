@@ -76,6 +76,20 @@ export class AuthController {
     );
   }
 
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Solicitar redefinição de senha' })
+  async forgotPassword(@Body('email') email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Redefinição de senha com token' })
+  async resetPassword(@Body() dto: any) {
+    return this.authService.resetPassword(dto.token, dto.password);
+  }
+
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()

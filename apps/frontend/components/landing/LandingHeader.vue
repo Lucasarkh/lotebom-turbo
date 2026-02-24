@@ -2,13 +2,7 @@
   <header :class="{ 'scrolled': isScrolled }" class="header">
     <div class="container-landing">
       <NuxtLink to="/" class="logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="40" rx="10" fill="currentColor"/>
-            <path d="M12 12V28M12 28H28M12 20H24" stroke="white" stroke-width="3" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <span class="logo-text">Lotio</span>
+        <img src="/img/logo.svg" alt="Lotio" class="logo-img" />
       </NuxtLink>
 
       <!-- Desktop Nav -->
@@ -130,22 +124,8 @@ onUnmounted(() => {
   text-decoration: none;
 }
 
-.logo-icon {
-  width: 28px;
+.logo-img {
   height: 28px;
-  color: var(--gray-900);
-  transition: transform 0.3s ease;
-}
-
-.logo:hover .logo-icon {
-  transform: scale(1.05);
-}
-
-.logo-text {
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  color: var(--gray-900);
 }
 
 .nav-desktop {

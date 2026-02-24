@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   UseGuards
 } from '@nestjs/common';
@@ -16,9 +17,13 @@ import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { LeadsService } from './leads.service';
-import { UpdateLeadDto } from './dto/update-lead.dto';
-import { LeadStatus } from '@prisma/client';
 import { LeadsQueryDto } from './dto/leads-query.dto';
+import {
+  CreateManualLeadDto,
+  UpdateLeadStatusDto,
+  AddLeadDocumentDto,
+  AddLeadPaymentDto
+} from './dto/manual-lead.dto';
 
 @ApiTags('Leads')
 @ApiBearerAuth()
@@ -26,6 +31,16 @@ import { LeadsQueryDto } from './dto/leads-query.dto';
 @Controller('leads')
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
+
+  @Post()
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  create(
+    @TenantId() tenantId: string,
+    @Body() dto: CreateManualLeadDto,
+    @CurrentUser() user: any
+  ) {
+    return this.leadsService.createManual(tenantId, dto, user);
+  }
 
   @Get()
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
@@ -47,14 +62,37 @@ export class LeadsController {
     return this.leadsService.findOne(tenantId, id, user);
   }
 
-  @Patch(':id')
-  @Roles('LOTEADORA', 'SYSADMIN')
-  update(
+  @Patch(':id/status')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  updateStatus(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateLeadDto
+    @Body() dto: UpdateLeadStatusDto,
+    @CurrentUser() user: any
   ) {
-    return this.leadsService.update(tenantId, id, dto);
+    return this.leadsService.updateStatus(tenantId, id, dto, user);
+  }
+
+  @Post(':id/documents')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  addDocument(
+    @TenantId() tenantId: string,
+    @Param('id') leadId: string,
+    @Body() dto: AddLeadDocumentDto,
+    @CurrentUser() user: any
+  ) {
+    return this.leadsService.addDocument(tenantId, leadId, dto, user);
+  }
+
+  @Post(':id/payments')
+  @Roles('LOTEADORA', 'SYSADMIN')
+  addPayment(
+    @TenantId() tenantId: string,
+    @Param('id') leadId: string,
+    @Body() dto: AddLeadPaymentDto,
+    @CurrentUser() user: any
+  ) {
+    return this.leadsService.addPayment(tenantId, leadId, dto, user);
   }
 
   @Delete(':id')

@@ -1,9 +1,12 @@
 <template>
   <div class="auth-page">
     <div class="auth-card">
+      <NuxtLink to="/" class="back-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        Voltar para Home
+      </NuxtLink>
       <div class="auth-brand">
-        <div class="brand-icon">L</div>
-        <h1>Lotio</h1>
+        <img src="/img/logo.svg" alt="Lotio" class="login-logo" />
         <p class="auth-subtitle">Entre na sua conta</p>
       </div>
 
@@ -84,13 +87,25 @@ const handleLogin = async () => {
   box-shadow: var(--shadow-lg); width: 100%; max-width: 420px; border: 1px solid var(--gray-200);
 }
 .auth-brand { text-align: center; margin-bottom: var(--space-8); }
-.auth-brand .brand-icon {
-  width: 52px; height: 52px; background: var(--primary); color: white;
-  border-radius: var(--radius-lg); display: inline-flex; align-items: center;
-  justify-content: center; font-weight: 800; font-size: 1.5rem; margin-bottom: var(--space-4);
+.login-logo {
+  height: 48px;
+  margin-bottom: var(--space-4);
 }
 .auth-brand h1 { font-size: 1.5rem; margin-bottom: var(--space-1); }
 .auth-subtitle { font-size: 0.875rem; color: var(--gray-500); }
+.back-home {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gray-500);
+  text-decoration: none;
+  font-size: 0.875rem;
+  margin-bottom: var(--space-6);
+  transition: color 0.2s;
+}
+.back-home:hover {
+  color: var(--primary);
+}
 .auth-footer-link { text-align: center; margin-top: var(--space-5); font-size: 0.8125rem; color: var(--gray-500); }
 .auth-footer-link a { color: var(--primary); font-weight: 600; }
 </style>

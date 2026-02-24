@@ -63,8 +63,28 @@ enum LeadStatus {
   CONTACTED
   QUALIFIED
   NEGOTIATING
+  RESERVATION
+  UNDER_REVIEW
+  WAITING_DOCS
+  WAITING_PAYMENT
   WON
   LOST
+  CANCELLED
+  REVERSED
+}
+
+enum LeadPaymentType {
+  RESERVATION_FEE
+  ENTRY
+  INSTALLMENT
+  INTERMEDIARY
+}
+
+enum LeadPaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  REVERSED
 }
 
 enum PlantHotspotType {
@@ -250,6 +270,18 @@ model Lead {
   name          String
   email         String?
   phone         String?
+  
+  // Registration data
+  cpf           String?
+  rg            String?
+  birthDate     DateTime?
+  maritalStatus String?
+  occupation    String?
+  address       String?
+  addressCity   String?
+  addressState  String?
+  addressZip    String?
+
   message       String?    @db.Text
   source        String?
   status        LeadStatus @default(NEW)
@@ -258,8 +290,55 @@ model Lead {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
+  documents     LeadDocument[]
+  payments      LeadPayment[]
+  history       LeadHistory[]
+
   @@index([tenantId, projectId])
   @@index([status])
+}
+
+model LeadDocument {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  name        String
+  url         String
+  type        String
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  @@index([leadId])
+}
+
+model LeadPayment {
+  id          String            @id @default(cuid())
+  leadId      String
+  lead        Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        LeadPaymentType
+  status      LeadPaymentStatus @default(PENDING)
+  amount      Float
+  dueDate     DateTime
+  paidDate    DateTime?
+  receiptUrl  String?
+  notes       String?           @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([leadId])
+}
+
+model LeadHistory {
+  id          String      @id @default(cuid())
+  leadId      String
+  lead        Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromStatus  LeadStatus?
+  toStatus    LeadStatus
+  notes       String?     @db.Text
+  createdBy   String
+  createdAt   DateTime    @default(now())
+
+  @@index([leadId])
 }
 
 model RealtorLink {
@@ -506,3 +585,13 @@ model SystemLead {
   updatedAt DateTime @updatedAt
 }
 
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}

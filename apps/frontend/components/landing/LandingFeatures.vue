@@ -59,6 +59,15 @@
             <p class="bento-desc">Gerencie um portfólio completo com facilidade. Troque de projeto em um clique com controle total de acesso.</p>
           </div>
         </div>
+
+        <!-- Totem -->
+        <div class="bento-item animate-slide-up">
+          <div class="bento-content">
+            <div class="bento-tag">Presencial</div>
+            <h3 class="bento-title">Experiência em Totens</h3>
+            <p class="bento-desc">Otimizado para estandes de vendas. Utilize as URLs dos mapas em totens interativos para uma experiência touch imersiva, sem necessidade de softwares extras.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -132,8 +141,9 @@
   .main-feature { grid-column: span 4; grid-row: span 2; }
   .bento-item:nth-child(2) { grid-column: span 2; }
   .bento-item:nth-child(3) { grid-column: span 2; }
-  .bento-item:nth-child(4) { grid-column: span 3; }
-  .bento-item:nth-child(5) { grid-column: span 3; }
+  .bento-item:nth-child(4) { grid-column: span 2; }
+  .bento-item:nth-child(5) { grid-column: span 2; }
+  .bento-item:nth-child(6) { grid-column: span 2; }
 }
 
 .bento-tag {

@@ -1,7 +1,9 @@
 import {
   Injectable,
   UnauthorizedException,
-  ConflictException
+  ConflictException,
+  NotFoundException,
+  BadRequestException
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +11,8 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { UserRole } from '@prisma/client';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
+import { EmailQueueService } from '@infra/email-queue/email-queue.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -17,14 +21,15 @@ export class AuthService {
   constructor(
     private jwtService: JwtService,
     private configService: ConfigService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private emailQueueService: EmailQueueService
   ) {
     this.jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
-      where: { email }
+      where: { email: email.toLowerCase() }
     });
 
     if (user && (await bcrypt.compare(pass, user.passwordHash))) {
@@ -34,9 +39,6 @@ export class AuthService {
     return null;
   }
 
-  /**
-   * Register a new tenant (Loteadora) + admin user in one transaction.
-   */
   async checkTenantSlugAvailability(slug: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { slug: slug.toLowerCase().replace(/\s+/g, '-') }
@@ -96,6 +98,13 @@ export class AuthService {
       };
     });
 
+    // Send welcome email
+    await this.emailQueueService.queueWelcomeTenantEmail(
+      dto.email.toLowerCase(),
+      dto.name,
+      dto.tenantName
+    );
+
     return result;
   }
 
@@ -120,7 +129,6 @@ export class AuthService {
       }
     );
 
-    // Save hashed refresh token in DB
     await this.prisma.user.update({
       where: { id: user.id },
       data: { refreshToken: await bcrypt.hash(refreshToken, 10) }
@@ -182,7 +190,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId }
     });
-    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    if (!user) throw new NotFoundException('Usuário não encontrado');
 
     const isValid = await bcrypt.compare(currentPass, user.passwordHash);
     if (!isValid) throw new UnauthorizedException('Senha atual incorreta');
@@ -192,6 +200,58 @@ export class AuthService {
       where: { id: userId },
       data: { passwordHash }
     });
+
+    return { success: true };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (user) {
+      const token = uuidv4();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+
+      await this.prisma.passwordReset.create({
+        data: {
+          email: email.toLowerCase(),
+          token,
+          expiresAt
+        }
+      });
+
+      await this.emailQueueService.queuePasswordResetEmail(
+        user.email,
+        user.name,
+        token
+      );
+    }
+
+    return { message: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.' };
+  }
+
+  async resetPassword(token: string, newPass: string) {
+    const reset = await this.prisma.passwordReset.findUnique({
+      where: { token }
+    });
+
+    if (!reset || reset.expiresAt < new Date()) {
+      throw new BadRequestException('Token inválido ou expirado');
+    }
+
+    const passwordHash = await bcrypt.hash(newPass, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { email: reset.email },
+        data: { passwordHash }
+      }),
+      this.prisma.passwordReset.delete({
+        where: { id: reset.id }
+      })
+    ]);
 
     return { success: true };
   }

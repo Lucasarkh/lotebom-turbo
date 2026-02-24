@@ -15,6 +15,9 @@ import { CampaignsModule } from '@modules/campaigns/campaigns.module';
 import { TenantsModule } from '@modules/tenants/tenants.module';
 import { DbModule } from '@infra/db/db.module';
 import { SystemSettingsModule } from '@modules/system-settings/system-settings.module';
+import { RabbitMqModule } from '@infra/rabbitmq/rabbitmq.module';
+import { SendPulseModule } from '@infra/sendpulse/sendpulse.module';
+import { EmailQueueModule } from '@infra/email-queue/email-queue.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { SystemSettingsModule } from '@modules/system-settings/system-settings.m
       isGlobal: true
     }),
     DbModule,
+    RabbitMqModule,
+    SendPulseModule,
+    EmailQueueModule,
     AuthModule,
     UserModule,
     TenantsModule,
