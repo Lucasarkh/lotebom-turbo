@@ -57,15 +57,15 @@ export class RealtorLinksService {
     return link;
   }
 
-  /** Public – resolve realtor by tenant slug + code for the public page */
-  async findPublic(tenantSlug: string, code: string) {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: tenantSlug },
+  /** Public – resolve realtor by project slug + code for the public page */
+  async findPublic(projectSlug: string, code: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { slug: projectSlug },
     });
-    if (!tenant) throw new NotFoundException('Tenant não encontrado.');
+    if (!project) throw new NotFoundException('Project não encontrado.');
 
     const link = await this.prisma.realtorLink.findFirst({
-      where: { tenantId: tenant.id, code, enabled: true },
+      where: { tenantId: project.tenantId, code, enabled: true },
       select: {
         id: true,
         name: true,

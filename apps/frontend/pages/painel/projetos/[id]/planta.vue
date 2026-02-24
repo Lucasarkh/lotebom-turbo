@@ -14,8 +14,8 @@
 
       <div class="flex items-center gap-2">
         <a
-          v-if="projectSlug && tenantSlug"
-          :href="`/${tenantSlug}/${projectSlug}#planta`"
+          v-if="projectSlug"
+          :href="`/${projectSlug}#planta`"
           target="_blank"
           class="btn btn-sm btn-outline"
           style="border-radius: 64px; padding-left: 16px; padding-right: 16px;"
@@ -65,7 +65,6 @@ const plantMapApi = usePlantMapApi()
 const plantMap = ref<PlantMap | null>(null)
 const projectName = ref('')
 const projectSlug = ref('')
-const tenantSlug = ref('')
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 
@@ -80,7 +79,6 @@ onMounted(async () => {
     if (project) {
       projectName.value = project.name
       projectSlug.value = project.slug
-      tenantSlug.value = project.tenant?.slug ?? ''
     }
 
     plantMap.value = pm

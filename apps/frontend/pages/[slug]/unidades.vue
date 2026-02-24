@@ -4,7 +4,7 @@
     <nav class="v4-header-glass">
       <div class="v4-container">
         <div class="v4-header-inner">
-          <NuxtLink :to="`/${tenantSlug}/${projectSlug}`" class="v4-back-btn">
+          <NuxtLink :to="`/${projectSlug}`" class="v4-back-btn">
             <span class="v4-icon">←</span> Ver Projeto
           </NuxtLink>
           <div v-if="project" class="v4-header-title">
@@ -177,8 +177,7 @@ definePageMeta({ layout: 'public' })
 const route = useRoute()
 const { fetchPublic } = usePublicApi()
 
-const tenantSlug = route.params.tenant as string
-const projectSlug = route.params.project as string
+const projectSlug = route.params.slug as string
 const corretorCode = route.query.c || ''
 
 const loading = ref(true)
@@ -337,13 +336,13 @@ function clearFilters() {
 
 const lotPageUrl = (lot: any) => {
   const code = lot.code || lot.id || lot.name
-  const base = `/${tenantSlug}/${projectSlug}/lote/${encodeURIComponent(code)}`
+  const base = `/${projectSlug}/lote/${encodeURIComponent(code)}`
   return corretorCode ? `${base}?c=${corretorCode}` : base
 }
 
 onMounted(async () => {
   try {
-    const p = await fetchPublic(`/p/${tenantSlug}/${projectSlug}`)
+    const p = await fetchPublic(`/p/${projectSlug}`)
     if (p) {
       project.value = p
       useHead({ title: `Busca de Unidades — ${p.name}` })

@@ -6,24 +6,22 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const tracking = useTracking();
   const route = useRoute();
 
-  // Extract tenant/project from URL if available
-  // Path format: /[tenant]/[project]
-  const tenant = to.params.tenant as string;
-  const project = to.params.project as string;
+  // Extract project from URL if available
+  // Path format: /[slug]
+  const projectSlug = to.params.slug as string;
 
   // Initializing session if needed
-  if (tenant || project) {
-    // Pass slugs so backend can resolve early for correct association in dashboard
+  if (projectSlug) {
+    // Pass slug so backend can resolve early for correct association in dashboard
     await tracking.initTracking({
-      tenantSlug: tenant,
-      projectSlug: project,
+      projectSlug: projectSlug,
       realtorCode: to.query.c as string,
     });
   }
 
   // Tracking page view (will only work if session already exists, i.e., non-entry pages)
   const isLotPage = to.path.includes('/lote/');
-  const isProjectPage = to.params.project && to.path.includes(to.params.project as string);
+  const isProjectPage = to.params.slug && to.path.includes(to.params.slug as string);
   
   // Create a clean, human-readable label
   let label = (to.meta.title as string) || '';

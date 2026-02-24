@@ -39,8 +39,9 @@
           </div>
           <div class="form-group">
             <label class="form-label">Slug</label>
-            <input v-model="form.slug" class="form-input" placeholder="parque-dos-ipes" required @input="onSlugInput" />
-            <small style="color:var(--gray-500); font-size:0.75rem">URL pública: /.../{{ form.slug || '...' }}</small>
+            <input v-model="form.slug" class="form-input" :class="{ 'input-error': slugTaken }" placeholder="parque-dos-ipes" required @input="onSlugInput" />
+            <small v-if="slugTaken" style="color:var(--error-color); font-size:0.75rem">Este slug já está em uso!</small>
+            <small v-else style="color:var(--gray-500); font-size:0.75rem">URL pública: /{{ form.slug || '...' }}</small>
           </div>
           <div class="form-group">
             <label class="form-label">Descrição</label>
@@ -77,8 +78,28 @@ const showCreate = ref(false)
 const creating = ref(false)
 const createError = ref('')
 const slugManuallyEdited = ref(false)
+const slugTaken = ref(false)
+const checkingSlug = ref(false)
 
 const form = ref({ name: '', slug: '', description: '' })
+
+let slugTimeout = null
+watch(() => form.value.slug, (v) => {
+  if (!v) {
+    slugTaken.value = false
+    return
+  }
+  // Simplified debounce
+  clearTimeout(slugTimeout)
+  slugTimeout = setTimeout(async () => {
+    checkingSlug.value = true
+    try {
+      const { available } = await fetchApi(`/projects/check-slug/${v}`)
+      slugTaken.value = !available
+    } catch { slugTaken.value = false }
+    finally { checkingSlug.value = false }
+  }, 500)
+})
 
 watch(() => form.value.name, (v) => {
   if (!slugManuallyEdited.value) {
@@ -103,6 +124,10 @@ const loadProjects = async (page = 1) => {
 }
 
 const handleCreate = async () => {
+  if (slugTaken.value) {
+    createError.value = 'Este slug já está em uso!'
+    return
+  }
   creating.value = true
   createError.value = ''
   try {

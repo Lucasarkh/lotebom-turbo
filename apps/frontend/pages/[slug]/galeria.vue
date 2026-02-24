@@ -11,7 +11,7 @@
       <div class="pub-error-card card">
         <h2>Projeto não encontrado</h2>
         <p>{{ error }}</p>
-        <NuxtLink :to="`/${tenantSlug}/${projectSlug}`" class="v4-btn-primary" style="display: inline-block; margin-top: 1rem;">Voltar ao projeto</NuxtLink>
+        <NuxtLink :to="corretorCode ? `/${projectSlug}?c=${corretorCode}` : `/${projectSlug}`" class="v4-btn-primary" style="display: inline-block; margin-top: 1rem;">Voltar ao projeto</NuxtLink>
       </div>
     </div>
 
@@ -21,7 +21,7 @@
       <nav class="v4-mini-header">
         <div class="v4-container">
           <div class="v4-mini-header-inner">
-            <NuxtLink :to="`/${tenantSlug}/${projectSlug}`" class="v4-back-link">
+            <NuxtLink :to="corretorCode ? `/${projectSlug}?c=${corretorCode}` : `/${projectSlug}`" class="v4-back-link">
               ← Voltar para o Projeto
             </NuxtLink>
             <div class="v4-mini-brand">
@@ -96,8 +96,8 @@ definePageMeta({ layout: 'public' })
 const route = useRoute()
 const { fetchPublic } = usePublicApi()
 
-const tenantSlug = route.params.tenant as string
-const projectSlug = route.params.project as string
+const projectSlug = route.params.slug as string
+const corretorCode = route.query.c || ''
 
 const loading = ref(true)
 const error = ref('')
@@ -131,7 +131,7 @@ function openLightbox(idx: number) {
 
 onMounted(async () => {
   try {
-    project.value = await fetchPublic(`/p/${tenantSlug}/${projectSlug}`)
+    project.value = await fetchPublic(`/p/${projectSlug}`)
     if (project.value) {
       useHead({
         title: `Galeria — ${project.value.name}`,

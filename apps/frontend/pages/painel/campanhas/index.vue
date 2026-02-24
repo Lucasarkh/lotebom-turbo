@@ -98,11 +98,10 @@ function openEdit(campaign: any) {
 
 function generateLink(campaign: any) {
   if (!campaign.project) return ''
-  const tenantSlug = campaign.tenant?.slug || 'demo'
   const projectSlug = campaign.project.slug
   
   // Build URL with query params
-  let url = `${window.location.origin}/${tenantSlug}/${projectSlug}?utm_source=${campaign.utmSource}&utm_campaign=${campaign.utmCampaign}`
+  let url = `${window.location.origin}/${projectSlug}?utm_source=${campaign.utmSource}&utm_campaign=${campaign.utmCampaign}`
   
   if (campaign.utmMedium) url += `&utm_medium=${campaign.utmMedium}`
   if (campaign.utmContent) url += `&utm_content=${campaign.utmContent}`

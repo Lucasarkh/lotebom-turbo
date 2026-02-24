@@ -12,7 +12,7 @@ export class ProjectsService {
 
   async create(tenantId: string, dto: CreateProjectDto) {
     const existing = await this.prisma.project.findUnique({
-      where: { tenantId_slug: { tenantId, slug: dto.slug } },
+      where: { slug: dto.slug.toLowerCase().replace(/\s+/g, '-') },
     });
     if (existing) throw new ConflictException('Já existe um projeto com este slug.');
 
@@ -73,19 +73,22 @@ export class ProjectsService {
     return project;
   }
 
-  async findBySlug(tenantSlug: string, projectSlug: string) {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: tenantSlug },
+  async checkSlugAvailability(slug: string) {
+    const s = slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const project = await this.prisma.project.findUnique({
+      where: { slug: s },
     });
-    if (!tenant) throw new NotFoundException('Tenant não encontrado.');
+    return { available: !project };
+  }
 
+  async findBySlug(projectSlug: string) {
     const project = await this.prisma.project.findFirst({
       where: {
-        tenantId: tenant.id,
         slug: projectSlug,
         status: ProjectStatus.PUBLISHED,
       },
       include: {
+        tenant: { select: { id: true, name: true, slug: true } },
         mapElements: {
           include: {
             lotDetails: {
@@ -102,7 +105,7 @@ export class ProjectsService {
     });
     if (!project) throw new NotFoundException('Projeto não encontrado ou não publicado.');
 
-    return { ...project, tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug } };
+    return project;
   }
 
   async update(tenantId: string, id: string, dto: UpdateProjectDto) {
@@ -113,7 +116,7 @@ export class ProjectsService {
 
     if (dto.slug) {
       const existing = await this.prisma.project.findFirst({
-        where: { tenantId, slug: dto.slug, NOT: { id } },
+        where: { slug: dto.slug.toLowerCase().replace(/\s+/g, '-'), NOT: { id } },
       });
       if (existing) throw new ConflictException('Já existe um projeto com este slug.');
     }

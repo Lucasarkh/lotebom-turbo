@@ -100,15 +100,14 @@ function getProjectNames(realtor) {
 }
 
 function copyLink(realtor, project = null) {
-  const tenantSlug = realtor.tenant?.slug || 'demo'
   let url = ''
   
   if (project) {
-    url = `${window.location.origin}/${tenantSlug}/${project.slug}?c=${realtor.code}`
+    url = `${window.location.origin}/${project.slug}?c=${realtor.code}`
   } else if (realtor.projects?.length > 0) {
     // If no specific project provided, copy the first one
     const p = realtor.projects[0]
-    url = `${window.location.origin}/${tenantSlug}/${p.slug}?c=${realtor.code}`
+    url = `${window.location.origin}/${p.slug}?c=${realtor.code}`
   } else {
     // Fallback if no projects
     url = `${window.location.origin}/p?c=${realtor.code}`

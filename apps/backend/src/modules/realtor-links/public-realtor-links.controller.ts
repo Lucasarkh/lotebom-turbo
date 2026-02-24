@@ -3,16 +3,16 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RealtorLinksService } from './realtor-links.service';
 
 @ApiTags('Public – Realtor Links')
-@Controller('p/:tenantSlug/corretores')
+@Controller('p/:projectSlug/corretores')
 export class PublicRealtorLinksController {
   constructor(private readonly service: RealtorLinksService) {}
 
   @Get(':code')
   @ApiOperation({ summary: 'Buscar dados públicos do corretor pelo código' })
   findPublic(
-    @Param('tenantSlug') tenantSlug: string,
+    @Param('projectSlug') projectSlug: string,
     @Param('code') code: string,
   ) {
-    return this.service.findPublic(tenantSlug, code);
+    return this.service.findPublic(projectSlug, code);
   }
 }

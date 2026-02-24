@@ -443,8 +443,7 @@ const { success: toastSuccess } = useToast()
 const tracking = useTracking()
 const trackingStore = useTrackingStore()
 
-const tenantSlug = route.params.tenant as string
-const projectSlug = route.params.project as string
+const projectSlug = route.params.slug as string
 const lotCode = decodeURIComponent(route.params.code as string)
 const corretorCode = (route.query.c as string) || ''
 
@@ -501,7 +500,7 @@ const lotPanorama = computed(() => {
 })
 
 const projectUrl = computed(() => {
-  const base = `/${tenantSlug}/${projectSlug}`
+  const base = `/${projectSlug}`
   return corretorCode ? `${base}?c=${corretorCode}` : base
 })
 
@@ -661,7 +660,7 @@ const otherLots = computed(() => {
 
 const otherLotUrl = (l: any) => {
   const code = l.code || l.id
-  const base = `/${tenantSlug}/${projectSlug}/lote/${encodeURIComponent(code)}`
+  const base = `/${projectSlug}/lote/${encodeURIComponent(code)}`
   return corretorCode ? `${base}?c=${corretorCode}` : base
 }
 
@@ -704,8 +703,8 @@ onMounted(async () => {
   
   try {
     const [p, c] = await Promise.allSettled([
-      fetchPublic(`/p/${tenantSlug}/${projectSlug}`),
-      corretorCode ? fetchPublic(`/p/${tenantSlug}/corretores/${corretorCode}`) : Promise.resolve(null),
+      fetchPublic(`/p/${projectSlug}`),
+      corretorCode ? fetchPublic(`/p/${projectSlug}/corretores/${corretorCode}`) : Promise.resolve(null),
     ])
     
     if (p.status === 'fulfilled') {
@@ -762,7 +761,7 @@ async function submitLead() {
       message: leadForm.value.message || `Quero mais informações sobre o lote ${lotCode}`,
       realtorCode: corretorCode || undefined,
     }
-    await fetchPublic(`/p/${tenantSlug}/${projectSlug}/leads`, {
+    await fetchPublic(`/p/${projectSlug}/leads`, {
       method: 'POST',
       body: JSON.stringify(body),
     })
@@ -785,7 +784,7 @@ async function submitGateLead() {
       message: `Liberou a tabela de preços do lote ${lotCode}`,
       realtorCode: corretorCode || undefined,
     }
-    await fetchPublic(`/p/${tenantSlug}/${projectSlug}/leads`, {
+    await fetchPublic(`/p/${projectSlug}/leads`, {
       method: 'POST',
       body: JSON.stringify(body),
     })

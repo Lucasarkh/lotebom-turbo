@@ -10,19 +10,24 @@ export class TrackingService {
     const { tenantSlug, projectSlug, realtorCode, ...data } = dto;
     let { tenantId, projectId } = data;
 
+    // Use projectSlug as the primary identifier if available
+    // Since slugs are now project-unique
+    if (!projectId && projectSlug) {
+      const project = await this.prisma.project.findUnique({
+        where: { slug: projectSlug },
+        include: { tenant: true }
+      });
+      if (project) {
+        projectId = project.id;
+        tenantId = project.tenantId;
+      }
+    }
+
+    // Fallback if only tenantSlug is provided (old behavior)
     if (!tenantId && tenantSlug) {
       const tenant = await this.prisma.tenant.findUnique({ where: { slug: tenantSlug } });
       if (tenant) {
         tenantId = tenant.id;
-      }
-    }
-
-    if (!projectId && projectSlug && tenantId) {
-      const project = await this.prisma.project.findFirst({
-        where: { tenantId, slug: projectSlug }
-      });
-      if (project) {
-        projectId = project.id;
       }
     }
 
@@ -442,14 +447,16 @@ export class TrackingService {
 
         if (code) {
            // We want to show the path components as requested: url/empreendimento/lote-01
-           const tenantSlug = parts[0] || '---';
-           const projectSlug = parts[1] || '---';
-           label = `${tenantSlug}/${projectSlug}/${code}`;
+           const projectSlug = parts[0] || '---';
+           label = `${projectSlug}/${code}`;
         }
-      } else if (cleanPath.split('/').filter(Boolean).length >= 2) {
-         // It's a project path, show as tenant/project
+      } else if (cleanPath.split('/').filter(Boolean).length >= 1) {
+         // It's a project path, show as project-slug
          const parts = cleanPath.split('/').filter(Boolean);
-         if (parts.length === 2) {
+         if (parts.length === 1) {
+            label = `${parts[0]}`;
+         } else if (parts.length === 2) {
+            // Likely /projectSlug/unidades or similar
             label = `${parts[0]}/${parts[1]}`;
          }
       }

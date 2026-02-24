@@ -204,7 +204,7 @@
           </div>
 
           <div v-if="unifiedAvailableLots.length > 6" style="margin-top: 56px; display: flex; justify-content: center;">
-            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver todos os lotes')">
+            <NuxtLink :to="`/${projectSlug}/unidades`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver todos os lotes')">
               Ver todos os {{ unifiedAvailableLots.length }} lotes disponíveis
             </NuxtLink>
           </div>
@@ -237,7 +237,7 @@
           </div>
 
           <div v-if="project.projectMedias.length > 9" style="margin-top: 56px; display: flex; justify-content: center;">
-            <NuxtLink :to="`/${tenantSlug}/${projectSlug}/galeria`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver toda galeria')">
+            <NuxtLink :to="`/${projectSlug}/galeria`" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver toda galeria')">
               Ver todos os {{ project.projectMedias.length }} arquivos de mídia
             </NuxtLink>
           </div>
@@ -448,6 +448,7 @@
 definePageMeta({ layout: 'public' })
 
 const route = useRoute()
+const projectSlug = route.params.slug
 const { fetchPublic } = usePublicApi()
 import { usePublicPlantMap } from '~/composables/plantMap/usePlantMapApi'
 import type { PlantMap } from '~/composables/plantMap/types'
@@ -458,9 +459,6 @@ import type { Panorama } from '~/composables/panorama/types'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
 import { useTracking } from '~/composables/useTracking'
 import { useTrackingStore } from '~/stores/tracking'
-
-const tenantSlug = route.params.tenant
-const projectSlug = route.params.project
 const corretorCode = route.query.c || ''
 const { success: toastSuccess } = useToast()
 const tracking = useTracking()
@@ -530,7 +528,7 @@ const applyFiltersAndSearch = () => {
   
   isFilterModalOpen.value = false
   navigateTo({
-    path: `/${tenantSlug}/${projectSlug}/unidades`,
+    path: `/${projectSlug}/unidades`,
     query
   })
 }
@@ -727,15 +725,15 @@ const priceRange = computed(() => {
 
 const lotPageUrl = (lot: any) => {
   const code = lot.code || lot.id || lot.name
-  const base = `/${tenantSlug}/${projectSlug}/lote/${encodeURIComponent(code)}`
+  const base = `/${projectSlug}/lote/${encodeURIComponent(code)}`
   return corretorCode ? `${base}?c=${corretorCode}` : base
 }
 
 onMounted(async () => {
   try {
     const [p, c] = await Promise.allSettled([
-      fetchPublic(`/p/${tenantSlug}/${projectSlug}`),
-      corretorCode ? fetchPublic(`/p/${tenantSlug}/corretores/${corretorCode}`) : Promise.resolve(null),
+      fetchPublic(`/p/${projectSlug}`),
+      corretorCode ? fetchPublic(`/p/${projectSlug}/corretores/${corretorCode}`) : Promise.resolve(null),
     ])
     if (p.status === 'fulfilled') {
       project.value = p.value
@@ -784,7 +782,7 @@ async function submitLead() {
       realtorCode: corretorCode || undefined,
       sessionId: trackingStore.sessionId || undefined,
     }
-    await fetchPublic(`/p/${tenantSlug}/${projectSlug}/leads`, {
+    await fetchPublic(`/p/${projectSlug}/leads`, {
       method: 'POST',
       body: JSON.stringify(body),
     })

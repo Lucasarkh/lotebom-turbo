@@ -11,7 +11,7 @@
     </div>
     <div class="project-card__content">
       <h3 class="project-card__title">{{ project.name }}</h3>
-      <p class="project-card__slug">/{{ project.tenant?.slug }}/{{ project.slug }}</p>
+      <p class="project-card__slug">/{{ project.slug }}</p>
       <div class="project-card__footer">
         <span class="project-card__date" v-if="showDate">{{ formatDate(project.createdAt) }}</span>
         <div class="project-card__stats">

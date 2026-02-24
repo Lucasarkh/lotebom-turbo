@@ -7,12 +7,11 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 export class PublicProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
-  @Get(':tenantSlug/:projectSlug')
+  @Get(':projectSlug')
   @ApiOperation({ summary: 'Dados públicos do projeto (mapa + lotes + mídia)' })
   findPublic(
-    @Param('tenantSlug') tenantSlug: string,
     @Param('projectSlug') projectSlug: string,
   ) {
-    return this.projectsService.findBySlug(tenantSlug, projectSlug);
+    return this.projectsService.findBySlug(projectSlug);
   }
 }

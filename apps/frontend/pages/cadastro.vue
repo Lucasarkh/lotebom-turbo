@@ -13,9 +13,10 @@
           <input v-model="form.tenantName" class="form-input" placeholder="Loteadora XYZ" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Slug (URL amigável)</label>
-          <input v-model="form.tenantSlug" class="form-input" placeholder="loteadora-xyz" required @input="onSlugInput" />
-          <small style="color:var(--gray-500);font-size:0.75rem">Será usado na URL pública: /<b>{{ form.tenantSlug || '...' }}</b>/projeto</small>
+          <label class="form-label">Identificador da empresa</label>
+          <input v-model="form.tenantSlug" class="form-input" :class="{ 'input-error': slugTaken }" placeholder="loteadora-xyz" required @input="onSlugInput" />
+          <small v-if="slugTaken" style="color:var(--error-color); font-size:0.75rem">Este identificador já está em uso!</small>
+          <small v-else style="color:var(--gray-500);font-size:0.75rem">Identificador único da sua empresa na plataforma.</small>
         </div>
         <div class="form-group">
           <label class="form-label">Seu nome</label>
@@ -58,11 +59,34 @@ const form = ref({
 })
 const confirmPassword = ref('')
 const slugManuallyEdited = ref(false)
+const slugTaken = ref(false)
+const checkingSlug = ref(false)
 const loading = ref(false)
 const error = ref('')
+
 const router = useRouter()
 const config = useRuntimeConfig()
 const { success: toastSuccess, fromError: toastFromError } = useToast()
+
+let slugTimeout = null
+watch(() => form.value.tenantSlug, (v) => {
+  if (!v) {
+    slugTaken.value = false
+    return
+  }
+  clearTimeout(slugTimeout)
+  slugTimeout = setTimeout(async () => {
+    checkingSlug.value = true
+    try {
+      const res = await fetch(`${config.public.apiBase}/api/auth/check-tenant-slug/${v}`)
+      if (res.ok) {
+        const { available } = await res.json()
+        slugTaken.value = !available
+      }
+    } catch { slugTaken.value = false }
+    finally { checkingSlug.value = false }
+  }, 500)
+})
 
 // Auto-generate slug from name, unless user edited it manually
 watch(() => form.value.tenantName, (v) => {
@@ -74,6 +98,10 @@ watch(() => form.value.tenantName, (v) => {
 const onSlugInput = () => { slugManuallyEdited.value = true }
 
 const handleRegister = async () => {
+  if (slugTaken.value) {
+    error.value = 'Este identificador já está em uso'
+    return
+  }
   if (form.value.password !== confirmPassword.value) {
     error.value = 'As senhas não coincidem'
     return

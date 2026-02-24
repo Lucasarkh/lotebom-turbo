@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Body,
+  Param,
   UnauthorizedException,
   HttpCode,
   HttpStatus,
@@ -21,6 +22,12 @@ import { AuthGuard } from '@nestjs/passport';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('check-tenant-slug/:slug')
+  @ApiOperation({ summary: 'Verificar disponibilidade de slug de tenant' })
+  async checkTenantSlug(@Param('slug') slug: string) {
+    return this.authService.checkTenantSlugAvailability(slug);
+  }
 
   @Post('register-tenant')
   @ApiOperation({ summary: 'Cadastro de loteadora (cria tenant + admin user)' })

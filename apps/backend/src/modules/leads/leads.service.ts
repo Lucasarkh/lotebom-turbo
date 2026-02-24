@@ -12,29 +12,23 @@ export class LeadsService {
 
   /** Public – anyone can create a lead for a published project */
   async createPublic(
-    tenantSlug: string,
     projectSlug: string,
     dto: CreateLeadDto,
   ) {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: tenantSlug },
-    });
-    if (!tenant) throw new NotFoundException('Tenant not found');
-
     const project = await this.prisma.project.findUnique({
-      where: {
-        tenantId_slug: { tenantId: tenant.id, slug: projectSlug },
-      },
+      where: { slug: projectSlug },
     });
     if (!project || project.status !== 'PUBLISHED')
       throw new NotFoundException('Project not found');
+
+    const tenantId = project.tenantId;
 
     // Resolve optional realtor code → ID (must be associated with this project)
     let realtorLinkId: string | undefined;
     if (dto.realtorCode) {
       const rl = await this.prisma.realtorLink.findFirst({
         where: {
-          tenantId: tenant.id,
+          tenantId,
           code: dto.realtorCode,
           enabled: true,
           projects: { some: { id: project.id } },
@@ -49,7 +43,7 @@ export class LeadsService {
     let validMapElementId: string | undefined;
     if (mapElementId && typeof mapElementId === 'string' && mapElementId.trim().length > 0) {
       const exists = await this.prisma.mapElement.findFirst({
-        where: { id: mapElementId, projectId: project.id, tenantId: tenant.id },
+        where: { id: mapElementId, projectId: project.id, tenantId },
         select: { id: true },
       });
       if (exists) {
@@ -59,7 +53,7 @@ export class LeadsService {
 
     return this.prisma.lead.create({
       data: {
-        tenantId: tenant.id,
+        tenantId,
         projectId: project.id,
         ...leadData,
         ...(validMapElementId ? { mapElementId: validMapElementId } : {}),

@@ -28,6 +28,12 @@ import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @Get('check-slug/:slug')
+  @ApiOperation({ summary: 'Verificar disponibilidade de slug de projeto' })
+  checkSlug(@Param('slug') slug: string) {
+    return this.projectsService.checkSlugAvailability(slug);
+  }
+
   @Post()
   @Roles('ADMIN', 'EDITOR')
   @ApiOperation({ summary: 'Criar projeto' })

@@ -33,6 +33,13 @@ export class AuthService {
   /**
    * Register a new tenant (Loteadora) + admin user in one transaction.
    */
+  async checkTenantSlugAvailability(slug: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug: slug.toLowerCase().replace(/\s+/g, '-') },
+    });
+    return { available: !tenant };
+  }
+
   async registerTenant(dto: RegisterTenantDto) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },

@@ -154,7 +154,7 @@ model Project {
   trackingSessions TrackingSession[]
   campaigns        Campaign[]
 
-  @@unique([tenantId, slug])
+  @@unique([slug])
   @@index([tenantId])
 }
 

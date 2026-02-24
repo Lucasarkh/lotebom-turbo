@@ -24,7 +24,7 @@
         <div class="flex items-center gap-3">
           <a
             v-if="project.status === 'PUBLISHED'"
-            :href="`/${tenantSlug}/${project.slug}`"
+            :href="`/${project.slug}`"
             target="_blank"
             class="btn btn-sm btn-outline"
             style="display: flex; align-items: center; gap: 8px; border-radius: 64px; padding-left: 16px; padding-right: 16px; border-color: var(--primary-50); background: var(--primary-light); color: var(--primary);"
@@ -134,7 +134,7 @@
                 <td v-if="authStore.canEdit">
                   <div class="flex gap-2">
                      <button class="btn btn-sm btn-secondary" @click="openEditLot(l)">Editar Dados</button>
-                     <a v-if="publicUrl && l.mapElement" :href="`/${project.tenant.slug}/${project.slug}/lote/${l.mapElement.code}`" target="_blank" class="btn btn-sm btn-outline">Ver Página</a>
+                     <a v-if="publicUrl && l.mapElement" :href="`/${project.slug}/lote/${l.mapElement.code}`" target="_blank" class="btn btn-sm btn-outline">Ver Página</a>
                   </div>
                 </td>
               </tr>
@@ -900,8 +900,7 @@ const removeLotMedia = async (id) => {
   }
 }
 
-const tenantSlug = computed(() => project.value?.tenant?.slug || '')
-const publicUrl = computed(() => tenantSlug.value && project.value ? `/${tenantSlug.value}/${project.value.slug}` : null)
+const publicUrl = computed(() => project.value ? `/${project.value.slug}` : null)
 
 const editForm = ref({
   name: '',

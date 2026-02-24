@@ -129,18 +129,16 @@ const statusLabel = computed(() =>
 const ctaLink = computed(() => {
   if (!props.hotspot) return null
   const { linkType, linkId, linkUrl } = props.hotspot
-  const tenant = route.params.tenant as string
-  const project = route.params.project as string
+  const slug = route.params.slug as string
   const realtorCode = route.query.c as string
   
   let base = null
   if (linkType === 'LOTE_PAGE' && linkId) {
-    if (tenant && project) base = `/${tenant}/${project}/lote/${linkId}`
+    if (slug) base = `/${slug}/lote/${linkId}`
     else base = `/lotes/${linkId}`
   }
   else if (linkType === 'PROJECT_PAGE' && linkId) {
-    if (tenant) base = `/${tenant}/${linkId}`
-    else base = `/${linkId}`
+    base = `/${linkId}`
   }
   else if (linkType === 'CUSTOM_URL' && linkUrl) return linkUrl
 
