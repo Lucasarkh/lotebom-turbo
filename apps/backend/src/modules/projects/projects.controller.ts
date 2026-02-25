@@ -18,8 +18,10 @@ import { TenantGuard } from '@common/guards/tenant.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { TenantId } from '@common/decorators/tenant-id.decorator';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
+import type { User } from '@prisma/client';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
@@ -37,8 +39,12 @@ export class ProjectsController {
   @Post()
   @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar projeto' })
-  create(@TenantId() tenantId: string, @Body() dto: CreateProjectDto) {
-    return this.projectsService.create(tenantId, dto);
+  create(
+    @TenantId() tenantId: string,
+    @Body() dto: CreateProjectDto,
+    @CurrentUser() user: User
+  ) {
+    return this.projectsService.create(tenantId, dto, user);
   }
 
   @Get()
@@ -62,9 +68,10 @@ export class ProjectsController {
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateProjectDto
+    @Body() dto: UpdateProjectDto,
+    @CurrentUser() user: User
   ) {
-    return this.projectsService.update(tenantId, id, dto);
+    return this.projectsService.update(tenantId, id, dto, user);
   }
 
   @Patch(':id')
@@ -73,9 +80,10 @@ export class ProjectsController {
   patch(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateProjectDto
+    @Body() dto: UpdateProjectDto,
+    @CurrentUser() user: User
   ) {
-    return this.projectsService.update(tenantId, id, dto);
+    return this.projectsService.update(tenantId, id, dto, user);
   }
 
   @Patch(':id/publish')

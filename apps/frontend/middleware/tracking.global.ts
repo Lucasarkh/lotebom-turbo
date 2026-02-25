@@ -1,14 +1,15 @@
 import { useTracking } from '../composables/useTracking';
+import { useTenantStore } from '../stores/tenant';
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (!process.client) return;
 
   const tracking = useTracking();
-  const route = useRoute();
+  const tenantStore = useTenantStore();
 
   // Extract project from URL if available
-  // Path format: /[slug]
-  const projectSlug = to.params.slug as string;
+  // Path format: /[slug] or it comes from tenantStore on custom domains
+  const projectSlug = (to.params.slug || (tenantStore.config?.projectId ? tenantStore.config.project?.slug : '')) as string;
 
   // Initializing session if needed
   if (projectSlug) {
@@ -20,8 +21,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Tracking page view (will only work if session already exists, i.e., non-entry pages)
-  const isLotPage = to.path.includes('/lote/');
-  const isProjectPage = to.params.slug && to.path.includes(to.params.slug as string);
+  const host = window.location.host;
+  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000');
+  
+  // A "lot page" can be /[slug]/lote/[code] (main domain) or /[code] (custom domain)
+  // On custom domain, if they browse to /L-01, to.params.slug is "L-01" because of pages/[slug]/index.vue
+  const isLotPage = to.path.includes('/lote/') || (!isMainDomain && to.params.slug && to.path === `/${to.params.slug}`);
+
+  const isProjectHome = (isMainDomain && to.params.slug && to.path === `/${to.params.slug}`) || (!isMainDomain && to.path === '/');
   
   // Create a clean, human-readable label
   let label = (to.meta.title as string) || '';
@@ -29,11 +36,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (isLotPage) {
     // extract code directly from URL to be safe
     const parts = to.path.split('/');
-    const code = to.params.code || parts[parts.length - 1];
+    const code = to.params.code || to.params.slug || parts[parts.length - 1];
     label = `Lote ${code || '?'}`;
-  } else if (isProjectPage && !to.path.includes('/painel')) {
+  } else if (isProjectHome) {
     label = 'Mapa do Empreendimento';
-  } else if (to.path === '/' || to.path === '/painel') {
+  } else if ((to.path === '/' && isMainDomain) || to.path === '/painel') {
     label = 'Painel Administrativo';
   } else if (!label) {
     const parts = to.path.split('/').filter(Boolean);

@@ -28,6 +28,11 @@ export class UpdateProjectDto {
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
 
+  @ApiPropertyOptional({ example: 'vendas.meu-loteamento.com.br' })
+  @IsOptional()
+  @IsString()
+  customDomain?: string | null;
+
   @ApiPropertyOptional({ description: 'Dados do mapa do editor (JSON)' })
   @IsOptional()
   mapData?: any;

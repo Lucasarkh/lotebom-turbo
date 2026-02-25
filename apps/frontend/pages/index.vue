@@ -1,13 +1,21 @@
 <template>
-  <div class="landing-page">
+  <div v-if="!tenantStore.isLoaded" class="loading-full">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- If a project was resolved (custom domain), show the project home here on root -->
+  <template v-else-if="tenantStore.config?.projectId">
+    <ProjectLandingView />
+  </template>
+
+  <!-- Otherwise show standard platform landing -->
+  <div v-else class="landing-page">
     <LandingHeader />
-    
     <main>
       <LandingHero />
       <LandingFeatures />
       <LandingCTA />
     </main>
-    
     <LandingFooter />
   </div>
 </template>
@@ -18,10 +26,10 @@ import LandingHero from '@/components/landing/LandingHero.vue'
 import LandingFeatures from '@/components/landing/LandingFeatures.vue'
 import LandingCTA from '@/components/landing/LandingCTA.vue'
 import LandingFooter from '@/components/landing/LandingFooter.vue'
+import ProjectLandingView from '@/components/ProjectLandingView.vue'
+import { useTenantStore } from '~/stores/tenant'
 
-// Avoid redirection if landing is active
-// const authStore = useAuthStore()
-// navigateTo(authStore.isLoggedIn ? '/painel' : '/login')
+const tenantStore = useTenantStore()
 
 useSeoMeta({
   title: 'Lotio - Gestão de Vendas para Loteadoras e Incorporadoras',

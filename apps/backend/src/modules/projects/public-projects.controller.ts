@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Req, NotFoundException } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
@@ -6,6 +6,21 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 @Controller('p')
 export class PublicProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
+
+  @Get('resolve-tenant')
+  @ApiOperation({ summary: 'Resolver contexto de tenant/projeto via Host' })
+  async resolveTenant(@Req() req: any) {
+    if (!req.tenantId) {
+      throw new NotFoundException('Loteadora não identificada.');
+    }
+    
+    // You could fetch more data here (theme, logo, etc)
+    return {
+      tenantId: req.tenantId,
+      projectId: req.projectId,
+      project: req.project || null
+    };
+  }
 
   @Get(':projectSlug')
   @ApiOperation({ summary: 'Dados públicos do projeto (mapa + lotes + mídia)' })

@@ -87,6 +87,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useTenantStore } from '~/stores/tenant'
 import type { PlantHotspot } from '~/composables/plantMap/types'
 import {
   HOTSPOT_TYPE_COLORS,
@@ -109,6 +110,7 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const route = useRoute()
+const tenantStore = useTenantStore()
 
 const badgeColor = computed(() =>
   props.hotspot ? HOTSPOT_TYPE_COLORS[props.hotspot.type] : '#6b7280',
@@ -129,16 +131,22 @@ const statusLabel = computed(() =>
 const ctaLink = computed(() => {
   if (!props.hotspot) return null
   const { linkType, linkId, linkUrl } = props.hotspot
-  const slug = route.params.slug as string
-  const realtorCode = route.query.c as string
+  const slug = (route.params.slug || tenantStore.config?.project?.slug) as string
+  const realtorCode = (route.query.c || '') as string
   
+  // Custom Domain logic: if on main domain, add slug prefix. 
+  // If on custom domain, keep root.
+  const host = process.client ? window.location.host : ''
+  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
+  const pathPrefix = isMainDomain ? `/${slug}` : ''
+
   let base = null
   if (linkType === 'LOTE_PAGE' && linkId) {
-    if (slug) base = `/${slug}/lote/${linkId}`
-    else base = `/lotes/${linkId}`
+    const code = (props.hotspot as any).code || (props.hotspot as any).name || linkId || props.hotspot.id
+    base = isMainDomain ? `${pathPrefix}/lote/${encodeURIComponent(code)}` : `/${encodeURIComponent(code)}`
   }
   else if (linkType === 'PROJECT_PAGE' && linkId) {
-    base = `/${linkId}`
+    base = isMainDomain ? `/${linkId}` : '/'
   }
   else if (linkType === 'CUSTOM_URL' && linkUrl) return linkUrl
 

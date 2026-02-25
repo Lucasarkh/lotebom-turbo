@@ -16,4 +16,9 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 'vendas.meu-loteamento.com.br' })
+  @IsOptional()
+  @IsString()
+  customDomain?: string;
 }

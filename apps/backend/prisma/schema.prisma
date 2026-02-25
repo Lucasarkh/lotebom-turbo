@@ -105,12 +105,13 @@ enum PlantHotspotLinkType {
 // ─── CORE MODELS ────────────────────────────────────────
 
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  customDomain String?  @unique
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   users         User[]
   projects      Project[]
@@ -125,8 +126,6 @@ model Tenant {
   panoramaBeacons  PanoramaBeacon[]
   trackingSessions TrackingSession[]
   campaigns         Campaign[]
-
-  @@unique([slug])
 }
 
 model User {
@@ -153,7 +152,8 @@ model Project {
   tenantId        String
   tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name            String
-  slug            String
+  slug            String        @unique
+  customDomain    String?       @unique
   description     String?       @db.Text
   status          ProjectStatus @default(DRAFT)
   bannerImageUrl  String?
@@ -179,7 +179,6 @@ model Project {
   trackingSessions TrackingSession[]
   campaigns        Campaign[]
 
-  @@unique([slug])
   @@index([tenantId])
 }
 

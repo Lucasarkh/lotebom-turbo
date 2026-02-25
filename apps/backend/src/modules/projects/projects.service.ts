@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '@/infra/db/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectStatus, Project } from '@prisma/client';
+import { ProjectStatus, Project, User, UserRole } from '@prisma/client';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 import { PaginatedResponse } from '@common/dto/paginated-response.dto';
 
@@ -14,19 +14,32 @@ import { PaginatedResponse } from '@common/dto/paginated-response.dto';
 export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(tenantId: string, dto: CreateProjectDto) {
+  async create(tenantId: string, dto: CreateProjectDto, user?: User) {
     const existing = await this.prisma.project.findUnique({
       where: { slug: dto.slug.toLowerCase().replace(/\s+/g, '-') }
     });
     if (existing)
       throw new ConflictException('Já existe um projeto com este slug.');
 
+    // Only sysadmin can set customDomain on creation
+    if (dto.customDomain && user?.role !== UserRole.SYSADMIN) {
+        delete dto.customDomain;
+    }
+
+    if (dto.customDomain) {
+      const existingDomain = await this.prisma.project.findUnique({
+          where: { customDomain: dto.customDomain }
+      });
+      if (existingDomain) throw new ConflictException('Domínio já em uso.');
+    }
+
     return this.prisma.project.create({
       data: {
         tenantId,
         name: dto.name,
         slug: dto.slug.toLowerCase().replace(/\s+/g, '-'),
-        description: dto.description
+        description: dto.description,
+        customDomain: dto.customDomain
       }
     });
   }
@@ -119,9 +132,9 @@ export class ProjectsService {
     return project;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateProjectDto) {
+  async update(tenantId: string, id: string, dto: UpdateProjectDto, user?: User) {
     const project = await this.prisma.project.findFirst({
-      where: { id, tenantId }
+      where: user?.role === UserRole.SYSADMIN ? { id } : { id, tenantId }
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
@@ -136,12 +149,29 @@ export class ProjectsService {
         throw new ConflictException('Já existe um projeto com este slug.');
     }
 
+    // Custom domain check: only SysAdmin can edit it
+    if (dto.customDomain !== undefined && user?.role !== UserRole.SYSADMIN) {
+        delete dto.customDomain;
+    }
+
+    if (dto.customDomain === '') {
+      dto.customDomain = null;
+    }
+
+    if (dto.customDomain !== undefined && dto.customDomain !== null) {
+      const existing = await this.prisma.project.findFirst({
+        where: { customDomain: dto.customDomain, NOT: { id } }
+      });
+      if (existing) throw new ConflictException('Domínio já em uso.');
+    }
+
     return this.prisma.project.update({
       where: { id },
       data: {
         ...(dto.name && { name: dto.name }),
         ...(dto.slug && { slug: dto.slug.toLowerCase().replace(/\s+/g, '-') }),
         ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.customDomain !== undefined && { customDomain: dto.customDomain }),
         ...(dto.bannerImageUrl !== undefined && {
           bannerImageUrl: dto.bannerImageUrl
         }),

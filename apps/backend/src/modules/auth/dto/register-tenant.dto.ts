@@ -1,5 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterTenantDto {
   @ApiProperty({ example: 'Loteadora Vista Verde' })
@@ -11,6 +11,11 @@ export class RegisterTenantDto {
   @IsString()
   @IsNotEmpty({ message: 'Slug é obrigatório' })
   tenantSlug: string;
+
+  @ApiPropertyOptional({ example: 'vendas.vistaverde.com.br' })
+  @IsOptional()
+  @IsString()
+  customDomain?: string;
 
   @ApiProperty({ example: 'Carlos Admin' })
   @IsString()

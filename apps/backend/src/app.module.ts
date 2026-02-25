@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from '@modules/auth/auth.module';
 import { UserModule } from '@modules/user/user.module';
@@ -18,6 +18,7 @@ import { SystemSettingsModule } from '@modules/system-settings/system-settings.m
 import { RabbitMqModule } from '@infra/rabbitmq/rabbitmq.module';
 import { SendPulseModule } from '@infra/sendpulse/sendpulse.module';
 import { EmailQueueModule } from '@infra/email-queue/email-queue.module';
+import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Module({
   imports: [
@@ -46,4 +47,10 @@ import { EmailQueueModule } from '@infra/email-queue/email-queue.module';
   controllers: [],
   providers: []
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(TenantMiddleware)
+      .forRoutes('*');
+  }
+}

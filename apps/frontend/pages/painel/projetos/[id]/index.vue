@@ -91,6 +91,11 @@
               <label class="form-label">Descrição</label>
               <textarea v-model="editForm.description" class="form-textarea" rows="3"></textarea>
             </div>
+            <div v-if="authStore.isSysAdmin" class="form-group">
+              <label class="form-label">Domínio Customizado (Somente SysAdmin)</label>
+              <input v-model="editForm.customDomain" class="form-input" placeholder="ex: vendas.meu-loteamento.com" />
+              <small class="text-muted">Informe o domínio completo ou subdomínio que aponta para cá.</small>
+            </div>
             <div class="form-group" style="display:flex; align-items:center; gap: var(--space-2); margin-top: var(--space-4); margin-bottom: var(--space-5);">
               <input type="checkbox" v-model="editForm.showPaymentConditions" id="chkShowPayment" style="width:18px; height:18px; cursor:pointer;" />
               <label for="chkShowPayment" class="form-label" style="margin-bottom:0; cursor:pointer; font-weight:600;">Exibir tabela de financiamento nas páginas dos lotes</label>
@@ -906,7 +911,8 @@ const editForm = ref({
   name: '',
   slug: '',
   description: '',
-  showPaymentConditions: false
+  showPaymentConditions: false,
+  customDomain: ''
 })
 
 // ── Public info (highlights + location) ──────────────────
@@ -1076,7 +1082,8 @@ const loadProject = async () => {
       name: p.name,
       slug: p.slug,
       description: p.description || '',
-      showPaymentConditions: p.showPaymentConditions ?? false
+      showPaymentConditions: p.showPaymentConditions ?? false,
+      customDomain: p.customDomain || ''
     }
     pubInfoForm.value = {
       highlightsJson: Array.isArray(p.highlightsJson) ? p.highlightsJson : [],

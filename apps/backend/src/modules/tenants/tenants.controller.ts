@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { RegisterTenantDto } from '../auth/dto/register-tenant.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -34,6 +35,12 @@ export class TenantsController {
   @ApiOperation({ summary: 'Listar todas as loteadoras com métricas' })
   findAll() {
     return this.tenantsService.findAll();
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Atualizar dados da loteadora' })
+  update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
+    return this.tenantsService.update(id, dto);
   }
 
   @Patch(':id/status')
