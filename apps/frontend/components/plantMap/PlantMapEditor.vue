@@ -1122,7 +1122,26 @@ const showError = (msg: string) => {
   text-align: center;
   line-height: 1.5;
 }
-.pme__hs-list { overflow-y: auto; flex: 1; }
+.pme__hs-list { 
+  overflow-y: auto; 
+  flex: 1; 
+  scrollbar-width: thin;
+  scrollbar-color: #475569 transparent;
+}
+.pme__hs-list::-webkit-scrollbar {
+  width: 5px;
+}
+.pme__hs-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pme__hs-list::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 10px;
+}
+.pme__hs-list::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 .pme__hs-item {
   display: flex;
   align-items: center;
@@ -1232,7 +1251,23 @@ const showError = (msg: string) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #475569 transparent;
 }
+.pme__batch-list::-webkit-scrollbar {
+  width: 5px;
+}
+.pme__batch-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pme__batch-list::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 10px;
+}
+.pme__batch-list::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 .pme__batch-item {
   display: flex;
   align-items: center;

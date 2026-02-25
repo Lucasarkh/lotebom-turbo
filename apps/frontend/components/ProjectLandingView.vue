@@ -775,7 +775,7 @@ const lotPageUrl = (lot: any) => {
   const code = lot.code || lot.name || lot.id
   const base = pathPrefix.value === '' 
     ? `/${encodeURIComponent(code)}` 
-    : `${pathPrefix.value}/lote/${encodeURIComponent(code)}`
+    : `${pathPrefix.value}/${encodeURIComponent(code)}`
 
   return corretorCode ? `${base}${base.includes('?') ? '&' : '?'}c=${corretorCode}` : base
 }

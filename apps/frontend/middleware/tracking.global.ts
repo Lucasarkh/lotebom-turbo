@@ -24,9 +24,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const host = window.location.host;
   const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000');
   
-  // A "lot page" can be /[slug]/lote/[code] (main domain) or /[code] (custom domain)
+  // A "lot page" can be /[slug]/[code] (main domain) or /[code] (custom domain)
   // On custom domain, if they browse to /L-01, to.params.slug is "L-01" because of pages/[slug]/index.vue
-  const isLotPage = to.path.includes('/lote/') || (!isMainDomain && to.params.slug && to.path === `/${to.params.slug}`);
+  const isLotPage = (!!to.params.slug && !!to.params.code) || (!isMainDomain && to.params.slug && to.path === `/${to.params.slug}`);
 
   const isProjectHome = (isMainDomain && to.params.slug && to.path === `/${to.params.slug}`) || (!isMainDomain && to.path === '/');
   

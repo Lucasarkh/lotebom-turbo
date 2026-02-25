@@ -700,7 +700,7 @@ const otherLotUrl = (l: any) => {
   const code = l.code || l.name || l.id
   const base = pathPrefix.value === '' 
     ? `/${encodeURIComponent(code)}` 
-    : `${pathPrefix.value}/lote/${encodeURIComponent(code)}`
+    : `${pathPrefix.value}/${encodeURIComponent(code)}`
   return corretorCode ? `${base}${base.includes('?') ? '&' : '?'}c=${corretorCode}` : base
 }
 
