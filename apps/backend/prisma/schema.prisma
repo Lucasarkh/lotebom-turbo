@@ -181,7 +181,13 @@ model Project {
   googleMapsUrl   String?       @db.Text
   showPaymentConditions Boolean @default(false)
   startingPrice   Float?
-  maxInstallments Int?
+  maxInstallments Int?          @default(180)
+  minDownPaymentPercent    Float?              @default(10)
+  minDownPaymentValue      Float?
+  monthlyInterestRate      Float?              @default(0.9)
+  indexer                  String?             @default("IGP-M")
+  allowIntermediary        Boolean             @default(false)
+  financingDisclaimer      String?             @db.Text
   paymentConditionsSummary String? @db.Text
   youtubeVideoUrl  String?
   constructionStatus Json?

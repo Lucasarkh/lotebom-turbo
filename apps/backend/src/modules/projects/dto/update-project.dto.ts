@@ -112,4 +112,34 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsNumber()
   reservationFeeValue?: number;
+
+  @ApiPropertyOptional({ description: 'Porcentagem de entrada mínima' })
+  @IsOptional()
+  @IsNumber()
+  minDownPaymentPercent?: number;
+
+  @ApiPropertyOptional({ description: 'Valor de entrada mínima fixa' })
+  @IsOptional()
+  @IsNumber()
+  minDownPaymentValue?: number;
+
+  @ApiPropertyOptional({ description: 'Taxa de juros mensal' })
+  @IsOptional()
+  @IsNumber()
+  monthlyInterestRate?: number;
+
+  @ApiPropertyOptional({ description: 'Indexador de correção monetária' })
+  @IsOptional()
+  @IsString()
+  indexer?: string;
+
+  @ApiPropertyOptional({ description: 'Permite parcelas intermediárias/balões' })
+  @IsOptional()
+  @IsBoolean()
+  allowIntermediary?: boolean;
+
+  @ApiPropertyOptional({ description: 'Disclaimer legal do financiamento' })
+  @IsOptional()
+  @IsString()
+  financingDisclaimer?: string;
 }

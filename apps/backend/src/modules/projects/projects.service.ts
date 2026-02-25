@@ -200,6 +200,24 @@ export class ProjectsService {
         ...(dto.maxInstallments !== undefined && {
           maxInstallments: dto.maxInstallments
         }),
+        ...(dto.minDownPaymentPercent !== undefined && {
+          minDownPaymentPercent: dto.minDownPaymentPercent
+        }),
+        ...(dto.minDownPaymentValue !== undefined && {
+          minDownPaymentValue: dto.minDownPaymentValue
+        }),
+        ...(dto.monthlyInterestRate !== undefined && {
+          monthlyInterestRate: dto.monthlyInterestRate
+        }),
+        ...(dto.indexer !== undefined && {
+          indexer: dto.indexer
+        }),
+        ...(dto.allowIntermediary !== undefined && {
+          allowIntermediary: dto.allowIntermediary
+        }),
+        ...(dto.financingDisclaimer !== undefined && {
+          financingDisclaimer: dto.financingDisclaimer
+        }),
         ...(dto.paymentConditionsSummary !== undefined && {
           paymentConditionsSummary: dto.paymentConditionsSummary
         }),

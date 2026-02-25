@@ -76,15 +76,36 @@ export class AiService {
       Endereço: ${project.address || 'N/A'}
       Condições Gerais de Pagamento: ${project.paymentConditionsSummary || 'N/A'}
       
-      LOTES DISPONÍVEIS E DETALHES:
+      LOTES DISPONÍVEIS E DETALHES (LISTA DE REFERÊNCIA):
       ${context}
 
+      DIRETRIZES DE FILTRAGEM (PRECISÃO EXTREMA):
+      1. FILTRAGEM POR TAGS: Quando o usuário busca por uma característica específica (ex: "sol da manhã", "esquina", "vista livre", "perto da portaria"), você deve retornar APENAS os lotes que possuem essa característica EXATA listada entre os colchetes [Tags] na LISTA DE REFERÊNCIA.
+      2. NUNCA presuma que um lote possui uma característica se ela não estiver listada nas tags. Se nenhum lote atender aos critérios, informe ao usuário que não encontrou lotes com essas características específicas e ofereça outras opções disponíveis.
+      3. STATUS: Se o lote estiver marcado como "Vendido", você deve deixar isso claro no card ou na mensagem. Se estiver como "Disponível", ele pode ser recomendado.
+
+      DIRETRIZES DE RESPOSTA E FORMATAÇÃO:
+      1. Se encontrar um ou mais lotes que atendam ao que o usuário busca, use este formato:
+         - Primeiro faça um pequeno resumo ou introdução em texto.
+         - Depois, para cada lote selecionado, use EXATAMENTE este bloco especial (um card por lote):
+         :::LOT_CARD
+         {
+           "code": "L-01",
+           "status": "Disponível",
+           "area": "200m²",
+           "price": "R$ 100.000",
+           "topography": "Plano",
+           "tags": ["esquina", "sol da manhã"]
+         }
+         :::
+         Importante: O conteúdo entre :::LOT_CARD e ::: deve ser um JSON válido. O campo "tags" dentro do JSON deve conter APENAS as tags que o lote realmente possui na LISTA DE REFERÊNCIA.
+      2. Seja muito preciso com a TOPOGRAFIA: use apenas "Plano", "Aclive" ou "Declive". Jamais use termos técnicos em inglês como "UPHILL".
+
       DIRETRIZES DE SEGURANÇA (TRAVAS EXTREMAS):
-      1. Você deve agir EXCLUSIVAMENTE como atendente deste empreendimento.
+      1. Você deve agir EXCLUSIVAMENTE como atendente deste empreendimento (${project.name}).
       2. Responda APENAS perguntas sobre lotes, disponibilidade, preços, condições de pagamento e características do loteamento.
-      3. Se o usuário perguntar sobre QUALQUER outro assunto (ex: política, receitas, notícias, piadas, outros negócios, conselhos pessoais), você deve recusar educadamente dizendo: "Desculpe, sou um assistente especializado apenas neste loteamento e não posso ajudar com outros assuntos."
+      3. Se o usuário perguntar sobre QUALQUER assunto fora deste contexto, você deve recusar educadamente.
       4. Se não encontrar a informação específica nos dados fornecidos, diga que não localizou mas que um consultor humano pode ajudar.
-      5. Nunca mencione o nome de outros empreendimentos que não sejam o ${project.name}.
     `;
 
     try {
@@ -101,7 +122,7 @@ export class AiService {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: message },
           ],
-          temperature: aiConfig.temperature || 0.7,
+          temperature: aiConfig.temperature ?? 0.0,
           max_tokens: aiConfig.maxTokens || 1000,
         });
         return { message: response.choices[0].message.content };
@@ -115,7 +136,7 @@ export class AiService {
             max_tokens: aiConfig.maxTokens || 1000,
             system: systemPrompt,
             messages: [{ role: 'user', content: message }],
-            temperature: aiConfig.temperature || 0.7,
+            temperature: aiConfig.temperature ?? 0.0,
           },
           {
             headers: {
@@ -139,7 +160,7 @@ export class AiService {
               },
             ],
             generationConfig: {
-              temperature: aiConfig.temperature || 0.7,
+              temperature: aiConfig.temperature ?? 0.0,
               maxOutputTokens: aiConfig.maxTokens || 1000,
             },
           },
@@ -159,8 +180,6 @@ export class AiService {
       where: {
         projectId,
         tenantId,
-        // Optional: Filter only available lots to prevent AI from offering sold ones?
-        // Or include all and let it check status?
       },
       include: {
         mapElement: true,
@@ -175,14 +194,21 @@ export class AiService {
         RESERVED: 'Reservado',
         SOLD: 'Vendido',
       };
+
+      const slopeMap = {
+        FLAT: 'Plano',
+        UPHILL: 'Aclive',
+        DOWNHILL: 'Declive',
+      };
       
       const code = lot.mapElement?.code || lot.mapElement?.name || 'S/N';
       const status = statusMap[lot.status] || lot.status;
-      const area = lot.areaM2 ? `${lot.areaM2}m2` : 'Não informada';
+      const area = lot.areaM2 ? `${lot.areaM2}m²` : 'Não informada';
       const price = lot.price ? `R$ ${lot.price.toLocaleString('pt-BR')}` : 'Sob consulta';
-      const tags = (lot.tags && lot.tags.length) ? lot.tags.join(', ') : 'Nenhuma';
+      const tags = (lot.tags && lot.tags.length) ? `[${lot.tags.join(', ')}]` : '[Nenhuma]';
+      const topography = slopeMap[lot.slope] || 'Plano';
       
-      return `Lote: ${code} | Status: ${status} | Área: ${area} | Preço: ${price} | Tags: ${tags} | Topografia: ${lot.slope || 'Plano'}`;
+      return `Lote: ${code} | Status: ${status} | Área: ${area} | Preço: ${price} | Tags: ${tags} | Topografia: ${topography}`;
     }).join('\n');
   }
 

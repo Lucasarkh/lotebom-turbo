@@ -59,6 +59,10 @@
               <span class="dot"></span>
               <span class="label">Tabela</span>
             </a>
+            <a v-if="project?.showPaymentConditions" href="#simulador" class="nav-dot" :class="{ 'is-active': activeSection === 'simulador' }" title="Simulador">
+              <span class="dot"></span>
+              <span class="label">Simular</span>
+            </a>
           </div>
         </aside>
 
@@ -68,36 +72,45 @@
             <main class="content-col">
               <!-- Hero / Title -->
               <section id="hero" class="hero-v4">
-                <div class="status-ribbon" :class="details?.status">
-                  {{ statusLabel }}
-                </div>
-                <h1 class="lot-code-title">{{ lot?.name || lot?.code }}</h1>
-                
-                <div v-if="details?.tags?.length" class="lot-seals-v4">
-                  <span v-for="tag in details?.tags" :key="tag" class="seal-pill">
-                    {{ tag }}
-                  </span>
+                <div class="hero-header-row">
+                  <div class="hero-main-info">
+                    <h1 class="lot-code-title">{{ lot?.name || lot?.code }}</h1>
+                    
+                    <div v-if="details?.tags?.length" class="lot-seals-v4">
+                      <span v-for="tag in details?.tags" :key="tag" class="seal-pill">
+                        {{ tag }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div v-if="(details?.price || details?.paymentConditions?.price)" class="hero-price-box">
+                    <div class="hp-status-tag" :class="details?.status">
+                      {{ statusLabel }}
+                    </div>
+                    <span class="hp-label">Investimento</span>
+                    <span class="hp-value">{{ formatCurrencyToBrasilia(details?.price || details?.paymentConditions?.price) }}</span>
+                  </div>
                 </div>
 
                 <div class="quick-metrics-v4">
-                <div class="q-item" v-if="details?.paymentConditions?.setor">
-                  <span class="q-val">{{ details?.paymentConditions?.setor }}</span>
-                  <span class="q-unit">Setor / Quadra</span>
+                  <div class="q-item" v-if="details?.paymentConditions?.setor">
+                    <span class="q-val">{{ details?.paymentConditions?.setor }}</span>
+                    <span class="q-unit">Setor / Quadra</span>
+                  </div>
+                  <div class="q-item" v-if="details?.areaM2">
+                    <span class="q-val">{{ details?.areaM2 }}</span>
+                    <span class="q-unit">m² totais</span>
+                  </div>
+                  <div class="q-item" v-if="details?.frontage">
+                    <span class="q-val">{{ details?.frontage }}</span>
+                    <span class="q-unit">m frente</span>
+                  </div>
+                  <div class="q-item" v-if="details?.slope">
+                    <span class="q-val">{{ slopeLabel(details?.slope) }}</span>
+                    <span class="q-unit">topografia</span>
+                  </div>
                 </div>
-                <div class="q-item" v-if="details?.areaM2">
-                  <span class="q-val">{{ details?.areaM2 }}</span>
-                  <span class="q-unit">m² totais</span>
-                </div>
-                <div class="q-item" v-if="details?.frontage">
-                  <span class="q-val">{{ details?.frontage }}</span>
-                  <span class="q-unit">m frente</span>
-                </div>
-                <div class="q-item" v-if="details?.slope">
-                  <span class="q-val">{{ slopeLabel(details?.slope) }}</span>
-                  <span class="q-unit">topografia</span>
-                </div>
-              </div>
-            </section>
+              </section>
 
             <!-- Gallery -->
             <section v-if="details?.medias?.length" id="galeria" class="section-v4">
@@ -193,6 +206,75 @@
               <div v-if="details?.notes" class="notes-box-v4">
                 <div class="box-header">Notas e Descrição</div>
                 <div class="box-body">{{ details?.notes }}</div>
+              </div>
+            </section>
+
+            <!-- Simulator Section -->
+            <section v-if="project?.showPaymentConditions" id="simulador" class="section-v4">
+              <div class="section-title-v4">
+                <h2>Simulador Financeiro</h2>
+                <div class="title-line"></div>
+              </div>
+
+              <div class="simulator-card-v4">
+                <div class="sim-header">
+                  <div class="h-item">
+                    <span class="l">Valor do Lote</span>
+                    <span class="v" style="font-size: 1.5rem; color: var(--primary);">{{ formatCurrencyToBrasilia(details?.price || 0) }}</span>
+                  </div>
+                </div>
+
+                <div class="sim-body">
+                  <!-- Down Payment Selection -->
+                  <div class="input-group-v4">
+                    <div class="ig-label">Quanto deseja dar de entrada?</div>
+                    <div class="ig-flex">
+                      <div class="ig-field" style="flex: 2;">
+                        <span class="ig-curr">R$</span>
+                        <input v-model.number="simDownPayment" type="number" step="0.01" @input="updatePercentFromDownPayment" class="ig-input" :min="minDownPaymentValue" />
+                      </div>
+                      <div class="ig-field" style="flex: 1;">
+                        <input v-model.number="simDownPaymentPercent" type="number" step="0.1" @input="updateDownPaymentFromPercent" class="ig-input" />
+                        <span class="ig-curr">%</span>
+                      </div>
+                    </div>
+                    <small class="ig-hint">Entrada mínima: {{ formatCurrencyToBrasilia(minDownPaymentValue) }} ({{ project?.minDownPaymentPercent || 10 }}%)</small>
+                  </div>
+
+                  <!-- Installments Slider -->
+                  <div class="input-group-v4" style="margin-top: 32px;">
+                    <div class="ig-label">Número de Parcelas: <strong>{{ simMonths }} meses</strong></div>
+                    <div class="slider-wrapper">
+                      <input 
+                        type="range" 
+                        v-model.number="simMonths" 
+                        min="12" 
+                        :max="maxInstallments" 
+                        step="12"
+                        class="range-slider-v4"
+                      />
+                      <div class="slider-labels">
+                        <span>12x</span>
+                        <span>{{ Math.round(maxInstallments / 2) }}x</span>
+                        <span>{{ maxInstallments }}x</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Result -->
+                  <div class="sim-result-v4">
+                    <div class="r-label">Parcela Estimada</div>
+                    <div class="r-value">{{ formatCurrencyToBrasilia(simResult) }}</div>
+                    <div class="r-detail">
+                      <span v-if="project?.monthlyInterestRate > 0">Juros: {{ project.monthlyInterestRate }}% am + {{ project.indexer || 'IGP-M' }}</span>
+                      <span v-else>Sem juros + {{ project.indexer || 'IGP-M' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="sim-disclaimer-v4">
+                    ⚠️ {{ project?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -313,80 +395,68 @@
           <!-- Sidebar (Sticky Conversion) -->
           <aside class="sidebar-col">
             <div class="sticky-conversion-card">
-              <div v-if="(details?.price || details?.paymentConditions?.price) && details?.status !== 'SOLD'" class="price-display-v4">
-                <div class="pd-label">Preço de Tabela</div>
-                <div class="pd-value">R$ {{ (details?.price || details?.paymentConditions?.price)?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</div>
-                <div class="pd-badges">
-                  <span class="badge-v4">Oportunidade</span>
-                  <span class="badge-v4">Negociação Direta</span>
-                </div>
-              </div>
-
+              <!-- Broker Profile -->
               <div class="broker-info-v4" v-if="corretor">
-                <div class="br-header">Falar com Consultor</div>
-                <div class="br-card">
-                  <img v-if="corretor.photoUrl" :src="corretor.photoUrl" class="br-img" />
-                  <div v-else class="br-avatar-placeholder">{{ corretor.name[0] }}</div>
-                  <div class="br-details">
-                    <strong class="br-name">{{ corretor.name }}</strong>
-                    <span class="br-role">Especialista local</span>
-                  </div>
+                <div class="b-avatar">
+                  <img v-if="corretor.avatarUrl" :src="corretor.avatarUrl" :alt="corretor.name" />
+                  <div v-else class="b-initial">{{ corretor.name?.charAt(0) }}</div>
+                </div>
+                <div class="b-text">
+                  <span class="b-label">Seu consultor</span>
+                  <span class="b-name">{{ corretor.name }}</span>
                 </div>
               </div>
 
+              <!-- Reservation / Lead Form -->
               <div id="contato" class="lead-form-v4">
-                <!-- Payment Reservation Button / Form -->
-                <template v-if="project?.paymentGateways?.length > 0 && details?.status === 'AVAILABLE'">
-                  <div class="booking-section-v4">
-                    <div v-if="!bookingMode" class="booking-intro">
-                      <div class="h-reserve-v4">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        <span>Reserva Online Garantida</span>
-                      </div>
-                      <p>Reserve este lote agora mesmo e garanta sua unidade.</p>
-                      <button @click="bookingMode = true" class="cta-reserve-v4">
-                        Reservar Lote
-                      </button>
-                      <div class="reserve-small">
-                        Taxa de reserva: R$ {{ reservationFeeValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-                      </div>
+                <div v-if="project?.paymentGateways?.length > 0 && details?.status === 'AVAILABLE'" class="booking-section-v4">
+                  <div v-if="!bookingMode" class="booking-intro">
+                    <div class="h-reserve-v4">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      <span>Reserva Online Garantida</span>
                     </div>
-
-                    <div v-else class="booking-form-v4">
-                      <div class="booking-header">
-                        <button @click="bookingMode = false" class="back-link">← Cancelar</button>
-                        <h4>Dados da Reserva</h4>
-                      </div>
-                      <form @submit.prevent="submitReservation" class="form-v4">
-                        <div class="f-field">
-                          <input v-model="reservationForm.name" type="text" placeholder="Nome Completo" required />
-                        </div>
-                        <div class="f-field">
-                          <input v-model="reservationForm.email" type="email" placeholder="E-mail" required />
-                        </div>
-                        <div class="f-field">
-                          <input v-model="reservationForm.phone" type="tel" placeholder="WhatsApp" required />
-                        </div>
-                        <div class="f-field">
-                          <input v-model="reservationForm.cpf" type="text" placeholder="CPF" required />
-                        </div>
-                        <div class="f-checkbox">
-                          <input v-model="reservationForm.acceptTerms" type="checkbox" id="terms" required />
-                          <label for="terms">Aceito os termos de reserva e políticas de privacidade.</label>
-                        </div>
-                        <div v-if="bookingError" class="f-error">{{ bookingError }}</div>
-                        <button type="submit" class="cta-submit-booking-v4" :disabled="bookingLoading">
-                          {{ bookingLoading ? 'Processando...' : 'Ir para Pagamento' }}
-                        </button>
-                      </form>
+                    <p>Reserve este lote agora mesmo e garanta sua unidade.</p>
+                    <button @click="bookingMode = true" class="cta-reserve-v4">
+                      Reservar Lote
+                    </button>
+                    <div class="reserve-small">
+                      Taxa de reserva: {{ formatCurrencyToBrasilia(reservationFeeValue) }}
                     </div>
                   </div>
-                  <div class="form-divider-v4">ou apenas contato</div>
-                </template>
+
+                  <div v-else class="booking-form-v4">
+                    <div class="booking-header">
+                      <button @click="bookingMode = false" class="back-link">← Cancelar</button>
+                      <h4>Dados da Reserva</h4>
+                    </div>
+                    <form @submit.prevent="submitReservation" class="form-v4">
+                      <div class="f-field">
+                        <input v-model="reservationForm.name" type="text" placeholder="Nome Completo" required />
+                      </div>
+                      <div class="f-field">
+                        <input v-model="reservationForm.email" type="email" placeholder="E-mail" required />
+                      </div>
+                      <div class="f-field">
+                        <input v-model="reservationForm.phone" type="tel" placeholder="WhatsApp" required />
+                      </div>
+                      <div class="f-field">
+                        <input v-model="reservationForm.cpf" type="text" placeholder="CPF" required />
+                      </div>
+                      <div class="f-checkbox">
+                        <input v-model="reservationForm.acceptTerms" type="checkbox" id="terms" required />
+                        <label for="terms">Aceito os termos de reserva e políticas de privacidade.</label>
+                      </div>
+                      <div v-if="bookingError" class="f-error">{{ bookingError }}</div>
+                      <button type="submit" class="cta-submit-booking-v4" :disabled="bookingLoading">
+                        {{ bookingLoading ? 'Processando...' : 'Ir para Pagamento' }}
+                      </button>
+                    </form>
+                  </div>
+                </div>
 
                 <div class="form-header-v4">
                   <h3>Tenho Interesse</h3>
-                  <p>Tire toda as suas dúvidas ou agende uma visita no local.</p>
+                  <p>Tire todas as suas dúvidas ou agende uma visita no local.</p>
                 </div>
 
                 <form v-if="!leadSuccess" @submit.prevent="submitLead" class="form-v4">
@@ -441,8 +511,8 @@
               <div class="assets-grid-v4">
                 <NuxtLink v-for="l in otherLots.slice(0, 8)" :key="l.id" :to="otherLotUrl(l)" class="asset-card-v4">
                   <div class="a-code">{{ (l.code || l.name || l.id).toString().toLowerCase().includes('lote') ? '' : 'Lote ' }}{{ l.code || l.name || l.id }}</div>
-                  <div class="a-area">{{ l.lotDetails?.areaM2 }} m²</div>
-                  <div class="a-price" v-if="l.lotDetails?.price">R$ {{ (l.lotDetails?.price / 1000).toFixed(0) }}k</div>
+                  <div class="a-area">{{ l.lotDetails?.areaM2 ? `${l.lotDetails.areaM2} m²` : '—' }}</div>
+                  <div class="a-price" v-if="l.lotDetails?.price">{{ formatCurrencyToBrasilia(l.lotDetails.price) }}</div>
                 </NuxtLink>
               </div>
             </div>
@@ -481,6 +551,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getTodayInBrasilia } from '~/utils/date'
+import { formatCurrencyToBrasilia } from '~/utils/money'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
 import PlantMapViewer from '~/components/plantMap/PlantMapViewer.vue'
 import { usePublicPlantMap } from '~/composables/plantMap/usePlantMapApi'
@@ -786,6 +857,64 @@ const reservationForm = ref({
 const bookingError = ref('')
 const bookingLoading = ref(false)
 
+// ── Simulator ───────────────────────────────────────────
+const simMonths = ref(120)
+const simDownPayment = ref(0)
+const simDownPaymentPercent = ref(10)
+
+const minDownPaymentValue = computed(() => {
+  if (!project.value || !details.value?.price) return 0
+  const perc = project.value.minDownPaymentPercent || 10
+  const fixed = project.value.minDownPaymentValue || 0
+  const calc = (details.value.price * (perc / 100))
+  return Math.max(calc, fixed)
+})
+
+const maxInstallments = computed(() => project.value?.maxInstallments || 180)
+
+const simResult = computed(() => {
+  if (!details.value?.price || !project.value) return 0
+  
+  const totalValue = details.value.price
+  const downPayment = Math.max(simDownPayment.value, minDownPaymentValue.value)
+  const pv = totalValue - downPayment
+  const n = simMonths.value
+  const i = (project.value.monthlyInterestRate || 0) / 100
+  
+  if (pv <= 0) return 0
+  if (i === 0) return pv / n
+  
+  // Price Table Formula: PMT = PV * (i * (1+i)^n) / ((1+i)^n - 1)
+  const pmt = pv * (i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1)
+  return pmt
+})
+
+const updateDownPaymentFromPercent = () => {
+  if (!details.value?.price) return
+  simDownPayment.value = (details.value.price * (simDownPaymentPercent.value / 100))
+}
+
+const updatePercentFromDownPayment = () => {
+  if (!details.value?.price) return
+  simDownPaymentPercent.value = Number(((simDownPayment.value / details.value.price) * 100).toFixed(1))
+}
+
+watch(() => details.value?.price, (val) => {
+  if (val) {
+    simDownPaymentPercent.value = project.value?.minDownPaymentPercent || 10
+    updateDownPaymentFromPercent()
+  }
+}, { immediate: true })
+
+watch(() => project.value, (val) => {
+  if (val && details.value?.price) {
+    simDownPaymentPercent.value = val.minDownPaymentPercent || 10
+    updateDownPaymentFromPercent()
+  }
+}, { immediate: true })
+
+watch(() => simMonths.value, (v) => { if (v) simMonths.value = Math.min(v, maxInstallments.value) })
+
 watch(() => leadForm.value.phone, (v) => { if (v) leadForm.value.phone = maskPhone(v) })
 watch(() => gateLeadForm.value.phone, (v) => { if (v) gateLeadForm.value.phone = maskPhone(v) })
 watch(() => reservationForm.value.phone, (v) => { if (v) reservationForm.value.phone = maskPhone(v) })
@@ -798,7 +927,7 @@ const lightboxMedia = computed(() => details.value?.medias?.[lightboxIdx.value] 
 const activeSection = ref('hero')
 
 const handleScroll = () => {
-  const sections = ['hero', 'galeria', 'localizacao', 'vista-360', 'ficha', 'financiamento']
+  const sections = ['hero', 'galeria', 'localizacao', 'vista-360', 'ficha', 'simulador', 'financiamento']
   for (const sectionId of [...sections].reverse()) {
     const el = document.getElementById(sectionId)
     if (el) {
@@ -1021,6 +1150,12 @@ async function submitReservation() {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.pub-page * {
+  box-sizing: border-box;
 }
 
 /* Header V4 */
@@ -1095,18 +1230,39 @@ async function submitReservation() {
 .nav-dot:hover .label, .nav-dot.is-active .label { color: var(--v4-primary); }
 
 /* Split View Grid */
-.page-container-v4 { max-width: 1300px; margin: 0 auto; padding: 0 22px; }
-.split-view { display: grid; grid-template-columns: 1fr 380px; gap: 40px; padding-top: 40px; padding-bottom: 80px; }
-@media (max-width: 1150px) { .split-view { grid-template-columns: 1fr; } }
+.page-container-v4 { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+.split-view { display: grid; grid-template-columns: 1fr 320px; gap: 32px; padding-top: 40px; padding-bottom: 80px; }
+@media (max-width: 1200px) { .split-view { grid-template-columns: 1fr; } }
 
 /* Hero V4 */
 .hero-v4 {
-  background: white; padding: 60px; border-radius: var(--v4-radius-lg); margin-bottom: 32px; border: 1px solid var(--v4-border); box-shadow: 0 4px 24px rgba(0,0,0,0.02);
+  position: relative;
+  background: white; padding: 48px; border-radius: var(--v4-radius-lg); margin-bottom: 32px; border: 1px solid var(--v4-border); box-shadow: 0 4px 24px rgba(0,0,0,0.02);
 }
-.lot-code-title { font-size: 64px; font-weight: 600; margin-bottom: 24px; color: var(--v4-text); line-height: 1.1; letter-spacing: -0.02em; }
+.hero-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; margin-bottom: 32px; }
+.lot-code-title { font-size: 56px; font-weight: 700; margin: 0; color: var(--v4-text); line-height: 1.1; letter-spacing: -0.03em; }
+
+.hero-price-box { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-end; 
+  text-align: right; 
+  background: #f8fafc; 
+  padding: 24px; 
+  border-radius: 20px; 
+  border: 1px solid #e2e8f0;
+}
+.hp-status-tag { 
+  font-size: 12px; font-weight: 700; text-transform: uppercase; padding: 4px 12px; border-radius: 100px; margin-bottom: 12px;
+  background: #32d74b; color: white;
+}
+.hp-status-tag.RESERVED { background: #ff9f0a; }
+.hp-status-tag.SOLD { background: #ff453a; }
+.hp-label { font-size: 13px; color: var(--v4-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.hp-value { font-size: 36px; font-weight: 800; color: var(--v4-primary); letter-spacing: -1px; margin-top: 4px; }
 
 /* Seals / Tags */
-.lot-seals-v4 { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.lot-seals-v4 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .seal-pill { 
   background: #f0f7ff; 
   color: #0071e3; 
@@ -1122,14 +1278,6 @@ async function submitReservation() {
 .q-item { display: flex; flex-direction: column; }
 .q-val { font-size: 28px; font-weight: 600; color: var(--v4-text); }
 .q-unit { font-size: 12px; font-weight: 600; color: var(--v4-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
-
-/* Status Ribbon */
-.status-ribbon {
-  position: absolute; top: 30px; right: 30px; padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
-  background: #32d74b; color: white;
-}
-.status-ribbon.RESERVED { background: #ff9f0a; }
-.status-ribbon.SOLD { background: #ff453a; }
 
 /* Section Generic V4 */
 .section-v4 {
@@ -1177,11 +1325,6 @@ async function submitReservation() {
 
 /* Sidebar V4 */
 .sticky-conversion-card { position: sticky; top: 100px; z-index: 10; }
-.price-display-v4 { background: white; padding: 32px; border-radius: 18px; border: 1px solid var(--v4-border); margin-bottom: 20px; }
-.pd-label { font-size: 12px; color: var(--v4-text-muted); font-weight: 600; text-transform: uppercase; }
-.pd-value { font-size: 32px; font-weight: 600; color: var(--v4-primary); margin: 8px 0; }
-.pd-badges { display: flex; gap: 8px; margin-top: 12px; }
-.badge-v4 { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 100px; background: #f5f5f7; color: var(--v4-text-muted); }
 
 .lead-form-v4 { background: white; padding: 32px; border-radius: 20px; border: 1px solid var(--v4-border); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
 .form-header-v4 h3 { font-size: 24px; font-weight: 600; color: var(--v4-text); margin-bottom: 12px; }
@@ -1230,28 +1373,29 @@ async function submitReservation() {
 .cta-submit-v4 { width: 100%; padding: 16px; background: var(--v4-primary); color: white; border: none; border-radius: 12px; font-weight: 600; font-size: 17px; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
 .cta-submit-v4:hover { background: var(--v4-primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 113, 227, 0.2); }
 
-.broker-info-v4 { margin-bottom: 20px; }
-.br-card { background: white; padding: 16px; border-radius: 18px; display: flex; align-items: center; gap: 16px; border: 1px solid var(--v4-border); }
-.br-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.br-avatar-placeholder { 
-  width: 56px; 
-  height: 56px; 
-  border-radius: 50%; 
-  background: #f5f5f7; 
-  color: var(--v4-primary); 
+/* Broker Info V4 */
+.broker-info-v4 { 
+  margin-bottom: 16px; 
   display: flex; 
   align-items: center; 
-  justify-content: center; 
-  font-weight: 700; 
-  font-size: 20px; 
-  flex-shrink: 0;
+  gap: 12px; 
+  background: white; 
+  padding: 14px; 
+  border-radius: 16px; 
+  border: 1px solid var(--v4-border); 
+}
+.b-avatar { 
+  width: 44px; height: 44px; border-radius: 50%; overflow: hidden; 
+  background: #f5f5f7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
   border: 1px solid var(--v4-border);
 }
-.br-details { display: flex; flex-direction: column; gap: 2px; }
-.br-name { font-size: 16px; font-weight: 600; color: var(--v4-text); line-height: 1.2; }
-.br-role { font-size: 13px; color: var(--v4-text-muted); }
+.b-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.b-initial { font-weight: 700; color: var(--v4-primary); font-size: 18px; }
+.b-text { display: flex; flex-direction: column; }
+.b-label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--v4-text-muted); letter-spacing: 0.5px; }
+.b-name { font-size: 15px; font-weight: 700; color: var(--v4-text); line-height: 1.2; }
 
-.form-divider-v4 { text-align: center; font-size: 13px; color: var(--v4-text-muted); margin: 8px 0; }
+.form-divider-v4 { text-align: center; font-size: 13px; color: var(--v4-text-muted); margin: 12px 0; }
 .wa-btn-v4 { 
   display: flex;
   align-items: center;
@@ -1306,6 +1450,100 @@ async function submitReservation() {
 .a-area { font-size: 14px; color: var(--v4-text-muted); font-weight: 500; }
 .a-price { font-size: 18px; font-weight: 700; color: var(--v4-primary); margin-top: 8px; }
 
+/* Simulator Styles */
+.simulator-card-v4 {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid var(--v4-border);
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+}
+.sim-header {
+  padding: 32px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--v4-border);
+}
+.sim-header .h-item { display: flex; flex-direction: column; gap: 4px; }
+.sim-header .l { font-size: 14px; color: var(--v4-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+.sim-body { padding: 32px; }
+
+.input-group-v4 { display: flex; flex-direction: column; gap: 12px; }
+.ig-label { font-size: 16px; font-weight: 600; color: var(--v4-text); }
+.ig-flex { display: flex; gap: 12px; flex-wrap: wrap; }
+.ig-field { 
+  display: flex; 
+  align-items: center; 
+  background: #f1f5f9; 
+  border: 1px solid #e2e8f0; 
+  border-radius: 12px; 
+  padding: 0 16px;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 120px;
+}
+.ig-field:focus-within { border-color: var(--v4-primary); background: white; box-shadow: 0 0 0 4px rgba(var(--v4-primary-rgb), 0.1); }
+.ig-curr { font-size: 14px; font-weight: 700; color: #64748b; }
+.ig-input { 
+  border: none; 
+  background: transparent; 
+  width: 100%; 
+  padding: 12px 8px; 
+  font-size: 18px; 
+  font-weight: 700; 
+  color: var(--v4-text); 
+  outline: none;
+}
+/* Hide arrows in number input */
+.ig-input::-webkit-outer-spin-button, .ig-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.ig-hint { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+.range-slider-v4 {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  outline: none;
+  margin: 20px 0;
+}
+.range-slider-v4::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--v4-primary);
+  cursor: pointer;
+  border: 4px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.2s;
+}
+.range-slider-v4::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+.slider-labels { display: flex; justify-content: space-between; font-size: 13px; color: #64748b; font-weight: 600; }
+
+.sim-result-v4 {
+  margin-top: 40px;
+  background: var(--v4-primary-light);
+  padding: 32px;
+  border-radius: 20px;
+  text-align: center;
+  border: 1px solid rgba(var(--v4-primary-rgb), 0.1);
+}
+.r-label { font-size: 15px; font-weight: 600; color: var(--v4-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.r-value { font-size: 42px; font-weight: 800; color: var(--v4-primary); letter-spacing: -1px; overflow-wrap: break-word; }
+.r-detail { font-size: 14px; color: var(--v4-primary); opacity: 0.8; font-weight: 600; margin-top: 8px; }
+
+.sim-disclaimer-v4 {
+  margin-top: 24px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+  padding: 0 8px;
+  text-align: center;
+}
+
 .legal-v4 { margin-top: 80px; text-align: center; color: var(--v4-text-muted); font-size: 14px; padding-top: 40px; border-top: 1px solid var(--v4-border); opacity: 0.8; }
 
 /* Lightbox V4 */
@@ -1314,18 +1552,28 @@ async function submitReservation() {
 
 @media (max-width: 768px) {
   .hero-v4, .section-v4 { padding: 20px; border-radius: 20px; }
-  .lot-code-title { font-size: 36px; margin-bottom: 16px; }
+  .hero-header-row { flex-direction: column; align-items: flex-start; gap: 24px; margin-bottom: 32px; }
+  .lot-code-title { font-size: 32px; }
+  .hero-price-box { width: 100%; align-items: flex-start; text-align: left; padding: 20px; }
+  .hp-value { font-size: 26px; }
+
   .quick-metrics-v4 { 
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 12px;
     margin-top: 24px;
+    width: 100%;
   }
-  .q-val { font-size: 20px; }
+  .q-val { font-size: 18px; }
   .q-unit { font-size: 10px; }
   
   .split-view { padding-top: 20px; padding-bottom: 40px; gap: 24px; }
-  .pd-value { font-size: 26px; }
+  
+  .r-value { font-size: 26px !important; letter-spacing: -0.5px; word-break: break-all; }
+  .r-label { font-size: 13px; }
+  .sim-result-v4 { padding: 20px 12px; margin-top: 24px; }
+  .sim-body, .sim-header { padding: 20px 16px; }
+  .ig-input { font-size: 16px; }
   
   .lot-header-v4 { padding: 8px 0; }
   .back-link-v4 span { display: none; }

@@ -232,6 +232,64 @@
         </div>
       </div>
 
+      <!-- Tab: Financiamento -->
+      <div v-if="activeTab === 'financing'">
+        <div class="card" style="max-width: 800px;">
+          <h3 style="margin-bottom: var(--space-2); display: flex; align-items: center; gap: 8px;">
+            <span>🧮</span> Regras de Simulação Financeira
+          </h3>
+          <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure as regras padrão para o simulador que aparece na página dos lotes.</p>
+
+          <div class="form-group" style="display:flex; align-items:center; gap: var(--space-2); margin-bottom: 32px; background: #fffbeb; padding: 16px; border-radius: 12px; border: 1px solid #fde68a;">
+            <input type="checkbox" v-model="editForm.showPaymentConditions" id="chkShowSimOnFinancing" style="width:20px; height:20px; cursor:pointer;" />
+            <label for="chkShowSimOnFinancing" style="font-weight: 700; cursor:pointer; color: #92400e;">✅ Habilitar Simulador nas Páginas Públicas</label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-6">
+            <div class="form-group">
+              <label class="form-label">Entrada Mínima (%)</label>
+              <input v-model.number="editForm.minDownPaymentPercent" type="number" class="form-input" placeholder="Ex: 10" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Entrada Mínima Fixa (R$)</label>
+              <input v-model.number="editForm.minDownPaymentValue" type="number" class="form-input" placeholder="Ex: 15000" />
+              <small class="text-muted">Se preenchido, o sistema usará o maior entre % e Valor Fixo.</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Número Máximo de Parcelas</label>
+              <input v-model.number="editForm.maxInstallments" type="number" class="form-input" placeholder="Ex: 180" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Taxa de Juros Mensal (%)</label>
+              <input v-model.number="editForm.monthlyInterestRate" type="number" step="0.01" class="form-input" placeholder="Ex: 0.9" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Indexador de Correção</label>
+              <input v-model="editForm.indexer" class="form-input" placeholder="Ex: IGP-M, IPCA..." />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Parcelas Intermediárias (Balões)</label>
+              <div style="display:flex; align-items:center; gap: var(--space-2); height: 42px;">
+                <input type="checkbox" v-model="editForm.allowIntermediary" id="chkInter" style="width:18px; height:18px; cursor:pointer;" />
+                <label for="chkInter" style="margin:0; cursor:pointer; font-weight:600;">Permitir cálculo de balões anuais</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label class="form-label">Aviso Legal (Disclaimer)</label>
+            <textarea v-model="editForm.financingDisclaimer" class="form-textarea" rows="2"></textarea>
+            <small class="text-muted">Aparecerá abaixo do resultado da simulação.</small>
+          </div>
+
+          <div class="flex justify-end" style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--gray-200);">
+            <button class="btn btn-primary" @click="saveSettings" :disabled="savingSettings" style="min-width: 200px;">
+              {{ savingSettings ? 'Salvando...' : '💾 Salvar Regras Financeiras' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: Lotes (Elementos do Projeto) -->
       <div v-if="activeTab === 'lots'">
         <div v-if="lots.length === 0" class="empty-state">
@@ -1088,7 +1146,15 @@ const editForm = ref({
   showPaymentConditions: false,
   customDomain: '',
   reservationFeeType: 'FIXED',
-  reservationFeeValue: 500
+  reservationFeeValue: 500,
+  minDownPaymentPercent: 10,
+  minDownPaymentValue: 0,
+  monthlyInterestRate: 0.9,
+  indexer: 'IGP-M',
+  allowIntermediary: false,
+  financingDisclaimer: 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.',
+  aiEnabled: false,
+  aiConfigId: ''
 })
 
 // ── Public info (highlights + location) ──────────────────
@@ -1302,6 +1368,7 @@ const loadAiConfigs = async () => {
 const tabs = [
   { key: 'lots', label: 'Lotes' },
   { key: 'public', label: 'Pág. Pública' },
+  { key: 'financing', label: '🧮 Simulação' },
   { key: 'payment', label: '💳 Pagamentos' },
   { key: 'ai', label: '🤖 Assistente IA' },
   { key: 'settings', label: 'Configurações' },
@@ -1351,6 +1418,12 @@ const loadProject = async () => {
       customDomain: p.customDomain || '',
       reservationFeeType: p.reservationFeeType || 'FIXED',
       reservationFeeValue: p.reservationFeeValue ?? 500,
+      minDownPaymentPercent: p.minDownPaymentPercent ?? 10,
+      minDownPaymentValue: p.minDownPaymentValue ?? 0,
+      monthlyInterestRate: p.monthlyInterestRate ?? 0.9,
+      indexer: p.indexer || 'IGP-M',
+      allowIntermediary: p.allowIntermediary ?? false,
+      financingDisclaimer: p.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.',
       aiEnabled: p.aiEnabled ?? false,
       aiConfigId: p.aiConfigId || ''
     }
