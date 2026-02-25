@@ -6,33 +6,25 @@
         <p class="cta-subtitle">
           Transforme sua forma de vender com a tecnologia líder para gestão de loteamentos.
         </p>
-        <div class="cta-actions">
-          <button v-if="settings?.contactWhatsapp" @click="openWhatsapp" class="btn btn-primary btn-apple-lg btn-shadow">
-            Falar com um especialista
-          </button>
-          <button v-else @click="showContactForm = true" class="btn btn-primary btn-apple-lg btn-shadow">
-            Solicitar Demonstração
-          </button>
-          <button @click="showContactForm = true" class="btn btn-secondary btn-apple-lg btn-ghost">
-            Solicitar Orçamento
-          </button>
-        </div>
-      </div>
-
-      <!-- Contact Form Modal -->
-      <div v-if="showContactForm" class="modal-overlay" @click.self="showContactForm = false">
-        <div class="modal-content animate-scale-in">
-          <button class="modal-close" @click="showContactForm = false">&times;</button>
-          <h2 class="modal-title">Comece Agora</h2>
-          <p class="modal-subtitle">Preencha os campos e nossa equipe entrará em contato.</p>
-          <form @submit.prevent="submitContact" class="contact-form">
-            <input v-model="form.name" type="text" placeholder="Nome" required>
-            <input v-model="form.email" type="email" placeholder="E-mail" required>
-            <input v-model="form.phone" type="tel" placeholder="WhatsApp" v-maska="'(##) #####-####'" required>
-            <button type="submit" class="btn btn-primary btn-block" :disabled="submitting">
-              {{ submitting ? 'Enviando...' : 'Enviar' }}
+        
+        <div class="cta-form-container animate-slide-up-delay-1">
+          <form @submit.prevent="submitContact" class="cta-card-form">
+            <div class="form-group">
+              <input v-model="form.name" type="text" placeholder="Seu nome" required>
+            </div>
+            <div class="form-group">
+              <input v-model="form.email" type="email" placeholder="E-mail corporativo" required>
+            </div>
+            <div class="form-group">
+              <input v-model="form.phone" type="tel" placeholder="WhatsApp" v-maska="'(##) #####-####'" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-apple-lg btn-block" :disabled="submitting">
+              {{ submitting ? 'Enviando...' : 'Solicitar uma Demonstração' }}
             </button>
           </form>
+          <div class="cta-footer-links" v-if="settings?.contactWhatsapp">
+            <p>Prefere conversar agora? <a @click.prevent="openWhatsapp" href="#" class="wa-link">Chamar no WhatsApp</a></p>
+          </div>
         </div>
       </div>
     </div>
@@ -80,8 +72,8 @@ const submitContact = async () => {
 
 <style scoped>
 .cta {
-  padding: 120px 0;
-  background-color: var(--gray-50);
+  padding: 140px 0;
+  background: radial-gradient(circle at top, var(--gray-100) 0%, var(--gray-50) 100%);
 }
 
 .cta-inner {
@@ -94,13 +86,13 @@ const submitContact = async () => {
   font-size: 3rem;
   font-weight: 700;
   margin-bottom: 24px;
-  letter-spacing: -2.5px;
+  letter-spacing: -0.04em;
   color: var(--gray-900);
   line-height: 1.05;
 }
 
 @media (min-width: 768px) {
-  .cta-title { font-size: 4.5rem; }
+  .cta-title { font-size: 4.8rem; }
 }
 
 .cta-subtitle {
@@ -113,76 +105,63 @@ const submitContact = async () => {
   line-height: 1.4;
 }
 
-.cta-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
+.cta-form-container {
+  max-width: 450px;
+  margin: 0 auto;
 }
 
-@media (min-width: 640px) {
-  .cta-actions {
-    flex-direction: row;
-  }
+.cta-card-form {
+  background: white;
+  padding: 32px;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-100);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cta-card-form input {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.cta-card-form input:focus {
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 4px var(--primary-50);
+}
+
+.cta-footer-links {
+  margin-top: 24px;
+  font-size: 0.95rem;
+  color: var(--gray-500);
+}
+
+.wa-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.wa-link:hover {
+  text-decoration: underline;
 }
 
 .btn-apple-lg {
-  border-radius: 980px;
-  padding: 16px 36px;
+  border-radius: 12px;
+  padding: 18px;
   font-size: 1.1rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.btn-ghost {
-  background: transparent;
-  color: var(--primary);
-  border: none;
-}
-
-/* Modal from Hero for consistency */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1100;
-}
-
-.modal-content {
-  background: white;
-  padding: 48px;
-  border-radius: 32px;
+.btn-block {
   width: 100%;
-  max-width: 480px;
-  position: relative;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.2);
 }
-
-.modal-close {
-  position: absolute; top: 24px; right: 24px; background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--gray-400);
-}
-
-.modal-title { margin-bottom: 12px; font-size: 1.75rem; font-weight: 700; color: var(--gray-900); letter-spacing: -0.02em; }
-.modal-subtitle { margin-bottom: 32px; color: var(--gray-500); font-size: 1rem; }
-
-.contact-form .form-group { margin-bottom: 16px; }
-.contact-form input { 
-  width: 100%; 
-  padding: 14px 20px; 
-  border: 1px solid var(--gray-200); 
-  border-radius: 12px; 
-  background: var(--gray-50);
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-.contact-form input:focus {
-  outline: none;
-  border-color: var(--primary);
-  background: white;
-}
-
-.btn-block { width: 100%; margin-top: 16px; }
 </style>

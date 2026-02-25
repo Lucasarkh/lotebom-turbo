@@ -107,6 +107,89 @@
         </div>
       </div>
 
+      <!-- Tab: Pagamentos -->
+      <div v-if="activeTab === 'payment'">
+        <div class="card" style="max-width: 800px;">
+          <h3>💳 Ativar Gateways de Pagamento</h3>
+          <p class="text-muted">Selecione abaixo quais perfis de pagamento globais você deseja habilitar para este projeto.</p>
+          
+          <div v-if="loadingPaymentOptions" class="flex justify-center p-8">
+             <div class="loader"></div>
+          </div>
+
+          <div v-else-if="allConfigs.length === 0" class="empty-state" style="padding: 24px;">
+            <p>Nenhum perfil de pagamento configurado globalmente.</p>
+            <NuxtLink to="/painel/pagamentos" class="btn btn-primary btn-sm">Criar Primeiro Perfil</NuxtLink>
+          </div>
+
+          <div v-else class="grid gap-4" style="margin-top: 24px;">
+            <div v-for="config in allConfigs" :key="config.id" 
+                 class="flex items-center justify-between p-4 border rounded-lg"
+                 :style="{ borderColor: isConfigActive(config.id) ? 'var(--primary)' : 'var(--gray-200)', background: isConfigActive(config.id) ? 'var(--primary-light)' : 'white' }">
+              <div class="flex items-center gap-3">
+                <div class="provider-badge-sm" :class="config.provider.toLowerCase()">{{ config.provider }}</div>
+                <div>
+                  <div style="font-weight: 600;">{{ config.name }}</div>
+                  <div style="font-size: 0.75rem; color: var(--gray-500);">ID: {{ config.id.split('-')[0] }}...</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span style="font-size: 0.8rem; font-weight: 600;" :style="{ color: isConfigActive(config.id) ? 'var(--primary)' : 'var(--gray-400)' }">
+                  {{ isConfigActive(config.id) ? 'Habilitado' : 'Desabilitado' }}
+                </span>
+                <div class="toggle-switch">
+                  <input type="checkbox" :checked="isConfigActive(config.id)" @change="toggleGateway(config.id, !isConfigActive(config.id))" :id="'config-'+config.id" />
+                  <label :for="'config-'+config.id"></label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 32px; border: 1px solid var(--gray-200);">
+            <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: var(--gray-700);">Como funciona?</h4>
+            <p style="font-size: 0.8rem; margin: 0; color: var(--gray-600); line-height: 1.5;">
+              As chaves e credenciais são gerenciadas na página global de <b>Pagamentos</b>. 
+              Aqui você apenas decide qual conta receberá os pagamentos deste projeto específico. 
+              Se múltiplos gateways forem habilitados, o sistema usará o primeiro ativo.
+            </p>
+          </div>
+
+          <!-- NEW: Reservation Fee Config -->
+          <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--gray-200);">
+            <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span>🎟️</span> Taxa de Reserva Online
+            </h3>
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure o valor que o cliente deve pagar para reservar um lote online via cartão ou PIX.</p>
+            
+            <div class="grid grid-cols-2 gap-6">
+              <div class="form-group">
+                <label class="form-label">Tipo de Cobrança</label>
+                <select v-model="editForm.reservationFeeType" class="form-input">
+                  <option value="FIXED">Valor Fixo (R$)</option>
+                  <option value="PERCENTAGE">Porcentagem do Valor do Lote (%)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">
+                  {{ editForm.reservationFeeType === 'FIXED' ? 'Valor da Reserva (R$)' : 'Porcentagem da Reserva (%)' }}
+                </label>
+                <input v-model="editForm.reservationFeeValue" type="number" step="0.01" class="form-input" 
+                       :placeholder="editForm.reservationFeeType === 'FIXED' ? 'Ex: 500.00' : 'Ex: 0.5'" />
+                <small v-if="editForm.reservationFeeType === 'PERCENTAGE'" style="color: var(--gray-500); font-size: 0.75rem;">
+                  Ex: 0.5 = 0,5% do valor total do lote.
+                </small>
+              </div>
+            </div>
+            
+            <div class="flex justify-end" style="margin-top: 20px;">
+              <button class="btn btn-primary" @click="saveSettings" :disabled="savingSettings" style="min-width: 200px;">
+                {{ savingSettings ? 'Salvando...' : '💾 Salvar Configuração de Taxa' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: Lotes (Elementos do Projeto) -->
       <div v-if="activeTab === 'lots'">
         <div v-if="lots.length === 0" class="empty-state">
@@ -912,7 +995,9 @@ const editForm = ref({
   slug: '',
   description: '',
   showPaymentConditions: false,
-  customDomain: ''
+  customDomain: '',
+  reservationFeeType: 'FIXED',
+  reservationFeeValue: 500
 })
 
 // ── Public info (highlights + location) ──────────────────
@@ -1042,10 +1127,57 @@ const copyLink = (text) => {
   toastSuccess('Link copiado!')
 }
 
+// ── Payment Configuration ────────────────────────────────
+const allConfigs = ref([])
+const activeConfigs = ref([])
+const loadingPaymentOptions = ref(false)
+
+const loadPaymentConfig = async () => {
+  loadingPaymentOptions.value = true
+  try {
+    // We get the list of all gateways with their enablement status for this project
+    const configs = await fetchApi(`/admin/payment-config/project/${projectId}`)
+    allConfigs.value = configs || []
+
+    // activeConfigs is used for the UI to know which ones are toggled on
+    activeConfigs.value = (allConfigs.value || []).filter(c => c.isEnabledForProject)
+  } catch (e) {
+    console.error('Error loading payment configs', e)
+  } finally {
+    loadingPaymentOptions.value = false
+  }
+}
+
+const isConfigActive = (configId: string) => {
+  return activeConfigs.value.some(c => c.id === configId)
+}
+
+const toggleGateway = async (configId: string, active: boolean) => {
+  try {
+    await fetchApi(`/admin/payment-config/project/${projectId}/toggle`, {
+      method: 'POST',
+      body: JSON.stringify({ gatewayId: configId, enabled: active })
+    })
+    
+    if (active) {
+      const config = allConfigs.value.find(c => c.id === configId)
+      if (config) activeConfigs.value.push(config)
+    } else {
+      activeConfigs.value = activeConfigs.value.filter(c => c.id !== configId)
+    }
+    
+    toastSuccess('Gateway alterado para o projeto')
+  } catch (e) {
+    toastFromError(e, 'Erro ao alternar gateway')
+  }
+}
+// ─────────────────────────────────────────────────────────
+
 // ── Tabs ─────────────────────────────────────────────────
 const tabs = [
   { key: 'lots', label: 'Lotes' },
   { key: 'public', label: 'Pág. Pública' },
+  { key: 'payment', label: '💳 Pagamentos' },
   { key: 'settings', label: 'Configurações' },
 ]
 
@@ -1078,12 +1210,15 @@ const loadProject = async () => {
     lots.value = resLots.data
     lotsMeta.value = resLots.meta
     media.value = md
+    loadPaymentConfig()
     editForm.value = {
       name: p.name,
       slug: p.slug,
       description: p.description || '',
       showPaymentConditions: p.showPaymentConditions ?? false,
-      customDomain: p.customDomain || ''
+      customDomain: p.customDomain || '',
+      reservationFeeType: p.reservationFeeType || 'FIXED',
+      reservationFeeValue: p.reservationFeeValue ?? 500
     }
     pubInfoForm.value = {
       highlightsJson: Array.isArray(p.highlightsJson) ? p.highlightsJson : [],
@@ -1240,4 +1375,55 @@ onMounted(async () => {
 .rich-editor-v4 :deep(ul), .rich-editor-v4 ul { padding-left: 1.5rem; margin-bottom: 1rem; list-style-type: disc; }
 .rich-editor-v4 :deep(li), .rich-editor-v4 li { margin-bottom: 0.25rem; }
 .rich-editor-v4 :deep(b), .rich-editor-v4 b, .rich-editor-v4 :deep(strong), .rich-editor-v4 strong { font-weight: 700; color: #000; }
+
+.provider-badge-sm {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: white;
+  text-transform: uppercase;
+}
+.provider-badge-sm.stripe { background: #635bff; }
+.provider-badge-sm.asaas { background: #0062ff; }
+.provider-badge-sm.mercado_pago { background: #009ee3; }
+.provider-badge-sm.pagar_me { background: #3c5af4; }
+.provider-badge-sm.pagseguro { background: #3fb43f; }
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-switch label {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--gray-300);
+  transition: .4s;
+  border-radius: 24px;
+}
+.toggle-switch label:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+.toggle-switch input:checked + label {
+  background-color: var(--primary);
+}
+.toggle-switch input:checked + label:before {
+  transform: translateX(20px);
+}
 </style>

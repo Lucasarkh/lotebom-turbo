@@ -151,13 +151,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 const { leads, loading, meta, projects, loadLeads, loadProjects, getLead } = useLeads()
 const authStore = useAuthStore()
 const { fromError, success: toastSuccess } = useToast()
 
 const viewMode = ref('kanban')
+
+// Persistence of view preference
+onMounted(() => {
+  const savedView = localStorage.getItem('lotio_leads_view_mode')
+  if (savedView) {
+    viewMode.value = savedView
+  }
+})
+
+watch(viewMode, (newVal) => {
+  localStorage.setItem('lotio_leads_view_mode', newVal)
+})
+
 const filters = ref({ projectId: '', status: '', search: '' })
 const showCreateModal = ref(false)
 const showEditModal = ref(false)

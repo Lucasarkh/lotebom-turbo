@@ -123,6 +123,13 @@ export class ProjectsService {
         projectMedias: {
           where: { lotDetailsId: null },
           orderBy: { createdAt: 'desc' }
+        },
+        paymentGateways: {
+          where: { isActive: true },
+          select: {
+            isActive: true,
+            provider: true
+          }
         }
       }
     });
@@ -198,6 +205,12 @@ export class ProjectsService {
         ...(dto.address !== undefined && { address: dto.address }),
         ...(dto.googleMapsUrl !== undefined && {
           googleMapsUrl: dto.googleMapsUrl
+        }),
+        ...(dto.reservationFeeType !== undefined && {
+          reservationFeeType: dto.reservationFeeType
+        }),
+        ...(dto.reservationFeeValue !== undefined && {
+          reservationFeeValue: dto.reservationFeeValue
         })
       },
       include: {

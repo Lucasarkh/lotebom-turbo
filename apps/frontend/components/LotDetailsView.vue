@@ -71,17 +71,17 @@
                 <div class="status-ribbon" :class="details?.status">
                   {{ statusLabel }}
                 </div>
-                <h1 class="lot-code-title">{{ lot.name || lot.code }}</h1>
+                <h1 class="lot-code-title">{{ lot?.name || lot?.code }}</h1>
                 
                 <div v-if="details?.tags?.length" class="lot-seals-v4">
-                  <span v-for="tag in details.tags" :key="tag" class="seal-pill">
+                  <span v-for="tag in details?.tags" :key="tag" class="seal-pill">
                     {{ tag }}
                   </span>
                 </div>
 
                 <div class="quick-metrics-v4">
                 <div class="q-item" v-if="details?.paymentConditions?.setor">
-                  <span class="q-val">{{ details.paymentConditions.setor }}</span>
+                  <span class="q-val">{{ details?.paymentConditions?.setor }}</span>
                   <span class="q-unit">Setor / Quadra</span>
                 </div>
                 <div class="q-item" v-if="details?.areaM2">
@@ -107,7 +107,7 @@
               </div>
               
               <div class="gallery-v4">
-                <div v-for="(m, i) in details.medias" :key="i" 
+                <div v-for="(m, i) in details?.medias" :key="i" 
                   class="gallery-tile" 
                   :class="{ 'main': i === 0 }"
                   @click="openLightbox(Number(i))">
@@ -133,7 +133,7 @@
                     :show-controls="true"
                     :show-legend="false"
                     :interactive="true"
-                    :focus-lot-code="lot.code"
+                    :focus-lot-code="lot?.code"
                   />
                   <template #fallback>
                     <div class="loading-state-pm">Carregando planta...</div>
@@ -170,19 +170,19 @@
                 </div>
                 <div class="spec-entry" v-if="details?.frontage">
                   <span class="s-label">Testada (Frente)</span>
-                  <span class="s-value">{{ details.frontage }} m</span>
+                  <span class="s-value">{{ details?.frontage }} m</span>
                 </div>
                 <div class="spec-entry" v-if="details?.depth">
                   <span class="s-label">Profundidade</span>
-                  <span class="s-value">{{ details.depth }} m</span>
+                  <span class="s-value">{{ details?.depth }} m</span>
                 </div>
                 <div class="spec-entry" v-if="details?.sideLeft">
                   <span class="s-label">Lateral Esquerda</span>
-                  <span class="s-value">{{ details.sideLeft }} m</span>
+                  <span class="s-value">{{ details?.sideLeft }} m</span>
                 </div>
                 <div class="spec-entry" v-if="details?.sideRight">
                   <span class="s-label">Lateral Direita</span>
-                  <span class="s-value">{{ details.sideRight }} m</span>
+                  <span class="s-value">{{ details?.sideRight }} m</span>
                 </div>
                 <div class="spec-entry" v-if="details?.slope">
                   <span class="s-label">Perfil do Terreno</span>
@@ -192,7 +192,7 @@
 
               <div v-if="details?.notes" class="notes-box-v4">
                 <div class="box-header">Notas e Descrição</div>
-                <div class="box-body">{{ details.notes }}</div>
+                <div class="box-body">{{ details?.notes }}</div>
               </div>
             </section>
 
@@ -207,61 +207,61 @@
                 <div class="finance-header">
                   <div class="h-item">
                     <span class="l">Valor do Lote</span>
-                    <span class="v">R$ {{ (details.price || details.paymentConditions?.price)?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+                    <span class="v">R$ {{ (details?.price || details?.paymentConditions?.price)?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                   </div>
                 </div>
 
                 <div class="finance-body">
                   <!-- Ato (Single) -->
-                  <div v-if="details.paymentConditions.ato" class="plan-group">
+                  <div v-if="details?.paymentConditions?.ato" class="plan-group">
                     <div class="group-label">Ato</div>
                     <div class="plans-grid">
                       <div class="plan-pill">
                         <span class="p-qty">Pagamento à vista</span>
-                        <span class="p-val">R$ {{ details.paymentConditions.ato.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+                        <span class="p-val">R$ {{ details?.paymentConditions?.ato?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                       </div>
                     </div>
                   </div>
 
                   <!-- Atos / Sinal (List - compatibility) -->
-                  <div v-if="details.paymentConditions.atos && !details.paymentConditions.ato" class="plan-group">
+                  <div v-if="details?.paymentConditions?.atos && !details?.paymentConditions?.ato" class="plan-group">
                     <div class="group-label">Ato</div>
                     <div class="plans-grid">
-                      <template v-if="Array.isArray(details.paymentConditions.atos)">
-                        <div v-for="(p, idx) in details.paymentConditions.atos" :key="'ato'+idx" class="plan-pill">
+                      <template v-if="Array.isArray(details?.paymentConditions?.atos)">
+                        <div v-for="(p, idx) in details?.paymentConditions?.atos" :key="'ato'+idx" class="plan-pill">
                           <span class="p-qty">{{ p.count }}x ato</span>
                           <span class="p-val">R$ {{ (p.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                         </div>
                       </template>
-                      <div v-else-if="details.paymentConditions.atos.count > 0" class="plan-pill">
-                        <span class="p-qty">{{ details.paymentConditions.atos.count }}x ato</span>
-                        <span class="p-val">R$ {{ ((details.paymentConditions.atos.total || 0) / (details.paymentConditions.atos.count || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+                      <div v-else-if="details?.paymentConditions?.atos?.count > 0" class="plan-pill">
+                        <span class="p-qty">{{ details?.paymentConditions?.atos?.count }}x ato</span>
+                        <span class="p-val">R$ {{ ((details?.paymentConditions?.atos?.total || 0) / (details?.paymentConditions?.atos?.count || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                       </div>
                     </div>
                   </div>
 
                   <!-- Entradas -->
-                  <div v-if="details.paymentConditions.entrada || details.paymentConditions.entradas" class="plan-group">
+                  <div v-if="details?.paymentConditions?.entrada || details?.paymentConditions?.entradas" class="plan-group">
                     <div class="group-label">Entrada</div>
                     <div class="plans-grid">
-                      <template v-if="Array.isArray(details.paymentConditions.entradas)">
-                        <div v-for="(p, idx) in details.paymentConditions.entradas" :key="'ent'+idx" class="plan-pill">
+                      <template v-if="Array.isArray(details?.paymentConditions?.entradas)">
+                        <div v-for="(p, idx) in details?.paymentConditions?.entradas" :key="'ent'+idx" class="plan-pill">
                           <span class="p-qty">{{ p.count }}x entrada</span>
                           <span class="p-val">R$ {{ (p.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                         </div>
                       </template>
-                      <div v-else-if="details.paymentConditions.entrada?.count > 0" class="plan-pill">
-                        <span class="p-qty">{{ details.paymentConditions.entrada.count }}x entrada</span>
-                        <span class="p-val">R$ {{ ((details.paymentConditions.entrada.total || 0) / (details.paymentConditions.entrada.count || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+                      <div v-else-if="details?.paymentConditions?.entrada?.count > 0" class="plan-pill">
+                        <span class="p-qty">{{ details?.paymentConditions?.entrada?.count }}x entrada</span>
+                        <span class="p-val">R$ {{ ((details?.paymentConditions?.entrada?.total || 0) / (details?.paymentConditions?.entrada?.count || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                       </div>
                     </div>
                   </div>
 
                   <!-- Parcelas -->
-                  <div v-if="(details.paymentConditions.parcelas || details.paymentConditions.installments)?.length" class="plan-group">
+                  <div v-if="(details?.paymentConditions?.parcelas || details?.paymentConditions?.installments)?.length" class="plan-group">
                     <div class="group-label">Parcelas Mensais</div>
                     <div class="plans-grid">
-                      <div v-for="(plan, idx) in (details.paymentConditions.parcelas || details.paymentConditions.installments)" :key="'par'+idx" class="plan-pill">
+                      <div v-for="(plan, idx) in (details?.paymentConditions?.parcelas || details?.paymentConditions?.installments)" :key="'par'+idx" class="plan-pill">
                         <span class="p-qty">{{ plan.months || plan.count || plan.qty }}x mensais</span>
                         <span class="p-val">R$ {{ (plan.amount || plan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                       </div>
@@ -269,41 +269,41 @@
                   </div>
 
                   <!-- Saldo do Saldo -->
-                  <div v-if="details.paymentConditions.saldo" class="plan-group">
+                  <div v-if="details?.paymentConditions?.saldo" class="plan-group">
                     <div class="group-label">Saldo Final (Financiado)</div>
                     <div class="plans-grid">
                       <div class="plan-pill">
                         <span class="p-qty">Saldo residual</span>
-                        <span class="p-val">R$ {{ details.paymentConditions.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+                        <span class="p-val">R$ {{ details?.paymentConditions?.saldo?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                       </div>
                     </div>
                   </div>
 
                   <!-- Reforços / Balões -->
-                  <div v-if="details.paymentConditions.intermediarias || details.paymentConditions.balloons" class="plan-group">
+                  <div v-if="details?.paymentConditions?.intermediarias || details?.paymentConditions?.balloons" class="plan-group">
                     <div class="group-label">Reforços / Balões</div>
                     <div class="plans-grid">
-                      <template v-if="Array.isArray(details.paymentConditions.intermediarias || details.paymentConditions.balloons)">
-                        <div v-for="(b, idx) in (details.paymentConditions.intermediarias || details.paymentConditions.balloons)" :key="'bal'+idx" class="plan-pill balloon">
+                      <template v-if="Array.isArray(details?.paymentConditions?.intermediarias || details?.paymentConditions?.balloons)">
+                        <div v-for="(b, idx) in (details?.paymentConditions?.intermediarias || details?.paymentConditions?.balloons)" :key="'bal'+idx" class="plan-pill balloon">
                           <span class="p-qty">{{ b.count }}x reforços</span>
                           <span class="p-val">R$ {{ (b.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                         </div>
                       </template>
-                      <div v-else-if="details.paymentConditions.intermediarias?.count > 0" class="plan-pill balloon">
-                        <span class="p-qty">{{ details.paymentConditions.intermediarias.count }}x reforços</span>
-                        <span class="p-val">R$ {{ ((details.paymentConditions.intermediarias.total || 0) / (details.paymentConditions.intermediarias.count || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
+                      <div v-else-if="details?.paymentConditions?.intermediarias?.count > 0" class="plan-pill balloon">
+                        <span class="p-qty">{{ details?.paymentConditions?.intermediarias?.count }}x reforços</span>
+                        <span class="p-val">R$ {{ ((details?.paymentConditions?.intermediarias?.total || 0) / (details?.paymentConditions?.intermediarias?.count || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div v-if="details.paymentConditions.observacoes?.length || (details.paymentConditions.notes && details.paymentConditions.notes !== '')" class="finance-note">
+                <div v-if="details?.paymentConditions?.observacoes?.length || (details?.paymentConditions?.notes && details?.paymentConditions?.notes !== '')" class="finance-note">
                   <svg width="18" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                   <div class="note-content">
-                    <template v-if="Array.isArray(details.paymentConditions.observacoes)">
-                      <p v-for="(obs, i) in details.paymentConditions.observacoes" :key="i">{{ obs }}</p>
+                    <template v-if="Array.isArray(details?.paymentConditions?.observacoes)">
+                      <p v-for="(obs, i) in details?.paymentConditions?.observacoes" :key="i">{{ obs }}</p>
                     </template>
-                    <p v-else>{{ details.paymentConditions.notes || details.paymentConditions.observacoes }}</p>
+                    <p v-else>{{ details?.paymentConditions?.notes || details?.paymentConditions?.observacoes }}</p>
                   </div>
                 </div>
               </div>
@@ -313,9 +313,9 @@
           <!-- Sidebar (Sticky Conversion) -->
           <aside class="sidebar-col">
             <div class="sticky-conversion-card">
-              <div v-if="(details?.price || details?.paymentConditions?.price) && details.status !== 'SOLD'" class="price-display-v4">
+              <div v-if="(details?.price || details?.paymentConditions?.price) && details?.status !== 'SOLD'" class="price-display-v4">
                 <div class="pd-label">Preço de Tabela</div>
-                <div class="pd-value">R$ {{ (details.price || details.paymentConditions?.price)?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</div>
+                <div class="pd-value">R$ {{ (details?.price || details?.paymentConditions?.price)?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</div>
                 <div class="pd-badges">
                   <span class="badge-v4">Oportunidade</span>
                   <span class="badge-v4">Negociação Direta</span>
@@ -335,6 +335,55 @@
               </div>
 
               <div id="contato" class="lead-form-v4">
+                <!-- Payment Reservation Button / Form -->
+                <template v-if="project?.paymentGateways?.length > 0 && details?.status === 'AVAILABLE'">
+                  <div class="booking-section-v4">
+                    <div v-if="!bookingMode" class="booking-intro">
+                      <div class="h-reserve-v4">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>Reserva Online Garantida</span>
+                      </div>
+                      <p>Reserve este lote agora mesmo e garanta sua unidade.</p>
+                      <button @click="bookingMode = true" class="cta-reserve-v4">
+                        Reservar Lote
+                      </button>
+                      <div class="reserve-small">
+                        Taxa de reserva: R$ {{ reservationFeeValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                      </div>
+                    </div>
+
+                    <div v-else class="booking-form-v4">
+                      <div class="booking-header">
+                        <button @click="bookingMode = false" class="back-link">← Cancelar</button>
+                        <h4>Dados da Reserva</h4>
+                      </div>
+                      <form @submit.prevent="submitReservation" class="form-v4">
+                        <div class="f-field">
+                          <input v-model="reservationForm.name" type="text" placeholder="Nome Completo" required />
+                        </div>
+                        <div class="f-field">
+                          <input v-model="reservationForm.email" type="email" placeholder="E-mail" required />
+                        </div>
+                        <div class="f-field">
+                          <input v-model="reservationForm.phone" type="tel" placeholder="WhatsApp" required />
+                        </div>
+                        <div class="f-field">
+                          <input v-model="reservationForm.cpf" type="text" placeholder="CPF" required />
+                        </div>
+                        <div class="f-checkbox">
+                          <input v-model="reservationForm.acceptTerms" type="checkbox" id="terms" required />
+                          <label for="terms">Aceito os termos de reserva e políticas de privacidade.</label>
+                        </div>
+                        <div v-if="bookingError" class="f-error">{{ bookingError }}</div>
+                        <button type="submit" class="cta-submit-booking-v4" :disabled="bookingLoading">
+                          {{ bookingLoading ? 'Processando...' : 'Ir para Pagamento' }}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                  <div class="form-divider-v4">ou apenas contato</div>
+                </template>
+
                 <div class="form-header-v4">
                   <h3>Tenho Interesse</h3>
                   <p>Tire toda as suas dúvidas ou agende uma visita no local.</p>
@@ -393,7 +442,7 @@
                 <NuxtLink v-for="l in otherLots.slice(0, 8)" :key="l.id" :to="otherLotUrl(l)" class="asset-card-v4">
                   <div class="a-code">{{ (l.code || l.name || l.id).toString().toLowerCase().includes('lote') ? '' : 'Lote ' }}{{ l.code || l.name || l.id }}</div>
                   <div class="a-area">{{ l.lotDetails?.areaM2 }} m²</div>
-                  <div class="a-price" v-if="l.lotDetails?.price">R$ {{ (l.lotDetails.price / 1000).toFixed(0) }}k</div>
+                  <div class="a-price" v-if="l.lotDetails?.price">R$ {{ (l.lotDetails?.price / 1000).toFixed(0) }}k</div>
                 </NuxtLink>
               </div>
             </div>
@@ -421,7 +470,7 @@
           <video v-else :src="lightboxMedia?.url" controls autoplay />
         </div>
 
-        <button v-if="lightboxIdx < (details.medias?.length || 1) - 1" class="lightbox-nav lightbox-next" @click="lightboxIdx++">
+        <button v-if="lightboxIdx < (details?.medias?.length || 1) - 1" class="lightbox-nav lightbox-next" @click="lightboxIdx++">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       </div>
@@ -431,6 +480,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { getTodayInBrasilia } from '~/utils/date'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
 import PlantMapViewer from '~/components/plantMap/PlantMapViewer.vue'
 import { usePublicPlantMap } from '~/composables/plantMap/usePlantMapApi'
@@ -507,7 +557,7 @@ const lotPanorama = computed(() => {
     snapshots: [{
       id: 'lot-snap',
       panoramaId: 'lot-panorama',
-      imageUrl: details.value.panoramaUrl,
+      imageUrl: details.value?.panoramaUrl,
       label: 'Vista 360°',
       sortOrder: 0,
       createdAt: getTodayInBrasilia().toISOString(),
@@ -655,6 +705,16 @@ const lot = computed(() => {
 
 const details = computed(() => lot.value?.lotDetails || null)
 
+const reservationFeeValue = computed(() => {
+  if (!project.value) return 500
+  const baseValue = project.value.reservationFeeValue || 500
+  const price = details.value?.price || 0
+  if (project.value.reservationFeeType === 'PERCENTAGE' && price > 0) {
+    return (price * (baseValue / 100))
+  }
+  return baseValue
+})
+
 const lotSideMetrics = computed(() => {
   const raw = details.value?.sideMetricsJson
   if (!Array.isArray(raw) || raw.length === 0) return []
@@ -707,16 +767,29 @@ const otherLotUrl = (l: any) => {
 const leadForm = ref({ name: '', email: '', phone: '', message: '' })
 const gateLeadForm = ref({ name: '', phone: '' })
 
-const { maskPhone, validateEmail, validatePhone, unmask } = useMasks()
-
-watch(() => leadForm.value.phone, (v) => { if (v) leadForm.value.phone = maskPhone(v) })
-watch(() => gateLeadForm.value.phone, (v) => { if (v) gateLeadForm.value.phone = maskPhone(v) })
+const { maskPhone, maskCpf, validateEmail, validatePhone, validateCpf, unmask } = useMasks()
 
 const submitting = ref(false)
 const submittingGate = ref(false)
 const leadSuccess = ref(false)
 const leadError = ref('')
 const financeUnlocked = ref(false)
+
+const bookingMode = ref(false)
+const reservationForm = ref({
+  name: '',
+  email: '',
+  phone: '',
+  cpf: '',
+  acceptTerms: false
+})
+const bookingError = ref('')
+const bookingLoading = ref(false)
+
+watch(() => leadForm.value.phone, (v) => { if (v) leadForm.value.phone = maskPhone(v) })
+watch(() => gateLeadForm.value.phone, (v) => { if (v) gateLeadForm.value.phone = maskPhone(v) })
+watch(() => reservationForm.value.phone, (v) => { if (v) reservationForm.value.phone = maskPhone(v) })
+watch(() => reservationForm.value.cpf, (v) => { if (v) reservationForm.value.cpf = maskCpf(v) })
 
 const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
@@ -866,6 +939,65 @@ async function submitGateLead() {
     financeUnlocked.value = true
   }
   submittingGate.value = false
+}
+
+async function submitReservation() {
+  if (!validateCpf(reservationForm.value.cpf)) {
+    bookingError.value = 'CPF inválido'
+    return
+  }
+  if (!validatePhone(reservationForm.value.phone)) {
+    bookingError.value = 'Telefone inválido'
+    return
+  }
+  if (!validateEmail(reservationForm.value.email)) {
+    bookingError.value = 'E-mail inválido'
+    return
+  }
+  if (!reservationForm.value.acceptTerms) {
+    bookingError.value = 'Você precisa aceitar os termos'
+    return
+  }
+
+  bookingLoading.value = true
+  bookingError.value = ''
+  try {
+    // 1. Create Lead first
+    const leadBody: any = {
+      name: reservationForm.value.name,
+      email: reservationForm.value.email,
+      phone: unmask(reservationForm.value.phone),
+      cpf: unmask(reservationForm.value.cpf),
+      mapElementId: lot.value?.id,
+      message: `RESERVA ONLINE: Intenção de compra do lote ${lotCode.value}`,
+      realtorCode: corretorCode || undefined,
+      sessionId: trackingStore.sessionId || undefined,
+    }
+    
+    const leadRes = await fetchPublic(`/p/${projectSlug.value}/leads`, {
+      method: 'POST',
+      body: JSON.stringify(leadBody),
+    })
+
+    // 2. Start Payment
+    const paymentRes = await fetchPublic(`/payment/reserve`, {
+      method: 'POST',
+      body: JSON.stringify({
+        leadId: leadRes.id,
+        amount: reservationFeeValue.value,
+        baseUrl: window.location.origin
+      }),
+    })
+
+    if (paymentRes.checkoutUrl) {
+      window.location.href = paymentRes.checkoutUrl
+    } else {
+      throw new Error('Erro ao gerar link de pagamento')
+    }
+  } catch (e: any) {
+    bookingError.value = e.message || 'Erro ao processar reserva'
+  }
+  bookingLoading.value = false
 }
 </script>
 
@@ -1186,6 +1318,101 @@ async function submitGateLead() {
   .quick-metrics-v4 { gap: 24px; flex-wrap: wrap; }
   .split-view { padding-bottom: 40px; }
   .pd-value { font-size: 28px; }
+}
+
+/* Booking & Reservation Styles */
+.booking-section-v4 {
+  background: rgba(0, 113, 227, 0.05);
+  border: 1px solid rgba(0, 113, 227, 0.2);
+  border-radius: var(--v4-radius-md);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.h-reserve-v4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--v4-primary);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.cta-reserve-v4 {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: var(--v4-primary);
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: all 0.2s ease;
+}
+
+.cta-reserve-v4:hover {
+  background: var(--v4-primary-hover);
+}
+
+.reserve-small {
+  text-align: center;
+  font-size: 12px;
+  color: var(--v4-text-muted);
+  margin-top: 8px;
+}
+
+.booking-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.booking-header h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.booking-header .back-link {
+  background: none;
+  border: none;
+  color: var(--v4-primary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cta-submit-booking-v4 {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #28a745;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: all 0.2s ease;
+}
+
+.cta-submit-booking-v4:hover {
+  background: #218838;
+}
+
+.f-checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--v4-text-muted);
+  margin-top: 12px;
+}
+
+.f-checkbox input {
+  margin-top: 3px;
 }
 </style>
 

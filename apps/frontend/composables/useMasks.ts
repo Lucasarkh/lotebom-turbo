@@ -22,6 +22,15 @@ export const useMasks = () => {
     return `(${limited.substring(0, 2)}) ${limited.substring(2, 7)}-${limited.substring(7)}`
   }
 
+  const maskCpf = (value: string) => {
+    if (!value) return ''
+    const digits = value.replace(/\D/g, '').substring(0, 11)
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.substring(0, 3)}.${digits.substring(3)}`
+    if (digits.length <= 9) return `${digits.substring(0, 3)}.${digits.substring(3, 6)}.${digits.substring(6)}`
+    return `${digits.substring(0, 3)}.${digits.substring(3, 6)}.${digits.substring(6, 9)}-${digits.substring(9)}`
+  }
+
   const unmask = (value: string) => {
     return value.replace(/\D/g, '')
   }
@@ -36,10 +45,16 @@ export const useMasks = () => {
     return digits.length >= 10 && digits.length <= 11
   }
 
+  const validateCpf = (cpf: string) => {
+    return cpf.replace(/\D/g, '').length === 11
+  }
+
   return {
     maskPhone,
+    maskCpf,
     unmask,
     validateEmail,
-    validatePhone
+    validatePhone,
+    validateCpf
   }
 }

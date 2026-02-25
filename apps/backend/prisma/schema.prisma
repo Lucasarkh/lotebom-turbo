@@ -23,6 +23,11 @@ enum ProjectStatus {
   PUBLISHED
 }
 
+enum ReservationFeeType {
+  FIXED
+  PERCENTAGE
+}
+
 enum MapElementType {
   LOT
   ROAD
@@ -87,6 +92,15 @@ enum LeadPaymentStatus {
   REVERSED
 }
 
+enum PaymentProvider {
+  STRIPE
+  MERCADO_PAGO
+  PAGSEGURO
+  ASAAS
+  PAGAR_ME
+  PIX_DIRECT // Manual bank transfer / key
+}
+
 enum PlantHotspotType {
   LOTE
   PORTARIA
@@ -125,7 +139,8 @@ model Tenant {
   panoramas        Panorama[]
   panoramaBeacons  PanoramaBeacon[]
   trackingSessions TrackingSession[]
-  campaigns         Campaign[]
+  campanhas         Campaign[]
+  paymentGateways   PaymentConfig[]
 }
 
 model User {
@@ -166,6 +181,8 @@ model Project {
   startingPrice   Float?
   maxInstallments Int?
   paymentConditionsSummary String? @db.Text
+  reservationFeeType    ReservationFeeType @default(FIXED)
+  reservationFeeValue   Float              @default(500)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -178,6 +195,7 @@ model Project {
   panoramas     Panorama[]
   trackingSessions TrackingSession[]
   campaigns        Campaign[]
+  paymentGateways  PaymentConfig[] @relation("ProjectGateways")
 
   @@index([tenantId])
 }
@@ -336,6 +354,12 @@ model LeadPayment {
   paidDate    DateTime?
   receiptUrl  String?
   notes       String?           @db.Text
+  
+  // New payment gateway fields
+  externalId  String?           // External transaction ID (Stripe, MP, etc.)
+  paymentUrl  String?           // Checkout URL for the user
+  provider    PaymentProvider?
+  
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
@@ -639,4 +663,21 @@ model PasswordReset {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+model PaymentConfig {
+  id               String          @id @default(cuid())
+  tenantId         String
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name             String          @default("Gateway Principal")
+  provider         PaymentProvider @default(STRIPE)
+  isActive         Boolean         @default(true)
+  keysJson         Json?           // Stores publicKey, secretKey, accessToken, etc.
+  webhookSecret    String?         // Common for most gateways
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  projects         Project[]       @relation("ProjectGateways")
+
+  @@index([tenantId])
 }

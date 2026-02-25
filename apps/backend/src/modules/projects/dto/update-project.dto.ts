@@ -1,6 +1,6 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectStatus, ReservationFeeType } from '@prisma/client';
 
 export class UpdateProjectDto {
   @ApiPropertyOptional({ example: 'Residencial Parque dos Ipês v2' })
@@ -83,4 +83,14 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   googleMapsUrl?: string;
+
+  @ApiPropertyOptional({ enum: ReservationFeeType })
+  @IsOptional()
+  @IsEnum(ReservationFeeType)
+  reservationFeeType?: ReservationFeeType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  reservationFeeValue?: number;
 }

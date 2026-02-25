@@ -176,8 +176,12 @@ const submitContact = async () => {
 
 .btn-secondary.btn-ghost {
   background: transparent;
-  color: var(--primary);
+  color: var(--gray-800);
   border: none;
+}
+
+.btn-secondary.btn-ghost:hover {
+  color: var(--primary);
 }
 
 .hero-actions {
@@ -185,19 +189,5 @@ const submitContact = async () => {
   align-items: center;
   justify-content: center;
   gap: 24px;
-}
-
-/* Animations */
-.animate-slide-up {
-  animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
-}
-
-.animate-slide-up-delay-1 { animation-delay: 0.1s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
-.animate-slide-up-delay-2 { animation-delay: 0.2s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
-.animate-slide-up-delay-3 { animation-delay: 0.3s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
-
-@keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
 }
 </style>

@@ -14,6 +14,11 @@ export class CreateLeadDto {
   @IsString()
   phone: string;
 
+  @ApiPropertyOptional({ example: '123.456.789-00' })
+  @IsOptional()
+  @IsString()
+  cpf?: string;
+
   @ApiPropertyOptional({
     description: 'ID do elemento do mapa (lote) de interesse'
   })

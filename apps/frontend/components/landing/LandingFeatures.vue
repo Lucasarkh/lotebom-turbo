@@ -33,6 +33,20 @@
           </div>
         </div>
 
+        <!-- Payments -->
+        <div class="bento-item animate-slide-up highlight-payment">
+          <div class="bento-content">
+            <div class="bento-tag">Pagamentos</div>
+            <h3 class="bento-title">Reserva Online Instantânea</h3>
+            <p class="bento-desc">Integração nativa com Stripe, Asaas e Mercado Pago. Transforme o interesse em venda real permitindo o pagamento da reserva via PIX ou Cartão.</p>
+          </div>
+          <div class="payment-icons">
+             <span class="p-icon">💳</span>
+             <span class="p-icon">⚡</span>
+             <span class="p-icon">💰</span>
+          </div>
+        </div>
+
         <!-- Realtors -->
         <div class="bento-item animate-slide-up">
           <div class="bento-content">
@@ -141,9 +155,41 @@
   .main-feature { grid-column: span 4; grid-row: span 2; }
   .bento-item:nth-child(2) { grid-column: span 2; }
   .bento-item:nth-child(3) { grid-column: span 2; }
-  .bento-item:nth-child(4) { grid-column: span 2; }
-  .bento-item:nth-child(5) { grid-column: span 2; }
-  .bento-item:nth-child(6) { grid-column: span 2; }
+  .bento-item:nth-child(4) { grid-column: span 3; }
+  .bento-item:nth-child(5) { grid-column: span 3; }
+  .bento-item:nth-child(6) { grid-column: span 3; }
+  .bento-item:nth-child(7) { grid-column: span 3; }
+}
+
+.highlight-payment { 
+  background: linear-gradient(135deg, #007AFF 0%, #0051FF 100%); 
+  color: white;
+  border: none;
+}
+
+.highlight-payment .bento-tag { 
+  background: rgba(255,255,255,0.2);
+  color: white; 
+  padding: 4px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.highlight-payment .bento-title,
+.highlight-payment .bento-desc {
+  color: white;
+}
+
+.payment-icons { 
+  position: absolute; 
+  bottom: 20px; 
+  right: 20px; 
+  display: flex; 
+  gap: 12px; 
+  font-size: 2rem; 
+  background: rgba(255,255,255,0.1);
+  padding: 10px;
+  border-radius: 12px;
 }
 
 .bento-tag {

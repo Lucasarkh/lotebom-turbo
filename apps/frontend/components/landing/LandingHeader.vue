@@ -9,7 +9,6 @@
       <nav class="nav-desktop">
         <ul class="nav-list">
           <li><a href="#features" class="nav-link">Funcionalidades</a></li>
-          <li><a href="#about" class="nav-link">Diferenciais</a></li>
           <li><a href="#cta" class="nav-link">Contato</a></li>
         </ul>
         
@@ -44,8 +43,7 @@
       <Transition name="fade">
         <div v-if="mobileMenuOpen" class="nav-mobile">
           <a href="#features" class="nav-link" @click="mobileMenuOpen = false">Funcionalidades</a>
-          <a href="#benefits" class="nav-link" @click="mobileMenuOpen = false">Benefícios</a>
-          <a href="#about" class="nav-link" @click="mobileMenuOpen = false">Soluções</a>
+          <a href="#cta" class="nav-link" @click="mobileMenuOpen = false">Contato</a>
           <div class="nav-divider"></div>
           
           <template v-if="!authStore.isLoggedIn">

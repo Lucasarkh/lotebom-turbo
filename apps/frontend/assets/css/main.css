@@ -872,3 +872,27 @@ tbody tr:hover {
 .w-100 { width: 100% !important; }
 .me-2 { margin-right: 0.5rem !important; }
 .mt-4 { margin-top: 1.5rem !important; }
+
+/* ─── Global Animations ───────────────────────────────── */
+
+.animate-slide-up {
+  animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-up-delay-1 { animation-delay: 0.1s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
+.animate-slide-up-delay-2 { animation-delay: 0.2s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
+.animate-slide-up-delay-3 { animation-delay: 0.3s; animation: slideUp 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
+
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
