@@ -1,6 +1,6 @@
 <template>
   <!-- Absolute positioned popover anchored to the hotspot pin -->
-  <Teleport to="body">
+  <Teleport :to="teleportTarget">
     <Transition name="hs-pop">
       <div
         v-if="hotspot"
@@ -97,12 +97,16 @@ import {
   LOT_STATUS_LABELS,
 } from '~/composables/plantMap/types'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   hotspot: PlantHotspot | null
   /** Anchor position in viewport coordinates (px) */
   anchorX: number
   anchorY: number
-}>()
+  /** Teleport destination (defaults to body) */
+  teleportTarget?: string | HTMLElement
+}>(), {
+  teleportTarget: 'body',
+})
 
 const emit = defineEmits<{
   (e: 'close'): void

@@ -80,6 +80,14 @@
       <button class="plant-map-viewer__btn" aria-label="Zoom in" @click="zoomIn">＋</button>
       <button class="plant-map-viewer__btn" aria-label="Zoom out" @click="zoomOut">－</button>
       <button class="plant-map-viewer__btn" aria-label="Resetar zoom" title="Resetar" @click="resetTransform">⌂</button>
+      <button 
+        v-if="isFullscreenSupported"
+        class="plant-map-viewer__btn" 
+        :title="isFullscreen ? 'Sair tela cheia' : 'Tela cheia'"
+        @click="toggleFullscreen"
+      >
+        {{ isFullscreen ? '✖' : '⛶' }}
+      </button>
     </div>
 
     <!-- Legend -->
@@ -100,6 +108,7 @@
       :hotspot="selectedHotspot"
       :anchor-x="popoverAnchor.x"
       :anchor-y="popoverAnchor.y"
+      :teleport-target="isFullscreen ? containerEl : 'body'"
       @close="selectedHotspot = null"
     />
   </div>
@@ -107,6 +116,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useFullscreen } from '@vueuse/core'
 import type { PlantMap, PlantHotspot } from '~/composables/plantMap/types'
 import { useZoomPan } from '~/composables/plantMap/useZoomPan'
 import HotspotPin from './HotspotPin.vue'
@@ -147,6 +157,16 @@ const {
 } = useZoomPan({
   minScale: 0.3,
   maxScale: 8,
+})
+
+// ── Fullscreen ───────────────────────────────────────────
+const { isFullscreen, toggle: toggleFullscreen, isSupported: isFullscreenSupported } = useFullscreen(containerEl)
+
+watch(isFullscreen, () => {
+  // Recalculate zoom/pan when entering/exiting fullscreen to fit new viewport size
+  setTimeout(() => {
+    fitToContainer()
+  }, 100)
 })
 
 // ── Performance optimization (Viewport Culling) ──────────
@@ -379,6 +399,15 @@ const handleContainerClick = () => {
   background: #1a1a2e;
   border-radius: 12px;
   user-select: none;
+}
+
+.plant-map-viewer:fullscreen {
+  border-radius: 0;
+  width: 100vw;
+  height: 100vh;
+}
+:fullscreen :deep(.hs-popover) {
+  z-index: 2000;
 }
 
 .plant-map-viewer__loading,

@@ -48,6 +48,7 @@
           <option value="RESERVATION">Reserva solicitada</option>
           <option value="WON">Convertido</option>
           <option value="LOST">Perdido</option>
+          <option value="ABANDONED">Abandonou Checkout</option>
         </select>
       </div>
       <div class="filter-group flex-2">

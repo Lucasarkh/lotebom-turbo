@@ -2,6 +2,14 @@
 export default defineNuxtConfig({
   ssr: false, 
   devtools: { enabled: true },
+  app: {
+    head: {
+      title: 'Lotio - Gestão Inteligente para Loteamentos',
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/img/logo-icon.svg' }
+      ]
+    }
+  },
   modules: ['@pinia/nuxt'],
   css: [
     '@/assets/css/main.css',

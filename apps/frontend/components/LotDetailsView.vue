@@ -1133,9 +1133,9 @@ async function submitReservation() {
 
 /* Section Generic V4 */
 .section-v4 {
-  background: white; padding: 60px; border-radius: var(--v4-radius-lg); margin-bottom: 32px; border: 1px solid var(--v4-border);
+  background: white; padding: 40px; border-radius: var(--v4-radius-lg); margin-bottom: 24px; border: 1px solid var(--v4-border);
 }
-.section-title-v4 { margin-bottom: 40px; display: flex; align-items: center; gap: 24px; }
+.section-title-v4 { margin-bottom: 24px; display: flex; align-items: center; gap: 24px; }
 .section-title-v4 h2 { font-size: 28px; font-weight: 600; color: var(--v4-text); margin: 0; letter-spacing: -0.01em; }
 .title-line { flex: 1; height: 1px; background: var(--v4-border); }
 
@@ -1313,11 +1313,51 @@ async function submitReservation() {
 .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; background: none; border: none; font-size: 32px; cursor: pointer; }
 
 @media (max-width: 768px) {
-  .hero-v4, .section-v4 { padding: 32px 24px; }
-  .lot-code-title { font-size: 40px; }
-  .quick-metrics-v4 { gap: 24px; flex-wrap: wrap; }
-  .split-view { padding-bottom: 40px; }
-  .pd-value { font-size: 28px; }
+  .hero-v4, .section-v4 { padding: 20px; border-radius: 20px; }
+  .lot-code-title { font-size: 36px; margin-bottom: 16px; }
+  .quick-metrics-v4 { 
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+  }
+  .q-val { font-size: 20px; }
+  .q-unit { font-size: 10px; }
+  
+  .split-view { padding-top: 20px; padding-bottom: 40px; gap: 24px; }
+  .pd-value { font-size: 26px; }
+  
+  .lot-header-v4 { padding: 8px 0; }
+  .back-link-v4 span { display: none; }
+  .back-link-v4::after { content: "Ver Todos"; margin-left: 4px; }
+  
+  .project-tags { gap: 4px; font-size: 10px; }
+  .tag-pname { padding: 3px 8px; }
+
+  .section-title-v4 { margin-bottom: 24px; gap: 12px; }
+  .section-title-v4 h2 { font-size: 20px; }
+  
+  .gallery-v4 { grid-template-columns: 1fr 1fr; grid-auto-rows: 140px; }
+  
+  .spec-entry { padding: 16px; }
+  .spec-entry .s-value { font-size: 17px; }
+  
+  .finance-body { padding: 0 20px 24px; }
+  .h-item { padding: 24px 20px; }
+  .h-item .v { font-size: 28px; }
+  .plan-group { margin-bottom: 24px; padding-top: 20px; }
+  .group-label { font-size: 16px; margin-bottom: 16px; }
+  .plans-grid { grid-template-columns: 1fr; }
+  .plan-pill { padding: 14px 18px; }
+  
+  .lead-form-v4 { padding: 24px 20px; border-radius: 20px; }
+  .form-header-v4 h3 { font-size: 20px; }
+
+  .assets-grid-v4 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .asset-card-v4 { padding: 12px; border-radius: 14px; gap: 4px; }
+  .a-code { font-size: 13px; }
+  .a-area { font-size: 11px; }
+  .a-price { font-size: 14px; margin-top: 2px; }
 }
 
 /* Booking & Reservation Styles */

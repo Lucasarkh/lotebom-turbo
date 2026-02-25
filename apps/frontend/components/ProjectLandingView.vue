@@ -288,7 +288,7 @@
       </section>
 
       <!-- Endereço e Mapa -->
-      <section v-if="project.googleMapsUrl || project.address" class="v4-section" id="localizacao" style="padding-bottom: 80px;">
+      <section v-if="project.googleMapsUrl || project.address" class="v4-section" id="localizacao">
         <div class="v4-container">
           <div class="v4-section-header center">
             <h2 class="v4-section-title">Nossa Localização</h2>
@@ -956,9 +956,18 @@ function openLightbox(idx: number) {
   padding: 0 22px;
 }
 
+@media (max-width: 768px) {
+  .v4-container { padding: 0 8px; }
+}
+
+/* Spacing & Sections */
 .v4-section {
-  padding: 48px 0; /* Reduced from 80px to avoid excessive gaps between sections */
+  padding: 50px 0;
   position: relative;
+}
+
+@media (max-width: 768px) {
+  .v4-section { padding: 24px 0; }
 }
 
 .v4-section-alt {
@@ -966,8 +975,16 @@ function openLightbox(idx: number) {
 }
 
 .v4-section-header {
-  margin-bottom: 32px; /* Reduced from 44px */
+  margin-bottom: 24px;
   max-width: 800px;
+}
+
+@media (max-width: 768px) {
+  .v4-section-header { margin-bottom: 16px; }
+}
+
+@media (max-width: 768px) {
+  .v4-section-header { margin-bottom: 24px; }
 }
 
 .v4-section-header.center {
@@ -981,6 +998,10 @@ function openLightbox(idx: number) {
   letter-spacing: -0.003em;
   line-height: 1.1;
   margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .v4-section-title { font-size: 28px; margin-bottom: 12px; }
 }
 
 .v4-section-subtitle {
@@ -1045,10 +1066,12 @@ function openLightbox(idx: number) {
   z-index: 1000;
   max-width: calc(100vw - 48px);
 }
+
 @media (max-width: 768px) {
   .v4-floating-cta {
-    bottom: 100px;
-    right: 16px;
+    bottom: 120px; 
+    right: 12px;
+    max-width: 60px;
   }
 }
 
@@ -1064,6 +1087,15 @@ function openLightbox(idx: number) {
   transition: transform 0.3s;
   border: none;
   cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .v4-cta-btn-animated { 
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    padding: 2px;
+  }
 }
 
 .v4-cta-btn-animated:hover {
@@ -1106,9 +1138,34 @@ function openLightbox(idx: number) {
   white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .v4-cta-inner {
+    padding: 12px;
+    border-radius: 50%;
+    aspect-ratio: 1;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+  }
+}
+
 .v4-cta-icon-spark { font-size: 18px; }
+
+@media (max-width: 768px) {
+  .v4-cta-icon-spark { font-size: 24px; margin: 0; }
+}
+
 .v4-cta-label { font-size: 14px; font-weight: 600; color: var(--v4-text); letter-spacing: -0.01em; }
+
+@media (max-width: 768px) {
+  .v4-cta-label { display: none; }
+}
+
 .v4-cta-arrow-icon { color: var(--v4-primary); font-weight: 700; transition: transform 0.2s; }
+
+@media (max-width: 768px) {
+  .v4-cta-arrow-icon { display: none; }
+}
 
 .v4-cta-btn-animated:hover .v4-cta-arrow-icon {
   transform: translateX(4px);
@@ -1670,6 +1727,13 @@ function openLightbox(idx: number) {
   gap: 20px;
 }
 
+@media (max-width: 768px) {
+  .v4-lots-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+}
+
 .v4-lot-card {
   background: white;
   border-radius: var(--v4-radius-lg);
@@ -1681,6 +1745,15 @@ function openLightbox(idx: number) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .v4-lot-card {
+    padding: 16px;
+    border-radius: 16px;
+    gap: 8px;
+  }
 }
 
 .v4-lot-card:hover { 
@@ -1694,6 +1767,10 @@ function openLightbox(idx: number) {
   justify-content: space-between; 
   align-items: flex-start;
   margin-bottom: 20px; 
+}
+
+@media (max-width: 768px) {
+  .v4-lot-card-header { margin-bottom: 12px; }
 }
 
 .v4-lot-id {
@@ -1710,11 +1787,19 @@ function openLightbox(idx: number) {
   letter-spacing: 0.1em;
 }
 
+@media (max-width: 768px) {
+  .v4-lot-label { font-size: 9px; }
+}
+
 .v4-lot-code { 
   font-size: 26px; 
   font-weight: 700; 
   letter-spacing: -0.02em; 
   color: var(--v4-text); 
+}
+
+@media (max-width: 768px) {
+  .v4-lot-code { font-size: 18px; line-height: 1.2; }
 }
 
 .v4-lot-status { 
@@ -1728,6 +1813,16 @@ function openLightbox(idx: number) {
   letter-spacing: 0.05em;
 }
 
+@media (max-width: 768px) {
+  .v4-lot-status { 
+    font-size: 8px; 
+    padding: 4px 8px; 
+    position: absolute;
+    top: 12px;
+    right: 12px;
+  }
+}
+
 .v4-lot-info-row { 
   display: flex; 
   gap: 20px; 
@@ -1737,13 +1832,37 @@ function openLightbox(idx: number) {
   align-items: center;
 }
 
+@media (max-width: 768px) {
+  .v4-lot-info-row { 
+    gap: 8px; 
+    font-size: 12px; 
+    margin-bottom: 8px; 
+    flex-direction: column; 
+    align-items: flex-start; 
+  }
+}
+
 .v4-lot-price { 
   margin-top: auto;
   border-top: 1px solid #f5f5f7;
   padding-top: 20px;
 }
 
+@media (max-width: 768px) {
+  .v4-lot-price { padding-top: 12px; margin-top: 4px; }
+}
+
+.v4-price-label { font-size: 12px; color: var(--v4-text-muted); }
+
+@media (max-width: 768px) {
+  .v4-price-label { font-size: 9px; margin-bottom: 2px; display: block; }
+}
+
 .v4-price-value { font-size: 20px; font-weight: 600; color: var(--v4-text); }
+
+@media (max-width: 768px) {
+  .v4-price-value { font-size: 15px; }
+}
 
 .v4-lot-card-footer { 
   margin-top: 20px;
@@ -1753,6 +1872,10 @@ function openLightbox(idx: number) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .v4-lot-card-footer { display: none; }
 }
 
 /* Conversion Card */
@@ -1767,7 +1890,7 @@ function openLightbox(idx: number) {
 }
 
 @media (max-width: 900px) {
-  .v4-conversion-card { grid-template-columns: 1fr; padding: 40px 20px; }
+  .v4-conversion-card { grid-template-columns: 1fr; padding: 16px 4px; gap: 20px; }
 }
 
 .v4-conversion-badge {
@@ -1900,6 +2023,9 @@ function openLightbox(idx: number) {
 
 .v4-form-title { font-size: 24px; font-weight: 600; margin-bottom: 32px; text-align: center; }
 
+.v4-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .v4-form-grid { grid-template-columns: 1fr; gap: 0; } }
+
 .v4-form-group { margin-bottom: 24px; }
 .v4-form-group label { display: block; font-size: 12px; font-weight: 600; color: #86868b; margin-bottom: 8px; }
 .v4-form-group input, .v4-form-group select, .v4-form-group textarea {
@@ -1920,28 +2046,46 @@ function openLightbox(idx: number) {
 /* Sticky mobile CTA */
 .v4-sticky-nav {
   position: fixed;
-  bottom: 32px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(29, 29, 31, 0.8);
+  background: rgba(29, 29, 31, 0.72);
   backdrop-filter: saturate(180%) blur(20px);
-  padding: 8px;
+  padding: 6px;
   border-radius: 100px;
   display: none;
   align-items: center;
   gap: 4px;
-  width: 90%;
-  max-width: 340px;
+  width: auto;
+  min-width: 320px;
+  max-width: 92vw;
   z-index: 1000;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.08);
 }
 
-@media (max-width: 768px) { .v4-sticky-nav { display: flex; } }
+@media (max-width: 768px) {
+  .v4-sticky-nav {
+    display: flex;
+    bottom: 20px;
+    min-width: 280px;
+    padding: 4px;
+    gap: 2px;
+  }
+}
 
 .v4-nav-item {
-  color: white; text-decoration: none; font-size: 12px; font-weight: 600; padding: 10px 16px; border-radius: 100px;
+  color: white; text-decoration: none; font-size: 13px; font-weight: 500; padding: 10px 18px; border-radius: 100px; transition: all 0.2s;
 }
-.v4-nav-cta { background: var(--v4-primary); flex: 1; text-align: center; }
+
+@media (max-width: 768px) {
+  .v4-nav-item { font-size: 11px; padding: 8px 10px; }
+}
+
+.v4-nav-cta { background: var(--v4-primary); flex: 1; text-align: center; font-weight: 600; }
+
+@media (max-width: 768px) {
+  .v4-nav-cta { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+}
 
 /* Lightbox V4 */
 .v4-lightbox { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; }
@@ -1956,23 +2100,42 @@ function openLightbox(idx: number) {
 @keyframes spinner { to { transform: rotate(360deg); } }
 .loading-spinner { width: 32px; height: 32px; border: 3px solid rgba(0, 113, 227, 0.1); border-top-color: var(--v4-primary); border-radius: 50%; animation: spinner 1s linear infinite; }
 
-/* Responsive tweaks */
+/* Responsive tweaks and improvements */
 @media (max-width: 768px) {
+  .v4-hero { min-height: 480px; padding: 40px 0; }
   .v4-hero-content { 
-    padding-top: 60px; 
+    padding: 32px 16px; 
     text-align: center; 
-    border-radius: 0; 
-    border: none; 
-    background: transparent; 
-    backdrop-filter: none; 
+    border-radius: 20px; 
+    margin: 0 12px;
   }
-  .v4-hero-title { font-size: 40px; margin-bottom: 32px; }
-  .v4-hero-stats { gap: 24px; margin-bottom: 32px; }
-  .v4-stat-value { font-size: 32px; }
-  .v4-stat-card { min-width: 100px; }
-  .v4-stat-label { font-size: 10px; }
-  .v4-hero-actions { flex-direction: column; width: 100%; }
-  .v4-btn-primary, .v4-btn-white { width: 100%; text-align: center; }
+  .v4-hero-title { font-size: 32px; margin-bottom: 24px; }
+  
+  .v4-hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 0 4px;
+  }
+  .v4-stat-card { min-width: 0; gap: 4px; }
+  .v4-stat-label { font-size: 9px; margin-bottom: 2px; -webkit-line-clamp: 1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; }
+  .v4-stat-value { font-size: 24px; }
+  .v4-stat-meta { display: none; }
+  
+  .v4-hero-actions { flex-direction: column; width: 100%; gap: 12px; }
+  .v4-btn-primary, .v4-btn-white { width: 100%; text-align: center; font-size: 16px; padding: 14px; }
+  
+  .v4-trust-bar { padding: 8px 0; }
+  .v4-trust-label { font-size: 10px; }
+  .v4-trust-name { font-size: 14px; }
+  .v4-trust-btn { padding: 8px 12px; font-size: 11px; font-weight: 700; white-space: nowrap; border-radius: 8px; }
+  .v4-trust-actions { gap: 4px; }
+  .v4-trust-inner { gap: 12px; }
+  .v4-trust-person { gap: 8px; }
+  .v4-trust-avatar { width: 36px; height: 36px; }
+  .v4-avatar-placeholder { font-size: 14px; }
+  .v4-conversion-form-wrapper { padding: 20px 4px; border-radius: 12px; }
 }
 
 /* Success Message Improvements */

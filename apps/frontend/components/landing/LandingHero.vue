@@ -108,7 +108,7 @@ const submitContact = async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 120px 0 60px;
+  padding: 100px 0 40px;
   background-color: var(--gray-50);
   background-image: url('~/assets/img/banner-hero.jpg');
   background-size: cover;
@@ -117,11 +117,17 @@ const submitContact = async () => {
   position: relative;
 }
 
+@media (min-width: 768px) {
+  .hero {
+    padding: 120px 0 60px;
+  }
+}
+
 .hero-overlay {
   display: block;
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 100%);
   z-index: 1;
 }
 
@@ -134,44 +140,56 @@ const submitContact = async () => {
   margin: 0 auto;
   position: relative;
   z-index: 10;
+  padding: 0 16px;
 }
 
 .hero-title {
-  font-size: 3.5rem;
-  line-height: 1.05;
-  letter-spacing: -2.5px;
+  font-size: 2.75rem;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
   font-weight: 700;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   color: var(--gray-900);
 }
 
 @media (min-width: 768px) {
   .hero-title {
     font-size: 5.5rem;
+    line-height: 1.05;
+    letter-spacing: -2.5px;
+    margin-bottom: 24px;
   }
 }
 
 .hero-subtitle {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   color: var(--gray-600);
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   max-width: 600px;
-  line-height: 1.4;
+  line-height: 1.5;
   letter-spacing: -0.015em;
 }
 
 @media (min-width: 768px) {
   .hero-subtitle {
     font-size: 1.6rem;
+    margin-bottom: 40px;
   }
 }
 
 .btn-apple-lg {
   border-radius: 980px;
   padding: 14px 32px;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@media (min-width: 768px) {
+  .btn-apple-lg {
+    font-size: 1.05rem;
+    padding: 14px 32px;
+  }
 }
 
 .btn-secondary.btn-ghost {
@@ -186,8 +204,17 @@ const submitContact = async () => {
 
 .hero-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .hero-actions {
+    flex-direction: row;
+    gap: 24px;
+  }
 }
 </style>

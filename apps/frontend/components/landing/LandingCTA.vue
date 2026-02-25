@@ -2,9 +2,9 @@
   <section id="cta" class="cta">
     <div class="container-landing">
       <div class="cta-inner">
-        <h2 class="cta-title">Sua jornada digital <br> começa aqui.</h2>
+        <h2 class="cta-title">Sua gestão de loteamentos, <br> em outro nível.</h2>
         <p class="cta-subtitle">
-          Transforme sua forma de vender com a tecnologia líder para gestão de loteamentos.
+          A plataforma completa para gerir, vender e automatizar o seu loteamento com tecnologia de ponta.
         </p>
         
         <div class="cta-form-container animate-slide-up-delay-1">
@@ -19,7 +19,7 @@
               <input v-model="form.phone" type="tel" placeholder="WhatsApp" v-maska="'(##) #####-####'" required>
             </div>
             <button type="submit" class="btn btn-primary btn-apple-lg btn-block" :disabled="submitting">
-              {{ submitting ? 'Enviando...' : 'Solicitar uma Demonstração' }}
+              {{ submitting ? 'Enviando...' : 'Quero Ver na Prática' }}
             </button>
           </form>
           <div class="cta-footer-links" v-if="settings?.contactWhatsapp">
@@ -72,53 +72,84 @@ const submitContact = async () => {
 
 <style scoped>
 .cta {
-  padding: 140px 0;
+  padding: 60px 0;
   background: radial-gradient(circle at top, var(--gray-100) 0%, var(--gray-50) 100%);
+}
+
+@media (min-width: 768px) {
+  .cta {
+    padding: 140px 0;
+  }
 }
 
 .cta-inner {
   text-align: center;
   max-width: 800px;
   margin: 0 auto;
+  padding: 0 16px;
 }
 
 .cta-title {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  margin-bottom: 24px;
-  letter-spacing: -0.04em;
+  margin-bottom: 20px;
+  letter-spacing: -1.5px;
   color: var(--gray-900);
-  line-height: 1.05;
+  line-height: 1.1;
 }
 
 @media (min-width: 768px) {
-  .cta-title { font-size: 4.8rem; }
+  .cta-title { 
+    font-size: 4.8rem;
+    margin-bottom: 24px;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+  }
 }
 
 .cta-subtitle {
-  font-size: 1.25rem;
-  margin-bottom: 48px;
+  font-size: 1.125rem;
+  margin-bottom: 32px;
   color: var(--gray-500);
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .cta-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 48px;
+  }
 }
 
 .cta-form-container {
-  max-width: 450px;
+  max-width: 500px;
   margin: 0 auto;
+  padding: 0 8px;
 }
 
 .cta-card-form {
   background: white;
-  padding: 32px;
+  padding: 24px;
   border-radius: 24px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.06);
   border: 1px solid var(--gray-100);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .cta-card-form {
+    padding: 48px;
+    gap: 24px;
+  }
+}
+
+.cta-card-form .form-group {
+  margin-bottom: 0;
 }
 
 .cta-card-form input {
@@ -126,16 +157,16 @@ const submitContact = async () => {
   padding: 16px 20px;
   border-radius: 12px;
   border: 1px solid var(--gray-200);
-  background: var(--gray-50);
+  background: white;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
   outline: none;
 }
 
 .cta-card-form input:focus {
   border-color: var(--primary);
-  background: white;
   box-shadow: 0 0 0 4px var(--primary-50);
+  transform: translateY(-1px);
 }
 
 .cta-footer-links {
@@ -156,9 +187,24 @@ const submitContact = async () => {
 
 .btn-apple-lg {
   border-radius: 12px;
-  padding: 18px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 20px 24px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary) 0%, #0056b3 100%);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+  white-space: normal;
+  line-height: 1.2;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.btn-apple-lg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3);
+  background: linear-gradient(135deg, #0084ff 0%, #0066d6 100%);
+}
+
+.btn-apple-lg:active {
+  transform: translateY(0);
 }
 
 .btn-block {

@@ -21,6 +21,7 @@ const badgeClass = computed(() => ({
   WON: 'badge-success',
   LOST: 'badge-danger',
   CANCELLED: 'badge-neutral',
+  ABANDONED: 'badge-danger',
   REVERSED: 'badge-danger',
 }[props.status] || 'badge-neutral'))
 
@@ -36,6 +37,7 @@ const label = computed(() => ({
   WON: 'Convertido',
   LOST: 'Perdido',
   CANCELLED: 'Cancelado',
+  ABANDONED: 'Abandonou Checkout',
   REVERSED: 'Estornado',
 }[props.status] || props.status))
 </script>

@@ -247,13 +247,63 @@ export class PaymentService {
     // Logic for failed payment
     const payment = await this.prisma.leadPayment.findFirst({
       where: { externalId, provider },
+      include: { lead: true },
     });
 
     if (payment) {
-        await this.prisma.leadPayment.update({
-            where: { id: payment.id },
-            data: { status: 'OVERDUE' },
+      await this.prisma.$transaction(async (tx) => {
+        // 1. Update Payment status
+        await tx.leadPayment.update({
+          where: { id: payment.id },
+          data: { status: 'OVERDUE' },
         });
+
+        // 2. Update Lead status
+        await tx.lead.update({
+          where: { id: payment.leadId },
+          data: { status: 'ABANDONED' },
+        });
+
+        // 3. Add History
+        await tx.leadHistory.create({
+          data: {
+            leadId: payment.leadId,
+            fromStatus: payment.lead.status,
+            toStatus: 'ABANDONED',
+            notes: `Pagamento de reserva falhou ou expirou via ${provider}`,
+            createdBy: 'SYSTEM_GATEWAY',
+          },
+        });
+      });
     }
+  }
+
+  async markAsAbandoned(leadId: string) {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id: leadId },
+    });
+
+    if (!lead || lead.status === 'WON' || lead.status === 'RESERVATION') {
+      return { success: false };
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.lead.update({
+        where: { id: leadId },
+        data: { status: 'ABANDONED' },
+      });
+
+      await tx.leadHistory.create({
+        data: {
+          leadId,
+          fromStatus: lead.status,
+          toStatus: 'ABANDONED',
+          notes: 'Lead retornou da tela de checkout e cancelou o processo',
+          createdBy: 'CUSTOMER',
+        },
+      });
+    });
+
+    return { success: true };
   }
 }

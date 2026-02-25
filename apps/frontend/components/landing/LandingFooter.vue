@@ -48,21 +48,29 @@
 .footer {
   background-color: var(--gray-50);
   color: var(--gray-900);
-  padding: 100px 0 40px;
+  padding: 60px 0 32px;
   border-top: 1px solid var(--gray-200);
+}
+
+@media (min-width: 768px) {
+  .footer {
+    padding: 100px 0 40px;
+  }
 }
 
 .footer-grid {
   display: flex;
   flex-direction: column;
-  gap: 64px;
-  margin-bottom: 80px;
+  gap: 40px;
+  margin-bottom: 60px;
 }
 
 @media (min-width: 1024px) {
   .footer-grid {
     flex-direction: row;
     justify-content: space-between;
+    gap: 64px;
+    margin-bottom: 80px;
   }
 }
 

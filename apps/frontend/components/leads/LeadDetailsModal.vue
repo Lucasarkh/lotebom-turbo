@@ -228,7 +228,7 @@ const statusOptions = {
   NEW: 'Novo', CONTACTED: 'Contatado', QUALIFIED: 'Qualificado',
   NEGOTIATING: 'Negociando', RESERVATION: 'Reserva Solic.', UNDER_REVIEW: 'Em Análise',
   WAITING_DOCS: 'Aguard. Docs', WAITING_PAYMENT: 'Aguard. Pagto', WON: 'Convertido',
-  LOST: 'Perdido', CANCELLED: 'Cancelado', REVERSED: 'Estornado'
+  LOST: 'Perdido', CANCELLED: 'Cancelado', ABANDONED: 'Abandonou Checkout', REVERSED: 'Estornado'
 }
 
 const statusLabel = (s) => statusOptions[s] || s

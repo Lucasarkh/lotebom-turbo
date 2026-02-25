@@ -75,6 +75,7 @@ enum LeadStatus {
   WON
   LOST
   CANCELLED
+  ABANDONED
   REVERSED
 }
 

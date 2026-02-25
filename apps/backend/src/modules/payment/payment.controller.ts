@@ -28,6 +28,13 @@ export class PaymentController {
   ) {
     return this.paymentService.startReservationPayment(leadId, amount, { baseUrl });
   }
+
+  @Post('cancel')
+  @ApiOperation({ summary: 'Mark lead as abandoned when they cancel/desist' })
+  @ApiResponse({ status: 200, description: 'Lead marked as abandoned' })
+  async cancelReservation(@Body('leadId') leadId: string) {
+    return this.paymentService.markAsAbandoned(leadId);
+  }
 }
 
 @ApiTags('Webhooks')
