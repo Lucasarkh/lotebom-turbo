@@ -165,15 +165,13 @@
         </div>
       </div>
     </footer>
-
-    <!-- AI Assistant -->
-    <AiChatWidget v-if="project?.aiEnabled" :project="project" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useTenantStore } from '~/stores/tenant'
+import { useAiChatStore } from '~/stores/aiChat'
 import CommonPagination from '~/components/common/Pagination.vue'
 
 const props = defineProps({
@@ -185,6 +183,7 @@ const props = defineProps({
 
 const route = useRoute()
 const tenantStore = useTenantStore()
+const chatStore = useAiChatStore()
 const { fetchPublic } = usePublicApi()
 
 const projectSlug = computed(() => (tenantStore.config?.project?.slug || props.slug || route.params.slug || '') as string)
@@ -206,6 +205,7 @@ const project = ref<any>(null)
 
 const searchQuery = ref('')
 const selectedFilters = ref<string[]>([])
+const codesFilter = ref<string[]>([])
 const matchMode = ref<'any' | 'exact'>('any')
 const lotsPage = ref(1)
 const lotsPerPage = 12
@@ -303,6 +303,11 @@ const allAvailableTags = computed(() => {
 const filteredLots = computed(() => {
   let list = unifiedAvailableLots.value
   
+  // Codes filter (from AI usually)
+  if (codesFilter.value.length > 0) {
+    list = list.filter((l: any) => codesFilter.value.includes(l.code))
+  }
+
   // Search query
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
@@ -351,6 +356,7 @@ function toggleFilter(tag: string) {
 function clearFilters() {
   searchQuery.value = ''
   selectedFilters.value = []
+  codesFilter.value = []
   lotsPage.value = 1
 }
 
@@ -368,11 +374,15 @@ onMounted(async () => {
     const p = await fetchPublic(`/p/${projectSlug.value}`)
     if (p) {
       project.value = p
+      chatStore.setProject(p)
       useHead({ title: `Busca de Unidades — ${p.name}` })
 
       // Handle Query Params
       if (route.query.tags) {
         selectedFilters.value = (route.query.tags as string).split(',')
+      }
+      if (route.query.codes) {
+        codesFilter.value = (route.query.codes as string).split(',')
       }
       if (route.query.match === 'exact') {
         matchMode.value = 'exact'

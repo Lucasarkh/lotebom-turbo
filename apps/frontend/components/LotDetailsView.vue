@@ -550,6 +550,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useTenantStore } from '~/stores/tenant'
+import { useAiChatStore } from '~/stores/aiChat'
 import { getTodayInBrasilia } from '~/utils/date'
 import { formatCurrencyToBrasilia } from '~/utils/money'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
@@ -565,6 +567,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const tenantStore = useTenantStore()
+const chatStore = useAiChatStore()
 const { fetchPublic } = usePublicApi()
 const { success: toastSuccess } = useToast()
 const tracking = useTracking()
@@ -957,6 +960,7 @@ onMounted(async () => {
     
     if (p.status === 'fulfilled') {
       project.value = p.value
+      chatStore.setProject(p.value)
       
       // Initialize tracking handled by global middleware
 

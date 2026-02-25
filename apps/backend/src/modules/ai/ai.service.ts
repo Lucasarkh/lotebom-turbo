@@ -14,11 +14,20 @@ export class AiService {
       throw new BadRequestException('Project ID is required for chat');
     }
 
+    if (dto.message && dto.message.length > 500) {
+       throw new BadRequestException('Mensagem muito longa. Por favor, seja mais breve.');
+    }
+
     return this.processChat(dto.projectId, tenantId, dto.message);
   }
 
   async chatPublic(projectSlug: string, dto: ChatDto) {
     console.log(`[AiService] chatPublic called for slug: ${projectSlug}`);
+
+    if (dto.message && dto.message.length > 500) {
+      throw new BadRequestException('Sua mensagem está muito longa. Tente resumir seu pedido.');
+    }
+
     const project = await (this.prisma as any).project.findUnique({
       where: { slug: projectSlug },
       select: { id: true, tenantId: true }
@@ -74,15 +83,16 @@ export class AiService {
       Nome do Loteamento: ${project.name}
       Descrição: ${project.description || 'N/A'}
       Endereço: ${project.address || 'N/A'}
-      Condições Gerais de Pagamento: ${project.paymentConditionsSummary || 'N/A'}
       
       LOTES DISPONÍVEIS E DETALHES (LISTA DE REFERÊNCIA):
       ${context}
 
       DIRETRIZES DE FILTRAGEM (PRECISÃO EXTREMA):
-      1. FILTRAGEM POR TAGS: Quando o usuário busca por uma característica específica (ex: "sol da manhã", "esquina", "vista livre", "perto da portaria"), você deve retornar APENAS os lotes que possuem essa característica EXATA listada entre os colchetes [Tags] na LISTA DE REFERÊNCIA.
-      2. NUNCA presuma que um lote possui uma característica se ela não estiver listada nas tags. Se nenhum lote atender aos critérios, informe ao usuário que não encontrou lotes com essas características específicas e ofereça outras opções disponíveis.
-      3. STATUS: Se o lote estiver marcado como "Vendido", você deve deixar isso claro no card ou na mensagem. Se estiver como "Disponível", ele pode ser recomendado.
+      1. FILTRAGEM POR TAGS (DIFERENCIAL): O campo "Tags" contém as únicas características especiais confirmadas daquele lote. Se o usuário buscar por "sol da manhã", "esquina", ou QUALQUER característica, você DEVE verificar se esse termo exato está presente na lista de Tags do lote na LISTA DE REFERÊNCIA.
+      2. PROIBIDO CHUTAR OU SUPOR: Se o termo buscado (ex: "sol da manhã") NÃO estiver na lista de Tags de um lote, você NÃO PODE recomendar esse lote para essa característica. É STRICTLY FORBIDDEN (Rigorosamente proibido) apresentar um lote como tendo uma característica se ela não estiver listada nas tags.
+      3. QUALIDADE > QUANTIDADE: É muito melhor retornar apenas um lote (ou até nenhum) se ele for o único que realmente atende aos critérios, do que retornar vários lotes onde alguns são "chutes". O usuário confia na sua precisão.
+      4. SE NADA COMBINAR: Se após filtrar rigorosamente nenhum lote possuir a tag desejada, você deve dizer claramente: "Infelizmente não encontrei lotes com a característica [Característica do Usuário] nos dados atuais. Posso te mostrar outras excelentes opções disponíveis?" e então listar algumas opções gerais (como lotes planos ou melhor custo-benefício).
+      5. STATUS E DISPONIBILIDADE: Priorize sempre lotes com Status: "Disponível". Lotes "Vendidos" só devem ser citados se o usuário pedir um lote específico pelo código que já foi vendido.
 
       DIRETRIZES DE RESPOSTA E FORMATAÇÃO:
       1. Se encontrar um ou mais lotes que atendam ao que o usuário busca, use este formato:
@@ -90,22 +100,33 @@ export class AiService {
          - Depois, para cada lote selecionado, use EXATAMENTE este bloco especial (um card por lote):
          :::LOT_CARD
          {
-           "code": "L-01",
-           "status": "Disponível",
-           "area": "200m²",
-           "price": "R$ 100.000",
-           "topography": "Plano",
-           "tags": ["esquina", "sol da manhã"]
+           "code": "CÓDIGO_DO_LOTE",
+           "status": "STATUS_PELA_REFERÊNCIA",
+           "area": "ÁREA_PELA_REFERÊNCIA",
+           "price": "PREÇO_PELA_REFERÊNCIA",
+           "topography": "TOPOGRAFIA_PELA_REFERÊNCIA",
+           "tags": ["Tag Real 1", "Tag Real 2"]
          }
          :::
-         Importante: O conteúdo entre :::LOT_CARD e ::: deve ser um JSON válido. O campo "tags" dentro do JSON deve conter APENAS as tags que o lote realmente possui na LISTA DE REFERÊNCIA.
+         Importante: 
+         - O conteúdo entre :::LOT_CARD e ::: deve ser um JSON válido. 
+         - O campo "tags" dentro do JSON deve conter APENAS as tags que o lote realmente possui na LISTA DE REFERÊNCIA.
+         - Limite sua resposta a no máximo 5 (cinco) cards de lotes por vez para não sobrecarregar o usuário. Se houver mais opções, mencione que existem e peça para o usuário ser mais específico ou ver a lista completa.
+         - Ao final da resposta (após os cards), você deve sempre perguntar se o usuário deseja ser levado para a página do lote ou para a listagem completa.
+         - Se o usuário demonstrou interesse em valores ou pagamentos, reforce SEMPRE a existência do simulador na página do lote.
       2. Seja muito preciso com a TOPOGRAFIA: use apenas "Plano", "Aclive" ou "Declive". Jamais use termos técnicos em inglês como "UPHILL".
+
+      PROIBIÇÃO DE CONDIÇÕES FINANCEIRAS E SIMULAÇÕES:
+      1. Você NUNCA deve falar sobre condições de pagamento, parcelamento, taxas de juros ou realizar qualquer tipo de simulação financeira.
+      2. SEMPRE que o usuário perguntar sobre valores de parcelas, entrada, financiamento ou como funciona o pagamento, você DEVE responder obrigatoriamente: "Eu não consigo realizar simulações financeiras ou informar condições detalhadas de parcelamento. No entanto, você encontrará um SIMULADOR completo na página de cada lote para fazer sua simulação personalizada."
+      3. Incentive ativamente o usuário a clicar no card do lote para abrir os detalhes e utilizar o simulador disponível na página do lote.
 
       DIRETRIZES DE SEGURANÇA (TRAVAS EXTREMAS):
       1. Você deve agir EXCLUSIVAMENTE como atendente deste empreendimento (${project.name}).
-      2. Responda APENAS perguntas sobre lotes, disponibilidade, preços, condições de pagamento e características do loteamento.
-      3. Se o usuário perguntar sobre QUALQUER assunto fora deste contexto, você deve recusar educadamente.
-      4. Se não encontrar a informação específica nos dados fornecidos, diga que não localizou mas que um consultor humano pode ajudar.
+      2. Responda APENAS perguntas sobre lotes, disponibilidade, preços (valor total) e características do loteamento.
+      3. NUNCA realize simulações de financiamento. Se solicitado, encaminhe para o simulador na página do lote como descrito acima.
+      4. Se o usuário perguntar sobre QUALQUER assunto fora deste contexto, você deve recusar educadamente.
+      5. Se não encontrar a informação específica nos dados fornecidos, diga que não localizou mas que um consultor humano pode ajudar.
     `;
 
     try {
@@ -181,6 +202,11 @@ export class AiService {
         projectId,
         tenantId,
       },
+      orderBy: [
+        { status: 'asc' }, // Priority to AVAILABLE usually
+        { mapElement: { code: 'asc' } }
+      ],
+      take: 150, // LIMIT Context size
       include: {
         mapElement: true,
       }
@@ -188,19 +214,19 @@ export class AiService {
 
     if (lots.length === 0) return "Não há informações de lotes cadastrados.";
 
-    return lots.map(lot => {
-      const statusMap = {
-        AVAILABLE: 'Disponível',
-        RESERVED: 'Reservado',
-        SOLD: 'Vendido',
-      };
+    const statusMap = {
+      AVAILABLE: 'Disponível',
+      RESERVED: 'Reservado',
+      SOLD: 'Vendido',
+    };
 
-      const slopeMap = {
-        FLAT: 'Plano',
-        UPHILL: 'Aclive',
-        DOWNHILL: 'Declive',
-      };
-      
+    const slopeMap = {
+      FLAT: 'Plano',
+      UPHILL: 'Aclive',
+      DOWNHILL: 'Declive',
+    };
+
+    return lots.map(lot => {
       const code = lot.mapElement?.code || lot.mapElement?.name || 'S/N';
       const status = statusMap[lot.status] || lot.status;
       const area = lot.areaM2 ? `${lot.areaM2}m²` : 'Não informada';

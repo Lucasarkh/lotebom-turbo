@@ -492,14 +492,13 @@
           </div>
         </div>
       </Transition>
-
-      <AiChatWidget v-if="project?.aiEnabled" :project="project" />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useTenantStore } from '~/stores/tenant'
+import { useAiChatStore } from '~/stores/aiChat'
 
 const props = defineProps<{
   slug?: string
@@ -507,6 +506,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const tenantStore = useTenantStore()
+const chatStore = useAiChatStore()
 const projectSlug = computed(() => (props.slug || route.params.slug || tenantStore.config?.project?.slug || '') as string)
 const pathPrefix = computed(() => {
   const host = process.client ? window.location.host : ''
@@ -833,6 +833,7 @@ onMounted(async () => {
     ])
     if (p.status === 'fulfilled') {
       project.value = p.value
+      chatStore.setProject(p.value)
       
       // Initialize tracking handled by middleware
       useHead({
