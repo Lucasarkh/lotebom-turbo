@@ -14,6 +14,7 @@ import { TrackingModule } from '@modules/tracking/tracking.module';
 import { CampaignsModule } from '@modules/campaigns/campaigns.module';
 import { TenantsModule } from '@modules/tenants/tenants.module';
 import { PaymentModule } from '@modules/payment/payment.module';
+import { AiModule } from '@modules/ai/ai.module';
 import { DbModule } from '@infra/db/db.module';
 import { SystemSettingsModule } from '@modules/system-settings/system-settings.module';
 import { RabbitMqModule } from '@infra/rabbitmq/rabbitmq.module';
@@ -44,6 +45,7 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     TrackingModule,
     CampaignsModule,
     PaymentModule,
+    AiModule,
     SystemSettingsModule
   ],
   controllers: [],

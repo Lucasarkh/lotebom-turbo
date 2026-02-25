@@ -63,6 +63,11 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
             <span v-if="!sidebarCollapsed">Pagamentos</span>
           </NuxtLink>
+
+          <NuxtLink to="/painel/ai" class="nav-item" :title="sidebarCollapsed ? 'Assistente IA' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm0 18a8 8 0 118-8 8 8 0 01-8 8zm-1-11a1 1 0 112 0v2a1 1 0 01-2 0V9zm1 7a1 1 0 100-2 1 1 0 000 2z"/></svg>
+            <span v-if="!sidebarCollapsed">Assistente IA</span>
+          </NuxtLink>
         </template>
 
         <!-- CORRETOR Menu -->

@@ -165,6 +165,9 @@
         </div>
       </div>
     </footer>
+
+    <!-- AI Assistant -->
+    <AiChatWidget v-if="project?.aiEnabled" :project="project" />
   </div>
 </template>
 

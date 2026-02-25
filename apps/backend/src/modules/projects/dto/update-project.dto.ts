@@ -78,7 +78,15 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   address?: string;
+  @ApiPropertyOptional({ description: 'Habilita IA no empreendimento' })
+  @IsOptional()
+  @IsBoolean()
+  aiEnabled?: boolean;
 
+  @ApiPropertyOptional({ description: 'ID da configuração de IA' })
+  @IsOptional()
+  @IsString()
+  aiConfigId?: string;
   @ApiPropertyOptional({ description: 'Link ou Embed URL do Google Maps' })
   @IsOptional()
   @IsString()

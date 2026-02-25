@@ -142,6 +142,7 @@ model Tenant {
   trackingSessions TrackingSession[]
   campanhas         Campaign[]
   paymentGateways   PaymentConfig[]
+  aiConfigs         AiConfig[]
 }
 
 model User {
@@ -199,6 +200,10 @@ model Project {
   trackingSessions TrackingSession[]
   campaigns        Campaign[]
   paymentGateways  PaymentConfig[] @relation("ProjectGateways")
+
+  aiEnabled        Boolean       @default(false)
+  aiConfigId       String?
+  aiConfig         AiConfig?     @relation(fields: [aiConfigId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
 }
@@ -681,6 +686,26 @@ model PaymentConfig {
   updatedAt        DateTime        @updatedAt
 
   projects         Project[]       @relation("ProjectGateways")
+
+  @@index([tenantId])
+}
+
+model AiConfig {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  provider     String   @default("openai") // e.g. openai, anthropic, google
+  model        String   @default("gpt-4o") // e.g. gpt-4o, gpt-3.5-turbo, claude-3-haiku
+  apiKey       String?
+  systemPrompt String?  @db.Text
+  temperature  Float?   @default(0.7)
+  maxTokens    Int?     @default(1000)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects Project[]
 
   @@index([tenantId])
 }

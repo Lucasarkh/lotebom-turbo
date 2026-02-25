@@ -190,6 +190,48 @@
         </div>
       </div>
 
+      <!-- Tab: AI -->
+      <div v-if="activeTab === 'ai'">
+        <div class="card" style="max-width: 600px;">
+          <h3 style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: 8px;">
+            <span>🤖</span> Assistente de IA
+          </h3>
+          <p class="text-muted" style="font-size: 0.85rem; margin-bottom: var(--space-6);">
+            Habilite um assistente virtual para ajudar clientes interessados. A IA responderá perguntas sobre lotes, disponibilidade e preços de acordo com os dados deste projeto.
+          </p>
+
+          <div class="form-group" style="display:flex; align-items:center; gap: var(--space-2); margin-bottom: var(--space-6);">
+            <input type="checkbox" v-model="editForm.aiEnabled" id="chkAiEnabled" style="width:20px; height:20px; cursor:pointer;" />
+            <label for="chkAiEnabled" style="font-weight: 600; cursor:pointer;">Ativar assistente de IA para este projeto</label>
+          </div>
+
+          <div v-if="editForm.aiEnabled">
+            <div class="form-group">
+              <label class="form-label">Modelo de Assistente (Configuração de IA)</label>
+              <select v-model="editForm.aiConfigId" class="form-input">
+                <option value="">Selecione uma configuração...</option>
+                <option v-for="c in aiConfigs" :key="c.id" :value="c.id">{{ c.name }} ({{ c.model }})</option>
+              </select>
+              <small class="text-muted">As configurações de modelos e chaves de API são feitas na página <NuxtLink to="/painel/ai">Assistente IA</NuxtLink>.</small>
+            </div>
+            
+            <div v-if="aiConfigs.length === 0" style="background: #fff5f5; color: #c53030; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-top: 12px; border: 1px solid #feb2b2;">
+              ⚠️ Você ainda não tem nenhuma configuração de IA cadastrada. <NuxtLink to="/painel/ai" style="color: #c53030; font-weight: 700;">Clique aqui para criar</NuxtLink>.
+            </div>
+
+            <div v-else-if="!editForm.aiConfigId" style="background: #ebf8ff; color: #2b6cb0; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-top: 12px; border: 1px solid #bee3f8;">
+              ℹ️ Selecione um modelo acima para habilitar o chat na página pública deste projeto.
+            </div>
+          </div>
+
+          <div class="flex justify-end" style="margin-top: var(--space-8); padding-top: var(--space-4); border-top: 1px solid var(--gray-100);">
+            <button class="btn btn-primary" @click="saveSettings" :disabled="savingSettings">
+              {{ savingSettings ? 'Salvando...' : '💾 Salvar Configurações de IA' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: Lotes (Elementos do Projeto) -->
       <div v-if="activeTab === 'lots'">
         <div v-if="lots.length === 0" class="empty-state">
@@ -1244,17 +1286,36 @@ const toggleGateway = async (configId: string, active: boolean) => {
 }
 // ─────────────────────────────────────────────────────────
 
+// ── AI Configuration ─────────────────────────────────────
+const aiConfigs = ref([])
+const loadAiConfigs = async () => {
+  try {
+    const res = await fetchApi('/ai/configs')
+    aiConfigs.value = res || []
+  } catch (e) {
+    console.error('Error loading AI configs', e)
+  }
+}
+// ─────────────────────────────────────────────────────────
+
 // ── Tabs ─────────────────────────────────────────────────
 const tabs = [
   { key: 'lots', label: 'Lotes' },
   { key: 'public', label: 'Pág. Pública' },
   { key: 'payment', label: '💳 Pagamentos' },
+  { key: 'ai', label: '🤖 Assistente IA' },
   { key: 'settings', label: 'Configurações' },
 ]
 
 const lotBadge = (s) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[s] || 'badge-neutral')
 const lotLabel = (s) => ({ AVAILABLE: 'Disponível', RESERVED: 'Reservado', SOLD: 'Vendido' }[s] || s)
 const slopeLabel = (s) => ({ FLAT: 'Plano', UPHILL: 'Aclive', DOWNHILL: 'Declive' }[s] || s)
+
+const formatCurrencyToBrasilia = (val: number | string) => {
+  if (!val) return '---'
+  const num = typeof val === 'string' ? parseFloat(val) : val
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num)
+}
 
 const loadLotsPaginated = async (page = 1) => {
   try {
@@ -1289,8 +1350,11 @@ const loadProject = async () => {
       showPaymentConditions: p.showPaymentConditions ?? false,
       customDomain: p.customDomain || '',
       reservationFeeType: p.reservationFeeType || 'FIXED',
-      reservationFeeValue: p.reservationFeeValue ?? 500
+      reservationFeeValue: p.reservationFeeValue ?? 500,
+      aiEnabled: p.aiEnabled ?? false,
+      aiConfigId: p.aiConfigId || ''
     }
+    loadAiConfigs()
     pubInfoForm.value = {
       highlightsJson: Array.isArray(p.highlightsJson) ? p.highlightsJson : [],
       locationText: p.locationText || '',

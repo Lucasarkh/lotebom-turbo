@@ -492,6 +492,8 @@
           </div>
         </div>
       </Transition>
+
+      <AiChatWidget v-if="project?.aiEnabled" :project="project" />
     </template>
   </div>
 </template>

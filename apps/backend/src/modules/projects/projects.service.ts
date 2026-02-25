@@ -52,7 +52,7 @@ export class ProjectsService {
     const skip = (page - 1) * limit;
 
     const [data, totalItems] = await Promise.all([
-      this.prisma.project.findMany({
+      (this.prisma as any).project.findMany({
         where: { tenantId },
         orderBy: { createdAt: 'desc' },
         include: {
@@ -80,10 +80,11 @@ export class ProjectsService {
   }
 
   async findOne(tenantId: string, id: string) {
-    const project = await this.prisma.project.findFirst({
+    const project = await (this.prisma as any).project.findFirst({
       where: { id, tenantId },
       include: {
         tenant: { select: { slug: true, name: true } },
+        aiConfig: true,
         _count: {
           select: { mapElements: true, leads: true, projectMedias: true }
         }
@@ -172,7 +173,7 @@ export class ProjectsService {
       if (existing) throw new ConflictException('Domínio já em uso.');
     }
 
-    return this.prisma.project.update({
+    return (this.prisma as any).project.update({
       where: { id },
       data: {
         ...(dto.name && { name: dto.name }),
@@ -217,10 +218,13 @@ export class ProjectsService {
         }),
         ...(dto.reservationFeeValue !== undefined && {
           reservationFeeValue: dto.reservationFeeValue
-        })
+        }),
+        ...(dto.aiEnabled !== undefined && { aiEnabled: dto.aiEnabled }),
+        ...(dto.aiConfigId !== undefined && { aiConfigId: dto.aiConfigId || null })
       },
       include: {
         tenant: { select: { slug: true, name: true } },
+        aiConfig: true,
         _count: {
           select: { mapElements: true, leads: true, projectMedias: true }
         }
