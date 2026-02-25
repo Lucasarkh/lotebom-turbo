@@ -47,7 +47,7 @@
                 <span class="v4-stat-value">{{ minArea }}m²</span>
               </div>
               <div v-if="priceRange" class="v4-stat-card">
-                <span class="v4-stat-label">A partir de</span>
+                <span class="v4-stat-label">Preços a partir de</span>
                 <span class="v4-stat-value">R$ {{ priceRange }}</span>
                 <div v-if="project.maxInstallments || project.paymentConditionsSummary" class="v4-stat-meta">
                   <span v-if="project.maxInstallments" class="v4-stat-installments">em até {{ project.maxInstallments }}x</span>
@@ -1071,8 +1071,8 @@ function openLightbox(idx: number) {
 
 @media (max-width: 768px) {
   .v4-floating-cta {
-    bottom: 120px; 
-    right: 12px;
+    bottom: 100px; 
+    right: 16px;
     max-width: 60px;
   }
 }

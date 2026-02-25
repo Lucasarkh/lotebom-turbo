@@ -13,6 +13,7 @@
     <LandingHeader />
     <main>
       <LandingHero />
+      <LandingAudience />
       <LandingFeatures />
       <LandingCTA />
     </main>
@@ -23,6 +24,7 @@
 <script setup>
 import LandingHeader from '@/components/landing/LandingHeader.vue'
 import LandingHero from '@/components/landing/LandingHero.vue'
+import LandingAudience from '@/components/landing/LandingAudience.vue'
 import LandingFeatures from '@/components/landing/LandingFeatures.vue'
 import LandingCTA from '@/components/landing/LandingCTA.vue'
 import LandingFooter from '@/components/landing/LandingFooter.vue'
@@ -32,10 +34,10 @@ import { useTenantStore } from '~/stores/tenant'
 const tenantStore = useTenantStore()
 
 useSeoMeta({
-  title: 'Lotio - Gestão de Vendas para Loteadoras e Incorporadoras',
-  ogTitle: 'Lotio - Gestão de Vendas para Loteadoras e Incorporadoras',
-  description: 'A plataforma definitiva para incorporadoras e loteadoras. Mapas interativos, gestão de leads em tempo real e controle total de estoque para seu empreendimento.',
-  ogDescription: 'A plataforma definitiva para incorporadoras e loteadoras. Mapas interativos, gestão de leads em tempo real e controle total de estoque para seu empreendimento.',
+  title: 'Lotio - Aliado das Loteadoras, Incorporadoras e Imobiliárias',
+  ogTitle: 'Lotio - Aliado das Loteadoras, Incorporadoras e Imobiliárias',
+  description: 'A plataforma definitiva para incorporadoras, loteadoras, imobiliárias e corretores. Mapas interativos, gestão de leads em tempo real e controle total de estoque.',
+  ogDescription: 'A plataforma definitiva para incorporadoras, loteadoras, imobiliárias e corretores. Mapas interativos, gestão de leads em tempo real e controle total de estoque.',
   ogImage: '/og-image.jpg',
   twitterCard: 'summary_large_image',
 })

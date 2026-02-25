@@ -168,8 +168,16 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .ai-widget {
-    bottom: 20px;
+    bottom: 100px;
     left: 16px;
+    right: auto;
+  }
+  .ai-bubble {
+    width: 56px;
+    height: 56px;
+  }
+  .ai-tooltip {
+    display: none;
   }
 }
 

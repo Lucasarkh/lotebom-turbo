@@ -40,11 +40,6 @@
             <h3 class="bento-title">Reserva Online Instantânea</h3>
             <p class="bento-desc">Integração nativa com Stripe, Asaas e Mercado Pago. Transforme o interesse em venda real permitindo o pagamento da reserva via PIX ou Cartão.</p>
           </div>
-          <div class="payment-icons">
-             <span class="p-icon">💳</span>
-             <span class="p-icon">⚡</span>
-             <span class="p-icon">💰</span>
-          </div>
         </div>
 
         <!-- Realtors -->

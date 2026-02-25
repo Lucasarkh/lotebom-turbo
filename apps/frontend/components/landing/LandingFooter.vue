@@ -7,7 +7,7 @@
             <img src="/img/logo.svg" alt="Lotio" class="logo-img" />
           </NuxtLink>
           <p class="footer-desc">
-            A nova fronteira digital para o mercado imobiliário. Transformando mapas em vendas, um lote por vez.
+            Aliado das loteadoras, incorporadoras, imobiliárias e corretores. A nova fronteira digital para o mercado imobiliário.
           </p>
         </div>
 
@@ -19,9 +19,9 @@
           </div>
           <div class="link-group">
             <h4 class="link-title">Soluções</h4>
-            <a href="#" class="link-item">Para Loteadoras</a>
-            <a href="#" class="link-item">Para Incorporadoras</a>
-            <a href="#" class="link-item">Gestão de Leads</a>
+            <a href="#" class="link-item">Loteadoras</a>
+            <a href="#" class="link-item">Incorporadoras</a>
+            <a href="#" class="link-item">Imobiliárias e Corretores</a>
           </div>
           <div class="link-group">
             <h4 class="link-title">Suporte</h4>
