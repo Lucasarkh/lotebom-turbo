@@ -20,7 +20,7 @@
       <ProjectSideMenu 
         :has-plant="!!plantMap"
         :has-panorama="panoramas.length > 0" 
-        :has-info="highlights.length > 0 || !!project.locationText"
+        :has-info="hasInfo"
         :has-lots="unifiedAvailableLots.length > 0"
         :has-gallery="!!project.projectMedias?.length"
         :has-location="!!project.googleMapsUrl || !!project.address"
@@ -139,13 +139,13 @@
       </section>
 
       <!-- Highlights & Info -->
-      <section v-if="highlights.length || project.locationText" class="v4-section" id="info">
+      <section v-if="hasInfo" class="v4-section" id="info">
         <div class="v4-container">
           <div class="v4-section-header center">
             <h2 class="v4-section-title">Diferenciais do Projeto</h2>
           </div>
 
-          <div v-if="project.locationText" class="v4-rich-content" v-html="formattedLocationText"></div>
+          <div v-if="hasMeaningfulLocationText" class="v4-rich-content" v-html="formattedLocationText"></div>
 
           <div v-if="highlights.length" class="v4-highlights-grid">
             <div v-for="h in highlights" :key="h.label" class="v4-highlight-card">
@@ -365,7 +365,7 @@
               <span class="v4-footer-project">Loteamento {{ project.name }}</span>
             </div>
             <div class="v4-footer-copyright">
-              © {{ new Date().getFullYear() }} — Todos os direitos reservados.
+              © {{ getYearInBrasilia() }} — Todos os direitos reservados.
             </div>
           </div>
         </div>
@@ -604,6 +604,17 @@ function calcContractArea(lot: any): number | null {
 const highlights = computed(() => {
   const raw = project.value?.highlightsJson
   return Array.isArray(raw) ? raw : []
+})
+
+const hasMeaningfulLocationText = computed(() => {
+  const text = project.value?.locationText || ''
+  if (!text) return false
+  return text.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, '').trim().length > 0
+})
+
+const hasInfo = computed(() => {
+  const hasHighlights = highlights.value && highlights.value.length > 0
+  return !!(hasHighlights || hasMeaningfulLocationText.value)
 })
 
 const lotElements = computed(() => (project.value?.mapElements || []).filter((e: any) => e.type === 'LOT'))

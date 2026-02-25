@@ -109,7 +109,7 @@ watch(() => form.value.name, (v) => {
 
 const onSlugInput = () => { slugManuallyEdited.value = true }
 
-const formatDate = (d) => new Date(d).toLocaleDateString('pt-BR')
+const formatDate = (d) => formatDateToBrasilia(d)
 
 const loadProjects = async (page = 1) => {
   loading.value = true

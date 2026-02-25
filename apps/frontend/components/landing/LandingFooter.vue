@@ -33,7 +33,7 @@
       </div>
 
       <div class="footer-bottom">
-        <p class="copyright">&copy; {{ new Date().getFullYear() }} Lotio. Tecnologia para o futuro imobiliário.</p>
+        <p class="copyright">&copy; {{ getYearInBrasilia() }} Lotio. Tecnologia para o futuro imobiliário.</p>
         <div class="footer-policy">
           <a href="#">Privacidade</a>
           <a href="#">Termos de Uso</a>

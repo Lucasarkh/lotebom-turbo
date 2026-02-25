@@ -128,7 +128,7 @@
                 <td>
                   <span class="badge" :class="lotBadge(l.status)">{{ lotLabel(l.status) }}</span>
                 </td>
-                <td>{{ l.price ? `R$ ${l.price.toLocaleString('pt-BR')}` : '—' }}</td>
+                <td>{{ l.price ? formatCurrencyToBrasilia(l.price) : '—' }}</td>
                 <td>{{ l.areaM2 ? `${l.areaM2} m²` : '—' }}</td>
                 <td>{{ slopeLabel(l.slope) }}</td>
                 <td v-if="authStore.canEdit">

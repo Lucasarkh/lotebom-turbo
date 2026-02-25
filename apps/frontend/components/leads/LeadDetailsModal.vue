@@ -88,7 +88,7 @@
                     <h3>Documentação</h3>
                     <p><strong>CPF:</strong> {{ lead.cpf || '—' }}</p>
                     <p><strong>RG:</strong> {{ lead.rg || '—' }}</p>
-                    <p><strong>Nasc:</strong> {{ lead.birthDate ? new Date(lead.birthDate).toLocaleDateString() : '—' }}</p>
+                    <p><strong>Nasc:</strong> {{ lead.birthDate ? formatDateToBrasilia(lead.birthDate) : '—' }}</p>
                     <p><strong>Estado Civil:</strong> {{ lead.maritalStatus || '—' }}</p>
                     <p><strong>Profissão:</strong> {{ lead.occupation || '—' }}</p>
                   </div>
@@ -114,7 +114,7 @@
                     <div class="doc-icon">📄</div>
                     <div class="doc-info">
                       <strong>{{ doc.name }}</strong>
-                      <span>{{ new Date(doc.createdAt).toLocaleDateString() }}</span>
+                      <span>{{ formatDateToBrasilia(doc.createdAt) }}</span>
                     </div>
                     <a :href="doc.url" target="_blank" class="btn btn-sm btn-light">Ver</a>
                   </div>
@@ -141,7 +141,7 @@
                     <tr v-for="p in lead.payments" :key="p.id">
                       <td>{{ paymentLabel(p.type) }}</td>
                       <td>{{ p.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</td>
-                      <td>{{ new Date(p.dueDate).toLocaleDateString() }}</td>
+                      <td>{{ formatDateToBrasilia(p.dueDate) }}</td>
                       <td>
                         <span :class="['badge', p.status === 'PAID' ? 'badge-success' : 'badge-warning']">
                           {{ p.status }}
@@ -239,7 +239,7 @@ const paymentLabel = (p) => ({
   INTERMEDIARY: 'Intermediária'
 }[p] || p)
 
-const formatDateTime = (d) => new Date(d).toLocaleString('pt-BR')
+const formatDateTime = (d) => formatDateTimeToBrasilia(d)
 
 const onStatusChange = async (newStatus) => {
   const notes = prompt('Alguma observação sobre essa mudança de status?') || ''

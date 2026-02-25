@@ -31,10 +31,7 @@ defineProps({
 
 defineEmits(['click'])
 
-const formatDate = (d) => {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('pt-BR')
-}
+const formatDate = (d) => formatDateToBrasilia(d)
 </script>
 
 <style scoped>

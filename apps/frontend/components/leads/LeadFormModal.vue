@@ -140,7 +140,7 @@ onMounted(() => {
       projectId: l.projectId || '',
       cpf: l.cpf || '',
       rg: l.rg || '',
-      birthDate: l.birthDate ? new Date(l.birthDate).toISOString().split('T')[0] : '',
+      birthDate: l.birthDate ? getISODateInBrasilia(l.birthDate) : '',
       maritalStatus: l.maritalStatus || '',
       occupation: l.occupation || '',
       address: l.address || '',

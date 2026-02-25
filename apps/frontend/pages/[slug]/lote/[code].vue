@@ -492,12 +492,12 @@ const lotPanorama = computed(() => {
       imageUrl: details.value.panoramaUrl,
       label: 'Vista 360°',
       sortOrder: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: getTodayInBrasilia().toISOString(),
+      updatedAt: getTodayInBrasilia().toISOString(),
     }],
     beacons: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: getTodayInBrasilia().toISOString(),
+    updatedAt: getTodayInBrasilia().toISOString(),
   } as Panorama
 })
 

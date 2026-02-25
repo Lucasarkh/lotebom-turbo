@@ -31,7 +31,7 @@
             <td>
               <span class="badge" :class="roleBadge(u.role)">{{ roleLabel(u.role) }}</span>
             </td>
-            <td>{{ new Date(u.createdAt).toLocaleDateString('pt-BR') }}</td>
+            <td>{{ formatDateToBrasilia(u.createdAt) }}</td>
             <td>
               <div class="flex gap-2">
                 <button class="btn btn-secondary btn-sm" @click="startEdit(u)">Editar</button>

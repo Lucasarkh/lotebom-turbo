@@ -50,7 +50,7 @@
               </div>
             </td>
             <td>
-              {{ new Date(lead.createdAt).toLocaleDateString('pt-BR') }}
+              {{ formatDateToBrasilia(lead.createdAt) }}
             </td>
             <td>
               <span 

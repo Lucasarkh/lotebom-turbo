@@ -186,7 +186,7 @@ async function toggleStatus(tenant) {
 }
 
 function formatDate(date) {
-  return new Date(date).toLocaleDateString('pt-BR')
+  return formatDateToBrasilia(date)
 }
 
 onMounted(loadTenants)

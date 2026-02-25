@@ -10,7 +10,7 @@ const campaign = ref<any>(null)
 
 const investmentForm = ref({
   amount: 0,
-  date: new Date().toISOString().split('T')[0],
+  date: getTodayInBrasilia(),
   notes: ''
 })
 
@@ -46,7 +46,7 @@ async function addInvestment() {
     toast.success('Investimento registrado!')
     investmentForm.value = {
       amount: 0,
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayInBrasilia(),
       notes: ''
     }
     fetchPerformance()
@@ -206,7 +206,7 @@ definePageMeta({
                <div v-if="performance.investments.length === 0" class="empty-mini">Nenhum investimento registrado</div>
                <div v-for="inv in performance.investments" :key="inv.id" class="investment-item">
                  <div class="inv-info">
-                   <span class="inv-date">{{ new Date(inv.date).toLocaleDateString('pt-BR') }}</span>
+                   <span class="inv-date">{{ formatDateToBrasilia(inv.date) }}</span>
                    <span class="inv-amount">{{ formatCurrency(inv.amount) }}</span>
                  </div>
                  <button class="btn-icon text-danger" @click="removeInvestment(inv.id)">

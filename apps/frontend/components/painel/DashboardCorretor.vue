@@ -123,7 +123,7 @@ function copyToClipboard(text) {
 }
 
 function formatDate(date) {
-  return new Date(date).toLocaleDateString('pt-BR')
+  return formatDateToBrasilia(date)
 }
 
 onMounted(loadData)

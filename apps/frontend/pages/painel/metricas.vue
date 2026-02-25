@@ -4,8 +4,10 @@ const toast = useToast()
 
 const projects = ref<any[]>([])
 const selectedProjectId = ref('all')
-const startDate = ref(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) // 30 days ago
-const endDate = ref(new Date().toISOString().split('T')[0])
+
+const startDate = ref(getDaysAgoInBrasilia(30)) // 30 days ago
+const endDate = ref(getTodayInBrasilia())
+
 const metrics = ref<any>(null)
 const loadingMetrics = ref(false)
 

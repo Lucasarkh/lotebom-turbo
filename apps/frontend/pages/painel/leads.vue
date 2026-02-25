@@ -108,7 +108,7 @@
               <td>{{ lead.project?.name || '—' }}</td>
               <td>{{ lead.realtorLink?.name || 'Direto' }}</td>
               <td><LeadsLeadStatusBadge :status="lead.status" /></td>
-              <td>{{ new Date(lead.createdAt).toLocaleDateString() }}</td>
+              <td>{{ formatDateToBrasilia(lead.createdAt) }}</td>
               <td @click.stop>
                 <div class="d-flex gap-1">
                   <button class="btn-icon btn-sm" title="Editar" @click="editLead(lead)">✏️</button>

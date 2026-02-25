@@ -129,7 +129,7 @@ function leadLabel(status) {
 }
 
 function formatDate(date) {
-  return new Date(date).toLocaleDateString('pt-BR')
+  return formatDateToBrasilia(date)
 }
 
 onMounted(loadDashboard)

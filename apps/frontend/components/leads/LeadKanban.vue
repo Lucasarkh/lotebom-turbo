@@ -15,7 +15,7 @@
           <div class="card-title">{{ lead.name }}</div>
           <div class="card-meta">
             <span class="project">{{ lead.project?.name || '—' }}</span>
-            <span class="date">{{ new Date(lead.createdAt).toLocaleDateString() }}</span>
+            <span class="date">{{ formatDateToBrasilia(lead.createdAt) }}</span>
           </div>
           <div v-if="lead.realtorLink" class="card-footer">
             👤 {{ lead.realtorLink.name }}
