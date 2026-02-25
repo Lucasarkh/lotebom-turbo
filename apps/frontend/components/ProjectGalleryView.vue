@@ -31,11 +31,11 @@
         </div>
       </nav>
 
-      <section class="v4-section" style="padding-top: 140px;">
+      <section class="v4-section" style="padding-top: 100px;">
         <div class="v4-container">
           <div class="v4-section-header">
-            <h2 class="v4-section-title">Galeria de Mídia</h2>
-            <p class="v4-section-subtitle">Explore todas as fotos e vídeos do empreendimento {{ project.name }}.</p>
+            <h2 class="v4-section-title" style="font-size: 32px;">Galeria de Mídia</h2>
+            <p class="v4-section-subtitle" style="font-size: 17px;">Explore todas as fotos e vídeos do empreendimento {{ project.name }}.</p>
           </div>
 
           <div class="v4-gallery-grid">
@@ -222,18 +222,18 @@ onMounted(async () => {
 /* Grid Gallery */
 .v4-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 .v4-gallery-item {
   position: relative;
-  border-radius: 18px;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
   background: #f5f5f7;
   border: 1px solid #d2d2d7;
-  aspect-ratio: 16/10;
+  aspect-ratio: 1/1;
 }
 
 .v4-gallery-item img, .v4-gallery-item video {

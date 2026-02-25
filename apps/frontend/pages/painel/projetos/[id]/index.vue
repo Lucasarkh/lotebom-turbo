@@ -438,7 +438,7 @@
 
       <!-- Tab: Pág. Pública -->
       <div v-if="activeTab === 'public'">
-        <div class="flex justify-between items-center" style="margin-bottom: var(--space-6);">
+        <div class="flex justify-between items-center" style="margin-bottom: 40px;">
           <div>
             <h2 style="margin:0; font-size: 1.25rem;">Conteúdo da Página Pública</h2>
             <p style="margin:0; font-size: 0.875rem; color: var(--gray-500);">Gerencie o que seus clientes verão ao acessar o link do loteamento.</p>
@@ -453,155 +453,202 @@
           </div>
         </div>
 
-        <div class="card-grid" style="display: grid; grid-template-columns: 1fr; gap: var(--space-6);">
+        <div class="card-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; align-items: start;">
           
-          <!-- Section: Hero Banner -->
-          <section class="card" style="padding: var(--space-6);">
-            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
-              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🖼️</div>
-              <div>
-                <h3 style="margin:0;">Banner do Loteamento</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">A primeira impressão da sua página pública.</p>
+          <!-- Column 1 -->
+          <div class="flex flex-col" style="gap: 40px;">
+            <!-- Section: Hero Banner -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+                <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🖼️</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Banner do Loteamento</h3>
+                </div>
               </div>
-            </div>
 
-            <div v-if="project.bannerImageUrl" class="banner-preview" style="position: relative; margin-bottom: var(--space-4); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); aspect-ratio: 16/5;">
-              <img :src="project.bannerImageUrl" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;" />
-              <div v-if="authStore.canEdit" style="position: absolute; bottom: 12px; right: 12px;">
-                <button class="btn btn-danger btn-sm" @click="removeBannerImage">🗑️ Remover Banner</button>
+              <div v-if="project.bannerImageUrl" class="banner-preview" style="position: relative; margin-bottom: var(--space-4); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); aspect-ratio: 16/5;">
+                <img :src="project.bannerImageUrl" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;" />
+                <div v-if="authStore.canEdit" style="position: absolute; bottom: 12px; right: 12px;">
+                  <button class="btn btn-danger btn-xs" style="background: white; color: var(--danger); border: 1px solid var(--danger);" @click="removeBannerImage">🗑️ Remover</button>
+                </div>
               </div>
-            </div>
-            
-            <div v-else class="banner-placeholder" style="margin-bottom: var(--space-4); border: 2px dashed var(--gray-200); background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-8); text-align: center;">
-              <div style="font-size: 2.5rem; margin-bottom: var(--space-2); opacity: 0.3;">🌅</div>
-              <p style="color: var(--gray-500); font-size: 0.875rem;">Nenhum banner configurado. O topo da página será azul padrão.</p>
-            </div>
-
-            <div v-if="authStore.canEdit" class="flex justify-start">
-              <label class="btn btn-secondary" style="cursor:pointer; display: flex; align-items: center; gap: 8px;">
-                <span>{{ uploadingBanner ? '⌛ Enviando...' : (project.bannerImageUrl ? '🔄 Trocar Imagem' : '📤 Upload do Banner') }}</span>
-                <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage" :disabled="uploadingBanner" />
-              </label>
-            </div>
-          </section>
-
-          <!-- Section: Media Gallery -->
-          <section class="card" style="padding: var(--space-6);">
-            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
-              <div style="width: 40px; height: 40px; background: #dcfce7; color: #166534; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📸</div>
-              <div style="flex: 1;">
-                <h3 style="margin:0;">Galeria de Mídia</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Fotos e vídeos que serão exibidos na galeria pública do loteamento.</p>
+              
+              <div v-else class="banner-placeholder" style="margin-bottom: var(--space-4); border: 2px dashed var(--gray-200); background: var(--gray-50); border-radius: var(--radius-lg); padding: var(--space-6); text-align: center;">
+                <p style="color: var(--gray-500); font-size: 0.75rem;">Nenhum banner configurado.</p>
               </div>
-              <div v-if="authStore.canEdit">
-                <label class="btn btn-primary btn-sm" style="cursor:pointer;">
-                  {{ uploadingMedia ? 'Enviando...' : '+ Upload Mídia' }}
-                  <input type="file" accept="image/*,video/*" style="display:none" @change="uploadMediaFile" :disabled="uploadingMedia" />
+
+              <div v-if="authStore.canEdit" class="flex justify-start">
+                <label class="btn btn-secondary btn-sm" style="cursor:pointer; display: flex; align-items: center; gap: 8px;">
+                  <span>{{ uploadingBanner ? '⌛ Enviando...' : '📤 Upload do Banner' }}</span>
+                  <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage" :disabled="uploadingBanner" />
                 </label>
               </div>
-            </div>
+            </section>
 
-            <div v-if="media.length === 0" class="empty-state" style="padding: var(--space-8); background: var(--gray-50); border-radius: var(--radius-lg);">
-              <p>Nenhuma mídia de loteamento enviada.</p>
-            </div>
-            <div v-else class="grid grid-cols-4" style="gap: var(--space-5);">
-              <div v-for="m in media" :key="m.id" class="media-card-v4" style="aspect-ratio: 16/10;">
-                <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption" class="media-thumb-v4" />
-                <video v-else :src="m.url" class="media-thumb-v4" />
-                <div class="media-overlay-v4">
-                   <div class="media-type-pill">{{ m.type === 'PHOTO' ? '🖼️ Foto' : '🎬 Vídeo' }}</div>
-                   <button v-if="authStore.canEdit" class="delete-btn-circ" title="Remover" @click="deleteMedia(m.id)">✕</button>
+            <!-- Section: Video & Multimedia -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+                <div style="width: 32px; height: 32px; background: #fee2e2; color: #b91c1c; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🎬</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Vídeo de Apresentação</h3>
                 </div>
               </div>
-            </div>
-          </section>
 
-          <!-- Section: Highlights -->
-          <section class="card" style="padding: var(--space-6);">
-            <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
-              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⭐</div>
-              <div>
-                <h3 style="margin:0;">Cards de Destaque</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Destaque os principais diferenciais do loteamento.</p>
-              </div>
-            </div>
-
-            <!-- List highlights as cards -->
-            <div v-if="pubInfoForm.highlightsJson.length" class="highlights-preview-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
-              <div v-for="(h, i) in pubInfoForm.highlightsJson" :key="i" class="highlight-item-card" style="padding: var(--space-4); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); position: relative; background: white; display: flex; items-start; gap: 12px;">
-                <div style="font-size: 1.5rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #ecfdf5; color: #059669; border-radius: var(--radius-md);">✅</div>
-                <div style="flex: 1;">
-                  <strong style="display: block; font-size: 0.9375rem; color: var(--gray-800);">{{ h.label }}</strong>
-                  <span style="font-size: 0.8125rem; color: var(--gray-500);">{{ h.value }}</span>
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label">Link do YouTube</label>
+                <div class="flex gap-2">
+                  <input v-model="pubInfoForm.youtubeVideoUrl" class="form-input" placeholder="https://www.youtube.com/watch?v=..." :disabled="!authStore.canEdit" />
                 </div>
-                <button v-if="authStore.canEdit" class="btn btn-xs" style="padding: 4px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; position: absolute; top: -8px; right: -8px; background: var(--danger); border: none; color: white; cursor: pointer; box-shadow: var(--shadow-sm);" title="Remover" @click="removeHighlight(i)">✕</button>
+                <small style="color:var(--gray-400); font-size:0.75rem;">O vídeo será incorporado na página do empreendimento.</small>
               </div>
-            </div>
 
-            <!-- New highlight form -->
-            <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: var(--space-5); border-radius: var(--radius-xl); border: 1px solid var(--gray-200);">
-              <h4 style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 0.875rem;">➕ Adicionar novo Diferencial</span>
-              </h4>
-              <div class="highlights-form" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-4); align-items: end;">
+              <div v-if="pubInfoForm.youtubeVideoUrl" style="margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200); aspect-ratio: 16/9;">
+                 <iframe 
+                    v-if="pubInfoForm.youtubeVideoUrl.includes('embed/')"
+                    :src="pubInfoForm.youtubeVideoUrl" 
+                    width="100%" height="100%" frameborder="0" allowfullscreen
+                 ></iframe>
+                 <div v-else style="padding: 20px; text-align: center; background: var(--gray-50); color: var(--gray-500); height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <p style="font-size: 0.8rem;">Preview disponível após salvar o link.</p>
+                 </div>
+              </div>
+            </section>
+
+            <!-- Section: Construction Status -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+                <div style="width: 32px; height: 32px; background: #fef3c7; color: #92400e; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏗️</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Acompanhamento de Obras</h3>
+                </div>
+              </div>
+
+              <div v-if="pubInfoForm.constructionStatus.length === 0" class="empty-state" style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: 16px;">
+                <p style="font-size: 0.8rem;">Nenhum status configurado.</p>
+              </div>
+
+              <div v-else style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
+                <div v-for="(item, i) in pubInfoForm.constructionStatus" :key="i" style="background: white; border: 1px solid var(--gray-200); padding: 16px; border-radius: 8px; position: relative;">
+                  <div class="flex justify-between items-center" style="margin-bottom: 10px;">
+                    <span style="font-weight: 600; font-size: 0.875rem;">{{ item.label }}</span>
+                    <span style="font-weight: 700; color: var(--success); font-size: 0.875rem;">{{ item.percentage }}%</span>
+                  </div>
+                  <div style="width: 100%; height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden;">
+                    <div :style="{ width: item.percentage + '%', background: 'var(--success)' }" style="height: 100%; transition: width 0.3s ease;"></div>
+                  </div>
+                  <button v-if="authStore.canEdit" class="btn btn-xs" style="position: absolute; top: -10px; right: -10px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: var(--danger); border: 2px solid white; color: white; cursor: pointer; padding: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" @click="removeWorkStage(i)">✕</button>
+                </div>
+              </div>
+
+              <!-- New Work Stage Form -->
+              <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: 20px; border-radius: 8px; border: 1px solid var(--gray-200);">
+                <div style="display: grid; grid-template-columns: 1fr 80px; gap: 16px; align-items: end;">
+                  <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 0.75rem;">Nova Etapa (ex: Terraplanagem)</label>
+                    <input v-model="newWorkStage.label" class="form-input btn-sm" placeholder="Nome da etapa..." />
+                  </div>
+                  <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 0.75rem;">%</label>
+                    <input v-model.number="newWorkStage.percentage" type="number" min="0" max="100" class="form-input btn-sm" />
+                  </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px;" @click="addWorkStage">Adicionar Etapa</button>
+              </div>
+            </section>
+          </div>
+
+          <!-- Column 2 -->
+          <div class="flex flex-col" style="gap: 40px;">
+            <!-- Section: Price & Conditions -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
+                <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">💰</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Preços e Condições</h3>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2" style="gap: 20px; margin-bottom: 20px;">
                 <div class="form-group" style="margin:0;">
-                  <label class="form-label">Rótulo / Título</label>
-                  <input v-model="newHighlight.label" class="form-input" placeholder="Ex: Infraestrutura completa" />
+                  <label class="form-label">A partir de (R$)</label>
+                  <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="144000" :disabled="!authStore.canEdit" />
                 </div>
                 <div class="form-group" style="margin:0;">
-                  <label class="form-label">Valor / Detalhe</label>
-                  <input v-model="newHighlight.value" class="form-input" placeholder="Ex: Água, luz, asfalto" />
+                  <label class="form-label">Parcelamento (Vezes)</label>
+                  <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="120" :disabled="!authStore.canEdit" />
                 </div>
-                <button class="btn btn-secondary" style="height: 42px;" @click="addHighlight">Adicionar</button>
               </div>
-            </div>
-          </section>
 
-          <!-- Section: Price & Conditions -->
-          <section class="card" style="padding: var(--space-6);">
-            <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
-              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">💰</div>
-              <div>
-                <h3 style="margin:0;">Preços e Condições</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Defina os valores de destaque para a página pública.</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2" style="gap: var(--space-5); margin-bottom: var(--space-6);">
               <div class="form-group" style="margin:0;">
-                <label class="form-label">Investimento a partir de (R$)</label>
-                <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="Ex: 144000" :disabled="!authStore.canEdit" />
-                <small style="color:var(--gray-400); font-size:0.75rem;">Deixe em branco para calcular automaticamente dos lotes.</small>
+                <label class="form-label">Resumo das Condições</label>
+                <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Entrada facilitada em 6x e saldo em 120 meses." :disabled="!authStore.canEdit" />
               </div>
+            </section>
+
+            <!-- Section: Highlights -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+                <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">⭐</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Diferenciais</h3>
+                </div>
+              </div>
+
+              <div v-if="pubInfoForm.highlightsJson.length" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+                <div v-for="(h, i) in pubInfoForm.highlightsJson" :key="i" style="padding: 12px 16px; border: 1px solid var(--gray-200); border-radius: 8px; position: relative; background: white; display: flex; align-items: center; gap: 10px;">
+                  <div style="font-size: 1rem; color: #059669;">✅</div>
+                  <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <strong style="font-size: 0.8125rem;">{{ h.label }}</strong>
+                    <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 4px;">{{ h.value }}</span>
+                  </div>
+                  <button v-if="authStore.canEdit" class="btn btn-xs" style="padding: 0; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: var(--danger); border: 1px solid white; color: white; cursor: pointer;" @click="removeHighlight(i)">✕</button>
+                </div>
+              </div>
+
+              <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: 20px; border-radius: 8px; border: 1px solid var(--gray-200);">
+                <div class="grid grid-cols-2 gap-3">
+                  <input v-model="newHighlight.label" class="form-input btn-sm" placeholder="Rótulo" />
+                  <input v-model="newHighlight.value" class="form-input btn-sm" placeholder="Detalhe" />
+                </div>
+                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 12px;" @click="addHighlight">Adicionar</button>
+              </div>
+            </section>
+
+            <!-- Section: Location -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+                <div style="width: 32px; height: 32px; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">📍</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Localização</h3>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 24px;">
+                <label class="form-label" style="font-size: 0.75rem;">Endereço</label>
+                <input v-model="pubInfoForm.address" class="form-input btn-sm" placeholder="Av. Brasil, 1000 - Centro" :disabled="!authStore.canEdit" />
+              </div>
+
               <div class="form-group" style="margin:0;">
-                <label class="form-label">Parcelamento Máximo (Vezes)</label>
-                <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="Ex: 120" :disabled="!authStore.canEdit" />
+                <label class="form-label" style="font-size: 0.75rem;">Link Google Maps</label>
+                <input v-model="pubInfoForm.googleMapsUrl" class="form-input btn-sm" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
               </div>
-            </div>
+            </section>
+          </div>
 
-            <div class="form-group" style="margin:0;">
-              <label class="form-label">Resumo das Condições / Observações</label>
-              <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Ex: Entrada facilitada em 6x e saldo em 120 meses direto com a loteadora." :disabled="!authStore.canEdit" />
-              <small style="color:var(--gray-400); font-size:0.75rem;">Este texto aparecerá junto ao preço na página pública.</small>
-            </div>
-          </section>
-
-          <!-- Section: Details Text -->
-          <section class="card" style="padding: var(--space-6);">
+          <!-- Section: Details Text (Full Width) -->
+          <section class="card" style="padding: var(--space-6); grid-column: span 2; margin-top: 12px;">
             <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
-              <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📝</div>
+              <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">📝</div>
               <div>
-                <h3 style="margin:0;">Texto de Diferenciais e Infra</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Descreva as facilidades do entorno e destaques do loteamento.</p>
+                <h3 style="margin:0; font-size: 1rem;">Texto Descritivo e Infraestrutura</h3>
               </div>
             </div>
             
             <div class="form-group" style="margin:0;">
-              <div v-if="authStore.canEdit" class="flex gap-2" style="margin-bottom: 8px;">
-                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('bold')" title="Negrito"><b>B</b></button>
-                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('italic')" title="Itálico"><i>I</i></button>
-                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('insertUnorderedList')" title="Lista">• Lista</button>
-                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('formatBlock', 'p')" title="Parágrafo">P</button>
+              <div v-if="authStore.canEdit" class="flex gap-2" style="margin-bottom: 12px;">
+                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('bold')"><b>B</b></button>
+                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('italic')"><i>I</i></button>
+                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('insertUnorderedList')">• Lista</button>
               </div>
               <div 
                 ref="richEditor"
@@ -611,45 +658,47 @@
                 @input="updateFromEditor"
                 @blur="updateFromEditor"
                 v-html="initialEditorContent"
-                style="min-height: 240px; padding: var(--space-4); line-height: 1.6; border-radius: var(--radius-lg); font-size: 0.9375rem; background: white; border: 1px solid var(--gray-300); overflow-y: auto; white-space: pre-wrap;"
+                style="min-height: 250px; padding: 20px; line-height: 1.6; border-radius: 8px; font-size: 0.875rem; background: white; border: 1px solid var(--gray-300); overflow-y: auto;"
               ></div>
-              <p style="font-size: 0.75rem; color: var(--gray-400); margin-top: 8px;">
-                Dica: Use <b>Shift + Enter</b> para quebra de linha simples e <b>Enter</b> para novo parágrafo.
-              </p>
             </div>
           </section>
 
-          <!-- Section: Location & Map -->
-          <section class="card" style="padding: var(--space-6);">
-            <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
-              <div style="width: 40px; height: 40px; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📍</div>
-              <div>
-                <h3 style="margin:0;">Endereço e Localização</h3>
-                <p style="font-size: 0.8125rem; margin:0; color: var(--gray-500);">Defina o endereço e o mapa do Google para a página pública.</p>
+          <!-- Section: Media Gallery (Full Width) -->
+          <section class="card" style="padding: var(--space-6); grid-column: span 2; margin-top: 12px;">
+            <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+              <div style="width: 32px; height: 32px; background: #dcfce7; color: #166534; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">📸</div>
+              <div style="flex: 1;">
+                <h3 style="margin:0; font-size: 1rem;">Galeria de Mídia</h3>
+              </div>
+              <div v-if="authStore.canEdit" class="flex gap-3">
+                <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+                  {{ uploadingMedia ? 'Enviando...' : '+ Adicionar Fotos/Vídeos' }}
+                  <input type="file" accept="image/*,video/*" style="display:none" @change="uploadMediaFile" :disabled="uploadingMedia" />
+                </label>
               </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: var(--space-5);">
-              <label class="form-label">Endereço Completo</label>
-              <input v-model="pubInfoForm.address" class="form-input" placeholder="Ex: Av. Brasil, 1000 - Centro, São Paulo - SP" :disabled="!authStore.canEdit" />
+            <div v-if="media.length === 0" class="empty-state" style="padding: 40px; background: var(--gray-50); border-radius: 12px;">
+              <p style="font-size: 0.875rem; color: var(--gray-400);">Nenhuma foto ou vídeo na galeria.</p>
             </div>
-
-            <div class="form-group" style="margin:0;">
-              <label class="form-label">Link ou Embed do Google Maps</label>
-              <input v-model="pubInfoForm.googleMapsUrl" class="form-input" placeholder="Cole aqui o link do Google Maps ou o link de incorporação (embed)" :disabled="!authStore.canEdit" />
-              <p style="font-size: 0.75rem; color: var(--gray-400); margin-top: 8px;">
-                Dica: Vá no Google Maps, clique em "Compartilhar", depois "Incorporar um mapa" e copie apenas o link dentro de <code>src="..."</code> ou cole o código inteiro (nós extrairemos o link para você).
-              </p>
+            <div v-else style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px;">
+              <div v-for="m in media" :key="m.id" class="media-card-v4" style="aspect-ratio: 1/1; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-100);">
+                <img v-if="m.type === 'PHOTO'" :src="m.url" class="media-thumb-v4" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+                <video v-else :src="m.url" class="media-thumb-v4" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+                <div class="media-overlay-v4">
+                   <button v-if="authStore.canEdit" class="delete-btn-circ" title="Remover" @click="deleteMedia(m.id)">✕</button>
+                </div>
+              </div>
             </div>
           </section>
+        </div>
 
-          <!-- Footer-ish Action Bar -->
-          <div v-if="authStore.canEdit" class="flex justify-end items-center gap-4" style="margin-top: var(--space-4);">
-            <div v-if="pubInfoSaved" style="color: var(--success); font-weight: 600; font-size: 0.875rem;">✅ Alterações salvas!</div>
-            <button class="btn btn-primary" style="min-width: 160px;" :disabled="savingPubInfo" @click="savePubInfo">
-              {{ savingPubInfo ? 'Salvando...' : '💾 Salvar Alterações' }}
-            </button>
-          </div>
+        <!-- Footer-ish Action Bar -->
+        <div v-if="authStore.canEdit" class="flex justify-end items-center gap-4" style="margin-top: 48px;">
+          <div v-if="pubInfoSaved" style="color: var(--success); font-weight: 600; font-size: 0.875rem;">✅ Alterações salvas!</div>
+          <button class="btn btn-primary" style="min-width: 180px; padding: 12px 24px;" :disabled="savingPubInfo" @click="savePubInfo">
+            {{ savingPubInfo ? 'Salvando...' : '💾 Salvar Alterações' }}
+          </button>
         </div>
       </div>
 
@@ -1022,20 +1071,33 @@ const pubInfoForm = ref({
   maxInstallments: null,
   paymentConditionsSummary: '',
   address: '',
-  googleMapsUrl: ''
+  googleMapsUrl: '',
+  youtubeVideoUrl: '',
+  constructionStatus: [] as { label: string, percentage: number }[]
 })
 const savingPubInfo = ref(false)
 const pubInfoSaved = ref(false)
 const newHighlight = ref({ label: '', value: '' })
+const newWorkStage = ref({ label: '', percentage: 0 })
 
 const addHighlight = () => {
   if (!newHighlight.value.label) return
   pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { icon: '✅', ...newHighlight.value }]
   newHighlight.value = { label: '', value: '' }
 }
-const removeHighlight = (i) => {
+const removeHighlight = (i: number) => {
   pubInfoForm.value.highlightsJson = pubInfoForm.value.highlightsJson.filter((_, idx) => idx !== i)
 }
+
+const addWorkStage = () => {
+  if (!newWorkStage.value.label) return
+  pubInfoForm.value.constructionStatus = [...pubInfoForm.value.constructionStatus, { ...newWorkStage.value }]
+  newWorkStage.value = { label: '', percentage: 0 }
+}
+const removeWorkStage = (i: number) => {
+  pubInfoForm.value.constructionStatus = pubInfoForm.value.constructionStatus.filter((_, idx) => idx !== i)
+}
+
 const savePubInfo = async () => {
   savingPubInfo.value = true; pubInfoSaved.value = false
   try {
@@ -1043,6 +1105,13 @@ const savePubInfo = async () => {
     if (mapUrl.includes('<iframe')) {
       const match = mapUrl.match(/src=["'](.+?)["']/);
       if (match && match[1]) mapUrl = match[1];
+    }
+
+    let ytUrl = pubInfoForm.value.youtubeVideoUrl || '';
+    if (ytUrl.includes('youtube.com/watch?v=')) {
+      ytUrl = ytUrl.replace('watch?v=', 'embed/');
+    } else if (ytUrl.includes('youtu.be/')) {
+      ytUrl = ytUrl.replace('youtu.be/', 'www.youtube.com/embed/');
     }
 
     project.value = await fetchApi(`/projects/${projectId}`, {
@@ -1054,7 +1123,9 @@ const savePubInfo = async () => {
         maxInstallments: pubInfoForm.value.maxInstallments ? Number(pubInfoForm.value.maxInstallments) : null,
         paymentConditionsSummary: pubInfoForm.value.paymentConditionsSummary || null,
         address: pubInfoForm.value.address || null,
-        googleMapsUrl: mapUrl || null
+        googleMapsUrl: mapUrl || null,
+        youtubeVideoUrl: ytUrl || null,
+        constructionStatus: pubInfoForm.value.constructionStatus
       }),
     })
     pubInfoSaved.value = true
@@ -1227,7 +1298,9 @@ const loadProject = async () => {
       maxInstallments: p.maxInstallments,
       paymentConditionsSummary: p.paymentConditionsSummary || '',
       address: p.address || '',
-      googleMapsUrl: p.googleMapsUrl || ''
+      googleMapsUrl: p.googleMapsUrl || '',
+      youtubeVideoUrl: p.youtubeVideoUrl || '',
+      constructionStatus: Array.isArray(p.constructionStatus) ? p.constructionStatus : []
     }
     initialEditorContent.value = p.locationText || '<p></p>'
   } catch (e) {

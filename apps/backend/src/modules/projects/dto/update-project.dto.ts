@@ -84,6 +84,17 @@ export class UpdateProjectDto {
   @IsString()
   googleMapsUrl?: string;
 
+  @ApiPropertyOptional({ description: 'URL do vídeo de apresentação no YouTube' })
+  @IsOptional()
+  @IsString()
+  youtubeVideoUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Acompanhamento de status da obra [{label, percentage}]'
+  })
+  @IsOptional()
+  constructionStatus?: any;
+
   @ApiPropertyOptional({ enum: ReservationFeeType })
   @IsOptional()
   @IsEnum(ReservationFeeType)

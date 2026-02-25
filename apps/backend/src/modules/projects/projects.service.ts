@@ -206,6 +206,12 @@ export class ProjectsService {
         ...(dto.googleMapsUrl !== undefined && {
           googleMapsUrl: dto.googleMapsUrl
         }),
+        ...(dto.youtubeVideoUrl !== undefined && {
+          youtubeVideoUrl: dto.youtubeVideoUrl
+        }),
+        ...(dto.constructionStatus !== undefined && {
+          constructionStatus: dto.constructionStatus
+        }),
         ...(dto.reservationFeeType !== undefined && {
           reservationFeeType: dto.reservationFeeType
         }),

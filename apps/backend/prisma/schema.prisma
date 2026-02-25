@@ -181,6 +181,8 @@ model Project {
   startingPrice   Float?
   maxInstallments Int?
   paymentConditionsSummary String? @db.Text
+  youtubeVideoUrl  String?
+  constructionStatus Json?
   reservationFeeType    ReservationFeeType @default(FIXED)
   reservationFeeValue   Float              @default(500)
   createdAt       DateTime      @default(now())

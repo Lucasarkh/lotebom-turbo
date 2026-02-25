@@ -161,6 +161,28 @@
         </div>
       </section>
 
+      <!-- Video Presentation -->
+      <section v-if="project.youtubeVideoUrl" class="v4-section" id="video-apresentacao">
+        <div class="v4-container">
+          <div class="v4-section-header center">
+            <h2 class="v4-section-title">Apresentação</h2>
+            <p class="v4-section-subtitle">Assista ao vídeo e conheça cada detalhe do empreendimento.</p>
+          </div>
+          <div class="v4-video-wrapper">
+            <iframe 
+              v-if="project.youtubeVideoUrl.includes('embed/')"
+              :src="project.youtubeVideoUrl" 
+              width="100%" height="100%" frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen
+            ></iframe>
+            <a v-else :href="project.youtubeVideoUrl" target="_blank" class="v4-video-placeholder">
+              <span>Assistir Vídeo no YouTube</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       <!-- Available Lots Grid -->
       <section v-if="unifiedAvailableLots.length" class="v4-section" id="lotes">
         <div class="v4-container">
@@ -211,6 +233,28 @@
         </div>
       </section>
 
+      <!-- Construction Progress -->
+      <section v-if="project.constructionStatus && project.constructionStatus.length" class="v4-section" id="obras">
+        <div class="v4-container">
+          <div class="v4-section-header center">
+            <h2 class="v4-section-title">Acompanhamento de Obras</h2>
+            <p class="v4-section-subtitle">Acompanhe a evolução do projeto em tempo real.</p>
+          </div>
+          
+          <div class="v4-construction-grid">
+            <div v-for="(item, i) in project.constructionStatus" :key="i" class="v4-construction-item">
+              <div class="v4-construction-header">
+                <span class="v4-construction-label">{{ item.label }}</span>
+                <span class="v4-construction-percentage">{{ item.percentage }}%</span>
+              </div>
+              <div class="v4-progress-bar">
+                <div class="v4-progress-fill" :style="{ width: item.percentage + '%' }"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Media gallery -->
       <section v-if="project.projectMedias?.length" class="v4-section" id="galeria">
         <div class="v4-container">
@@ -221,10 +265,9 @@
 
           <div class="v4-gallery-grid">
             <div 
-              v-for="(m, i) in project.projectMedias.slice(0, 9)" 
+              v-for="(m, i) in project.projectMedias.slice(0, 8)" 
               :key="m.id" 
               class="v4-gallery-item"
-              :class="{'v4-gallery-item--large': i === 0}"
               @click="openLightbox(Number(i))"
             >
               <img v-if="m.type === 'PHOTO'" :src="m.url" :alt="m.caption || 'Foto'" referrerpolicy="no-referrer" />
@@ -1506,6 +1549,69 @@ function openLightbox(idx: number) {
 .v4-highlight-label { font-size: 19px; font-weight: 600; margin-bottom: 8px; }
 .v4-highlight-value { font-size: 17px; color: var(--v4-text-muted); line-height: 1.47059; }
 
+/* Video Presentation */
+.v4-video-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  aspect-ratio: 16/9;
+  border-radius: 24px;
+  overflow: hidden;
+  background: black;
+  box-shadow: var(--v4-shadow-elevated);
+}
+.v4-video-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  gap: 12px;
+}
+.v4-video-placeholder:hover { background: #222; }
+
+/* Construction Progress */
+.v4-construction-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  max-width: 1000px;
+  margin: 40px auto 0;
+}
+@media (min-width: 768px) {
+  .v4-construction-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
+}
+
+.v4-construction-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.v4-construction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.v4-construction-label { font-size: 17px; font-weight: 600; color: var(--v4-text); }
+.v4-construction-percentage { font-size: 15px; font-weight: 700; color: var(--v4-primary); }
+
+.v4-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: var(--v4-bg-alt);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.v4-progress-fill {
+  height: 100%;
+  background: var(--v4-primary);
+  border-radius: 6px;
+  transition: width 1s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
 /* Rich Content */
 .v4-rich-content {
   font-size: 19px;
@@ -1724,29 +1830,24 @@ function openLightbox(idx: number) {
 /* Gallery */
 .v4-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 240px;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-auto-rows: 180px;
+  gap: 12px;
 }
 
 .v4-gallery-item {
   position: relative;
-  border-radius: var(--v4-radius-lg);
+  border-radius: var(--v4-radius-md);
   overflow: hidden;
   cursor: pointer;
   background: var(--v4-bg-alt);
   border: 1px solid var(--v4-border);
 }
 
-.v4-gallery-item--large {
-  grid-column: span 2;
-  grid-row: span 2;
-}
-
 @media (max-width: 768px) {
   .v4-gallery-grid {
     grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 180px;
+    grid-auto-rows: 160px;
   }
 }
 
