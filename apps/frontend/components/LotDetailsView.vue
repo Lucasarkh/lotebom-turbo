@@ -123,7 +123,7 @@
                 <div v-for="(m, i) in details?.medias" :key="i" 
                   class="gallery-tile" 
                   :class="{ 'main': i === 0 }"
-                  @click="openLightbox(Number(i))">
+                  @click="() => { openLightbox(Number(i)); tracking.trackClick('Galeria: Abrir Foto', 'GALLERY'); }">
                   <img v-if="m.type === 'PHOTO'" :src="m.url" referrerpolicy="no-referrer" />
                   <div v-else class="video-preview-v4">
                     <video :src="m.url" referrerpolicy="no-referrer"></video>
@@ -164,7 +164,9 @@
                 <h2>Vista 360° do Lote</h2>
                 <div class="title-line"></div>
               </div>
-              <div class="panorama-container-v4" style="height: 600px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border);">
+              <div class="panorama-container-v4" 
+                   style="height: 600px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border);"
+                   @click="tracking.trackClick('Panorama: Interação 360', 'VIEW_360')">
                 <PanoramaViewer :panorama="lotPanorama" />
               </div>
             </section>
@@ -231,10 +233,10 @@
                     <div class="ig-flex">
                       <div class="ig-field" style="flex: 2;">
                         <span class="ig-curr">R$</span>
-                        <input v-model.number="simDownPayment" type="number" step="0.01" @input="updatePercentFromDownPayment" class="ig-input" :min="minDownPaymentValue" />
+                        <input v-model.number="simDownPayment" type="number" step="0.01" @input="() => { updatePercentFromDownPayment(); tracking.trackClick('Simulador: Valor Entrada', 'FINANCE'); }" class="ig-input" :min="minDownPaymentValue" />
                       </div>
                       <div class="ig-field" style="flex: 1;">
-                        <input v-model.number="simDownPaymentPercent" type="number" step="0.1" @input="updateDownPaymentFromPercent" class="ig-input" />
+                        <input v-model.number="simDownPaymentPercent" type="number" step="0.1" @input="() => { updateDownPaymentFromPercent(); tracking.trackClick('Simulador: Porcentagem Entrada', 'FINANCE'); }" class="ig-input" />
                         <span class="ig-curr">%</span>
                       </div>
                     </div>
@@ -252,6 +254,7 @@
                         :max="maxInstallments" 
                         step="12"
                         class="range-slider-v4"
+                        @change="tracking.trackClick('Simulador: Parcelamento Meses', 'FINANCE')"
                       />
                       <div class="slider-labels">
                         <span>12x</span>
@@ -416,7 +419,7 @@
                       <span>Reserva Online Garantida</span>
                     </div>
                     <p>Reserve este lote agora mesmo e garanta sua unidade.</p>
-                    <button @click="bookingMode = true" class="cta-reserve-v4">
+                    <button @click="() => { bookingMode = true; tracking.trackClick('Botão: Abrir Reserva Online', 'CONVERSION'); }" class="cta-reserve-v4">
                       Reservar Lote
                     </button>
                     <div class="reserve-small">

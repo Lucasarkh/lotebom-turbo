@@ -112,6 +112,33 @@ export class RealtorLinksService {
     return link;
   }
 
+  async checkEmail(email: string, excludeId?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+    
+    // Also check if any existing realtor has this email, except the current one
+    const realtor = await this.prisma.realtorLink.findFirst({
+        where: {
+            email: email.toLowerCase(),
+            ...(excludeId ? { NOT: { id: excludeId } } : {})
+        }
+    });
+
+    return { available: !user && !realtor };
+  }
+
+  async checkCode(tenantId: string, code: string, excludeId?: string) {
+    const realtor = await this.prisma.realtorLink.findFirst({
+      where: {
+        tenantId,
+        code,
+        ...(excludeId ? { NOT: { id: excludeId } } : {})
+      }
+    });
+    return { available: !realtor };
+  }
+
   async updateMe(userId: string, dto: UpdateRealtorLinkDto) {
     const link = await this.prisma.realtorLink.findUnique({
       where: { userId }

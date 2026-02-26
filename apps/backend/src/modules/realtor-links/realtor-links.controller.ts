@@ -45,6 +45,27 @@ export class RealtorLinksController {
     return this.service.findAll(tenantId, projectId);
   }
 
+  @Get('check-email')
+  @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Verificar disponibilidade de email' })
+  checkEmail(
+    @Query('email') email: string,
+    @Query('excludeId') excludeId?: string
+  ) {
+    return this.service.checkEmail(email, excludeId);
+  }
+
+  @Get('check-code')
+  @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Verificar disponibilidade de código' })
+  checkCode(
+    @TenantId() tenantId: string,
+    @Query('code') code: string,
+    @Query('excludeId') excludeId?: string
+  ) {
+    return this.service.checkCode(tenantId, code, excludeId);
+  }
+
   @Get('me')
   @Roles('CORRETOR')
   @ApiOperation({ summary: 'Buscar link do corretor logado' })

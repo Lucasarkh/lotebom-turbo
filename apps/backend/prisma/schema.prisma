@@ -180,11 +180,11 @@ model Project {
   address         String?       @db.Text
   googleMapsUrl   String?       @db.Text
   showPaymentConditions Boolean @default(false)
-  startingPrice   Float?
+  startingPrice   Decimal?      @db.Decimal(12, 2)
   maxInstallments Int?          @default(180)
-  minDownPaymentPercent    Float?              @default(10)
-  minDownPaymentValue      Float?
-  monthlyInterestRate      Float?              @default(0.9)
+  minDownPaymentPercent    Decimal?            @default(10) @db.Decimal(5, 2)
+  minDownPaymentValue      Decimal?            @db.Decimal(12, 2)
+  monthlyInterestRate      Decimal?            @default(0.9) @db.Decimal(5, 4)
   indexer                  String?             @default("IGP-M")
   allowIntermediary        Boolean             @default(false)
   financingDisclaimer      String?             @db.Text
@@ -192,7 +192,7 @@ model Project {
   youtubeVideoUrl  String?
   constructionStatus Json?
   reservationFeeType    ReservationFeeType @default(FIXED)
-  reservationFeeValue   Float              @default(500)
+  reservationFeeValue   Decimal            @default(500) @db.Decimal(12, 2)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -245,8 +245,9 @@ model LotDetails {
   project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   mapElementId   String    @unique
   mapElement     MapElement @relation(fields: [mapElementId], references: [id], onDelete: Cascade)
+  version        Int        @default(0)
   status         LotStatus  @default(AVAILABLE)
-  price          Float?
+  price          Decimal?   @db.Decimal(12, 2)
   areaM2         Float?
   frontage       Float?
   depth          Float?
@@ -301,6 +302,7 @@ model Lead {
   name          String
   email         String?
   phone         String?
+  version       Int        @default(0)
   
   // Registration data
   cpf           String?
@@ -341,7 +343,13 @@ model Lead {
   history       LeadHistory[]
 
   @@index([tenantId, projectId])
-  @@index([status])
+  @@index([status, createdAt])
+  @@index([email])
+  @@index([phone])
+  @@index([cpf])
+  @@index([sessionId])
+  @@index([realtorLinkId])
+  @@index([createdAt(sort: Desc)])
 }
 
 model LeadDocument {
@@ -363,7 +371,7 @@ model LeadPayment {
   lead        Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
   type        LeadPaymentType
   status      LeadPaymentStatus @default(PENDING)
-  amount      Float
+  amount      Decimal           @db.Decimal(12, 2)
   dueDate     DateTime
   paidDate    DateTime?
   receiptUrl  String?
@@ -588,6 +596,7 @@ model TrackingSession {
   leads  Lead[]
 
   @@index([tenantId, projectId])
+  @@index([projectId, lastSeenAt])
   @@index([createdAt])
   @@index([lastSeenAt])
 }
@@ -605,8 +614,8 @@ model TrackingEvent {
   path      String?
   timestamp DateTime        @default(now())
 
-  @@index([sessionId])
-  @@index([type, category])
+  @@index([sessionId, timestamp])
+  @@index([type, category, timestamp])
   @@index([timestamp])
 }
 
@@ -624,7 +633,7 @@ model Campaign {
   utmCampaign  String
   utmContent   String?
   utmTerm      String?
-  budget       Float?
+  budget       Decimal? @db.Decimal(12, 2)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -639,7 +648,7 @@ model CampaignInvestment {
   id          String   @id @default(cuid())
   campaignId  String
   campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  amount      Float
+  amount      Decimal  @db.Decimal(12, 2)
   date        DateTime @default(now())
   notes       String?  @db.Text
   createdAt   DateTime @default(now())

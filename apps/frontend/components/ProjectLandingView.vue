@@ -57,8 +57,8 @@
             </div>
 
             <div class="v4-hero-actions">
-              <a href="#planta" class="v4-btn-primary" @click="tracking.trackClick('Herói: Ver Planta')">Ver Planta Interativa</a>
-              <a href="#contato" class="v4-btn-white" @click="tracking.trackClick('Herói: Solicitar Info')">Solicitar informações</a>
+              <a href="#planta" class="v4-btn-primary" @click="tracking.trackClick('Botão: Ver Planta Interativa')">Ver Planta Interativa</a>
+              <a href="#contato" class="v4-btn-white" @click="tracking.trackClick('Botão: Solicitar Informações')">Solicitar informações</a>
             </div>
           </div>
         </div>
@@ -226,7 +226,7 @@
           </div>
 
           <div v-if="unifiedAvailableLots.length > 6" style="margin-top: 56px; display: flex; justify-content: center;">
-            <NuxtLink :to="unitsUrl" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver todos os lotes')">
+            <NuxtLink :to="unitsUrl" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Botão: Ver todas unidades')">
               Ver todos os {{ unifiedAvailableLots.length }} lotes disponíveis
             </NuxtLink>
           </div>
@@ -280,7 +280,7 @@
           </div>
 
           <div v-if="project.projectMedias.length > 9" style="margin-top: 56px; display: flex; justify-content: center;">
-            <NuxtLink :to="galleryUrl" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Ver toda galeria')">
+            <NuxtLink :to="galleryUrl" class="v4-btn-primary" style="min-width: 280px; text-decoration: none; text-align: center;" @click="tracking.trackClick('Botão: Abrir Galeria Completa')">
               Ver todos os {{ project.projectMedias.length }} arquivos de mídia
             </NuxtLink>
           </div>
@@ -435,7 +435,7 @@
       </nav>
       <!-- Floating Search CTA -->
       <div v-if="availableLotElements.length > 0 || mapDataLots.length > 0" class="v4-floating-cta">
-        <button class="v4-cta-btn-animated" @click="toggleFilterModal">
+        <button class="v4-cta-btn-animated" @click="() => { tracking.trackClick('CTA: Busca de Lotes Animado'); toggleFilterModal(); }">
           <div class="v4-cta-inner">
             <span class="v4-cta-icon-spark">✨</span>
             <span class="v4-cta-label">Busque o lote ideal com base nas suas preferências</span>
@@ -597,6 +597,11 @@ const toggleFilterTag = (tag: string) => {
 }
 
 const applyFiltersAndSearch = () => {
+  tracking.trackClick('Botão: Aplicar Filtros e Buscar', { 
+    tags: selectedFilterTags.value.join(','),
+    count: filteredLotsCount.value
+  })
+
   const query: any = {}
   if (selectedFilterTags.value.length) {
     query.tags = selectedFilterTags.value.join(',')

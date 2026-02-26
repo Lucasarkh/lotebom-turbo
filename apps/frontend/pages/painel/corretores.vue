@@ -8,6 +8,16 @@ const loading = ref(true)
 const showModal = ref(false)
 const editingRealtor = ref(null)
 
+const emailError = ref('')
+const codeError = ref('')
+const emailAvailable = ref(false)
+const codeAvailable = ref(false)
+const emailLoading = ref(false)
+const codeLoading = ref(false)
+
+let emailDebounceTimer: any = null
+let codeDebounceTimer: any = null
+
 const { maskPhone } = useMasks()
 
 const form = ref({
@@ -15,6 +25,7 @@ const form = ref({
   phone: '',
   creci: '',
   code: '',
+  photoUrl: '',
   projectIds: [],
   accountEmail: '',
   accountPassword: ''
@@ -22,11 +33,64 @@ const form = ref({
 
 watch(() => form.value.phone, (v) => { if (v) form.value.phone = maskPhone(v) })
 
+watch(() => form.value.accountEmail, (email) => {
+  if (editingRealtor.value) return
+  emailError.value = ''
+  emailAvailable.value = false
+  if (!email || !email.includes('@')) return
+  
+  clearTimeout(emailDebounceTimer)
+  emailDebounceTimer = setTimeout(async () => {
+    emailLoading.value = true
+    try {
+      const res = await get(`/realtor-links/check-email?email=${email}`)
+      if (!res.available) {
+        emailError.value = 'Já existe um usuário com este email.'
+      } else {
+        emailAvailable.value = true
+      }
+    } catch {
+      // Ignora erro na verificação
+    } finally {
+      emailLoading.value = false
+    }
+  }, 600)
+})
+
+watch(() => form.value.code, (code) => {
+  codeError.value = ''
+  codeAvailable.value = false
+  if (!code) return
+  
+  clearTimeout(codeDebounceTimer)
+  codeDebounceTimer = setTimeout(async () => {
+    codeLoading.value = true
+    try {
+      const excludeId = editingRealtor.value?.id || ''
+      const res = await get(`/realtor-links/check-code?code=${code}&excludeId=${excludeId}`)
+      if (!res.available) {
+        codeError.value = 'Este código já está sendo usado por outro corretor.'
+      } else {
+        codeAvailable.value = true
+      }
+    } catch {
+      // Ignora erro na verificação
+    } finally {
+      codeLoading.value = false
+    }
+  }, 600)
+})
+
 const slugManuallyEdited = ref(false)
 
 function onNameInput() {
   if (!slugManuallyEdited.value) {
-    form.value.code = form.value.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    form.value.code = form.value.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
   }
 }
 
@@ -48,6 +112,11 @@ async function fetchData() {
 }
 
 async function saveRealtor() {
+  if (emailError.value || codeError.value) {
+    toast.error('Por favor, corrija os erros no formulário antes de salvar.')
+    return
+  }
+
   try {
     const payload = {
       ...form.value,
@@ -70,6 +139,10 @@ async function saveRealtor() {
     }
     showModal.value = false
     slugManuallyEdited.value = false
+    emailError.value = ''
+    codeError.value = ''
+    emailAvailable.value = false
+    codeAvailable.value = false
     fetchData()
   } catch (error) {
     toast.error(error?.data?.message || 'Erro ao salvar corretor')
@@ -89,8 +162,12 @@ async function removeRealtor(id: string) {
 
 function openCreate() {
   editingRealtor.value = null
-  form.value = { name: '', phone: '', creci: '', code: '', projectIds: [], accountEmail: '', accountPassword: '' }
+  form.value = { name: '', phone: '', creci: '', code: '', photoUrl: '', projectIds: [], accountEmail: '', accountPassword: '' }
   slugManuallyEdited.value = false
+  emailError.value = ''
+  codeError.value = ''
+  emailAvailable.value = false
+  codeAvailable.value = false
   showModal.value = true
 }
 
@@ -101,11 +178,16 @@ function openEdit(realtor) {
     phone: realtor.phone,
     creci: realtor.creci || '',
     code: realtor.code,
+    photoUrl: realtor.photoUrl || '',
     projectIds: realtor.projects?.map(p => p.id) || [],
     accountEmail: '',
     accountPassword: ''
   }
   slugManuallyEdited.value = true
+  emailError.value = ''
+  codeError.value = ''
+  emailAvailable.value = false
+  codeAvailable.value = false
   showModal.value = true
 }
 
@@ -218,21 +300,34 @@ definePageMeta({
           <form @submit.prevent="saveRealtor" class="form">
             <div class="form-grid">
               <div class="form-group span-2">
-                <label class="form-label">Nome do Corretor *</label>
+                <label class="form-label">Nome do Corretor <span class="required">*</span></label>
                 <input v-model="form.name" type="text" class="form-input" placeholder="Nome completo" required @input="onNameInput">
               </div>
+
               <div class="form-group">
-                <label class="form-label">Código de Indicação (Slug) *</label>
-                <input v-model="form.code" type="text" class="form-input" placeholder="joao-corretor" required>
-                <small class="help-text">Usado no link: ?c={{ form.code || '...' }}</small>
+                <label class="form-label">Código de Indicação (Slug) <span class="required">*</span></label>
+                <div class="input-wrapper">
+                  <input v-model="form.code" type="text" class="form-input" :class="{ 'is-invalid': codeError, 'is-valid': codeAvailable }" placeholder="joao-corretor" required>
+                  <span v-if="codeAvailable" class="valid-icon">✓</span>
+                </div>
+                <span v-if="codeError" class="error-text">{{ codeError }}</span>
+                <span v-else-if="codeLoading" class="help-text">Verificando...</span>
+                <small v-else class="help-text">Usado no link: ?c={{ form.code || '...' }}</small>
               </div>
+
               <div class="form-group">
                 <label class="form-label">CRECI</label>
                 <input v-model="form.creci" type="text" class="form-input" placeholder="Ex: 12345-F">
               </div>
-              <div class="form-group span-2">
-                <label class="form-label">Telefone (WhatsApp) *</label>
+
+              <div class="form-group">
+                <label class="form-label">Telefone (WhatsApp) <span class="required">*</span></label>
                 <input v-model="form.phone" type="text" class="form-input" placeholder="(DD) 9XXXX-XXXX" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">URL da Foto</label>
+                <input v-model="form.photoUrl" type="text" class="form-input" placeholder="URL da foto/avatar">
               </div>
             </div>
 
@@ -243,7 +338,12 @@ definePageMeta({
               <div class="form-grid">
                 <div class="form-group">
                   <label class="form-label">Email de Acesso *</label>
-                  <input v-model="form.accountEmail" type="email" class="form-input" placeholder="corretor@email.com" required autocomplete="off">
+                  <div class="input-wrapper">
+                    <input v-model="form.accountEmail" type="email" class="form-input" :class="{ 'is-invalid': emailError, 'is-valid': emailAvailable }" placeholder="corretor@email.com" required autocomplete="off">
+                    <span v-if="emailAvailable" class="valid-icon">✓</span>
+                  </div>
+                  <span v-if="emailError" class="error-text">{{ emailError }}</span>
+                  <span v-else-if="emailLoading" class="help-text">Verificando...</span>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Senha Inicial *</label>
@@ -473,6 +573,47 @@ h1 {
   margin-top: 4px;
 }
 
+.error-text {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 4px;
+}
+
+.form-input.is-invalid {
+  border-color: #ef4444;
+}
+
+.form-input.is-invalid:focus {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.form-input.is-valid {
+  border-color: #10b981;
+  padding-right: 32px;
+}
+
+.form-input.is-valid:focus {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper .form-input {
+  width: 100%;
+}
+
+.valid-icon {
+  position: absolute;
+  right: 10px;
+  color: #10b981;
+  font-weight: bold;
+  font-size: 16px;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -508,5 +649,10 @@ h1 {
 
 .text-right {
   text-align: right;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 2px;
 }
 </style>

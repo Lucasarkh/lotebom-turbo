@@ -2,6 +2,7 @@
 import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { usePublicApi } from '@/composables/usePublicApi'
 import { useAiChatStore } from '@/stores/aiChat'
+import { useTracking } from '@/composables/useTracking'
 
 const props = defineProps<{
   project: any
@@ -10,6 +11,7 @@ const props = defineProps<{
 const router = useRouter()
 const route = useRoute()
 const chatStore = useAiChatStore()
+const tracking = useTracking()
 const { post } = usePublicApi()
 
 const input = ref('')
@@ -104,12 +106,17 @@ const parseMessage = (text: string) => {
 
 function toggleChat() {
   isOpen.value = !isOpen.value
+  if (isOpen.value) {
+    tracking.trackClick('Chat: Abrir', 'AI_CHAT')
+  }
 }
 
 async function sendMessage() {
   if (!input.value.trim() || loading.value) return
   
   const userMsg = input.value
+  tracking.trackClick('Chat: Enviar Mensagem', 'AI_CHAT')
+  
   chatStore.addMessage('user', userMsg)
   input.value = ''
   loading.value = true

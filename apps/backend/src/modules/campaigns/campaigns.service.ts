@@ -235,11 +235,11 @@ export class CampaignsService {
     const totalSessions = sessions.length;
     const totalLeads = leads.length;
     const totalWonLeads = leads.filter((l) => l.status === 'WON').length;
-    const totalSpent = investments.reduce((acc, curr) => acc + curr.amount, 0);
+    const totalSpent = investments.reduce((acc, curr) => acc + Number(curr.amount), 0);
     const totalRevenue = leads
       .filter((l) => l.status === 'WON')
       .reduce(
-        (acc, curr) => acc + (curr.mapElement?.lotDetails?.price || 0),
+        (acc, curr) => acc + Number(curr.mapElement?.lotDetails?.price || 0),
         0
       );
 
@@ -308,7 +308,7 @@ export class CampaignsService {
         stats.set(d, { date: d, sessions: 0, leads: 0, spent: 0, rev: 0 });
       stats.get(d).leads++;
       if (l.status === 'WON') {
-        stats.get(d).rev += l.mapElement?.lotDetails?.price || 0;
+        stats.get(d).rev += Number(l.mapElement?.lotDetails?.price || 0);
       }
     });
 
@@ -316,7 +316,7 @@ export class CampaignsService {
       const d = formatDate(i.date);
       if (!stats.has(d))
         stats.set(d, { date: d, sessions: 0, leads: 0, spent: 0, rev: 0 });
-      stats.get(d).spent += i.amount;
+      stats.get(d).spent += Number(i.amount);
     });
 
     return Array.from(stats.values()).sort((a, b) =>

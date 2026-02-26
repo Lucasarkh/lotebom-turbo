@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { fetchApi } = useApi()
 const toast = useToast()
+const auth = useAuthStore()
 
 const projects = ref<any[]>([])
 const selectedProjectId = ref('all')
@@ -105,7 +106,7 @@ const conversionRate = computed(() => {
     <div v-else-if="metrics" class="dashboard" :class="{ 'loading-overlay': loadingMetrics }">
       <!-- Summary Cards -->
       <div class="stats-grid">
-        <div class="stat-card">
+        <div v-if="!auth.isCorretor" class="stat-card">
           <div class="stat-icon sessions">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
@@ -114,7 +115,7 @@ const conversionRate = computed(() => {
             <span class="stat-value text-blue">{{ metrics.summary.totalSessions }}</span>
           </div>
         </div>
-        <div class="stat-card">
+        <div v-if="!auth.isCorretor" class="stat-card">
           <div class="stat-icon avg-pages">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
           </div>
@@ -123,7 +124,7 @@ const conversionRate = computed(() => {
             <span class="stat-value text-teal">{{ pagesPerSession }}</span>
           </div>
         </div>
-        <div class="stat-card">
+        <div v-if="!auth.isCorretor" class="stat-card">
           <div class="stat-icon views">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </div>
@@ -141,10 +142,19 @@ const conversionRate = computed(() => {
             <span class="stat-value text-emerald">{{ metrics.summary.totalLeads }} ({{ conversionRate }}%)</span>
           </div>
         </div>
+        <div v-if="!auth.isCorretor" class="stat-card">
+          <div class="stat-icon realtor">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Acessos via Corretor</span>
+            <span class="stat-value text-orange">{{ metrics.summary.totalRealtorClicks }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- History Chart -->
-      <div class="details-card history-card full-width">
+      <div v-if="!auth.isCorretor" class="details-card history-card full-width">
         <h3>Histórico de Acessos</h3>
         <div class="history-chart-container">
           <div v-for="h in metrics.history" :key="h.date" class="chart-col">
@@ -176,7 +186,7 @@ const conversionRate = computed(() => {
 
       <div class="details-grid">
         <!-- Projects Breakdown (Only if all projects selected) -->
-        <div v-if="selectedProjectId === 'all'" class="details-card">
+        <div v-if="!auth.isCorretor && selectedProjectId === 'all'" class="details-card">
           <h3>Acessos por Empreendimento</h3>
           <div v-if="metrics.topProjects?.length" class="chart-list">
             <div v-for="item in metrics.topProjects" :key="item.label" class="chart-item">
@@ -191,7 +201,7 @@ const conversionRate = computed(() => {
         </div>
 
         <!-- Page Views Breakdown -->
-        <div class="details-card">
+        <div v-if="!auth.isCorretor" class="details-card">
           <h3>Páginas mais Visitadas</h3>
           <div v-if="metrics.topPaths?.length" class="chart-list">
             <div v-for="item in metrics.topPaths" :key="item.label" class="chart-item">
@@ -206,7 +216,7 @@ const conversionRate = computed(() => {
         </div>
 
         <!-- Lead Sources -->
-        <div class="details-card">
+        <div v-if="!auth.isCorretor" class="details-card">
           <h3>Origens de Tráfego</h3>
           <div v-if="metrics.topUtmSources?.length" class="chart-list">
             <div v-for="item in metrics.topUtmSources" :key="item.label" class="chart-item">
@@ -221,9 +231,9 @@ const conversionRate = computed(() => {
         </div>
 
         <!-- Campaigns -->
-        <div class="details-card">
+        <div v-if="!auth.isCorretor && metrics.topUtmCampaigns?.length" class="details-card">
           <h3>Campanhas Ativas</h3>
-          <div v-if="metrics.topUtmCampaigns?.length" class="chart-list">
+          <div class="chart-list">
             <div v-for="item in metrics.topUtmCampaigns" :key="item.utm" class="chart-item">
               <span class="item-label">{{ item.label }}</span>
               <div class="bar-container">
@@ -232,7 +242,21 @@ const conversionRate = computed(() => {
               <span class="item-count">{{ item.count }}</span>
             </div>
           </div>
-          <div v-else class="no-data-placeholder">Nenhuma campanha registrada</div>
+        </div>
+
+        <!-- Realtors Breakdown -->
+        <div v-if="!auth.isCorretor" class="details-card">
+          <h3>Desempenho de Corretores</h3>
+          <div v-if="metrics.topRealtors?.length" class="chart-list">
+            <div v-for="item in metrics.topRealtors" :key="item.label" class="chart-item">
+              <span class="item-label">{{ item.label }}</span>
+              <div class="bar-container">
+                <div class="bar bg-orange" :style="{ width: `${metrics.summary.totalSessions > 0 ? (item.count / metrics.summary.totalSessions) * 100 : 0}%` }"></div>
+              </div>
+              <span class="item-count">{{ item.count }}</span>
+            </div>
+          </div>
+          <div v-else class="no-data-placeholder">Nenhum acesso via corretor registrado</div>
         </div>
 
         <div class="details-card table-card">
@@ -375,6 +399,7 @@ h1 {
 .stat-icon.views { background: #eef2ff; color: #4f46e5; }
 .stat-icon.avg-pages { background: #f0fdfa; color: #0d9488; }
 .stat-icon.leads { background: #ecfdf5; color: #059669; }
+.stat-icon.realtor { background: #fff7ed; color: #ea580c; }
 
 .stat-content {
   display: flex;
@@ -399,6 +424,7 @@ h1 {
 .text-indigo { color: #4f46e5; }
 .text-teal { color: #0d9488; }
 .text-emerald { color: #059669; }
+.text-orange { color: #ea580c; }
 
 /* History Chart */
 .history-card {

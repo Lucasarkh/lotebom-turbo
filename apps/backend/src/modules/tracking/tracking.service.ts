@@ -489,7 +489,7 @@ export class TrackingService {
         where: { ...whereEvent, type: 'CLICK', category: 'LOT' }
       }),
       this.prisma.trackingEvent.count({
-        where: { ...whereEvent, type: 'CLICK', category: 'REALTOR_LINK' }
+        where: { ...whereEvent, category: 'REALTOR_LINK' }
       }),
       this.prisma.lead.count({
         where: {
@@ -675,9 +675,22 @@ export class TrackingService {
         };
       }),
       topLots: topLotsProcessed,
-      topRealtors: topRealtors.map((r) => ({
-        label: r.label,
-        count: r._count.id
+      topRealtors: await Promise.all(topRealtors.map(async (r) => {
+        let label = r.label || 'Desconhecido';
+        if (label.startsWith('Corretor Link: ')) {
+          const code = label.replace('Corretor Link: ', '');
+          const rl = await this.prisma.realtorLink.findFirst({
+            where: { tenantId: whereSession.tenantId, code, enabled: true },
+            select: { name: true }
+          });
+          if (rl) {
+            label = `${rl.name} (${code})`;
+          }
+        }
+        return {
+          label,
+          count: r._count.id
+        };
       })),
       topProjects: topProjects.map((p) => {
         const proj = projects.find((pr) => pr.id === p.projectId);

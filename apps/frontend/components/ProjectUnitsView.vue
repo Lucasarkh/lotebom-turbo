@@ -46,7 +46,7 @@
                   :key="tag"
                   class="v4-filter-tag"
                   :class="{ active: selectedFilters.includes(tag) }"
-                  @click="toggleFilter(tag)"
+                  @click="() => { toggleFilter(tag); tracking.trackClick(`Filtro: Selo ${tag}`, 'LIST_FILTER'); }"
                 >
                   {{ tag }}
                 </button>
@@ -110,6 +110,7 @@
                 :key="lot.id" 
                 :to="lotPageUrl(lot)"
                 class="v4-lot-card-v2"
+                @click="tracking.trackLotClick(lot.code || lot.name || lot.id, lot.id)"
               >
                 <div class="v4-card-header">
                   <div class="v4-card-id">
@@ -172,6 +173,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTenantStore } from '~/stores/tenant'
 import { useAiChatStore } from '~/stores/aiChat'
+import { useTracking } from '~/composables/useTracking'
 import CommonPagination from '~/components/common/Pagination.vue'
 
 const props = defineProps({
@@ -184,6 +186,7 @@ const props = defineProps({
 const route = useRoute()
 const tenantStore = useTenantStore()
 const chatStore = useAiChatStore()
+const tracking = useTracking()
 const { fetchPublic } = usePublicApi()
 
 const projectSlug = computed(() => (tenantStore.config?.project?.slug || props.slug || route.params.slug || '') as string)

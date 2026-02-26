@@ -814,25 +814,43 @@
             {{ showNewCorretor ? '✕ Cancelar' : '+ Novo Corretor' }}
           </button>
 
-          <div v-if="showNewCorretor" class="card" style="margin-top: var(--space-4); max-width: 600px;">
+          <div v-if="showNewCorretor" class="card" style="margin-top: var(--space-4); max-width: 800px;">
             <h4 style="margin-bottom: var(--space-4);">Novo Link de Corretor</h4>
-            <div class="grid grid-cols-2" style="gap: var(--space-3);">
-              <div class="form-group">
-                <label class="form-label">Nome *</label>
-                <input v-model="corretorForm.name" class="form-input" placeholder="João Corretor" required />
+            <div class="grid grid-cols-2" style="gap: var(--space-4);">
+              <div class="form-group col-span-2">
+                <label class="form-label">Nome do Corretor <span class="required" style="color:#ef4444;">*</span></label>
+                <input v-model="corretorForm.name" class="form-input" placeholder="Nome completo" required @input="onNameInput" />
               </div>
               <div class="form-group">
-                <label class="form-label">Código (URL) *</label>
-                <input v-model="corretorForm.code" class="form-input" placeholder="joao-c" required />
-                <small style="color:var(--gray-500); font-size:0.75rem;">Usado como ?c={{ corretorForm.code || 'codigo' }}</small>
+                <label class="form-label">Código (URL) <span class="required" style="color:#ef4444;">*</span></label>
+                <div class="input-wrapper" style="position: relative; display: flex; align-items: center;">
+                  <input v-model="corretorForm.code" class="form-input" :class="{ 'is-invalid': codeError, 'is-valid': codeAvailable }" placeholder="joao-corretor" required style="width: 100%;" />
+                  <span v-if="codeAvailable" style="position: absolute; right: 10px; color: #10b981; font-weight: bold;">✓</span>
+                </div>
+                <span v-if="codeError" class="error-text" style="color:#ef4444; font-size:0.75rem;">{{ codeError }}</span>
+                <span v-else-if="codeLoading" class="help-text" style="color:var(--gray-500); font-size:0.75rem;">Verificando...</span>
+                <small v-else style="color:var(--gray-500); font-size:0.75rem;">Usado como ?c={{ corretorForm.code || '...' }}</small>
               </div>
               <div class="form-group">
-                <label class="form-label">Telefone</label>
-                <input v-model="corretorForm.phone" class="form-input" placeholder="(00) 00000-0000" />
+                <label class="form-label">CRECI</label>
+                <input v-model="corretorForm.creci" class="form-input" placeholder="Ex: 12345-F" />
               </div>
               <div class="form-group">
+                <label class="form-label">Telefone (WhatsApp) <span class="required" style="color:#ef4444;">*</span></label>
+                <input v-model="corretorForm.phone" class="form-input" placeholder="(DD) 9XXXX-XXXX" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL da Foto</label>
+                <input v-model="corretorForm.photoUrl" class="form-input" placeholder="URL da foto/avatar" />
+              </div>
+              <div class="form-group col-span-2">
                 <label class="form-label">E-mail</label>
-                <input v-model="corretorForm.email" type="email" class="form-input" placeholder="corretor@email.com" />
+                <div class="input-wrapper" style="position: relative; display: flex; align-items: center;">
+                  <input v-model="corretorForm.email" type="email" class="form-input" :class="{ 'is-invalid': emailError, 'is-valid': emailAvailable }" placeholder="corretor@email.com" style="width: 100%;" />
+                  <span v-if="emailAvailable" style="position: absolute; right: 10px; color: #10b981; font-weight: bold;">✓</span>
+                </div>
+                <span v-if="emailError" class="error-text" style="color:#ef4444; font-size:0.75rem;">{{ emailError }}</span>
+                <span v-else-if="emailLoading" class="help-text" style="color:var(--gray-500); font-size:0.75rem;">Verificando...</span>
               </div>
             </div>
             <div v-if="corretorError" class="alert alert-error" style="margin-top: var(--space-3);">{{ corretorError }}</div>
@@ -1248,8 +1266,75 @@ const corretores = ref([])
 const loadingCorretores = ref(false)
 const showNewCorretor = ref(false)
 const creatingCorretor = ref(false)
-const corretorForm = ref({ name: '', phone: '', email: '', code: '', enabled: true, notes: '' })
+const corretorForm = ref({ name: '', phone: '', email: '', code: '', creci: '', photoUrl: '', enabled: true, notes: '' })
 const corretorError = ref('')
+const emailError = ref('')
+const codeError = ref('')
+const emailAvailable = ref(false)
+const codeAvailable = ref(false)
+const emailLoading = ref(false)
+const codeLoading = ref(false)
+const slugManuallyEdited = ref(false)
+
+let emailDebounceTimer: any = null
+let codeDebounceTimer: any = null
+
+watch(() => corretorForm.value.email, (email) => {
+  emailError.value = ''
+  emailAvailable.value = false
+  if (!email || !email.includes('@')) return
+  
+  clearTimeout(emailDebounceTimer)
+  emailDebounceTimer = setTimeout(async () => {
+    emailLoading.value = true
+    try {
+      const res = await fetchApi(`/realtor-links/check-email?email=${email}`)
+      if (!res.available) {
+        emailError.value = 'Já existe um usuário com este email.'
+      } else {
+        emailAvailable.value = true
+      }
+    } catch {
+      // Ignora erro na verificação
+    } finally {
+      emailLoading.value = false
+    }
+  }, 600)
+})
+
+watch(() => corretorForm.value.code, (code) => {
+  codeError.value = ''
+  codeAvailable.value = false
+  if (!code) return
+  
+  clearTimeout(codeDebounceTimer)
+  codeDebounceTimer = setTimeout(async () => {
+    codeLoading.value = true
+    try {
+      const res = await fetchApi(`/realtor-links/check-code?code=${code}`)
+      if (!res.available) {
+        codeError.value = 'Este código já está sendo usado por outro corretor.'
+      } else {
+        codeAvailable.value = true
+      }
+    } catch {
+      // Ignora erro na verificação
+    } finally {
+      codeLoading.value = false
+    }
+  }, 600)
+})
+
+function onNameInput() {
+  if (!slugManuallyEdited.value) {
+    corretorForm.value.code = corretorForm.value.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+  }
+}
 
 const loadCorretores = async () => {
   loadingCorretores.value = true
@@ -1260,15 +1345,25 @@ const loadCorretores = async () => {
 }
 
 const createCorretor = async () => {
+  if (emailError.value || codeError.value) {
+    toastFromError(new Error('Corrija os erros no formulário antes de salvar'))
+    return
+  }
+
   creatingCorretor.value = true; corretorError.value = ''
   try {
     const c = await fetchApi('/realtor-links', {
       method: 'POST',
-      body: JSON.stringify({ ...corretorForm.value, projectId }),
+      body: JSON.stringify({ ...corretorForm.value, projectIds: [projectId] }),
     })
     corretores.value.unshift(c)
     showNewCorretor.value = false
-    corretorForm.value = { name: '', phone: '', email: '', code: '', enabled: true, notes: '' }
+    corretorForm.value = { name: '', phone: '', email: '', code: '', creci: '', photoUrl: '', enabled: true, notes: '' }
+    slugManuallyEdited.value = false
+    emailError.value = ''
+    codeError.value = ''
+    emailAvailable.value = false
+    codeAvailable.value = false
     toastSuccess('Corretor criado!')
   } catch (e) {
     corretorError.value = e.message || 'Erro ao criar'
@@ -1635,5 +1730,17 @@ onMounted(async () => {
 }
 .toggle-switch input:checked + label:before {
   transform: translateX(20px);
+}
+
+.form-input.is-valid {
+  border-color: #10b981 !important;
+  padding-right: 32px;
+}
+.form-input.is-valid:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
+}
+.form-input.is-invalid {
+  border-color: #ef4444 !important;
 }
 </style>

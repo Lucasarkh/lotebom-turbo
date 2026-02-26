@@ -174,34 +174,36 @@ onMounted(() => {
       <button class="btn btn-primary" @click="openCreate">Começar agora</button>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="config in configs" :key="config.id" class="card config-card">
-        <div class="card-body">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="config-name">{{ config.name }}</h3>
-              <span class="badge" :class="config.isActive ? 'badge-success' : 'badge-neutral'">
-                {{ config.isActive ? 'Ativo' : 'Inativo' }}
-              </span>
-            </div>
-            <div class="provider-badge">{{ config.provider.toUpperCase() }}</div>
+    <div v-else class="ai-config-grid">
+      <div v-for="config in configs" :key="config.id" class="card ai-config-card">
+        <div class="ai-card-header">
+          <div class="ai-card-info">
+            <h3 class="config-name">{{ config.name }}</h3>
+            <span class="badge" :class="config.isActive ? 'badge-success' : 'badge-neutral'">
+              {{ config.isActive ? 'Ativo' : 'Inativo' }}
+            </span>
           </div>
-          
-          <div class="config-details">
-            <div class="detail-item">
-              <span class="label">Modelo:</span>
-              <span class="value">{{ config.model }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">API Key:</span>
-              <span class="value">{{ config.apiKey ? '••••••••' : 'Não configurada' }}</span>
-            </div>
+          <div class="provider-badge">{{ config.provider.toUpperCase() }}</div>
+        </div>
+        
+        <div class="ai-config-details">
+          <div class="detail-item">
+            <span class="detail-label">Modelo</span>
+            <span class="detail-value">{{ config.model }}</span>
           </div>
+          <div class="detail-item">
+            <span class="detail-label">API Key</span>
+            <span class="detail-value font-mono">{{ config.apiKey ? '••••••••••••' : 'Não configurada' }}</span>
+          </div>
+        </div>
 
-          <div class="card-actions mt-6">
-            <button class="btn btn-outline btn-sm" @click="openEdit(config)">Editar</button>
-            <button class="btn btn-ghost btn-sm text-danger" @click="removeConfig(config.id)">Excluir</button>
-          </div>
+        <div class="ai-card-actions mt-auto border-t border-gray-100 pt-5 flex gap-2">
+          <button class="btn btn-outline btn-sm flex-1" @click="openEdit(config)">
+             <i class="pi pi-pencil mr-1"></i> Editar
+          </button>
+          <button class="btn btn-ghost btn-sm text-danger" @click="removeConfig(config.id)">
+             <i class="pi pi-trash mr-1"></i> Excluir
+          </button>
         </div>
       </div>
     </div>
@@ -307,45 +309,112 @@ onMounted(() => {
   color: var(--gray-500);
 }
 
-.config-card {
-  transition: transform 0.2s;
+.ai-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 400px));
+  gap: var(--space-6);
 }
 
-.config-card:hover {
-  transform: translateY(-2px);
+.ai-config-card {
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  min-height: 220px;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: var(--space-6);
+}
+
+.ai-config-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light);
+}
+
+.ai-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-6);
+}
+
+.ai-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .config-name {
   font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
 }
 
 .provider-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   background: var(--gray-100);
-  padding: 2px 8px;
-  border-radius: 4px;
+  min-width: 70px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--gray-500);
+  border: 1px solid var(--gray-200);
+  padding: 0 var(--space-2);
+  text-transform: uppercase;
 }
 
-.config-details {
-  margin-top: var(--space-4);
-  font-size: 0.875rem;
+.ai-config-card:hover .provider-badge {
+  background: white;
+  border-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.ai-config-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
 }
 
 .detail-item {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.25rem;
+  align-items: center;
+  padding: var(--space-1) 0;
 }
 
-.detail-item .label {
-  color: var(--gray-500);
+.detail-label {
+  color: var(--gray-400);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.detail-item .value {
-  font-weight: 500;
+.detail-value {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--gray-700);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.ai-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.text-danger {
+  color: var(--danger);
 }
 
 .empty-state {

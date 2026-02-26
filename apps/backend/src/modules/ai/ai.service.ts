@@ -230,7 +230,7 @@ export class AiService {
       const code = lot.mapElement?.code || lot.mapElement?.name || 'S/N';
       const status = statusMap[lot.status] || lot.status;
       const area = lot.areaM2 ? `${lot.areaM2}m²` : 'Não informada';
-      const price = lot.price ? `R$ ${lot.price.toLocaleString('pt-BR')}` : 'Sob consulta';
+      const price = lot.price ? `R$ ${Number(lot.price).toLocaleString('pt-BR')}` : 'Sob consulta';
       const tags = (lot.tags && lot.tags.length) ? `[${lot.tags.join(', ')}]` : '[Nenhuma]';
       const topography = slopeMap[lot.slope] || 'Plano';
       
