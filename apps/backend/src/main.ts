@@ -2,12 +2,32 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from '@/infra/db/prisma.service';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
+import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Removendo headers que revelam tecnologia (obrigatório para auditoria)
+  app.disable('x-powered-by');
+
+  // Trust Proxy for accurate client IPs (e.g., behind Nginx/Cloudflare)
+  app.set('trust proxy', 1);
+
+  // Security Headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Disable for Swagger docs, or configure specifically
+      crossOriginEmbedderPolicy: false
+    })
+  );
+
+  // Payload Compression (Gzip/Brotli)
+  app.use(compression());
 
   // Increase body size limits for large map data
   app.use(json({ limit: '10mb' }));

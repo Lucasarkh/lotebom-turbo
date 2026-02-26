@@ -98,6 +98,14 @@ export class UpdateProjectDto {
   youtubeVideoUrl?: string;
 
   @ApiPropertyOptional({
+    description: 'Tempo de expiração da reserva em horas',
+    example: 24
+  })
+  @IsOptional()
+  @IsNumber()
+  reservationExpiryHours?: number;
+
+  @ApiPropertyOptional({
     description: 'Acompanhamento de status da obra [{label, percentage}]'
   })
   @IsOptional()

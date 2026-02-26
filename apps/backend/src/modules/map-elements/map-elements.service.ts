@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { BulkMapElementsDto, MapElementDto } from './dto/map-element.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class MapElementsService {
@@ -46,7 +47,6 @@ export class MapElementsService {
         .map((el) => el.id as string);
 
       // 1. Delete elements that are no longer present in the payload
-      // Careful: this might delete LotDetails, leads, etc via Cascade.
       await tx.mapElement.deleteMany({
         where: {
           tenantId,
@@ -55,60 +55,59 @@ export class MapElementsService {
         }
       });
 
-      const results: any[] = [];
+      const toUpdate = dto.elements.filter((el) => el.id);
+      const toCreate = dto.elements.filter((el) => !el.id).map(el => ({ ...el, id: uuidv4() })); // Generate ID for convenience
 
-      for (const el of dto.elements) {
-        let element: any;
-        if (el.id) {
-          // Update existing
-          element = await tx.mapElement.upsert({
-            where: { id: el.id },
-            update: {
-              type: el.type,
-              name: el.name,
-              code: el.code,
-              geometryType: el.geometryType,
-              geometryJson: el.geometryJson,
-              styleJson: el.styleJson ?? undefined,
-              metaJson: el.metaJson ?? undefined
-            },
-            create: {
-              id: el.id,
-              tenantId,
-              projectId,
-              type: el.type,
-              name: el.name,
-              code: el.code,
-              geometryType: el.geometryType,
-              geometryJson: el.geometryJson,
-              styleJson: el.styleJson,
-              metaJson: el.metaJson
-            }
-          });
-        } else {
-          // Create new (no id provided)
-          element = await tx.mapElement.create({
-            data: {
-              tenantId,
-              projectId,
-              type: el.type,
-              name: el.name,
-              code: el.code,
-              geometryType: el.geometryType,
-              geometryJson: el.geometryJson,
-              styleJson: el.styleJson,
-              metaJson: el.metaJson
-            }
-          });
-        }
+      // 2. Perform updates in parallel (limited chunks if necessary, but here we can use Promise.all)
+      const updatePromises = toUpdate.map((el) => 
+        tx.mapElement.update({
+          where: { id: el.id },
+          data: {
+            type: el.type,
+            name: el.name,
+            code: el.code,
+            geometryType: el.geometryType,
+            geometryJson: el.geometryJson,
+            styleJson: el.styleJson ?? undefined,
+            metaJson: el.metaJson ?? undefined
+          }
+        })
+      );
 
-        // 2. Synchronize LotDetails for LOT elements
-        if (element.type === 'LOT') {
-          const lotMeta = element.metaJson || {};
-          await tx.lotDetails.upsert({
-            where: { mapElementId: element.id },
+      // 3. Perform creates in one go (Note: createMany is faster)
+      const createPromise = tx.mapElement.createMany({
+        data: toCreate.map(el => ({
+          id: el.id,
+          tenantId,
+          projectId,
+          type: el.type,
+          name: el.name,
+          code: el.code,
+          geometryType: el.geometryType,
+          geometryJson: el.geometryJson,
+          styleJson: el.styleJson,
+          metaJson: el.metaJson
+        }))
+      });
+
+      const [updatedElements] = await Promise.all([
+        Promise.all(updatePromises),
+        createPromise
+      ]);
+
+      // All elements for LOT details sync
+      const allElements = [...toUpdate, ...toCreate];
+      const lotsToSync = allElements.filter(el => el.type === 'LOT');
+
+      // 4. Batch LotDetails upserts
+      // To keep it clean and fairly fast, we also Promise.all these
+      const lotPromises = lotsToSync.map(element => {
+          const lotMeta = (element.metaJson as any) || {};
+          const mapElementId = element.id!; // We are sure id exists as we update/create it above
+          
+          return tx.lotDetails.upsert({
+            where: { mapElementId },
             update: {
-              // Only update fields from metaJson if they exist
               areaM2: lotMeta.areaM2 || lotMeta.area || undefined,
               frontage: lotMeta.frontage || undefined,
               price: lotMeta.price || undefined
@@ -116,18 +115,24 @@ export class MapElementsService {
             create: {
               tenantId,
               projectId,
-              mapElementId: element.id,
+              mapElementId,
               status: 'AVAILABLE',
               areaM2: lotMeta.areaM2 || lotMeta.area || null,
               frontage: lotMeta.frontage || null,
               price: lotMeta.price || null
             }
           });
-        }
-        results.push(element);
-      }
+      });
 
-      return results;
+      await Promise.all(lotPromises);
+
+      // Return a full list for frontend acknowledgment (optional, but consistent with return type)
+      return tx.mapElement.findMany({
+        where: { tenantId, projectId },
+        include: { lotDetails: true }
+      });
+    }, {
+      timeout: 30000 // Increase timeout for massive map saves
     });
   }
 

@@ -1,5 +1,9 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from '@modules/auth/auth.module';
 import { UserModule } from '@modules/user/user.module';
 import { ProjectsModule } from '@modules/projects/projects.module';
@@ -16,6 +20,7 @@ import { TenantsModule } from '@modules/tenants/tenants.module';
 import { PaymentModule } from '@modules/payment/payment.module';
 import { AiModule } from '@modules/ai/ai.module';
 import { DbModule } from '@infra/db/db.module';
+import { RedisModule } from '@infra/redis/redis.module';
 import { SystemSettingsModule } from '@modules/system-settings/system-settings.module';
 import { RabbitMqModule } from '@infra/rabbitmq/rabbitmq.module';
 import { SendPulseModule } from '@infra/sendpulse/sendpulse.module';
@@ -27,7 +32,24 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     ConfigModule.forRoot({
       isGlobal: true
     }),
+    ScheduleModule.forRoot(),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: 60000,
+            limit: 120
+          }
+        ],
+        storage: new ThrottlerStorageRedisService(
+          config.get<string>('REDIS_URL') || 'redis://localhost:6379'
+        )
+      })
+    }),
     DbModule,
+    RedisModule,
     RabbitMqModule,
     SendPulseModule,
     EmailQueueModule,
@@ -49,7 +71,12 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     SystemSettingsModule
   ],
   controllers: [],
-  providers: []
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard
+    }
+  ]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

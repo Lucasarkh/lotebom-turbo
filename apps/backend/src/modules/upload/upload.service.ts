@@ -139,6 +139,14 @@ export class UploadService {
     });
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
+    // Restrict folders to known areas
+    const allowedFolders = ['banner', 'media', 'plant-map', 'panorama', 'lots'];
+    const baseFolder = folder.split('/')[0];
+    if (!allowedFolders.includes(baseFolder)) {
+      throw new BadRequestException('Pasta de destino não permitida.');
+    }
+
+    // Direct folder construction to avoid arbitrary placement
     const key = this.s3.buildKey(
       tenantId,
       `projects/${projectId}/${folder}`,

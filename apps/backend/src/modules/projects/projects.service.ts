@@ -1,7 +1,8 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException
+  ConflictException,
+  Inject
 } from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -12,7 +13,10 @@ import { PaginatedResponse } from '@common/dto/paginated-response.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject('REDIS_SERVICE') private redis: any
+  ) {}
 
   async create(tenantId: string, dto: CreateProjectDto, user?: User) {
     const existing = await this.prisma.project.findUnique({
@@ -39,7 +43,8 @@ export class ProjectsService {
         name: dto.name,
         slug: dto.slug.toLowerCase().replace(/\s+/g, '-'),
         description: dto.description,
-        customDomain: dto.customDomain
+        customDomain: dto.customDomain,
+        reservationExpiryHours: dto.reservationExpiryHours ?? 24
       }
     });
   }
@@ -106,6 +111,11 @@ export class ProjectsService {
   }
 
   async findBySlug(projectSlug: string) {
+    // 1. Check Redis cache first
+    const cacheKey = `project_public:${projectSlug}`;
+    const cached = await this.redis?.get(cacheKey);
+    if (cached) return cached;
+
     const project = await this.prisma.project.findFirst({
       where: {
         slug: projectSlug,
@@ -116,7 +126,15 @@ export class ProjectsService {
         mapElements: {
           include: {
             lotDetails: {
-              include: { medias: true }
+              select: {
+                id: true,
+                status: true,
+                price: true,
+                areaM2: true,
+                frontage: true,
+                slope: true,
+                updatedAt: true
+              }
             }
           },
           orderBy: { createdAt: 'asc' }
@@ -131,11 +149,25 @@ export class ProjectsService {
             isActive: true,
             provider: true
           }
+        },
+        plantMap: true,
+        panoramas: {
+          where: { published: true },
+          select: {
+            id: true,
+            title: true
+          }
         }
       }
     });
+
     if (!project)
       throw new NotFoundException('Projeto não encontrado ou não publicado.');
+
+    // 2. Save to Redis (short TTL: 2 minutes for public info)
+    if (this.redis) {
+      await this.redis.set(cacheKey, project, 120);
+    }
 
     return project;
   }
@@ -214,6 +246,9 @@ export class ProjectsService {
         }),
         ...(dto.allowIntermediary !== undefined && {
           allowIntermediary: dto.allowIntermediary
+        }),
+        ...(dto.reservationExpiryHours !== undefined && {
+            reservationExpiryHours: dto.reservationExpiryHours
         }),
         ...(dto.financingDisclaimer !== undefined && {
           financingDisclaimer: dto.financingDisclaimer

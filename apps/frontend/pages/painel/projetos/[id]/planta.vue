@@ -1,15 +1,15 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="page-header" style="align-items: center; border-bottom: 1px solid var(--gray-100); padding-bottom: var(--space-6); margin-bottom: var(--space-6);">
+    <div class="page-header" style="border-bottom: 1px solid var(--gray-100); padding-bottom: var(--space-6); margin-bottom: var(--space-6);">
       <div style="flex: 1;">
-        <div class="flex items-center gap-2" style="margin-bottom: var(--space-2);">
-          <NuxtLink :to="`/painel/projetos/${projectId}`" class="btn btn-ghost btn-sm" style="padding-left: 0;">
-            &larr; {{ projectName || 'Projeto' }}
+        <div class="flex items-center gap-2" style="margin-bottom: var(--space-1);">
+          <NuxtLink :to="`/painel/projetos/${projectId}`" class="btn btn-ghost btn-sm" style="padding-left: 0; color: var(--gray-500);">
+            ← {{ projectName || 'Projeto' }}
           </NuxtLink>
         </div>
-        <h1 style="margin: 0; font-size: 1.4rem;">🗺️ Planta Interativa</h1>
-        <p style="margin: 0; color: var(--gray-500);">Gerencie a planta do loteamento com hotspots interativos.</p>
+        <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">🗺️ Planta Interativa</h1>
+        <p style="margin: 0; color: var(--gray-500); font-weight: 500;">Gerencie a planta do loteamento com hotspots interativos.</p>
       </div>
 
       <div class="flex items-center gap-2">
@@ -17,10 +17,11 @@
           v-if="projectSlug"
           :href="`/${projectSlug}#planta`"
           target="_blank"
-          class="btn btn-sm btn-outline"
-          style="border-radius: 64px; padding-left: 16px; padding-right: 16px;"
+          class="btn btn-sm btn-primary"
+          style="border-radius: var(--radius-full); padding-left: var(--space-5); padding-right: var(--space-5); height: 38px;"
         >
-          🌐 Ver página pública
+          <span style="font-size: 1rem;">🌐</span>
+          <span>Ver página pública</span>
         </a>
       </div>
     </div>

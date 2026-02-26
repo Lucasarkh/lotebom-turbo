@@ -21,4 +21,8 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   customDomain?: string;
+
+  @ApiPropertyOptional({ example: 24, description: 'Tempo de expiração da reserva em horas' })
+  @IsOptional()
+  reservationExpiryHours?: number;
 }

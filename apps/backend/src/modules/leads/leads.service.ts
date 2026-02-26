@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Logger
+} from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '@infra/db/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -14,7 +21,81 @@ import {
 
 @Injectable()
 export class LeadsService {
+  private readonly logger = new Logger(LeadsService.name);
   constructor(private readonly prisma: PrismaService) {}
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async cleanupExpiredReservations() {
+    this.logger.log('Iniciando limpeza de reservas expiradas...');
+    
+    // Buscar todos os leads em reserva que tenham data de reserva
+    const activeReservations = await this.prisma.lead.findMany({
+      where: {
+        status: 'RESERVATION',
+        reservedAt: { not: null },
+        project: { reservationExpiryHours: { gt: 0 } }
+      },
+      include: {
+        project: true
+      }
+    });
+
+    const now = new Date();
+    let expiredCount = 0;
+
+    for (const lead of activeReservations) {
+      if (!lead.reservedAt) continue;
+      
+      const expiryHours = lead.project.reservationExpiryHours || 24;
+      const expiryDate = new Date(lead.reservedAt.getTime() + expiryHours * 60 * 60 * 1000);
+
+      if (now > expiryDate) {
+        this.logger.log(`Expirando reserva do lead ${lead.id} do projeto ${lead.project.name}`);
+        
+        await this.prisma.$transaction(async (tx) => {
+          // 1. Atualizar status do Lead
+          await tx.lead.update({
+            where: { id: lead.id },
+            data: {
+              status: 'ABANDONED',
+              reservedAt: null,
+              history: {
+                create: {
+                  fromStatus: 'RESERVATION',
+                  toStatus: 'ABANDONED',
+                  notes: `Reserva expirada automaticamente após ${expiryHours}h`,
+                  createdBy: 'SYSTEM_CRON'
+                }
+              }
+            }
+          });
+
+          // 2. Liberar lote se não houver outra reserva ativa (segurança)
+          if (lead.mapElementId) {
+            const othersCount = await tx.lead.count({
+              where: {
+                mapElementId: lead.mapElementId,
+                status: { in: ['RESERVATION', 'WON'] },
+                id: { not: lead.id }
+              }
+            });
+
+            if (othersCount === 0) {
+              await tx.lotDetails.update({
+                where: { mapElementId: lead.mapElementId },
+                data: { status: 'AVAILABLE' }
+              });
+            }
+          }
+        });
+        expiredCount++;
+      }
+    }
+
+    if (expiredCount > 0) {
+      this.logger.log(`Limpeza concluída. ${expiredCount} reservas expiradas.`);
+    }
+  }
 
   /** Public – anyone can create a lead for a published project */
   async createPublic(projectSlug: string, dto: CreateLeadDto) {
@@ -166,25 +247,76 @@ export class LeadsService {
 
     const { realtorCode, mapElementId, sessionId, projectId, ...data } = dto;
 
-    const lead = await this.prisma.lead.create({
-      data: {
-        ...data,
-        tenantId,
-        projectId,
-        realtorLinkId,
-        source: user.role === 'CORRETOR' ? 'corretor_manual' : 'loteadora_manual',
-        status: dto.status || 'NEW',
-        history: {
-          create: {
-            toStatus: dto.status || 'NEW',
-            notes: 'Lead criado manualmente',
-            createdBy: user.name || user.id
+    return this.prisma.$transaction(async (tx) => {
+      // Check lot availability if setting WON/RESERVATION status
+      if (
+        mapElementId &&
+        (dto.status === 'WON' || dto.status === 'RESERVATION')
+      ) {
+        const lot = await tx.lotDetails.findUnique({
+          where: { mapElementId }
+        });
+        
+        if (lot) {
+          if (dto.status === 'WON' && lot.status === 'SOLD') {
+            throw new BadRequestException('O lote já foi vendido.');
+          }
+
+          if (dto.status === 'RESERVATION') {
+            if (lot.status !== 'AVAILABLE') {
+              // Even if it is RESERVED, it might be for another lead. 
+              // We only allow reservation if it's AVAILABLE.
+              throw new BadRequestException('O lote não está disponível para reserva.');
+            }
+
+            // Check if there's any other lead that is currently reserving this lot
+            const activeLead = await tx.lead.findFirst({
+              where: {
+                mapElementId,
+                status: { in: ['RESERVATION', 'WON'] }
+              }
+            });
+            if (activeLead) {
+              throw new BadRequestException('Já existe uma reserva ativa para este lote.');
+            }
           }
         }
       }
-    });
 
-    return lead;
+      const lead = await tx.lead.create({
+        data: {
+          ...data,
+          tenantId,
+          projectId,
+          mapElementId,
+          realtorLinkId,
+          source: user.role === 'CORRETOR' ? 'corretor_manual' : 'loteadora_manual',
+          status: dto.status || 'NEW',
+          reservedAt: dto.status === 'RESERVATION' ? new Date() : null,
+          history: {
+            create: {
+              toStatus: dto.status || 'NEW',
+              notes: 'Lead criado manualmente',
+              createdBy: user.name || user.id
+            }
+          }
+        }
+      });
+
+      // Sync status if WON or RESERVATION
+      if (
+        mapElementId &&
+        (dto.status === 'WON' || dto.status === 'RESERVATION')
+      ) {
+        const newStatus = dto.status === 'WON' ? 'SOLD' : 'RESERVED';
+        await tx.lotDetails.update({
+          where: { mapElementId },
+          data: { status: newStatus as any }
+        });
+      }
+
+      return lead;
+    });
   }
 
   /** Panel – list leads with optional filters */
@@ -339,20 +471,89 @@ export class LeadsService {
       }
     }
 
-    return this.prisma.lead.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        lastContactAt: new Date(),
-        history: {
-          create: {
-            fromStatus: lead.status,
-            toStatus: dto.status,
-            notes: dto.notes,
-            createdBy: user.name || user.id
+    return this.prisma.$transaction(async (tx) => {
+      const updatedLead = await tx.lead.update({
+        where: { id },
+        data: {
+          status: dto.status,
+          lastContactAt: new Date(),
+          reservedAt: dto.status === 'RESERVATION' ? new Date() : (dto.status === 'WON' ? undefined : null),
+          history: {
+            create: {
+              fromStatus: lead.status,
+              toStatus: dto.status,
+              notes: dto.notes,
+              createdBy: user.name || user.id
+            }
+          }
+        }
+      });
+
+      // Synchronize Lot status
+      if (lead.mapElementId) {
+        const lot = await tx.lotDetails.findUnique({
+          where: { mapElementId: lead.mapElementId }
+        });
+
+        if (lot) {
+          if (dto.status === 'RESERVATION') {
+            // Se já estava reservado por este lead, permitimos renovar a reserva (reservedAt atualiza no update do lead)
+            // Se estava disponível, reservamos.
+            if (lot.status !== 'AVAILABLE' && lot.status !== 'RESERVED') {
+              throw new BadRequestException('O lote não está disponível para reserva.');
+            }
+            
+            // Check if there's any other lead that is currently reserving this lot
+            const activeLead = await tx.lead.findFirst({
+              where: {
+                mapElementId: lead.mapElementId,
+                status: { in: ['RESERVATION', 'WON'] },
+                id: { not: lead.id }
+              }
+            });
+            if (activeLead) {
+              throw new BadRequestException('O lote já está reservado para outro cliente.');
+            }
+
+            if (lot.status === 'AVAILABLE') {
+              await tx.lotDetails.update({ where: { id: lot.id }, data: { status: 'RESERVED' } });
+            }
+          } else if (dto.status === 'WON') {
+            if (lot.status === 'SOLD') {
+              throw new BadRequestException('O lote já foi vendido.');
+            }
+            // Check if someone else owns it in reservation
+            const otherReserver = await tx.lead.findFirst({
+                where: {
+                    mapElementId: lead.mapElementId,
+                    status: 'RESERVATION',
+                    id: { not: lead.id }
+                }
+            });
+            if (otherReserver) {
+                // Se o dono for outro, não permitimos vender
+                throw new BadRequestException('O lote está reservado por outro corretor.');
+            }
+
+            await tx.lotDetails.update({ where: { id: lot.id }, data: { status: 'SOLD' } });
+          } else if (
+            ['CANCELLED', 'LOST', 'ABANDONED', 'REVERSED'].includes(dto.status)
+          ) {
+            const othersCount = await tx.lead.count({
+              where: {
+                mapElementId: lead.mapElementId,
+                status: { in: ['RESERVATION', 'WON'] },
+                id: { not: lead.id }
+              }
+            });
+            if (othersCount === 0) {
+              await tx.lotDetails.update({ where: { id: lot.id }, data: { status: 'AVAILABLE' } });
+            }
           }
         }
       }
+
+      return updatedLead;
     });
   }
 

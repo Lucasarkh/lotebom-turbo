@@ -45,8 +45,14 @@ export class S3Service {
    * Pattern: tenants/{tenantId}/{folder}/{uuid}.{ext}
    */
   buildKey(tenantId: string, folder: string, originalName: string): string {
-    const ext = originalName.split('.').pop() ?? 'bin';
-    return `tenants/${tenantId}/${folder}/${uuid()}.${ext}`;
+    // Sanitize folder to prevent path traversal
+    const sanitizedFolder = folder
+      .replace(/\.\./g, '') // Remove ..
+      .replace(/[^\w\-/]/g, '-') // Allow only alphanumeric, dashes, and slashes
+      .replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
+
+    const ext = originalName.split('.').pop()?.replace(/[^\w]/g, '') ?? 'bin';
+    return `tenants/${tenantId}/${sanitizedFolder}/${uuid()}.${ext}`;
   }
 
   // ── upload ───────────────────────────────────────────────

@@ -55,7 +55,9 @@ export class PaymentService {
     const lead = await this.prisma.lead.findUnique({
       where: { id: leadId },
       include: {
-        mapElement: true,
+        mapElement: {
+          include: { lotDetails: true }
+        },
         project: {
           include: {
             paymentGateways: {
@@ -68,6 +70,13 @@ export class PaymentService {
 
     if (!lead || !lead.project) {
       throw new NotFoundException('Lead or Project not found');
+    }
+
+    // 0. Check Lot availability
+    if (lead.mapElement?.lotDetails) {
+      if (lead.mapElement.lotDetails.status !== 'AVAILABLE') {
+        throw new BadRequestException('Este lote não está disponível para reserva.');
+      }
     }
 
     const gateways = lead.project.paymentGateways;
@@ -219,15 +228,53 @@ export class PaymentService {
       // 2. Mark Lead as RESERVATION
       await tx.lead.update({
         where: { id: payment.leadId },
-        data: { status: 'RESERVATION' },
+        data: { 
+          status: 'RESERVATION',
+          reservedAt: new Date(), // Set reservation time when payment is confirmed
+        },
       });
 
       // 3. Update Lot status to RESERVED if applicable
       if (payment.lead.mapElementId && payment.lead.mapElement?.lotDetails) {
-        await tx.lotDetails.update({
+        // Double-check availability inside transaction to prevent race conditions
+        const currentLot = await tx.lotDetails.findUnique({
           where: { id: payment.lead.mapElement.lotDetails.id },
-          data: { status: 'RESERVED' },
         });
+
+        if (currentLot && currentLot.status === 'AVAILABLE') {
+          // Check if there's any other lead that somehow reserved it (race condition during webhook)
+          const otherActiveLead = await tx.lead.findFirst({
+            where: {
+              mapElementId: payment.lead.mapElementId,
+              status: { in: ['RESERVATION', 'WON'] },
+              id: { not: payment.leadId }
+            }
+          });
+
+          if (!otherActiveLead) {
+            await tx.lotDetails.update({
+              where: { id: currentLot.id },
+              data: { status: 'RESERVED' },
+            });
+          } else {
+             this.logger.error(
+                `CONFLITO: Lote ${payment.lead.mapElementId} pago pelo lead ${payment.leadId}, mas já está reservado por outro lead (${otherActiveLead.id}).`
+             );
+             // In this case, we might need a manual intervention or a refund logic, but for now we block the update to lot status.
+          }
+        } else if (currentLot?.status === 'RESERVED') {
+            // Check if it's already reserved for THIS lead
+             const activeLead = await tx.lead.findFirst({
+                where: {
+                    mapElementId: payment.lead.mapElementId,
+                    status: { in: ['RESERVATION', 'WON'] },
+                    id: { not: payment.leadId }
+                }
+            });
+            if (activeLead) {
+                 this.logger.error(`CONFLITO: Lote ${payment.lead.mapElementId} pago, mas já ocupado.`);
+            }
+        }
       }
 
       // 4. Create History

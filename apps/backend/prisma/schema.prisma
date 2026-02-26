@@ -193,6 +193,7 @@ model Project {
   constructionStatus Json?
   reservationFeeType    ReservationFeeType @default(FIXED)
   reservationFeeValue   Decimal            @default(500) @db.Decimal(12, 2)
+  reservationExpiryHours Int               @default(24)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -212,6 +213,7 @@ model Project {
   aiConfig         AiConfig?     @relation(fields: [aiConfigId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
+  @@index([slug])
 }
 
 model MapElement {
@@ -319,6 +321,7 @@ model Lead {
   source        String?
   status        LeadStatus @default(NEW)
   lastContactAt DateTime?
+  reservedAt    DateTime?
   notes         String?    @db.Text
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -597,6 +600,7 @@ model TrackingSession {
 
   @@index([tenantId, projectId])
   @@index([projectId, lastSeenAt])
+  @@index([tenantId, createdAt])
   @@index([createdAt])
   @@index([lastSeenAt])
 }
@@ -617,6 +621,7 @@ model TrackingEvent {
   @@index([sessionId, timestamp])
   @@index([type, category, timestamp])
   @@index([timestamp])
+  @@index([type, timestamp])
 }
 
 model Campaign {

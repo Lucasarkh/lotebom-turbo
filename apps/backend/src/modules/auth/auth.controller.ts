@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { LogoutDto } from './dto/logout.dto';
@@ -30,12 +31,14 @@ export class AuthController {
   }
 
   @Post('register-tenant')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // Somente 3 registros por minuto por IP
   @ApiOperation({ summary: 'Registrar nova loteadora (tenant + admin)' })
   async registerTenant(@Body() dto: RegisterTenantDto) {
     return this.authService.registerTenant(dto);
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // Limite estrito de login para evitar brute-force
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login de usuário' })
   async login(@Body() loginDto: LoginDto) {

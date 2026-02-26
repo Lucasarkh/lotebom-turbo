@@ -8,71 +8,82 @@
     </div>
 
     <template v-else-if="project">
-      <div class="page-header" style="align-items: center; border-bottom: 1px solid var(--gray-100); padding-bottom: var(--space-6); margin-bottom: var(--space-8);">
+      <div class="page-header" style="border-bottom: 1px solid var(--gray-100); padding-bottom: var(--space-6); margin-bottom: var(--space-8);">
         <div style="flex: 1;">
-          <div class="flex items-center gap-2" style="margin-bottom: var(--space-2);">
-            <NuxtLink to="/painel/projetos" class="btn btn-ghost btn-sm" style="padding-left: 0;">&larr; Projetos</NuxtLink>
-            <div style="width: 1px; height: 12px; background: var(--gray-300);"></div>
-            <span class="badge" :class="project.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'" style="font-size: 0.65rem; padding: 2px 8px; text-transform: uppercase;">
+          <div class="flex items-center gap-2" style="margin-bottom: var(--space-1);">
+            <NuxtLink to="/painel/projetos" class="btn btn-ghost btn-sm" style="padding-left: 0; color: var(--gray-500);">← Projetos</NuxtLink>
+            <div style="width: 1px; height: 10px; background: var(--gray-200);"></div>
+            <span class="badge" :class="project.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'" style="font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase;">
               {{ project.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
             </span>
           </div>
-          <h1 style="margin: 0; font-size: 1.5rem;">{{ project.name }}</h1>
-          <p style="margin: 0; color: var(--gray-500);">{{ project.description || 'Sem descrição' }}</p>
+          <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">{{ project.name }}</h1>
+          <p style="margin: 0; color: var(--gray-500); font-weight: 500;">{{ project.description || 'Sem descrição' }}</p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4">
           <a
             v-if="project.status === 'PUBLISHED'"
             :href="`/${project.slug}`"
             target="_blank"
-            class="btn btn-sm btn-outline"
-            style="display: flex; align-items: center; gap: 8px; border-radius: 64px; padding-left: 16px; padding-right: 16px; border-color: var(--primary-50); background: var(--primary-light); color: var(--primary);"
+            class="btn btn-sm btn-primary"
+            style="border-radius: var(--radius-full); padding-left: var(--space-5); padding-right: var(--space-5); height: 38px;"
           >
             <span style="font-size: 1rem;">🌐</span>
-            <span style="font-weight: 600;">Ver Página Pública</span>
+            <span>Ver Página Pública</span>
           </a>
 
-          <div style="width: 1px; height: 32px; background: var(--gray-200); margin: 0 var(--space-1);"></div>
+          <div style="width: 1px; height: 24px; background: var(--gray-200);"></div>
 
           <div class="flex items-center gap-2">
             <button 
               v-if="authStore.canEdit" 
               class="btn btn-sm" 
               :class="project.status === 'PUBLISHED' ? 'btn-secondary' : 'btn-success'" 
-              style="font-weight: 600; border-radius: 64px; padding-left: 20px; padding-right: 20px; height: 38px;"
+              style="border-radius: var(--radius-full); padding-left: var(--space-5); padding-right: var(--space-5); height: 38px;"
               @click="togglePublish"
             >
-              {{ project.status === 'PUBLISHED' ? '⏸️ Parar Publicação' : '📡 Publicar Agora' }}
+              <span>{{ project.status === 'PUBLISHED' ? '⏸️ Parar Publicação' : '📡 Publicar Agora' }}</span>
             </button>
             
             <button 
               v-if="authStore.canEdit" 
-              class="btn btn-sm" 
-              style="color: var(--danger); background: var(--danger-light); font-weight: 600; border-radius: 64px; padding-left: 16px; padding-right: 16px; border: 1px solid transparent;"
-              @mouseenter="($event.target as any).style.borderColor = 'var(--danger)'"
-              @mouseleave="($event.target as any).style.borderColor = 'transparent'"
+              class="btn btn-sm btn-danger" 
+              style="border-radius: var(--radius-full); padding-left: var(--space-4); padding-right: var(--space-4); height: 38px;"
               @click="confirmDelete"
             >
-              🗑️ Excluir
+              <span>🗑️ Excluir</span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Tabs -->
-      <div class="filter-bar" style="display: flex; align-items: center; gap: 4px;">
-        <button v-for="t in tabs" :key="t.key" class="filter-btn" :class="{ active: activeTab === t.key }" @click="activeTab = t.key">
-          {{ t.label }}
-        </button>
-        <!-- Planta Interativa — main visual tool -->
-        <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="filter-btn active" style="text-decoration: none; background: var(--primary); color: white;">
-          🗺️ Planta Interativa
-        </NuxtLink>
-        <!-- Panorama 360° -->
-        <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="filter-btn" style="text-decoration: none; background: var(--gray-700); color: white;">
-          🌄 Panorama 360°
-        </NuxtLink>
+      <!-- Tabs / Navigation -->
+      <div class="flex items-center justify-between gap-4" style="margin-bottom: var(--space-8);">
+        <div class="filter-bar">
+          <button 
+            v-for="t in tabs" 
+            :key="t.key" 
+            class="filter-btn" 
+            :class="{ active: activeTab === t.key }" 
+            @click="activeTab = t.key"
+          >
+            {{ t.label }}
+          </button>
+        </div>
+
+        <div style="width: 1px; height: 24px; background: var(--gray-200); align-self: center;"></div>
+
+        <div class="filter-bar" style="background: var(--gray-200);">
+          <!-- Planta Interativa — main visual tool -->
+          <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="filter-btn filter-btn-primary active" style="text-decoration: none;">
+            🗺️ Planta Interativa
+          </NuxtLink>
+          <!-- Panorama 360° -->
+          <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="filter-btn filter-btn-dark active" style="text-decoration: none;">
+            🌄 Panorama 360°
+          </NuxtLink>
+        </div>
       </div>
 
       <!-- Tab: Configurações -->
@@ -178,6 +189,14 @@
                 <small v-if="editForm.reservationFeeType === 'PERCENTAGE'" style="color: var(--gray-500); font-size: 0.75rem;">
                   Ex: 0.5 = 0,5% do valor total do lote.
                 </small>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6" style="margin-top: 16px;">
+              <div class="form-group">
+                <label class="form-label">Tempo de Expiração da Reserva (Horas)</label>
+                <input v-model.number="editForm.reservationExpiryHours" type="number" class="form-input" placeholder="Ex: 24" />
+                <small class="text-muted">Tempo que o lote ficará reservado aguardando confirmação (manual ou pagamento). Padrão: 24h.</small>
               </div>
             </div>
             
@@ -1165,6 +1184,7 @@ const editForm = ref({
   customDomain: '',
   reservationFeeType: 'FIXED',
   reservationFeeValue: 500,
+  reservationExpiryHours: 24,
   minDownPaymentPercent: 10,
   minDownPaymentValue: 0,
   monthlyInterestRate: 0.9,
@@ -1461,12 +1481,12 @@ const loadAiConfigs = async () => {
 
 // ── Tabs ─────────────────────────────────────────────────
 const tabs = [
-  { key: 'lots', label: 'Lotes' },
-  { key: 'public', label: 'Pág. Pública' },
+  { key: 'lots', label: '📍 Lotes' },
+  { key: 'public', label: '📄 Pág. Pública' },
   { key: 'financing', label: '🧮 Simulação' },
   { key: 'payment', label: '💳 Pagamentos' },
   { key: 'ai', label: '🤖 Assistente IA' },
-  { key: 'settings', label: 'Configurações' },
+  { key: 'settings', label: '⚙️ Config' },
 ]
 
 const lotBadge = (s) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[s] || 'badge-neutral')
@@ -1513,6 +1533,7 @@ const loadProject = async () => {
       customDomain: p.customDomain || '',
       reservationFeeType: p.reservationFeeType || 'FIXED',
       reservationFeeValue: p.reservationFeeValue ?? 500,
+      reservationExpiryHours: p.reservationExpiryHours ?? 24,
       minDownPaymentPercent: p.minDownPaymentPercent ?? 10,
       minDownPaymentValue: p.minDownPaymentValue ?? 0,
       monthlyInterestRate: p.monthlyInterestRate ?? 0.9,

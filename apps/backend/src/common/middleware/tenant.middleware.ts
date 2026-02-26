@@ -14,17 +14,18 @@ import { PrismaService } from '@/infra/db/prisma.service';
  */
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
-  // Simple in-memory cache for domain resolution (performance)
-  private static domainCache = new Map<string, any>();
-  private static CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private static CACHE_TTL = 300; // 5 minutes in seconds for Redis
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject('REDIS_SERVICE') private redis: any
+  ) {}
 
   async use(req: any, res: Response, next: NextFunction) {
     if (req.method === 'OPTIONS') return next();
 
     let host = req.headers['host'] || '';
-    
+
     // In local development or via proxy, we might want to trust a custom header
     // or the Origin/Referer header to determine the "virtual" host being accessed.
     const origin = req.headers['origin'];
@@ -49,7 +50,8 @@ export class TenantMiddleware implements NestMiddleware {
     // Ignorar logs para caminhos de infraestrutura/documentação para reduzir ruído
     const ignoredPaths = ['/favicon.ico', '/docs', '/api/metrics', '/'];
     if (!ignoredPaths.some(p => req.path === p || req.path.startsWith('/docs'))) {
-        console.log(`[TenantMiddleware] Resolved host: "${host}" for path: ${req.path}`);
+        // Log sparingly in production, or use a proper logger
+        // console.log(`[TenantMiddleware] Resolved host: "${host}" for path: ${req.path}`);
     }
     
     // Main domain can be configured via Env, default to 'lotio.com.br'
@@ -58,9 +60,11 @@ export class TenantMiddleware implements NestMiddleware {
 
     // 1. Resolve from custom domain (highest priority)
     if (!isMainDomain && host) {
-      // Check cache first
-      const cached = TenantMiddleware.domainCache.get(host);
-      if (cached && (Date.now() - cached.timestamp) < TenantMiddleware.CACHE_TTL) {
+      // Check Redis cache first
+      const cacheKey = `domain_resolve:${host}`;
+      const cached = await this.redis.get(cacheKey);
+      
+      if (cached) {
           req.tenantId = cached.tenantId;
           req.projectId = cached.projectId;
           req.project = cached.project;
@@ -75,8 +79,8 @@ export class TenantMiddleware implements NestMiddleware {
 
       if (project) {
         if (!project.tenant.isActive) throw new NotFoundException('Tenant inativo.');
-        const data = { tenantId: project.tenantId, projectId: project.id, project, timestamp: Date.now() };
-        TenantMiddleware.domainCache.set(host, data);
+        const data = { tenantId: project.tenantId, projectId: project.id, project };
+        await this.redis.set(cacheKey, data, TenantMiddleware.CACHE_TTL);
         req.tenantId = data.tenantId;
         req.projectId = data.projectId;
         req.project = data.project;
@@ -90,10 +94,8 @@ export class TenantMiddleware implements NestMiddleware {
 
       if (tenant) {
         if (!tenant.isActive) throw new NotFoundException('Tenant inativo.');
-        const data = { tenantId: tenant.id, timestamp: Date.now() };
-        TenantMiddleware.domainCache.set(host, data);
-        req.tenantId = data.tenantId;
-        return next();
+        const data = { tenantId: tenant.id };
+        await this.redis.set(cacheKey, data, TenantMiddleware.CACHE_TTL);
       }
       
       // Domain not recognized
