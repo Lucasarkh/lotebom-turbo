@@ -19,6 +19,7 @@ import { CampaignsModule } from '@modules/campaigns/campaigns.module';
 import { TenantsModule } from '@modules/tenants/tenants.module';
 import { PaymentModule } from '@modules/payment/payment.module';
 import { AiModule } from '@modules/ai/ai.module';
+import { SchedulingModule } from '@modules/scheduling/scheduling.module';
 import { DbModule } from '@infra/db/db.module';
 import { RedisModule } from '@infra/redis/redis.module';
 import { SystemSettingsModule } from '@modules/system-settings/system-settings.module';
@@ -68,6 +69,7 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     CampaignsModule,
     PaymentModule,
     AiModule,
+    SchedulingModule,
     SystemSettingsModule
   ],
   controllers: [],

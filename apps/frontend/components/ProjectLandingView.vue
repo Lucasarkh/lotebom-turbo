@@ -24,6 +24,7 @@
         :has-lots="unifiedAvailableLots.length > 0"
         :has-gallery="!!project.projectMedias?.length"
         :has-location="!!project.googleMapsUrl || !!project.address"
+        :has-scheduling="schedulingConfig?.enabled"
       />
 
       <!-- Hero section -->
@@ -58,6 +59,7 @@
 
             <div class="v4-hero-actions">
               <a href="#planta" class="v4-btn-primary" @click="tracking.trackClick('Botão: Ver Planta Interativa')">Ver Planta Interativa</a>
+              <a v-if="schedulingConfig?.enabled" href="#agendamento" class="v4-btn-white" @click="tracking.trackClick('Botão: Agendar Visita')">Agendar Visita</a>
               <a href="#contato" class="v4-btn-white" @click="tracking.trackClick('Botão: Solicitar Informações')">Solicitar informações</a>
             </div>
           </div>
@@ -309,91 +311,124 @@
         </div>
       </section>
 
-      <!-- Lead form -->
-      <section class="v4-section v4-section-alt" id="contato">
+      <!-- Agendamento Section -->
+      <section v-if="project && schedulingConfig?.enabled" class="v4-section" id="agendamento" style="background: #1d1d1f; color: white;">
         <div class="v4-container">
-          <div class="v4-conversion-card">
-            <div class="v4-conversion-info">
-              <div class="v4-conversion-badge">
-                <span class="v4-pulse"></span>
-                Oportunidade única
-              </div>
-              <h2 class="v4-conversion-title">Garanta sua unidade agora</h2>
-              <p class="v4-conversion-desc">Restam poucas unidades disponíveis. Preencha o formulário e nossa equipe entrará em contato para tirar suas dúvidas e agendar uma visita.</p>
+          <div class="v4-schedule-row" style="align-items: center; justify-content: space-between; gap: 80px; padding: 60px 0;">
+            <div class="v4-schedule-info">
+              <h2 class="v4-section-title" style="color: white;">Ficou interessado?<br>Venha conhecer de perto.</h2>
+              <p class="v4-section-subtitle" style="color: #a1a1a6; max-width: 480px;">Nada supera a sensação de estar no local onde será construído o seu futuro. Agende uma visita guiada com nossos especialistas.</p>
               
-              <div v-if="lotElements.length" class="v4-available-badge">
-                <span style="font-size: 1.25rem;">✨</span> {{ availableLots }} lotes disponíveis no momento
-              </div>
-
-              <div v-if="corretor" class="v4-active-realtor">
-                <div class="v4-realtor-avatar">
-                  <img v-if="corretor.profileImageUrl" :src="corretor.profileImageUrl" :alt="corretor.name" />
-                  <span v-else class="v4-avatar-placeholder">{{ corretor.name[0] }}</span>
+              <div class="v4-perks" style="margin-top: 48px; border-left: 2px solid #333; padding-left: 32px;">
+                <div class="v4-perk-item">
+                  <div class="v4-perk-content">
+                    <strong style="color: white;">Atendimento VIP</strong>
+                    <p style="color: #86868b;">Horário exclusivo reservado para você tirar todas as dúvidas sem pressa.</p>
+                  </div>
                 </div>
-                <div class="v4-realtor-details">
-                  <span class="v4-realtor-label">Consultor Atendimento</span>
-                  <span class="v4-realtor-name">{{ corretor.name }}</span>
-                  <span v-if="corretor.creci" class="v4-realtor-creci">CRECI: {{ corretor.creci }}</span>
+                <div class="v4-perk-item" style="margin-top: 24px;">
+                  <div class="v4-perk-content">
+                    <strong style="color: white;">Consultoria Especializada</strong>
+                    <p style="color: #86868b;">Nossos consultores conhecem cada detalhe técnico do empreendimento.</p>
+                  </div>
                 </div>
               </div>
             </div>
+            
+            <div class="v4-schedule-cta" style="flex: 0 0 auto; text-align: center;">
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 50px; border-radius: 40px; backdrop-filter: blur(20px);">
+                <div style="font-size: 40px; margin-bottom: 24px;">📅</div>
+                <h3>Agendar agora</h3>
+                <p style="color: #86868b; margin-bottom: 32px; font-size: 15px;">Escolha o dia e horário de sua preferência.</p>
+                <button @click="showSchedulingModal = true" class="v4-btn-primary" style="padding: 16px 40px; font-size: 17px; background: white; color: black;">
+                  Ver disponibilidade
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <div class="v4-conversion-form-wrapper">
-              <div v-if="leadSuccess" class="v4-form-success">
-                <div class="v4-success-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:32px; height:32px">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
+      <!-- Modal de Agendamento (Overlay) -->
+      <div v-if="showSchedulingModal" class="v4-modal-overlay" @click.self="showSchedulingModal = false">
+        <div class="v4-modal-content" style="max-width: 600px; position: relative;">
+          <button @click="showSchedulingModal = false" class="v4-modal-close">×</button>
+          <LandingPublicSchedulingForm :project-slug="project.slug" @success="showSchedulingModal = false" />
+        </div>
+      </div>
+
+      <!-- Lead form -->
+      <section class="v4-section" id="contato" style="background: #fbfbfd; padding: 120px 0;">
+        <div class="v4-container">
+          <div class="v4-conversion-card-new">
+            <div class="v4-conversion-content">
+              <div class="v4-conversion-header-new">
+                <div class="v4-badge-clean">
+                  <span class="v4-pulse-blue"></span>
+                  Oportunidade única
                 </div>
-                <h3>Mensagem enviada!</h3>
-                <p>Recebemos seus dados e logo um consultor entrará em contato.</p>
-                <div style="margin-top: 32px;">
-                  <button @click="leadSuccess = false" class="v4-trust-btn v4-trust-btn--primary" style="padding: 12px 32px; border: none; cursor: pointer;">
-                    OK
-                  </button>
+                <h2 class="v4-title-display">Garanta sua unidade agora</h2>
+                <p class="v4-subtitle-clean">Restam poucas unidades disponíveis. Preencha o formulário e nossa equipe entrará em contato para tirar suas dúvidas.</p>
+                
+                <div v-if="lotElements.length" class="v4-lot-badge-minimal">
+                  <span class="v4-sparkle">✨</span> <strong>{{ availableLots }}</strong> lotes disponíveis no momento
                 </div>
               </div>
-              <form v-else class="v4-form" @submit.prevent="submitLead" ref="formRef">
-                <h3 class="v4-form-title">Preencha seus dados</h3>
-                
-                <div class="v4-form-grid">
-                  <div class="v4-form-group">
-                    <label>Seu nome completo *</label>
-                    <input v-model="leadForm.name" required placeholder="Ex: João Silva" />
+
+              <div class="v4-form-container-new">
+                <div v-if="leadSuccess" class="v4-form-success-new">
+                  <div class="v4-success-circle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
                   </div>
-                  <div class="v4-form-group">
-                    <label>Telefone / WhatsApp *</label>
-                    <input v-model="leadForm.phone" required placeholder="(00) 00000-0000" />
-                  </div>
+                  <h3>Solicitação enviada!</h3>
+                  <p>Recebemos seus dados e logo um consultor entrará em contato.</p>
+                  <button @click="leadSuccess = false" class="v4-btn-back">Voltar</button>
                 </div>
-
-                <div class="v4-form-group">
-                  <label>E-mail *</label>
-                  <input v-model="leadForm.email" type="email" required placeholder="seu@email.com" />
-                </div>
-
-                <div v-if="unifiedAvailableLots.length" class="v4-form-group">
-                  <label>Tenho interesse no lote</label>
-                  <select v-model="leadForm.mapElementId">
-                    <option value="">Não tenho preferência</option>
-                    <option v-for="lot in unifiedAvailableLots" :key="lot.id" :value="lot.id">
-                      {{ lot.code || lot.name || lot.id }} {{ lot.lotDetails?.areaM2 ? `— ${lot.lotDetails.areaM2} m²` : '' }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="v4-form-group">
-                  <label>Mensagem (opcional)</label>
-                  <textarea v-model="leadForm.message" rows="3" placeholder="Em que podemos te ajudar?"></textarea>
-                </div>
-
-                <div v-if="leadError" class="v4-form-error">{{ leadError }}</div>
                 
-                <button type="submit" class="v4-btn-submit" :disabled="submitting" @click="tracking.trackClick('Formulário: Submit')">
-                  {{ submitting ? 'Enviando...' : 'Falar com um consultor' }}
-                </button>
-                <p class="v4-form-privacy">Seus dados estão seguros conosco.</p>
-              </form>
+                <form v-else class="v4-form-modern" @submit.prevent="submitLead" ref="formRef">
+                  <div class="v4-form-cols">
+                    <div class="v4-input-group">
+                      <label>Seu nome completo *</label>
+                      <input v-model="leadForm.name" required placeholder="Ex: João Silva" />
+                    </div>
+                    <div class="v4-input-group">
+                      <label>Telefone / WhatsApp *</label>
+                      <input v-model="leadForm.phone" v-maska="'(##) #####-####'" required placeholder="(00) 00000-0000" />
+                    </div>
+                  </div>
+
+                  <div class="v4-input-group">
+                    <label>E-mail *</label>
+                    <input v-model="leadForm.email" type="email" required placeholder="seu@email.com" />
+                  </div>
+
+                  <div v-if="unifiedAvailableLots.length" class="v4-input-group">
+                    <label>Tenho interesse no lote</label>
+                    <div class="v4-select-wrapper">
+                      <select v-model="leadForm.mapElementId">
+                        <option value="">Não tenho preferência</option>
+                        <option v-for="lot in unifiedAvailableLots" :key="lot.id" :value="lot.id">
+                          {{ lot.code || lot.name || lot.id }} {{ lot.lotDetails?.areaM2 ? `— ${lot.lotDetails.areaM2} m²` : '' }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="v4-input-group">
+                    <label>Mensagem (opcional)</label>
+                    <textarea v-model="leadForm.message" rows="3" placeholder="Em que podemos te ajudar?"></textarea>
+                  </div>
+
+                  <div v-if="leadError" class="v4-form-error-msg">{{ leadError }}</div>
+                  
+                  <button type="submit" class="v4-btn-submit-modern" :disabled="submitting" @click="tracking.trackClick('Formulário: Submit')">
+                    {{ submitting ? 'Enviando...' : 'Falar com um consultor' }}
+                  </button>
+                  <p class="v4-privacy-legal">Seus dados estão seguros conosco.</p>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -541,12 +576,14 @@ const tracking = useTracking()
 const trackingStore = useTrackingStore()
 
 const loading = ref(true)
+const showSchedulingModal = ref(false)
 const error = ref('')
 const project = ref<any>(null)
 const corretor = ref<any>(null)
 const plantMap = ref<PlantMap | null>(null)
 const { getPublicPlantMap } = usePublicPlantMap()
 const panoramas = ref<Panorama[]>([])
+const schedulingConfig = ref<any>(null)
 const { getPublicPanoramas } = usePublicPanorama()
 
 const leadForm = ref({ name: '', email: '', phone: '', mapElementId: '', message: '' })
@@ -832,14 +869,18 @@ const lotPageUrl = (lot: any) => {
 
 onMounted(async () => {
   try {
-    const [p, c] = await Promise.allSettled([
+    const [p, c, s] = await Promise.allSettled([
       fetchPublic(`/p/${projectSlug.value}`),
       corretorCode ? fetchPublic(`/p/${projectSlug.value}/corretores/${corretorCode}`) : Promise.resolve(null),
+      fetchPublic(`/p/${projectSlug.value}/scheduling/config`).catch(() => null)
     ])
     if (p.status === 'fulfilled') {
       project.value = p.value
       chatStore.setProject(p.value)
       
+      if (s.status === 'fulfilled' && s.value) {
+        schedulingConfig.value = s.value
+      }
       // Initialize tracking handled by middleware
       useHead({
         title: `Loteamento ${p.value.name} — ${p.value.tenant?.name}`,
@@ -1048,7 +1089,12 @@ function openLightbox(idx: number) {
   font-weight: 700;
   color: #000;
 }
-
+.v4-schedule-cta h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #fff;
+}
 .v4-pulse {
   display: inline-block;
   width: 8px;
@@ -1886,77 +1932,190 @@ function openLightbox(idx: number) {
   .v4-lot-card-footer { display: none; }
 }
 
-/* Conversion Card */
-.v4-conversion-card {
-  background: #f5f5f7;
-  border-radius: 30px;
-  padding: 100px 60px;
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 60px;
-  align-items: center;
+/* Final Conversion Card Modern */
+.v4-conversion-card-new {
+  background: white;
+  border-radius: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.06);
+  border: 1px solid #d2d2d7;
+  overflow: hidden;
+}
+
+.v4-conversion-content {
+  display: flex;
+  min-height: 600px;
 }
 
 @media (max-width: 900px) {
-  .v4-conversion-card { grid-template-columns: 1fr; padding: 16px 4px; gap: 20px; }
+  .v4-conversion-content { flex-direction: column; }
+  .v4-conversion-card-new { border-radius: 24px; }
 }
 
-.v4-conversion-badge {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--v4-primary);
-  margin-bottom: 16px;
-  display: block;
-}
-
-.v4-conversion-title { font-size: 48px; font-weight: 600; line-height: 1.1; margin-bottom: 20px; color: #1d1d1f; letter-spacing: -0.01em; }
-.v4-conversion-desc { font-size: 21px; color: #86868b; margin-bottom: 40px; line-height: 1.4; }
-
-.v4-active-realtor {
-  margin-top: 48px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding-top: 40px;
-  border-top: 1px solid var(--v4-border);
-}
-
-.v4-realtor-avatar { 
-  width: 64px; 
-  height: 64px; 
-  border-radius: 50%; 
-  overflow: hidden; 
-  background: #f5f5f7; 
-  border: 1px solid var(--v4-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.v4-realtor-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.v4-realtor-details {
+.v4-conversion-header-new {
+  flex: 1;
+  background: #fbfbfd;
+  padding: 80px 60px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
-.v4-realtor-label {
-  font-size: 11px;
+.v4-form-container-new {
+  flex: 1.2;
+  padding: 80px 60px;
+}
+
+@media (max-width: 900px) {
+  .v4-conversion-header-new { padding: 48px 32px; }
+  .v4-form-container-new { padding: 48px 32px; }
+}
+
+.v4-badge-clean {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0071e3;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--v4-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
+  margin-bottom: 24px;
 }
 
-.v4-realtor-name { font-size: 21px; font-weight: 600; color: var(--v4-text); }
-.v4-realtor-creci { font-size: 14px; color: var(--v4-text-muted); display: block; margin-top: 2px; }
+.v4-pulse-blue {
+  width: 8px;
+  height: 8px;
+  background: #0071e3;
+  border-radius: 50%;
+  position: relative;
+}
+
+.v4-pulse-blue::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 2px solid #0071e3;
+  border-radius: 50%;
+  animation: v4-ping 1.5s infinite;
+}
+
+.v4-title-display {
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #1d1d1f;
+  margin-bottom: 20px;
+  letter-spacing: -0.02em;
+}
+
+.v4-subtitle-clean {
+  font-size: 19px;
+  line-height: 1.5;
+  color: #86868b;
+  margin-bottom: 40px;
+}
+
+.v4-lot-badge-minimal {
+  margin-top: auto;
+  background: white;
+  border: 1px solid #d2d2d7;
+  padding: 16px 24px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  color: #1d1d1f;
+}
+
+.v4-form-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.v4-form-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .v4-form-cols { grid-template-columns: 1fr; }
+}
+
+.v4-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.v4-input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #86868b;
+  margin-left: 2px;
+}
+
+.v4-input-group input, 
+.v4-input-group select, 
+.v4-input-group textarea {
+  width: 100%;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #d2d2d7;
+  border-radius: 12px;
+  font-size: 17px;
+  color: #1d1d1f;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.v4-input-group input:focus, 
+.v4-input-group select:focus, 
+.v4-input-group textarea:focus {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.08);
+}
+
+.v4-btn-submit-modern {
+  width: 100%;
+  background: #0071e3;
+  color: white;
+  border: none;
+  padding: 18px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+
+.v4-btn-submit-modern:hover { background: #0077ed; transform: translateY(-1px); }
+.v4-btn-submit-modern:active { transform: translateY(0); }
+
+.v4-privacy-legal {
+  text-align: center;
+  font-size: 13px;
+  color: #86868b;
+  margin-top: 16px;
+}
+
+.v4-form-error-msg {
+  background: #fff1f0;
+  color: #df1125;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.v4-form-success-new { text-align: center; padding: 40px 0; }
+.v4-success-circle { width: 64px; height: 64px; background: #e6f7ed; color: #008a32; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+.v4-success-circle svg { width: 32px; height: 32px; }
+.v4-btn-back { background: #f5f5f7; border: none; padding: 12px 32px; border-radius: 10px; cursor: pointer; margin-top: 24px; font-weight: 600; }
 
 /* Gallery */
 .v4-gallery-grid {
@@ -2209,5 +2368,102 @@ function openLightbox(idx: number) {
     transform: scale(1.4);
     opacity: 0;
   }
+}
+
+.v4-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.v4-modal-content {
+  background: white;
+  border-radius: 32px;
+  width: 100%;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+}
+
+.v4-modal-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.05);
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* Agendamento Section Styles */
+.v4-schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  margin-top: 40px;
+}
+
+@media (max-width: 992px) {
+  .v4-schedule-row {
+    flex-direction: column;
+    text-align: center;
+    gap: 32px;
+  }
+}
+
+.v4-schedule-info {
+  flex: 1;
+}
+
+.v4-schedule-card {
+  flex: 1;
+  width: 100%;
+  max-width: 500px;
+}
+
+.v4-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.v4-perk-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.v4-perk-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.v4-perk-icon--red { background: #fee2e2; color: #dc2626; }
+.v4-perk-icon--blue { background: #dbeafe; color: #2563eb; }
+
+.v4-perk-content strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.v4-perk-content p {
+  font-size: 14px;
+  color: #86868b;
+  margin: 0;
 }
 </style>

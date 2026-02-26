@@ -1,0 +1,429 @@
+<template>
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-content modal-md">
+      <div class="modal-header">
+        <h2>Configurações de Agendamento</h2>
+        <button class="close-btn" @click="$emit('close')">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div v-if="loading" class="loading-state">
+          <div class="spinner"></div>
+          <p>Sincronizando configurações...</p>
+        </div>
+        
+        <div v-else class="config-container">
+          <!-- Seção: Ativação -->
+          <section class="config-card toggle-card">
+            <div class="card-info">
+              <h3 class="card-title">Agendamentos Públicos</h3>
+              <p class="card-description">Habilite a reserva de horários diretamente pelos clientes no seu portal.</p>
+            </div>
+            <label class="modern-toggle">
+              <input v-model="config.enabled" type="checkbox">
+              <span class="toggle-track"></span>
+            </label>
+          </section>
+
+          <!-- Seção: Horários -->
+          <section class="config-section">
+            <header class="section-header">
+              <h4 class="section-title">Janela de Atendimento</h4>
+            </header>
+            
+            <div class="grid-fields duo">
+              <div class="field-group">
+                <label class="field-label">Início</label>
+                <div class="field-wrapper">
+                  <input v-model="config.startTime" type="time" class="base-input">
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Término</label>
+                <div class="field-wrapper">
+                  <input v-model="config.endTime" type="time" class="base-input">
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Seção: Regras -->
+          <section class="config-section">
+            <header class="section-header">
+              <h4 class="section-title">Regras de Reserva</h4>
+            </header>
+
+            <div class="grid-fields duo">
+              <div class="field-group">
+                <label class="field-label">Intervalo entre Visitas</label>
+                <div class="field-wrapper">
+                  <select v-model="config.scheduleInterval" class="base-select">
+                    <option :value="30">30 minutos</option>
+                    <option :value="60">1 hora</option>
+                    <option :value="120">2 horas</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Atendimentos Simultâneos</label>
+                <div class="field-wrapper">
+                  <input v-model="config.maxSimultaneous" type="number" class="base-input" min="1">
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Seção: Calendário -->
+          <section class="config-section">
+            <header class="section-header">
+              <h4 class="section-title">Dias de Operação</h4>
+            </header>
+
+            <div class="days-selector">
+              <label v-for="day in dayOptions" :key="day.value" class="day-input">
+                <input v-model="config.availableDays" type="checkbox" :value="day.value" class="hidden-check">
+                <div class="day-box">{{ day.label }}</div>
+              </label>
+            </div>
+            <footer class="section-hint">
+              Os horários serão gerados automaticamente para os dias selecionados.
+            </footer>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" @click="$emit('close')">Cancelar</button>
+        <button class="btn btn-primary" :disabled="saving" @click="save">
+          <span v-if="saving" class="spinner-sm"></span>
+          Salvar Configurações
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  projectId: string;
+}>();
+
+const emit = defineEmits(['close', 'updated']);
+const api = useApi();
+const toast = useToast();
+
+const loading = ref(true);
+const saving = ref(false);
+const config = ref({
+  enabled: false,
+  startTime: '08:00',
+  endTime: '18:00',
+  scheduleInterval: 60,
+  maxSimultaneous: 1,
+  availableDays: ['MON', 'TUE', 'WED', 'THU', 'FRI']
+});
+
+const dayOptions = [
+  { label: 'Dom', value: 'SUN' },
+  { label: 'Seg', value: 'MON' },
+  { label: 'Ter', value: 'TUE' },
+  { label: 'Qua', value: 'WED' },
+  { label: 'Qui', value: 'THU' },
+  { label: 'Sex', value: 'FRI' },
+  { label: 'Sáb', value: 'SAT' },
+];
+
+onMounted(async () => {
+  try {
+    const data = await api.get(`/scheduling/config/${props.projectId}`);
+    if (data) config.value = data;
+  } catch (e) {
+    toast.error('Erro ao carregar configurações');
+  } finally {
+    loading.value = false;
+  }
+});
+
+const save = async () => {
+  saving.value = true;
+  try {
+    // Destructuring to remove read-only/metadata fields that backend might reject
+    const { id, projectId, createdAt, updatedAt, ...updateData } = config.value as any;
+    
+    await api.patch(`/scheduling/config/${props.projectId}`, updateData);
+    toast.success('Configurações salvas com sucesso');
+    emit('updated');
+    emit('close');
+  } catch (e) {
+    toast.error('Erro ao salvar configurações');
+  } finally {
+    saving.value = false;
+  }
+};
+</script>
+
+<style scoped>
+/* RESET & FOUNDATION */
+.modal-content {
+  background: #ffffff;
+  border-radius: 12px; /* Smooth but professional */
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15), 0 18px 36px -18px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+  font-weight: 600; /* Regular semi-bold for senior UI */
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.close-btn:hover { color: #333; }
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px; /* Uniform section spacing */
+}
+
+/* SECTIONING */
+.config-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* CARDS */
+.toggle-card {
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+  padding: 24px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+}
+
+.card-description {
+  font-size: 0.85rem;
+  color: #71717a;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* GRID & FIELDS */
+.grid-fields {
+  display: grid;
+  gap: 20px;
+}
+
+.grid-fields.duo { grid-template-columns: 1fr 1fr; }
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
+}
+
+/* INPUTS & SELECTS */
+.base-input, .base-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  background: #ffffff;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #333;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.base-input:focus, .base-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+/* TOGGLE TRACK */
+.modern-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.modern-toggle input { opacity: 0; width: 0; height: 0; }
+
+.toggle-track {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #e4e4e7;
+  transition: .3s;
+  border-radius: 30px;
+}
+
+.toggle-track:before {
+  position: absolute;
+  content: "";
+  height: 20px; width: 20px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+input:checked + .toggle-track { background-color: #2563eb; }
+input:checked + .toggle-track:before { transform: translateX(22px); }
+
+/* DAY PICKER */
+.days-selector {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.day-input { flex: 1; cursor: pointer; }
+
+.hidden-check {
+  display: none;
+}
+
+.day-box {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.day-input:hover .day-box { border-color: #999; }
+
+.hidden-check:checked + .day-box {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+  font-weight: 600;
+}
+
+.section-hint {
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  margin-top: 4px;
+}
+
+/* FOOTER */
+.modal-footer {
+  padding: 20px 32px;
+  background: #fcfcfc;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn {
+  height: 42px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-secondary {
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  color: #444;
+}
+
+.btn-secondary:hover { background: #f5f5f5; }
+
+.btn-primary {
+  background: #1a1a1a; /* Professional dark primary */
+  color: white;
+}
+
+.btn-primary:hover { background: #000; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* LOADING */
+.loading-state {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>

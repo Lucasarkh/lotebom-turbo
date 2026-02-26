@@ -93,6 +93,13 @@ enum LeadPaymentStatus {
   REVERSED
 }
 
+enum SchedulingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
 enum PaymentProvider {
   STRIPE
   MERCADO_PAGO
@@ -143,6 +150,7 @@ model Tenant {
   campanhas         Campaign[]
   paymentGateways   PaymentConfig[]
   aiConfigs         AiConfig[]
+  schedulings       Scheduling[]
 }
 
 model User {
@@ -160,6 +168,7 @@ model User {
 
   realtorLink RealtorLink?
   campaigns   Campaign[]
+  schedulings Scheduling[]
 
   @@index([tenantId])
 }
@@ -211,6 +220,8 @@ model Project {
   aiEnabled        Boolean       @default(false)
   aiConfigId       String?
   aiConfig         AiConfig?     @relation(fields: [aiConfigId], references: [id], onDelete: SetNull)
+  schedulingConfig SchedulingConfig?
+  schedulings      Scheduling[]
 
   @@index([tenantId])
   @@index([slug])
@@ -344,6 +355,7 @@ model Lead {
   documents     LeadDocument[]
   payments      LeadPayment[]
   history       LeadHistory[]
+  schedulings   Scheduling[]
 
   @@index([tenantId, projectId])
   @@index([status, createdAt])
@@ -728,4 +740,39 @@ model AiConfig {
   projects Project[]
 
   @@index([tenantId])
+}
+
+model SchedulingConfig {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  enabled             Boolean  @default(false)
+  scheduleInterval    Int      @default(60) // minutes
+  leadCaptureRequired Boolean  @default(true)
+  availableDays       Json?    // ["MON", "TUE", ...]
+  startTime           String   @default("08:00")
+  endTime             String   @default("18:00")
+  maxSimultaneous     Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Scheduling {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  leadId      String?
+  lead        Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  userId      String?
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  scheduledAt DateTime
+  status      SchedulingStatus @default(PENDING)
+  notes       String?          @db.Text
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([tenantId, projectId])
+  @@index([scheduledAt])
 }

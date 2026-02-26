@@ -26,6 +26,7 @@ const props = defineProps<{
   hasLots?: boolean;
   hasGallery?: boolean;
   hasLocation?: boolean;
+  hasScheduling?: boolean;
 }>()
 
 const allItems = [
@@ -36,6 +37,7 @@ const allItems = [
   { id: 'lotes', label: 'UNIDADES' },
   { id: 'galeria', label: 'GALERIA' },
   { id: 'localizacao', label: 'LOCAL' },
+  { id: 'agendamento', label: 'AGENDAR' },
   { id: 'contato', label: 'CONTATO' },
 ]
 
@@ -49,6 +51,7 @@ const filteredItems = computed(() => {
     if (item.id === 'lotes') return props.hasLots
     if (item.id === 'galeria') return props.hasGallery
     if (item.id === 'localizacao') return props.hasLocation
+    if (item.id === 'agendamento') return props.hasScheduling
     return false
   })
 })

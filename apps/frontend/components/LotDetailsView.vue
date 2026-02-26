@@ -504,7 +504,7 @@
         </div>
 
         <!-- Footer / Others -->
-        <footer class="footer-v4">
+        <footer class="v4-footer">
           <div class="page-container-v4">
             <div v-if="otherLots.length" class="other-assets-v4">
               <div class="assets-header-v4">
@@ -519,9 +519,15 @@
                 </NuxtLink>
               </div>
             </div>
-            <div class="legal-v4">
-              <p><strong>{{ project?.tenant?.name }}</strong> &middot; {{ project?.name }}</p>
-              <span>© 2026 Lotio &middot; O sistema oficial de gestão do loteamento</span>
+
+            <div v-if="project" class="v4-footer-inner">
+              <div class="v4-footer-brand">
+                <span class="v4-footer-tenant">{{ project.tenant?.name }}</span>
+                <span class="v4-footer-project">Loteamento {{ project.name }}</span>
+              </div>
+              <div class="v4-footer-copyright">
+                © {{ getYearInBrasilia() }} — Todos os direitos reservados.
+              </div>
             </div>
           </div>
         </footer>
@@ -555,7 +561,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTenantStore } from '~/stores/tenant'
 import { useAiChatStore } from '~/stores/aiChat'
-import { getTodayInBrasilia } from '~/utils/date'
+import { getTodayInBrasilia, getYearInBrasilia } from '~/utils/date'
 import { formatCurrencyToBrasilia } from '~/utils/money'
 import PanoramaViewer from '~/components/panorama/PanoramaViewer.vue'
 import PlantMapViewer from '~/components/plantMap/PlantMapViewer.vue'
@@ -1419,8 +1425,13 @@ async function submitReservation() {
   transition: all 0.2s;
 }
 .wa-btn-v4:hover { background: #20b858; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2); }
-.footer-v4 { padding: 80px 0; background: white; border-top: 1px solid var(--v4-border); }
-.other-assets-v4 { width: 100%; position: relative; }
+.v4-footer { padding: 80px 0; background: var(--v4-bg-alt); border-top: 1px solid var(--v4-border); }
+.v4-footer-inner { display: flex; justify-content: space-between; align-items: flex-end; }
+@media (max-width: 768px) { .v4-footer-inner { flex-direction: column; align-items: flex-start; gap: 24px; } }
+.v4-footer-tenant { font-weight: 600; font-size: 17px; margin-bottom: 4px; display: block; }
+.v4-footer-project { font-size: 14px; color: var(--v4-text-muted); }
+.v4-footer-copyright { font-size: 12px; color: var(--v4-text-muted); }
+.other-assets-v4 { width: 100%; position: relative; margin-bottom: 60px; padding-bottom: 60px; border-bottom: 1px solid var(--v4-border); }
 .assets-header-v4 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 32px; }
 .assets-header-v4 h3 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
 .assets-header-v4 a { font-size: 14px; font-weight: 600; color: var(--v4-primary); text-decoration: none; }
@@ -1550,8 +1561,6 @@ async function submitReservation() {
   padding: 0 8px;
   text-align: center;
 }
-
-.legal-v4 { margin-top: 80px; text-align: center; color: var(--v4-text-muted); font-size: 14px; padding-top: 40px; border-top: 1px solid var(--v4-border); opacity: 0.8; }
 
 /* Lightbox V4 */
 .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; }
