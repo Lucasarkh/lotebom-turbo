@@ -22,6 +22,12 @@ export class PublicProjectsController {
     };
   }
 
+  @Get('preview/:id')
+  @ApiOperation({ summary: 'Visualização prévia do projeto' })
+  findPreview(@Param('id') id: string) {
+    return this.projectsService.findPreview(id);
+  }
+
   @Get(':projectSlug')
   @ApiOperation({ summary: 'Dados públicos do projeto (mapa + lotes + mídia)' })
   findPublic(@Param('projectSlug') projectSlug: string) {

@@ -143,20 +143,43 @@
       <!-- Highlights & Info -->
       <section v-if="hasInfo" class="v4-section" id="info">
         <div class="v4-container">
-          <div class="v4-section-header center">
-            <h2 class="v4-section-title">Diferenciais do Projeto</h2>
+          <!-- Text content if exists -->
+          <div v-if="hasMeaningfulLocationText" class="v4-rich-content" v-html="formattedLocationText" style="margin-bottom: 80px;"></div>
+
+          <!-- Sophisticated Infrastructure Grid (Based on image) -->
+          <div v-if="infrastructureCategories.length" class="v4-infra-split">
+            <div class="v4-infra-left">
+              <h2 class="v4-infra-hero-text" v-html="project.highlightsTitle || 'Sua família<br>merece o melhor.'"></h2>
+              <p class="v4-infra-sub-text">{{ project.highlightsSubtitle || 'Qualidade de vida, segurança e infraestrutura completa em um só lugar.' }}</p>
+              <div class="v4-infra-divider"></div>
+            </div>
+            <div class="v4-infra-right">
+              <div v-for="cat in infrastructureCategories" :key="cat.title" class="v4-infra-group">
+                <h3 class="v4-infra-group-title">{{ cat.title }}</h3>
+                <ul class="v4-infra-items-list">
+                  <li v-for="it in cat.items" :key="it" class="v4-infra-list-item">
+                    <span class="v4-infra-bullet">•</span>
+                    {{ it }}
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
 
-          <div v-if="hasMeaningfulLocationText" class="v4-rich-content" v-html="formattedLocationText"></div>
-
-          <div v-if="highlights.length" class="v4-highlights-grid">
-            <div v-for="h in highlights" :key="h.label" class="v4-highlight-card">
-              <div class="v4-highlight-icon-wrapper">
-                <span class="v4-highlight-icon">{{ h.icon }}</span>
-              </div>
-              <div class="v4-highlight-content">
-                <h4 class="v4-highlight-label">{{ h.label }}</h4>
-                <p v-if="h.value" class="v4-highlight-value">{{ h.value }}</p>
+          <!-- New Traditional Highlights "Destaques" -->
+          <div v-if="traditionalHighlights.length" class="v4-destaques-grid-v2" :style="infrastructureCategories.length ? 'margin-top: 120px;' : ''">
+            <div class="v4-section-header center" style="margin-bottom: 56px;">
+              <h2 class="v4-section-title">{{ project.traditionalHighlightsTitle || 'Destaques' }}</h2>
+              <p class="v4-section-subtitle">{{ project.traditionalHighlightsSubtitle || 'Diferenciais pensados para o seu bem-estar.' }}</p>
+            </div>
+            
+            <div class="v4-destaques-items">
+              <div v-for="h in traditionalHighlights" :key="h.label" class="v4-destaque-card-minimal">
+                <div class="v4-destaque-marker-dot"></div>
+                <div class="v4-destaque-info">
+                  <h4 class="v4-destaque-title">{{ h.label }}</h4>
+                  <p v-if="h.value" class="v4-destaque-detail">{{ h.value }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -203,7 +226,12 @@
             >
               <div class="v4-lot-card-header">
                 <div class="v4-lot-id">
-                  <span class="v4-lot-label">Lote</span>
+                  <span class="v4-lot-label">
+                    <span v-if="lot.lotDetails?.block || lot.lotDetails?.lotNumber">
+                      QUADRA {{ lot.lotDetails.block || '---' }} · LOTE {{ lot.lotDetails.lotNumber || '---' }}
+                    </span>
+                    <span v-else>LOTE</span>
+                  </span>
                   <span class="v4-lot-code">{{ lot.code || lot.name || lot.id }}</span>
                 </div>
                 <div class="v4-lot-status">Disponível</div>
@@ -212,7 +240,8 @@
               <div class="v4-lot-card-body">
                 <div class="v4-lot-info-row">
                   <span class="v4-info-item">📐 {{ lot.lotDetails?.areaM2 || '---' }} m²</span>
-                  <span v-if="lot.lotDetails?.frontage" class="v4-info-item">↔ {{ lot.lotDetails.frontage }}m frente</span>
+                  <span v-if="lot.lotDetails?.pricePerM2" class="v4-info-item">💰 R$ {{ lot.lotDetails.pricePerM2.toLocaleString('pt-BR') }} / m²</span>
+                  <span v-else-if="lot.lotDetails?.frontage" class="v4-info-item">↔ {{ lot.lotDetails.frontage }}m frente</span>
                 </div>
                 <div v-if="lot.lotDetails?.price" class="v4-lot-price">
                   <span class="v4-price-label">Valor do investimento</span>
@@ -537,13 +566,19 @@ import { useAiChatStore } from '~/stores/aiChat'
 
 const props = defineProps<{
   slug?: string
+  id?: string
 }>()
 
 const route = useRoute()
 const tenantStore = useTenantStore()
 const chatStore = useAiChatStore()
+const isPreview = computed(() => !!props.id || !!route.query.previewId)
+const previewId = computed(() => (props.id || route.query.previewId) as string)
 const projectSlug = computed(() => (props.slug || route.params.slug || tenantStore.config?.project?.slug || '') as string)
 const pathPrefix = computed(() => {
+  if (isPreview.value) {
+    return `/preview/${previewId.value}`
+  }
   const host = process.client ? window.location.host : ''
   const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
   return isMainDomain ? `/${projectSlug.value}` : ''
@@ -634,10 +669,7 @@ const toggleFilterTag = (tag: string) => {
 }
 
 const applyFiltersAndSearch = () => {
-  tracking.trackClick('Botão: Aplicar Filtros e Buscar', { 
-    tags: selectedFilterTags.value.join(','),
-    count: filteredLotsCount.value
-  })
+  tracking.trackClick('Botão: Aplicar Filtros e Buscar', 'LIST_FILTER')
 
   const query: any = {}
   if (selectedFilterTags.value.length) {
@@ -715,6 +747,14 @@ const highlights = computed(() => {
   return Array.isArray(raw) ? raw : []
 })
 
+const infrastructureCategories = computed(() => {
+  return highlights.value.filter(h => h.type === 'category')
+})
+
+const traditionalHighlights = computed(() => {
+  return highlights.value.filter(h => h.type === 'highlight' || !h.type)
+})
+
 const hasMeaningfulLocationText = computed(() => {
   const text = project.value?.locationText || ''
   if (!text) return false
@@ -775,7 +815,10 @@ const unifiedAvailableLots = computed(() => {
             frontage: parseFloat(finalFrontage.toFixed(2)),
             price: l.price,
             status: 'AVAILABLE',
-            tags: l.tags || []
+            tags: l.tags || [],
+            block: l.block,
+            lotNumber: l.lotNumber,
+            pricePerM2: l.pricePerM2
           }
         }
       })
@@ -869,10 +912,12 @@ const lotPageUrl = (lot: any) => {
 
 onMounted(async () => {
   try {
+    const baseUrl = isPreview.value ? `/p/preview/${previewId.value}` : `/p/${projectSlug.value}`
+
     const [p, c, s] = await Promise.allSettled([
-      fetchPublic(`/p/${projectSlug.value}`),
-      corretorCode ? fetchPublic(`/p/${projectSlug.value}/corretores/${corretorCode}`) : Promise.resolve(null),
-      fetchPublic(`/p/${projectSlug.value}/scheduling/config`).catch(() => null)
+      fetchPublic(baseUrl),
+      corretorCode && !isPreview.value ? fetchPublic(`${baseUrl}/corretores/${corretorCode}`) : Promise.resolve(null),
+      !isPreview.value ? fetchPublic(`${baseUrl}/scheduling/config`).catch(() => null) : Promise.resolve(null)
     ])
     if (p.status === 'fulfilled') {
       project.value = p.value
@@ -890,7 +935,7 @@ onMounted(async () => {
         ]
       })
       // Fetch plant map for this project (non-blocking)
-      getPublicPlantMap(p.value.id).then((pm) => {
+      getPublicPlantMap(p.value.id, isPreview.value).then((pm) => {
         if (pm && pm.hotspots) {
           pm.hotspots = pm.hotspots.map(h => {
             if (h.linkType === 'LOTE_PAGE' && h.linkId) {
@@ -905,7 +950,7 @@ onMounted(async () => {
         plantMap.value = pm
       }).catch(() => {})
       // Fetch panoramas for this project (non-blocking)
-      getPublicPanoramas(p.value.id).then((panos) => {
+      getPublicPanoramas(p.value.id, isPreview.value).then((panos) => {
         panoramas.value = panos ?? []
       }).catch(() => {})
     }
@@ -1626,39 +1671,127 @@ function openLightbox(idx: number) {
 .v4-trust-btn--whatsapp { background: #25d366; color: white; }
 .v4-trust-btn--primary { background: var(--v4-primary); color: white; }
 
-/* Highlights Grid */
-.v4-highlights-grid {
+/* Infrastructure Split Layout (Sophisticated) */
+.v4-infra-split {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 60px;
+}
+@media (min-width: 992px) {
+  .v4-infra-split { grid-template-columns: 1fr 1.5fr; gap: 100px; }
 }
 
-.v4-highlight-card {
-  background: var(--v4-bg);
-  padding: 40px;
-  border-radius: var(--v4-radius-lg);
+.v4-infra-hero-text {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--v4-text);
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+.v4-infra-sub-text {
+  font-size: 19px;
+  color: var(--v4-text-muted);
+  line-height: 1.4;
+  margin-bottom: 40px;
+}
+.v4-infra-divider {
+  width: 60px;
+  height: 4px;
+  background: var(--v4-primary);
+  border-radius: 2px;
+}
+
+.v4-infra-right {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 40px;
+}
+
+.v4-infra-group-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--v4-text);
+  margin-bottom: 20px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.v4-infra-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.v4-infra-list-item {
+  font-size: 16px;
+  color: var(--v4-text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.v4-infra-bullet {
+  color: var(--v4-primary);
+  font-weight: bold;
+}
+
+/* Traditional Highlights Grid v2 (Destaques) */
+.v4-destaques-grid-v2 {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.v4-destaques-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 40px 60px;
+}
+
+.v4-destaque-card-minimal {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.v4-destaque-marker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--v4-primary);
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+
+.v4-destaque-info {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  transition: transform 0.3s;
-  border: 1px solid #f2f2f2;
+  gap: 4px;
 }
 
-.v4-highlight-card:hover { transform: scale(1.02); }
-
-.v4-highlight-icon-wrapper {
-  width: 56px;
-  height: 56px;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.v4-destaque-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--v4-text);
+  margin: 0;
+  letter-spacing: -0.01em;
 }
 
-.v4-highlight-icon { font-size: 40px; }
-.v4-highlight-label { font-size: 19px; font-weight: 600; margin-bottom: 8px; }
-.v4-highlight-value { font-size: 17px; color: var(--v4-text-muted); line-height: 1.47059; }
+.v4-destaque-detail {
+  font-size: 16px;
+  color: var(--v4-text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .v4-destaques-items {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+}
 
 /* Video Presentation */
 .v4-video-wrapper {

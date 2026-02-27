@@ -172,6 +172,56 @@ export class ProjectsService {
     return project;
   }
 
+  async findPreview(projectId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: {
+        id: projectId
+      },
+      include: {
+        tenant: { select: { id: true, name: true, slug: true } },
+        mapElements: {
+          include: {
+            lotDetails: {
+              select: {
+                id: true,
+                status: true,
+                price: true,
+                areaM2: true,
+                frontage: true,
+                slope: true,
+                updatedAt: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        },
+        projectMedias: {
+          where: { lotDetailsId: null },
+          orderBy: { createdAt: 'desc' }
+        },
+        paymentGateways: {
+          where: { isActive: true },
+          select: {
+            isActive: true,
+            provider: true
+          }
+        },
+        plantMap: true,
+        panoramas: {
+          select: {
+            id: true,
+            title: true
+          }
+        }
+      }
+    });
+
+    if (!project)
+      throw new NotFoundException('Projeto não encontrado.');
+
+    return project;
+  }
+
   async update(tenantId: string, id: string, dto: UpdateProjectDto, user?: User) {
     const project = await this.prisma.project.findFirst({
       where: user?.role === UserRole.SYSADMIN ? { id } : { id, tenantId }
@@ -219,6 +269,18 @@ export class ProjectsService {
         ...(dto.mapData !== undefined && { mapData: dto.mapData }),
         ...(dto.highlightsJson !== undefined && {
           highlightsJson: dto.highlightsJson
+        }),
+        ...(dto.highlightsTitle !== undefined && {
+          highlightsTitle: dto.highlightsTitle
+        }),
+        ...(dto.highlightsSubtitle !== undefined && {
+          highlightsSubtitle: dto.highlightsSubtitle
+        }),
+        ...(dto.traditionalHighlightsTitle !== undefined && {
+          traditionalHighlightsTitle: dto.traditionalHighlightsTitle
+        }),
+        ...(dto.traditionalHighlightsSubtitle !== undefined && {
+          traditionalHighlightsSubtitle: dto.traditionalHighlightsSubtitle
         }),
         ...(dto.locationText !== undefined && {
           locationText: dto.locationText

@@ -77,8 +77,6 @@ export class AiService {
     console.log(`[AiService] Context fetched (${context.length} chars)`);
 
     const systemPrompt = `
-      ${aiConfig.systemPrompt || 'Você é um assistente virtual especializado em ajudar clientes a encontrar o lote ideal.'}
-      
       ESTAS SÃO AS INFORMAÇÕES DO PROJETO:
       Nome do Loteamento: ${project.name}
       Descrição: ${project.description || 'N/A'}

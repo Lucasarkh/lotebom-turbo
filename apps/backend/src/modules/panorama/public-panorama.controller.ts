@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PanoramaService } from './panorama.service';
 
@@ -9,7 +9,7 @@ export class PublicPanoramaController {
 
   @Get()
   @ApiOperation({ summary: 'Panoramas públicos do projeto' })
-  findPublic(@Param('projectId') projectId: string) {
-    return this.panoramaService.findByProjectPublic(projectId);
+  findPublic(@Param('projectId') projectId: string, @Query('preview') preview?: string) {
+    return this.panoramaService.findByProjectPublic(projectId, preview === 'true');
   }
 }

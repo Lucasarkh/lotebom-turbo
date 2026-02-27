@@ -43,6 +43,26 @@ export class UpdateProjectDto {
   @IsOptional()
   highlightsJson?: any;
 
+  @ApiPropertyOptional({ example: 'Sua família merece o melhor.' })
+  @IsOptional()
+  @IsString()
+  highlightsTitle?: string;
+
+  @ApiPropertyOptional({ example: 'Qualidade de vida, segurança e infraestrutura completa em um só lugar.' })
+  @IsOptional()
+  @IsString()
+  highlightsSubtitle?: string;
+
+  @ApiPropertyOptional({ example: 'Destaques' })
+  @IsOptional()
+  @IsString()
+  traditionalHighlightsTitle?: string;
+
+  @ApiPropertyOptional({ example: 'Diferenciais pensados para o seu bem-estar.' })
+  @IsOptional()
+  @IsString()
+  traditionalHighlightsSubtitle?: string;
+
   @ApiPropertyOptional({
     description: 'Exibe tabela de condições de pagamento nas páginas públicas'
   })

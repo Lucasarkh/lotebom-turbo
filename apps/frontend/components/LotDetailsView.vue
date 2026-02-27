@@ -74,7 +74,10 @@
               <section id="hero" class="hero-v4">
                 <div class="hero-header-row">
                   <div class="hero-main-info">
-                    <h1 class="lot-code-title">{{ lot?.name || lot?.code }}</h1>
+                    <h1 class="lot-code-title">
+                      <span v-if="details?.block" style="color: var(--v4-text-muted); font-weight: 500; margin-right: 8px;">{{ details.block }}</span>
+                      <span>{{ details?.lotNumber || lot?.name || lot?.code }}</span>
+                    </h1>
                     
                     <div v-if="details?.tags?.length" class="lot-seals-v4">
                       <span v-for="tag in details?.tags" :key="tag" class="seal-pill">
@@ -93,17 +96,17 @@
                 </div>
 
                 <div class="quick-metrics-v4">
-                  <div class="q-item" v-if="details?.paymentConditions?.setor">
-                    <span class="q-val">{{ details?.paymentConditions?.setor }}</span>
-                    <span class="q-unit">Setor / Quadra</span>
+                  <div class="q-item" v-if="details?.block || details?.lotNumber || details?.paymentConditions?.setor">
+                    <span class="q-val">{{ details?.block ? `${details.block} ${details.lotNumber || ''}` : details?.paymentConditions?.setor }}</span>
+                    <span class="q-unit">Quadra / Lote</span>
                   </div>
                   <div class="q-item" v-if="details?.areaM2">
                     <span class="q-val">{{ details?.areaM2 }}</span>
                     <span class="q-unit">m² totais</span>
                   </div>
-                  <div class="q-item" v-if="details?.frontage">
-                    <span class="q-val">{{ details?.frontage }}</span>
-                    <span class="q-unit">m frente</span>
+                  <div class="q-item" v-if="details?.pricePerM2">
+                    <span class="q-val">{{ formatCurrencyToBrasilia(details?.pricePerM2) }}</span>
+                    <span class="q-unit">valor do m²</span>
                   </div>
                   <div class="q-item" v-if="details?.slope">
                     <span class="q-val">{{ slopeLabel(details?.slope) }}</span>
@@ -179,9 +182,21 @@
               </div>
               
               <div class="specs-grid-v4">
+                <div class="spec-entry" v-if="details?.block">
+                  <span class="s-label">Quadra</span>
+                  <span class="s-value">{{ details?.block }}</span>
+                </div>
+                <div class="spec-entry" v-if="details?.lotNumber">
+                  <span class="s-label">Lote nº</span>
+                  <span class="s-value">{{ details?.lotNumber }}</span>
+                </div>
                 <div class="spec-entry" v-if="details?.areaM2">
                   <span class="s-label">Área Escriturada</span>
                   <span class="s-value">{{ details?.areaM2 }} m²</span>
+                </div>
+                <div class="spec-entry" v-if="details?.pricePerM2">
+                  <span class="s-label">Valor do m²</span>
+                  <span class="s-value">{{ formatCurrencyToBrasilia(details?.pricePerM2) }}</span>
                 </div>
                 <div class="spec-entry" v-if="details?.frontage">
                   <span class="s-label">Testada (Frente)</span>
@@ -266,16 +281,30 @@
 
                   <!-- Result -->
                   <div class="sim-result-v4">
-                    <div class="r-label">Parcela Estimada</div>
+                    <div class="r-label">Primeira Parcela Estimada</div>
                     <div class="r-value">{{ formatCurrencyToBrasilia(simResult) }}</div>
                     <div class="r-detail">
-                      <span v-if="project?.monthlyInterestRate > 0">Juros: {{ project.monthlyInterestRate }}% am + {{ project.indexer || 'IGP-M' }}</span>
+                      <span v-if="project?.monthlyInterestRate > 0">
+                        Juros: {{ project.monthlyInterestRate }}% am ({{ annualInterestRateEffective.toFixed(2) }}% aa efetivo) + {{ project.indexer || 'IGP-M' }}
+                      </span>
                       <span v-else>Sem juros + {{ project.indexer || 'IGP-M' }}</span>
+                    </div>
+
+                    <div class="sim-summary-v4" v-if="simMonths > 1">
+                      <div class="summary-item">
+                        <span class="s-l">Investimento Total (Simulado):</span>
+                        <span class="s-v">{{ formatCurrencyToBrasilia(simTotalInvested) }}</span>
+                      </div>
+                      <div class="summary-item" v-if="simTotalInterest > 0">
+                        <span class="s-l">Custo de Financiamento (Juros):</span>
+                        <span class="s-v">{{ formatCurrencyToBrasilia(simTotalInterest) }}</span>
+                      </div>
                     </div>
                   </div>
 
                   <div class="sim-disclaimer-v4">
-                    ⚠️ {{ project?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
+                    📢 <strong>Importante:</strong> Este é um simulador informativo. As parcelas serão reajustadas mensalmente pelo <strong>{{ project.indexer || 'IGP-M' }}</strong>. 
+                    {{ project?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
                   </div>
                 </div>
               </div>
@@ -572,6 +601,7 @@ import type { PlantMap } from '~/composables/plantMap/types'
 const props = defineProps<{
   slug?: string
   lotCode?: string
+  id?: string
 }>()
 
 const route = useRoute()
@@ -583,7 +613,12 @@ const tracking = useTracking()
 const trackingStore = useTrackingStore()
 
 const projectSlug = computed(() => (tenantStore.config?.project?.slug || props.slug || route.params.slug || '') as string)
+const isPreview = computed(() => !!props.id || !!route.query.previewId)
+const previewId = computed(() => (props.id || route.query.previewId) as string)
 const pathPrefix = computed(() => {
+  if (isPreview.value) {
+    return `/preview/${previewId.value}`
+  }
   const host = process.client ? window.location.host : ''
   const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
   return isMainDomain ? `/${projectSlug.value}` : ''
@@ -775,6 +810,9 @@ const lot = computed(() => {
             slope: found.slope || 'FLAT',
             notes: found.notes || '',
             tags: found.tags || [],
+            block: found.block || null,
+            lotNumber: found.lotNumber || null,
+            pricePerM2: found.pricePerM2 || null,
             conditionsJson: found.conditionsJson || [],
             paymentConditions: (typeof found.paymentConditions === 'string' ? JSON.parse(found.paymentConditions) : found.paymentConditions) || null,
             medias: []
@@ -901,6 +939,23 @@ const simResult = computed(() => {
   return pmt
 })
 
+const simTotalInvested = computed(() => {
+  const downPayment = Math.max(simDownPayment.value, minDownPaymentValue.value)
+  const installmentsTotal = simResult.value * simMonths.value
+  return downPayment + installmentsTotal
+})
+
+const simTotalInterest = computed(() => {
+  if (!details.value?.price) return 0
+  return Math.max(0, simTotalInvested.value - details.value.price)
+})
+
+const annualInterestRateEffective = computed(() => {
+  const i = (project.value?.monthlyInterestRate || 0) / 100
+  if (i === 0) return 0
+  return (Math.pow(1 + i, 12) - 1) * 100
+})
+
 const updateDownPaymentFromPercent = () => {
   if (!details.value?.price) return
   simDownPayment.value = (details.value.price * (simDownPaymentPercent.value / 100))
@@ -962,9 +1017,10 @@ onMounted(async () => {
   handleScroll()
   
   try {
+    const baseUrl = isPreview.value ? `/p/preview/${previewId.value}` : `/p/${projectSlug.value}`
     const [p, c] = await Promise.allSettled([
-      fetchPublic(`/p/${projectSlug.value}`),
-      corretorCode ? fetchPublic(`/p/${projectSlug.value}/corretores/${corretorCode}`) : Promise.resolve(null),
+      fetchPublic(baseUrl),
+      corretorCode && !isPreview.value ? fetchPublic(`/p/${projectSlug.value}/corretores/${corretorCode}`) : Promise.resolve(null),
     ])
     
     if (p.status === 'fulfilled') {
@@ -974,7 +1030,7 @@ onMounted(async () => {
       // Initialize tracking handled by global middleware
 
       // NEW: Fetch plant map using project id once we have it
-      getPublicPlantMap(p.value.id).then((pm) => {
+      getPublicPlantMap(p.value.id, isPreview.value).then((pm) => {
         if (pm && pm.hotspots) {
           pm.hotspots = pm.hotspots.map(h => {
             if (h.linkType === 'LOTE_PAGE' && h.linkId) {
@@ -1033,7 +1089,8 @@ async function submitLead() {
       realtorCode: corretorCode || undefined,
       sessionId: trackingStore.sessionId || undefined,
     }
-    await fetchPublic(`/p/${projectSlug.value}/leads`, {
+    const baseUrl = isPreview.value ? `/p/preview/${previewId.value}` : `/p/${projectSlug.value}`
+    await fetchPublic(`${baseUrl}/leads`, {
       method: 'POST',
       body: JSON.stringify(body),
     })
@@ -1552,6 +1609,15 @@ async function submitReservation() {
 .r-label { font-size: 15px; font-weight: 600; color: var(--v4-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 .r-value { font-size: 42px; font-weight: 800; color: var(--v4-primary); letter-spacing: -1px; overflow-wrap: break-word; }
 .r-detail { font-size: 14px; color: var(--v4-primary); opacity: 0.8; font-weight: 600; margin-top: 8px; }
+
+.sim-summary-v4 {
+  margin-top: 24px;
+  border-top: 1px solid var(--v4-border);
+  padding-top: 16px;
+}
+.summary-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: var(--v4-text-muted); }
+.summary-item .s-l { font-weight: 500; }
+.summary-item .s-v { font-weight: 700; color: var(--v4-text); }
 
 .sim-disclaimer-v4 {
   margin-top: 24px;

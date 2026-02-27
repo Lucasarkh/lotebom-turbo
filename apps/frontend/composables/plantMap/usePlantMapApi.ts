@@ -90,8 +90,8 @@ export const usePublicPlantMap = () => {
   const { fetchPublic } = usePublicApi()
 
   /** GET public plant map for a project */
-  const getPublicPlantMap = (projectId: string): Promise<PlantMap | null> =>
-    fetchPublic(`/p/projects/${projectId}/plant-map`)
+  const getPublicPlantMap = (projectId: string, preview = false): Promise<PlantMap | null> =>
+    fetchPublic(`/p/projects/${projectId}/plant-map${preview ? '?preview=true' : ''}`)
 
   return { getPublicPlantMap }
 }

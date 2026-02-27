@@ -136,8 +136,8 @@ export const usePanoramaApi = () => {
 export const usePublicPanorama = () => {
   const { fetchPublic } = usePublicApi()
 
-  const getPublicPanoramas = (projectId: string): Promise<Panorama[]> =>
-    fetchPublic(`/p/projects/${projectId}/panoramas`)
+  const getPublicPanoramas = (projectId: string, preview = false): Promise<Panorama[]> =>
+    fetchPublic(`/p/projects/${projectId}/panoramas${preview ? '?preview=true' : ''}`)
 
   return { getPublicPanoramas }
 }

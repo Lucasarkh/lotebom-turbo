@@ -114,7 +114,12 @@
               >
                 <div class="v4-card-header">
                   <div class="v4-card-id">
-                    <span class="v4-label">LOTE</span>
+                    <span class="v4-label">
+                      <span v-if="lot.lotDetails?.block || lot.lotDetails?.lotNumber">
+                        QUADRA {{ lot.lotDetails.block || '---' }} · LOTE {{ lot.lotDetails.lotNumber || '---' }}
+                      </span>
+                      <span v-else>LOTE</span>
+                    </span>
                     <h3 class="v4-code">{{ lot.code || lot.name || lot.id }}</h3>
                   </div>
                   <div class="v4-card-status">Disponível</div>
@@ -129,7 +134,11 @@
                     <span class="m-val">{{ lot.lotDetails?.areaM2 || '---' }}</span>
                     <span class="m-unit">m² totais</span>
                   </div>
-                  <div class="v4-metric" v-if="lot.lotDetails?.frontage">
+                  <div class="v4-metric" v-if="lot.lotDetails?.pricePerM2">
+                    <span class="m-val">R$ {{ lot.lotDetails.pricePerM2.toLocaleString('pt-BR') }}</span>
+                    <span class="m-unit">valor m²</span>
+                  </div>
+                  <div class="v4-metric" v-else-if="lot.lotDetails?.frontage">
                     <span class="m-val">{{ lot.lotDetails.frontage }}</span>
                     <span class="m-unit">m frente</span>
                   </div>
@@ -180,6 +189,10 @@ const props = defineProps({
   slug: {
     type: String,
     default: ''
+  },
+  id: {
+    type: String,
+    default: ''
   }
 })
 
@@ -190,16 +203,26 @@ const tracking = useTracking()
 const { fetchPublic } = usePublicApi()
 
 const projectSlug = computed(() => (tenantStore.config?.project?.slug || props.slug || route.params.slug || '') as string)
-const pathPrefix = computed(() => {
-  const host = process.client ? window.location.host : ''
-  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
-  return isMainDomain ? `/${projectSlug.value}` : ''
-})
+const isPreview = computed(() => !!props.id || !!route.query.previewId)
+const previewId = computed(() => (props.id || route.query.previewId) as string)
 const corretorCode = route.query.c || ''
 
 const projectUrl = computed(() => {
+  if (isPreview.value) {
+    const base = `/preview/${previewId.value}`
+    return corretorCode ? `${base}?c=${corretorCode}` : base
+  }
   const base = pathPrefix.value || '/'
   return corretorCode ? `${base}${base.includes('?') ? '&' : '?'}c=${corretorCode}` : base
+})
+
+const pathPrefix = computed(() => {
+  if (isPreview.value) {
+    return `/preview/${previewId.value}`
+  }
+  const host = process.client ? window.location.host : ''
+  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
+  return isMainDomain ? `/${projectSlug.value}` : ''
 })
 
 const loading = ref(true)
@@ -277,7 +300,10 @@ const unifiedAvailableLots = computed(() => {
             areaM2: parseFloat(finalAreaM2.toFixed(2)), 
             frontage: parseFloat(finalFrontage.toFixed(2)), 
             price: l.price,
-            tags: l.tags || []
+            tags: l.tags || [],
+            block: l.block,
+            lotNumber: l.lotNumber,
+            pricePerM2: l.pricePerM2
           } 
         }
       })
@@ -374,7 +400,8 @@ const lotPageUrl = (lot: any) => {
 
 onMounted(async () => {
   try {
-    const p = await fetchPublic(`/p/${projectSlug.value}`)
+    const baseUrl = isPreview.value ? `/p/preview/${previewId.value}` : `/p/${projectSlug.value}`
+    const p = await fetchPublic(baseUrl)
     if (p) {
       project.value = p
       chatStore.setProject(p)

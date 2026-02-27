@@ -62,8 +62,8 @@ export class PlantMapService {
   }
 
   /** Public access — no tenantId check (project uniqueness ensures isolation) */
-  async findByProjectPublic(projectId: string) {
-    const plantMap = await this.prisma.plantMap.findUnique({
+  async findByProjectPublic(projectId: string, _isPreview = false) {
+    const plantMap = (await this.prisma.plantMap.findUnique({
       where: { projectId },
       include: {
         hotspots: { 
@@ -87,7 +87,8 @@ export class PlantMapService {
           }
         }
       }
-    });
+    })) as any;
+
     if (!plantMap) return null;
 
     // Attach tags from linked MapElements (Lots)

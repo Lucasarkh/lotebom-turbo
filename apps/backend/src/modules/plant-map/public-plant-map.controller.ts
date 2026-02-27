@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PlantMapService } from './plant-map.service';
 
@@ -16,8 +16,8 @@ export class PublicPlantMapController {
 
   @Get()
   @ApiOperation({ summary: 'Planta interativa pública do projeto' })
-  findPublic(@Param('projectId') projectId: string) {
+  findPublic(@Param('projectId') projectId: string, @Query('preview') preview?: string) {
     // tenantId not needed for public lookup — uses projectId unique constraint
-    return this.plantMapService.findByProjectPublic(projectId);
+    return this.plantMapService.findByProjectPublic(projectId, preview === 'true');
   }
 }

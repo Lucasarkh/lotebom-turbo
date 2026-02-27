@@ -17,7 +17,7 @@
               {{ project.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
             </span>
           </div>
-          <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">{{ project.name }}</h1>
+          <h1 style="margin: 0; font-size: 1.75rem; letter-spacing: -0.02em;">{{ project.name }}</h1>
           <p style="margin: 0; color: var(--gray-500); font-weight: 500;">{{ project.description || 'Sem descrição' }}</p>
         </div>
 
@@ -32,6 +32,17 @@
             <span style="font-size: 1rem;">🌐</span>
             <span>Ver Página Pública</span>
           </a>
+
+          <NuxtLink
+            v-else
+            :to="`/preview/${project.id}`"
+            target="_blank"
+            class="btn btn-sm btn-secondary"
+            style="border-radius: var(--radius-full); padding-left: var(--space-5); padding-right: var(--space-5); height: 38px;"
+          >
+            <span style="font-size: 1rem;">👀</span>
+            <span>Link de Preview</span>
+          </NuxtLink>
 
           <div style="width: 1px; height: 24px; background: var(--gray-200);"></div>
 
@@ -252,8 +263,8 @@
       </div>
 
       <!-- Tab: Financiamento -->
-      <div v-if="activeTab === 'financing'">
-        <div class="card" style="max-width: 800px;">
+      <div v-if="activeTab === 'financing'" class="financing-layout-v4">
+        <div class="card" style="flex: 1; max-width: 800px;">
           <h3 style="margin-bottom: var(--space-2); display: flex; align-items: center; gap: 8px;">
             <span>🧮</span> Regras de Simulação Financeira
           </h3>
@@ -307,6 +318,92 @@
             </button>
           </div>
         </div>
+
+        <!-- LIVE PREVIEW SIDEBAR -->
+        <div class="financing-preview-sidebar">
+          <div class="preview-header">
+            <h4>👀 Preview em Tempo Real</h4>
+            <p>Assim é como o simulador aparece na página pública</p>
+          </div>
+
+          <div class="simulator-card-v4">
+            <div class="sim-header" style="background: #eff6ff;">
+              <div class="h-item">
+                <span class="l" style="font-weight: 700; color: #3b82f6;">Valor do Lote (Simulado)</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.5rem; font-weight: 800; color: var(--v4-primary);">R$</span>
+                  <input v-model.number="previewLotPrice" type="number" step="1000" style="font-size: 1.5rem; font-weight: 800; color: var(--v4-primary); border: none; background: transparent; padding: 0; outline: none; width: 100%;" />
+                </div>
+                <small style="color: #60a5fa; font-weight: 500;">Digite aqui o valor para testar a simulação</small>
+              </div>
+            </div>
+
+            <div class="sim-body">
+              <!-- Down Payment Selection -->
+              <div class="input-group-v4">
+                <div class="ig-label">Quanto deseja dar de entrada?</div>
+                <div class="ig-flex">
+                  <div class="ig-field" style="flex: 2;">
+                    <span class="ig-curr">R$</span>
+                    <input v-model.number="previewDownPayment" type="number" step="0.01" @input="updatePercentFromDownPaymentPreview" class="ig-input" :min="minDownPaymentValueForPreview" />
+                  </div>
+                  <div class="ig-field" style="flex: 1;">
+                    <input v-model.number="previewDownPaymentPercent" type="number" step="0.1" class="ig-input" />
+                    <span class="ig-curr">%</span>
+                  </div>
+                </div>
+                <small class="ig-hint">Entrada mínima: {{ formatCurrencyToBrasilia(minDownPaymentValueForPreview) }} ({{ editForm?.minDownPaymentPercent || 10 }}%)</small>
+              </div>
+
+              <!-- Installments Slider -->
+              <div class="input-group-v4" style="margin-top: 32px;">
+                <div class="ig-label">Número de Parcelas: <strong>{{ previewMonths }} meses</strong></div>
+                <div class="slider-wrapper">
+                  <input 
+                    type="range" 
+                    v-model.number="previewMonths" 
+                    min="12" 
+                    :max="editForm.maxInstallments || 180" 
+                    step="12"
+                    class="range-slider-v4"
+                  />
+                  <div class="slider-labels">
+                    <span>12x</span>
+                    <span>{{ Math.round((editForm.maxInstallments || 180) / 2) }}x</span>
+                    <span>{{ editForm.maxInstallments || 180 }}x</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Result -->
+              <div class="sim-result-v4">
+                <div class="r-label">Primeira Parcela Estimada</div>
+                <div class="r-value" style="font-size: 2rem;">{{ formatCurrencyToBrasilia(previewResult) }}</div>
+                <div class="r-detail">
+                  <span v-if="editForm?.monthlyInterestRate > 0">
+                    Juros: {{ editForm.monthlyInterestRate }}% am ({{ annualInterestRateEffective.toFixed(2) }}% aa) + {{ editForm.indexer || 'IGP-M' }}
+                  </span>
+                  <span v-else>Sem juros + {{ editForm.indexer || 'IGP-M' }}</span>
+                </div>
+
+                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(0, 112, 227, 0.1); font-size: 0.85rem; color: #1e40af;">
+                  <div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Total do Investimento:</span>
+                    <strong>{{ formatCurrencyToBrasilia(previewTotalInvested) }}</strong>
+                  </div>
+                  <div style="display:flex; justify-content: space-between;" v-if="previewTotalInterest > 0">
+                    <span>Custo Total de Juros:</span>
+                    <strong>{{ formatCurrencyToBrasilia(previewTotalInterest) }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sim-disclaimer-v4">
+                ⚠️ {{ editForm?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Tab: Lotes (Elementos do Projeto) -->
@@ -323,21 +420,26 @@
           </div>
           <table>
             <thead>
-              <tr><th>Código</th><th>Nome</th><th>Tipo</th><th>Status</th><th>Preço</th><th>Área</th><th>Inclinação</th><th v-if="authStore.canEdit">Ações</th></tr>
+              <tr><th>Quadra/Lote</th><th>Status</th><th>Valor M²</th><th>Total</th><th>Entrada/Ato</th><th>Área</th><th v-if="authStore.canEdit">Ações</th></tr>
             </thead>
             <tbody>
               <tr v-for="l in lots" :key="l.id">
-                <td><code>{{ l.mapElement?.code || '—' }}</code></td>
-                <td>{{ l.mapElement?.name || '—' }}</td>
                 <td>
-                  <span class="badge badge-neutral" style="font-size: 10px;">{{ l.mapElement?.type === 'LOT' ? 'Lote' : 'Ponto' }}</span>
+                   <div style="font-weight: 700; color: var(--gray-800);">{{ l.block || '' }} {{ l.lotNumber || (l.mapElement?.code || '—') }}</div>
+                   <div style="font-size: 0.7rem; color: var(--gray-400); display: flex; align-items: center; gap: 4px;">
+                     <span class="badge badge-neutral" style="font-size: 8px; padding: 1px 4px; border-radius: 4px;">{{ l.mapElement?.type === 'LOT' ? 'Lote' : 'Ponto' }}</span>
+                     <span>{{ l.mapElement?.code }}</span>
+                   </div>
                 </td>
                 <td>
                   <span class="badge" :class="lotBadge(l.status)">{{ lotLabel(l.status) }}</span>
                 </td>
-                <td>{{ l.price ? formatCurrencyToBrasilia(l.price) : '—' }}</td>
-                <td>{{ l.areaM2 ? `${l.areaM2} m²` : '—' }}</td>
-                <td>{{ slopeLabel(l.slope) }}</td>
+                <td style="font-weight: 500;">{{ l.pricePerM2 ? formatCurrencyToBrasilia(l.pricePerM2) : '—' }}</td>
+                <td style="font-weight: 700;">{{ l.price ? formatCurrencyToBrasilia(l.price) : '—' }}</td>
+                <td style="font-weight: 600; color: var(--success);">
+                  {{ l.price ? formatCurrencyToBrasilia(Number(l.price) * (project?.minDownPaymentPercent / 100 || 0.1)) : '—' }}
+                </td>
+                <td style="font-weight: 500;">{{ l.areaM2 ? `${l.areaM2.toFixed(2)} m²` : '—' }}</td>
                 <td v-if="authStore.canEdit">
                   <div class="flex gap-2">
                      <button class="btn btn-sm btn-secondary" @click="openEditLot(l)">Editar Dados</button>
@@ -361,6 +463,17 @@
           
           <div class="grid grid-cols-2" style="gap: var(--space-4); margin-top: var(--space-4);">
             <div class="form-group">
+              <label class="form-label">Quadra</label>
+              <input v-model="lotForm.block" class="form-input" placeholder="Ex: Quadra B" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lote nº</label>
+              <input v-model="lotForm.lotNumber" class="form-input" placeholder="Ex: 31" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3" style="gap: var(--space-4); margin-top: var(--space-4);">
+            <div class="form-group">
               <label class="form-label">Status</label>
               <select v-model="lotForm.status" class="form-input">
                 <option value="AVAILABLE">Disponível</option>
@@ -369,8 +482,12 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Preço (R$)</label>
-              <input v-model.number="lotForm.price" type="number" step="0.01" class="form-input" placeholder="0.00" />
+              <label class="form-label">Valor do M² (R$)</label>
+              <input v-model.number="lotForm.pricePerM2" type="number" step="0.01" class="form-input" placeholder="0.00" @input="calculatePriceFromM2" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Preço Total (R$)</label>
+              <input v-model.number="lotForm.price" type="number" step="0.01" class="form-input" placeholder="0.00" @input="calculateM2FromPrice" />
             </div>
           </div>
 
@@ -488,7 +605,7 @@
                   <input v-model.number="p.months" type="number" class="form-input" style="width: 80px;" placeholder="Meses" />
                   <span style="font-size: 0.8rem; color: var(--gray-400);">vezes de</span>
                   <input v-model.number="p.amount" type="number" step="0.01" class="form-input flex-1" placeholder="R$ 0.00" />
-                  <button class="btn btn-sm" style="padding: 4px;" @click="removeParcelaInForm(i)">✕</button>
+                  <button class="btn btn-sm" style="padding: 4px;" @click="removeParcelaInForm(Number(i))">✕</button>
                 </div>
                 <button class="btn btn-sm btn-outline" style="width:100%; margin-top: var(--space-2);" @click="addParcelaInForm">+ Adicionar Parcela</button>
               </div>
@@ -604,6 +721,97 @@
               </div>
             </section>
 
+            <!-- Section: Price & Conditions -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
+                <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">💰</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Preços e Condições</h3>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2" style="gap: 20px; margin-bottom: 20px;">
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">A partir de (R$)</label>
+                  <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="144000" :disabled="!authStore.canEdit" />
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Parcelamento (Vezes)</label>
+                  <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="120" :disabled="!authStore.canEdit" />
+                </div>
+              </div>
+
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Resumo das Condições</label>
+                <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Entrada facilitada em 6x e saldo em 120 meses." :disabled="!authStore.canEdit" />
+              </div>
+            </section>
+
+            <!-- Section: Construction Status -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+                <div style="width: 32px; height: 32px; background: #fef3c7; color: #92400e; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏗️</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Acompanhamento de Obras</h3>
+                </div>
+              </div>
+
+              <div v-if="pubInfoForm.constructionStatus.length === 0" class="empty-state" style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: 16px;">
+                <p style="font-size: 0.8rem;">Nenhum status configurado.</p>
+              </div>
+
+              <div v-else style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
+                <div v-for="(item, i) in pubInfoForm.constructionStatus" :key="i" style="background: white; border: 1px solid var(--gray-200); padding: 16px; border-radius: 8px; position: relative;">
+                  <div class="flex justify-between items-center" style="margin-bottom: 10px;">
+                    <span style="font-weight: 600; font-size: 0.875rem;">{{ item.label }}</span>
+                    <span style="font-weight: 700; color: var(--success); font-size: 0.875rem;">{{ item.percentage }}%</span>
+                  </div>
+                  <div style="width: 100%; height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden;">
+                    <div :style="{ width: item.percentage + '%', background: 'var(--success)' }" style="height: 100%; transition: width 0.3s ease;"></div>
+                  </div>
+                  <button v-if="authStore.canEdit" class="btn-remove-v4" title="Remover Etapa" @click="removeWorkStage(i)">✕</button>
+                </div>
+              </div>
+
+              <!-- New Work Stage Form -->
+              <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: 20px; border-radius: 8px; border: 1px solid var(--gray-200);">
+                <div style="display: grid; grid-template-columns: 1fr 80px; gap: 16px; align-items: end;">
+                  <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 0.75rem;">Nova Etapa (ex: Terraplanagem)</label>
+                    <input v-model="newWorkStage.label" class="form-input btn-sm" placeholder="Nome da etapa..." />
+                  </div>
+                  <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 0.75rem;">%</label>
+                    <input v-model.number="newWorkStage.percentage" type="number" min="0" max="100" class="form-input btn-sm" />
+                  </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px;" @click="addWorkStage">Adicionar Etapa</button>
+              </div>
+            </section>
+
+            <!-- Section: Location -->
+            <section class="card" style="padding: var(--space-6); margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
+                <div style="width: 32px; height: 32px; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">📍</div>
+                <div>
+                  <h3 style="margin:0; font-size: 1rem;">Localização</h3>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 24px;">
+                <label class="form-label" style="font-size: 0.75rem;">Endereço</label>
+                <input v-model="pubInfoForm.address" class="form-input btn-sm" placeholder="Av. Brasil, 1000 - Centro" :disabled="!authStore.canEdit" />
+              </div>
+
+              <div class="form-group" style="margin:0;">
+                <label class="form-label" style="font-size: 0.75rem;">Link Google Maps</label>
+                <input v-model="pubInfoForm.googleMapsUrl" class="form-input btn-sm" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
+              </div>
+            </section>
+          </div>
+
+          <!-- Column 2 -->
+          <div class="flex flex-col" style="gap: 40px;">
             <!-- Section: Video & Multimedia -->
             <section class="card" style="padding: var(--space-6); margin: 0;">
               <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
@@ -633,123 +841,108 @@
               </div>
             </section>
 
-            <!-- Section: Construction Status -->
-            <section class="card" style="padding: var(--space-6); margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
-                <div style="width: 32px; height: 32px; background: #fef3c7; color: #92400e; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏗️</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Acompanhamento de Obras</h3>
-                </div>
-              </div>
-
-              <div v-if="pubInfoForm.constructionStatus.length === 0" class="empty-state" style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: 16px;">
-                <p style="font-size: 0.8rem;">Nenhum status configurado.</p>
-              </div>
-
-              <div v-else style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
-                <div v-for="(item, i) in pubInfoForm.constructionStatus" :key="i" style="background: white; border: 1px solid var(--gray-200); padding: 16px; border-radius: 8px; position: relative;">
-                  <div class="flex justify-between items-center" style="margin-bottom: 10px;">
-                    <span style="font-weight: 600; font-size: 0.875rem;">{{ item.label }}</span>
-                    <span style="font-weight: 700; color: var(--success); font-size: 0.875rem;">{{ item.percentage }}%</span>
-                  </div>
-                  <div style="width: 100%; height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden;">
-                    <div :style="{ width: item.percentage + '%', background: 'var(--success)' }" style="height: 100%; transition: width 0.3s ease;"></div>
-                  </div>
-                  <button v-if="authStore.canEdit" class="btn btn-xs" style="position: absolute; top: -10px; right: -10px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: var(--danger); border: 2px solid white; color: white; cursor: pointer; padding: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" @click="removeWorkStage(i)">✕</button>
-                </div>
-              </div>
-
-              <!-- New Work Stage Form -->
-              <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: 20px; border-radius: 8px; border: 1px solid var(--gray-200);">
-                <div style="display: grid; grid-template-columns: 1fr 80px; gap: 16px; align-items: end;">
-                  <div class="form-group" style="margin:0;">
-                    <label class="form-label" style="font-size: 0.75rem;">Nova Etapa (ex: Terraplanagem)</label>
-                    <input v-model="newWorkStage.label" class="form-input btn-sm" placeholder="Nome da etapa..." />
-                  </div>
-                  <div class="form-group" style="margin:0;">
-                    <label class="form-label" style="font-size: 0.75rem;">%</label>
-                    <input v-model.number="newWorkStage.percentage" type="number" min="0" max="100" class="form-input btn-sm" />
-                  </div>
-                </div>
-                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px;" @click="addWorkStage">Adicionar Etapa</button>
-              </div>
-            </section>
-          </div>
-
-          <!-- Column 2 -->
-          <div class="flex flex-col" style="gap: 40px;">
-            <!-- Section: Price & Conditions -->
+            <!-- Section: Infraestrutura -->
             <section class="card" style="padding: var(--space-6); margin: 0;">
               <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
-                <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">💰</div>
+                <div style="width: 32px; height: 32px; background: #fdf2f8; color: #db2777; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏗️</div>
                 <div>
-                  <h3 style="margin:0; font-size: 1rem;">Preços e Condições</h3>
+                  <h3 style="margin:0; font-size: 1rem;">Infraestrutura</h3>
                 </div>
               </div>
 
-              <div class="grid grid-cols-2" style="gap: 20px; margin-bottom: 20px;">
-                <div class="form-group" style="margin:0;">
-                  <label class="form-label">A partir de (R$)</label>
-                  <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="144000" :disabled="!authStore.canEdit" />
+              <!-- Infrastructure Titles -->
+              <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--gray-200); margin-bottom: 32px;">
+                <h4 style="font-size: 0.75rem; color: var(--gray-400); text-transform: uppercase; margin-bottom: 16px;">Títulos da Seção</h4>
+                <div class="form-group">
+                  <label class="form-label" style="font-size: 0.7rem;">Título Principal (Ex: Sua família merece o melhor)</label>
+                  <input v-model="pubInfoForm.highlightsTitle" class="form-input" placeholder="Sua família merece o melhor." />
                 </div>
-                <div class="form-group" style="margin:0;">
-                  <label class="form-label">Parcelamento (Vezes)</label>
-                  <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="120" :disabled="!authStore.canEdit" />
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.7rem;">Subtítulo (Abaixo do título)</label>
+                  <input v-model="pubInfoForm.highlightsSubtitle" class="form-input" placeholder="Qualidade de vida, segurança..." />
                 </div>
               </div>
 
-              <div class="form-group" style="margin:0;">
-                <label class="form-label">Resumo das Condições</label>
-                <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Entrada facilitada em 6x e saldo em 120 meses." :disabled="!authStore.canEdit" />
+              <!-- Infrastructure Categories -->
+              <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'category').length" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
+                <h4 style="font-size: 0.75rem; color: var(--gray-400); text-transform: uppercase;">Categorias de Infraestrutura</h4>
+                <div v-for="(cat, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="cat.type === 'category'" style="background: white; border: 1px solid var(--gray-200); padding: 20px; border-radius: 12px; position: relative;">
+                  <div class="flex justify-between items-center" style="margin-bottom: 16px;">
+                    <strong style="font-size: 0.95rem; color: var(--gray-800); font-weight: 700;">{{ cat.title }}</strong>
+                    <button v-if="authStore.canEdit" class="btn-remove-v4" title="Remover Categoria" @click="removeHighlight(idx)">✕</button>
+                  </div>
+                  
+                  <!-- Items list -->
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                    <div v-for="(it, itIdx) in cat.items" :key="itIdx" class="infra-badge-v4">
+                      {{ it }}
+                      <span v-if="authStore.canEdit" class="infra-badge-remove" @click="removeInfraItem(idx, itIdx)">✕</span>
+                    </div>
+                  </div>
+
+                  <!-- Add item to category -->
+                  <div v-if="authStore.canEdit" style="display: flex; gap: 10px;">
+                    <input 
+                      v-model="infraItemInputs[idx]"
+                      @keyup.enter="addInfraItem(idx)"
+                      class="form-input" 
+                      placeholder="Adicionar item..." 
+                      style="flex: 1; font-size: 0.8125rem; height: 42px; border-radius: 8px;" 
+                    />
+                    <button class="btn btn-dark" style="width: 42px; height: 42px; padding: 0; border-radius: 8px; background: #222; color: white;" @click="addInfraItem(idx)">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: 24px; border-radius: 12px; border: 1px solid var(--gray-200);">
+                <p style="font-size: 0.7rem; color: var(--gray-500); margin-bottom: 12px; font-weight: 700; text-transform: uppercase;">Nova Categoria de Infraestrutura</p>
+                <input v-model="newInfraCategory" class="form-input" placeholder="Título da Categoria (ex: Equipamentos)" style="height: 48px; border-radius: 8px;" />
+                <button class="btn btn-primary" style="width: 100%; margin-top: 16px; height: 48px; border-radius: 12px; font-weight: 600; background: #3b82f6;" @click="addInfraCategory">Criar Categoria</button>
               </div>
             </section>
 
-            <!-- Section: Highlights -->
+            <!-- Section: Destaques -->
             <section class="card" style="padding: var(--space-6); margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
-                <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">⭐</div>
+              <div class="flex items-center gap-3" style="margin-bottom: var(--space-6);">
+                <div style="width: 32px; height: 32px; background: #fff7ed; color: #f97316; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">✨</div>
                 <div>
-                  <h3 style="margin:0; font-size: 1rem;">Diferenciais</h3>
+                  <h3 style="margin:0; font-size: 1rem;">Destaques</h3>
                 </div>
               </div>
 
-              <div v-if="pubInfoForm.highlightsJson.length" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
-                <div v-for="(h, i) in pubInfoForm.highlightsJson" :key="i" style="padding: 12px 16px; border: 1px solid var(--gray-200); border-radius: 8px; position: relative; background: white; display: flex; align-items: center; gap: 10px;">
-                  <div style="font-size: 1rem; color: #059669;">✅</div>
+              <!-- Highlights Titles -->
+              <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--gray-200); margin-bottom: 32px;">
+                <h4 style="font-size: 0.75rem; color: var(--gray-400); text-transform: uppercase; margin-bottom: 16px;">Títulos da Seção</h4>
+                <div class="form-group">
+                  <label class="form-label" style="font-size: 0.7rem;">Título da Seção (Ex: Destaques)</label>
+                  <input v-model="pubInfoForm.traditionalHighlightsTitle" class="form-input" placeholder="Destaques" />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" style="font-size: 0.7rem;">Subtítulo (Abaixo do título)</label>
+                  <input v-model="pubInfoForm.traditionalHighlightsSubtitle" class="form-input" placeholder="Diferenciais pensados para..." />
+                </div>
+              </div>
+
+              <!-- General Highlights -->
+              <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'highlight' || !h.type).length" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+                <h4 style="font-size: 0.75rem; color: var(--gray-400); text-transform: uppercase;">Diferenciais Individuais</h4>
+                <div v-for="(h, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="h.type === 'highlight' || !h.type" style="padding: 12px 16px; border: 1px solid var(--gray-200); border-radius: 8px; position: relative; background: white; display: flex; align-items: center; gap: 10px;">
+                  <div style="font-size: 1rem; color: #059669;">{{ h.icon || '✅' }}</div>
                   <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                     <strong style="font-size: 0.8125rem;">{{ h.label }}</strong>
                     <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 4px;">{{ h.value }}</span>
                   </div>
-                  <button v-if="authStore.canEdit" class="btn btn-xs" style="padding: 0; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: var(--danger); border: 1px solid white; color: white; cursor: pointer;" @click="removeHighlight(i)">✕</button>
+                  <button v-if="authStore.canEdit" class="btn-remove-v4" title="Remover" @click="removeHighlight(idx)">✕</button>
                 </div>
               </div>
 
-              <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: 20px; border-radius: 8px; border: 1px solid var(--gray-200);">
-                <div class="grid grid-cols-2 gap-3">
-                  <input v-model="newHighlight.label" class="form-input btn-sm" placeholder="Rótulo" />
-                  <input v-model="newHighlight.value" class="form-input btn-sm" placeholder="Detalhe" />
+              <div v-if="authStore.canEdit" style="background: var(--gray-50); padding: 24px; border-radius: 12px; border: 1px solid var(--gray-200);">
+                <p style="font-size: 0.7rem; color: var(--gray-500); margin-bottom: 12px; font-weight: 700; text-transform: uppercase;">Novo Diferencial Simples</p>
+                <div class="grid grid-cols-2 gap-4">
+                  <input v-model="newHighlight.label" class="form-input" placeholder="Rótulo (ex: Segurança)" style="height: 48px; border-radius: 8px;" />
+                  <input v-model="newHighlight.value" class="form-input" placeholder="Detalhe (ex: 24h)" style="height: 48px; border-radius: 8px;" />
                 </div>
-                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 12px;" @click="addHighlight">Adicionar</button>
-              </div>
-            </section>
-
-            <!-- Section: Location -->
-            <section class="card" style="padding: var(--space-6); margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
-                <div style="width: 32px; height: 32px; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">📍</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Localização</h3>
-                </div>
-              </div>
-
-              <div class="form-group" style="margin-bottom: 24px;">
-                <label class="form-label" style="font-size: 0.75rem;">Endereço</label>
-                <input v-model="pubInfoForm.address" class="form-input btn-sm" placeholder="Av. Brasil, 1000 - Centro" :disabled="!authStore.canEdit" />
-              </div>
-
-              <div class="form-group" style="margin:0;">
-                <label class="form-label" style="font-size: 0.75rem;">Link Google Maps</label>
-                <input v-model="pubInfoForm.googleMapsUrl" class="form-input btn-sm" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
+                <button class="btn btn-dark" style="width: 100%; margin-top: 16px; height: 48px; background: #222; color: white; border-radius: 12px; font-weight: 600;" @click="addHighlight">Adicionar Diferencial</button>
               </div>
             </section>
           </div>
@@ -759,7 +952,7 @@
             <div class="flex items-center gap-3" style="margin-bottom: var(--space-4);">
               <div style="width: 32px; height: 32px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem;">📝</div>
               <div>
-                <h3 style="margin:0; font-size: 1rem;">Texto Descritivo e Infraestrutura</h3>
+                <h3 style="margin:0; font-size: 1rem;">Texto Descritivo</h3>
               </div>
             </div>
             
@@ -915,7 +1108,7 @@
                 <td>
                   <div v-if="publicUrl" class="flex gap-2 items-center">
                     <code style="font-size:0.75rem; color: var(--gray-600);">?c={{ c.code }}</code>
-                    <button class="btn btn-sm btn-outline" @click="copyLink(`${$config?.public?.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')}${publicUrl}?c=${c.code}`)">📋 Copiar</button>
+                    <button class="btn btn-sm btn-outline" @click="copyLink(`${locationOrigin}${publicUrl}?c=${c.code}`)">📋 Copiar</button>
                   </div>
                   <span v-else style="color:var(--gray-400); font-size:0.8rem;">Publique o projeto</span>
                 </td>
@@ -937,7 +1130,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+
+interface Media {
+  id: string;
+  url: string;
+  type: 'PHOTO' | 'VIDEO';
+}
+
+interface Highlight {
+  type?: 'category' | 'highlight';
+  title?: string;
+  items?: string[];
+  label?: string;
+  value?: string;
+  icon?: string;
+}
+
+interface Corretor {
+  id: string;
+  name: string;
+  code: string;
+  phone?: string;
+  email?: string;
+  creci?: string;
+  photoUrl?: string;
+  enabled: boolean;
+  notes?: string;
+  _count?: { leads: number };
+}
+
+interface PaymentConfig {
+  id: string;
+  name: string;
+  provider: string;
+  isEnabledForProject: boolean;
+}
+
+interface AiConfig {
+  id: string;
+  name: string;
+  model: string;
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -952,7 +1186,7 @@ const project = ref<any>(null)
 const mapElements = ref<any[]>([])
 const lots = ref<any[]>([])
 const lotsMeta = ref({ totalItems: 0, itemCount: 0, itemsPerPage: 50, totalPages: 0, currentPage: 1 })
-const media = ref<any[]>([])
+const media = ref<Media[]>([])
 const activeTab = ref('lots')
 const uploadingBanner = ref(false)
 const uploadingMedia = ref(false)
@@ -964,12 +1198,15 @@ const editingLot = ref<any>(null)
 const newTag = ref('')
 const lotForm = ref({
   status: 'AVAILABLE',
-  price: null,
-  areaM2: null,
-  frontage: null,
-  depth: null,
-  sideLeft: null,
-  sideRight: null,
+  block: '',
+  lotNumber: '',
+  price: null as number | null,
+  pricePerM2: null as number | null,
+  areaM2: null as number | null,
+  frontage: null as number | null,
+  depth: null as number | null,
+  sideLeft: null as number | null,
+  sideRight: null as number | null,
   slope: 'FLAT',
   panoramaUrl: null as string | null,
   notes: '',
@@ -993,6 +1230,7 @@ const addSuggestedTag = (tag: string) => {
     lotForm.value.tags.push(tag.toLowerCase())
   }
 }
+
 const savingLot = ref(false)
 const uploadingLotMedia = ref(false)
 const uploadingPanorama = ref(false)
@@ -1018,11 +1256,36 @@ const lotMedias = computed(() => {
   return editingLot.value.medias || []
 })
 
+const calculatePriceFromM2 = () => {
+  const area = lotForm.value.areaM2 || lotContractArea.value
+  if (area && lotForm.value.pricePerM2) {
+    lotForm.value.price = Math.round(area * lotForm.value.pricePerM2 * 100) / 100
+  }
+}
+
+const calculateM2FromPrice = () => {
+  const area = lotForm.value.areaM2 || lotContractArea.value
+  if (area && lotForm.value.price) {
+    lotForm.value.pricePerM2 = Math.round((lotForm.value.price / area) * 100) / 100
+  }
+}
+
+watch(() => lotContractArea.value, (newArea) => {
+  if (newArea && lotForm.value.pricePerM2) {
+    lotForm.value.price = Math.round(newArea * lotForm.value.pricePerM2 * 100) / 100
+  } else if (newArea && lotForm.value.price) {
+    lotForm.value.pricePerM2 = Math.round((lotForm.value.price / newArea) * 100) / 100
+  }
+})
+
 const openEditLot = (lot: any) => {
   editingLot.value = lot
   lotForm.value = { 
     status: lot.status, 
-    price: lot.price, 
+    block: lot.block || '',
+    lotNumber: lot.lotNumber || '',
+    price: lot.price ? Number(lot.price) : null, 
+    pricePerM2: lot.pricePerM2 ? Number(lot.pricePerM2) : null,
     areaM2: lot.areaM2, 
     frontage: lot.frontage, 
     depth: lot.depth,
@@ -1044,7 +1307,10 @@ const saveLotDetails = async () => {
     const calc = lotContractArea.value
     const payload: Record<string, any> = {
       status: lotForm.value.status,
+      block: lotForm.value.block || undefined,
+      lotNumber: lotForm.value.lotNumber || undefined,
       price: lotForm.value.price ?? undefined,
+      pricePerM2: lotForm.value.pricePerM2 ?? undefined,
       frontage: lotForm.value.frontage ?? undefined,
       depth: lotForm.value.depth ?? undefined,
       sideLeft: lotForm.value.sideLeft ?? undefined,
@@ -1123,8 +1389,8 @@ const removeParcelaInForm = (idx: number) => {
   lotForm.value.paymentConditions.parcelas.splice(idx, 1)
 }
 
-const uploadLotMediaFile = async (e) => {
-  const file = e.target.files?.[0]
+const uploadLotMediaFile = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
   if (!file || !editingLot.value) return
   uploadingLotMedia.value = true
   try {
@@ -1139,12 +1405,12 @@ const uploadLotMediaFile = async (e) => {
   } catch (err) {
     toastFromError(err, 'Erro ao enviar foto')
   }
-  e.target.value = ''
+  (e.target as HTMLInputElement).value = ''
   uploadingLotMedia.value = false
 }
 
-const uploadLotPanoramaFile = async (e) => {
-  const file = e.target.files?.[0]
+const uploadLotPanoramaFile = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
   if (!file || !editingLot.value) return
   uploadingPanorama.value = true
   try {
@@ -1157,22 +1423,27 @@ const uploadLotPanoramaFile = async (e) => {
   } catch (err) {
     toastFromError(err, 'Erro ao enviar imagem')
   }
-  e.target.value = ''
+  (e.target as HTMLInputElement).value = ''
   uploadingPanorama.value = false
 }
 
-const removeLotMedia = async (id) => {
+const removeLotMedia = async (id: string) => {
   if (!confirm('Excluir foto do lote?')) return
   try {
     await fetchApi(`/projects/${projectId}/media/${id}`, { method: 'DELETE' })
     if (editingLot.value.medias) {
-      editingLot.value.medias = editingLot.value.medias.filter(m => m.id !== id)
+      editingLot.value.medias = editingLot.value.medias.filter((m: any) => m.id !== id)
     }
     toastSuccess('Foto excluída')
   } catch (e) {
     toastFromError(e, 'Erro ao excluir foto')
   }
 }
+
+const locationOrigin = computed(() => {
+  if (typeof window !== 'undefined') return window.location.origin
+  return ''
+})
 
 const publicUrl = computed(() => project.value ? `/${project.value.slug}` : null)
 
@@ -1187,13 +1458,89 @@ const editForm = ref({
   reservationExpiryHours: 24,
   minDownPaymentPercent: 10,
   minDownPaymentValue: 0,
+  maxInstallments: 180,
   monthlyInterestRate: 0.9,
   indexer: 'IGP-M',
   allowIntermediary: false,
   financingDisclaimer: 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.',
   aiEnabled: false,
-  aiConfigId: ''
+  aiConfigId: '',
+  paymentConditions: [] as any[]
 })
+
+// ── Live Preview Logic ──────────────────────────────────
+const previewDownPayment = ref(0)
+const previewMonths = ref(120)
+const previewLotPrice = ref(200000)
+
+const minDownPaymentValueForPreview = computed(() => {
+  const percentVal = (previewLotPrice.value * (editForm.value.minDownPaymentPercent || 0)) / 100
+  const fixedVal = editForm.value.minDownPaymentValue || 0
+  return Math.max(percentVal, fixedVal)
+})
+
+watch(() => editForm.value.minDownPaymentPercent, () => {
+  if (previewDownPayment.value < minDownPaymentValueForPreview.value) {
+    previewDownPayment.value = minDownPaymentValueForPreview.value
+  }
+}, { immediate: true })
+
+watch(previewLotPrice, () => {
+  if (previewDownPayment.value < minDownPaymentValueForPreview.value) {
+    previewDownPayment.value = minDownPaymentValueForPreview.value
+  }
+})
+
+const previewResult = computed(() => {
+  const price = previewLotPrice.value
+  const down = previewDownPayment.value
+  const months = previewMonths.value
+  const rate = (editForm.value.monthlyInterestRate || 0) / 100
+  
+  const amount = price - down
+  if (amount <= 0) return 0
+  
+  if (rate === 0) return amount / months
+  
+  // Amortização PRICE formula: PMT = P * (i * (1 + i)^n) / ((1 + i)^n - 1)
+  const pmt = amount * (rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1)
+  return pmt
+})
+
+const previewTotalInvested = computed(() => {
+  const down = previewDownPayment.value || 0
+  return down + (previewResult.value * previewMonths.value)
+})
+
+const previewTotalInterest = computed(() => {
+  return previewTotalInvested.value - previewLotPrice.value
+})
+
+const annualInterestRateEffective = computed(() => {
+  const i = (editForm.value.monthlyInterestRate || 0) / 100
+  if (i === 0) return 0
+  return (Math.pow(1 + i, 12) - 1) * 100
+})
+
+const updatePercentFromDownPaymentPreview = () => {
+  if (previewDownPayment.value < minDownPaymentValueForPreview.value) {
+    previewDownPayment.value = minDownPaymentValueForPreview.value
+  }
+}
+
+const previewDownPaymentPercent = computed({
+  get: () => {
+    if (!previewLotPrice.value) return 0
+    return Math.round((previewDownPayment.value / previewLotPrice.value * 100) * 10) / 10
+  },
+  set: (val) => {
+    previewDownPayment.value = (previewLotPrice.value * val) / 100
+    if (previewDownPayment.value < minDownPaymentValueForPreview.value) {
+      previewDownPayment.value = minDownPaymentValueForPreview.value
+    }
+  }
+})
+// ─────────────────────────────────────────────────────────
 
 // ── Public info (highlights + location) ──────────────────
 const richEditor = ref<HTMLElement | null>(null);
@@ -1211,10 +1558,14 @@ const updateFromEditor = () => {
 };
 
 const pubInfoForm = ref({
-  highlightsJson: [],
+  highlightsJson: [] as Highlight[],
+  highlightsTitle: '',
+  highlightsSubtitle: '',
+  traditionalHighlightsTitle: '',
+  traditionalHighlightsSubtitle: '',
   locationText: '',
-  startingPrice: null,
-  maxInstallments: null,
+  startingPrice: null as number | null,
+  maxInstallments: null as number | null,
   paymentConditionsSummary: '',
   address: '',
   googleMapsUrl: '',
@@ -1226,9 +1577,43 @@ const pubInfoSaved = ref(false)
 const newHighlight = ref({ label: '', value: '' })
 const newWorkStage = ref({ label: '', percentage: 0 })
 
+// Infraestrutura Categorizada
+const newInfraCategory = ref('')
+const infraItemInputs = ref<Record<number, string>>({}) // Unique input for each category
+const addingItemsToCategory = ref<number | null>(null)
+
+const addInfraCategory = () => {
+  if (!newInfraCategory.value) return
+  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { 
+    type: 'category', 
+    title: newInfraCategory.value, 
+    items: [] 
+  }]
+  newInfraCategory.value = ''
+}
+
+const addInfraItem = (catIdx: number) => {
+  const value = infraItemInputs.value[catIdx]
+  if (!value) return
+  
+  const cat = pubInfoForm.value.highlightsJson[catIdx]
+  if (cat && cat.type === 'category') {
+    if (!cat.items) cat.items = []
+    cat.items.push(value)
+    infraItemInputs.value[catIdx] = '' // Clear only this specific input
+  }
+}
+
+const removeInfraItem = (catIdx: number, itemIdx: number) => {
+  const cat = pubInfoForm.value.highlightsJson[catIdx]
+  if (cat && cat.type === 'category' && cat.items) {
+    cat.items.splice(itemIdx, 1)
+  }
+}
+
 const addHighlight = () => {
   if (!newHighlight.value.label) return
-  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { icon: '✅', ...newHighlight.value }]
+  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { type: 'highlight' as const, icon: '✅', ...newHighlight.value }]
   newHighlight.value = { label: '', value: '' }
 }
 const removeHighlight = (i: number) => {
@@ -1264,6 +1649,10 @@ const savePubInfo = async () => {
       method: 'PATCH',
       body: JSON.stringify({ 
         highlightsJson: pubInfoForm.value.highlightsJson, 
+        highlightsTitle: pubInfoForm.value.highlightsTitle,
+        highlightsSubtitle: pubInfoForm.value.highlightsSubtitle,
+        traditionalHighlightsTitle: pubInfoForm.value.traditionalHighlightsTitle,
+        traditionalHighlightsSubtitle: pubInfoForm.value.traditionalHighlightsSubtitle,
         locationText: pubInfoForm.value.locationText,
         startingPrice: pubInfoForm.value.startingPrice ? Number(pubInfoForm.value.startingPrice) : null,
         maxInstallments: pubInfoForm.value.maxInstallments ? Number(pubInfoForm.value.maxInstallments) : null,
@@ -1282,7 +1671,7 @@ const savePubInfo = async () => {
 }
 
 // ── Corretores ────────────────────────────────────────────
-const corretores = ref([])
+const corretores = ref<Corretor[]>([])
 const loadingCorretores = ref(false)
 const showNewCorretor = ref(false)
 const creatingCorretor = ref(false)
@@ -1385,45 +1774,45 @@ const createCorretor = async () => {
     emailAvailable.value = false
     codeAvailable.value = false
     toastSuccess('Corretor criado!')
-  } catch (e) {
+  } catch (e: any) {
     corretorError.value = e.message || 'Erro ao criar'
     toastFromError(e, 'Erro ao criar corretor')
   }
   creatingCorretor.value = false
 }
 
-const toggleCorretor = async (c) => {
+const toggleCorretor = async (c: Corretor) => {
   try {
     const updated = await fetchApi(`/realtor-links/${c.id}`, {
       method: 'PATCH',
       body: JSON.stringify({ enabled: !c.enabled }),
     })
     Object.assign(c, updated)
-  } catch (e) { toastFromError(e, 'Erro ao atualizar corretor') }
+  } catch (e: any) { toastFromError(e, 'Erro ao atualizar corretor') }
 }
 
-const deleteCorretor = async (c) => {
+const deleteCorretor = async (c: Corretor) => {
   if (!confirm(`Excluir corretor "${c.name}"?`)) return
   try {
     await fetchApi(`/realtor-links/${c.id}`, { method: 'DELETE' })
     corretores.value = corretores.value.filter(x => x.id !== c.id)
     toastSuccess('Corretor excluído')
-  } catch (e) { toastFromError(e, 'Erro ao excluir corretor') }
+  } catch (e: any) { toastFromError(e, 'Erro ao excluir corretor') }
 }
 
-const corretorLotLink = (c, lotCode) => {
+const corretorLotLink = (c: Corretor, lotCode?: string) => {
   if (!publicUrl.value) return ''
   return `${window?.location?.origin || ''}${publicUrl.value}?c=${c.code}${lotCode ? `#lote-${lotCode}` : ''}`
 }
 
-const copyLink = (text) => {
+const copyLink = (text: string) => {
   navigator.clipboard.writeText(text)
   toastSuccess('Link copiado!')
 }
 
 // ── Payment Configuration ────────────────────────────────
-const allConfigs = ref([])
-const activeConfigs = ref([])
+const allConfigs = ref<PaymentConfig[]>([])
+const activeConfigs = ref<PaymentConfig[]>([])
 const loadingPaymentOptions = ref(false)
 
 const loadPaymentConfig = async () => {
@@ -1454,10 +1843,10 @@ const toggleGateway = async (configId: string, active: boolean) => {
     })
     
     if (active) {
-      const config = allConfigs.value.find(c => c.id === configId)
+      const config = allConfigs.value.find(c => (c as any).id === configId)
       if (config) activeConfigs.value.push(config)
     } else {
-      activeConfigs.value = activeConfigs.value.filter(c => c.id !== configId)
+      activeConfigs.value = activeConfigs.value.filter(c => (c as any).id !== configId)
     }
     
     toastSuccess('Gateway alterado para o projeto')
@@ -1468,7 +1857,7 @@ const toggleGateway = async (configId: string, active: boolean) => {
 // ─────────────────────────────────────────────────────────
 
 // ── AI Configuration ─────────────────────────────────────
-const aiConfigs = ref([])
+const aiConfigs = ref<AiConfig[]>([])
 const loadAiConfigs = async () => {
   try {
     const res = await fetchApi('/ai/configs')
@@ -1489,9 +1878,9 @@ const tabs = [
   { key: 'settings', label: '⚙️ Config' },
 ]
 
-const lotBadge = (s) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[s] || 'badge-neutral')
-const lotLabel = (s) => ({ AVAILABLE: 'Disponível', RESERVED: 'Reservado', SOLD: 'Vendido' }[s] || s)
-const slopeLabel = (s) => ({ FLAT: 'Plano', UPHILL: 'Aclive', DOWNHILL: 'Declive' }[s] || s)
+const lotBadge = (s: string) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[s] || 'badge-neutral')
+const lotLabel = (s: string) => ({ AVAILABLE: 'Disponível', RESERVED: 'Reservado', SOLD: 'Vendido' }[s] || s)
+const slopeLabel = (s: string) => ({ FLAT: 'Plano', UPHILL: 'Aclive', DOWNHILL: 'Declive' }[s] || s)
 
 const formatCurrencyToBrasilia = (val: number | string) => {
   if (!val) return '---'
@@ -1541,11 +1930,17 @@ const loadProject = async () => {
       allowIntermediary: p.allowIntermediary ?? false,
       financingDisclaimer: p.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.',
       aiEnabled: p.aiEnabled ?? false,
-      aiConfigId: p.aiConfigId || ''
+      aiConfigId: p.aiConfigId || '',
+      maxInstallments: p.maxInstallments ?? 180,
+      paymentConditions: Array.isArray(p.paymentConditions) ? [...p.paymentConditions] : []
     }
     loadAiConfigs()
     pubInfoForm.value = {
       highlightsJson: Array.isArray(p.highlightsJson) ? p.highlightsJson : [],
+      highlightsTitle: p.highlightsTitle || 'Sua família merece o melhor.',
+      highlightsSubtitle: p.highlightsSubtitle || 'Qualidade de vida, segurança e infraestrutura completa em um só lugar.',
+      traditionalHighlightsTitle: p.traditionalHighlightsTitle || 'Destaques',
+      traditionalHighlightsSubtitle: p.traditionalHighlightsSubtitle || 'Diferenciais pensados para o seu bem-estar.',
       locationText: p.locationText || '',
       startingPrice: p.startingPrice,
       maxInstallments: p.maxInstallments,
@@ -1580,7 +1975,7 @@ const saveSettings = async () => {
     settingsSaved.value = true
     toastSuccess('Configurações salvas!')
     setTimeout(() => settingsSaved.value = false, 2000)
-  } catch (e) {
+  } catch (e: any) {
     settingsError.value = e.message
     toastFromError(e, 'Erro ao salvar configurações')
   }
@@ -1598,8 +1993,8 @@ const confirmDelete = async () => {
   }
 }
 
-const uploadBannerImage = async (e) => {
-  const file = e.target.files?.[0]
+const uploadBannerImage = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
   uploadingBanner.value = true
   try {
@@ -1609,7 +2004,7 @@ const uploadBannerImage = async (e) => {
   } catch (err) {
     toastFromError(err, 'Erro ao enviar banner')
   }
-  e.target.value = ''
+  (e.target as HTMLInputElement).value = ''
   uploadingBanner.value = false
 }
 
@@ -1617,13 +2012,13 @@ const removeBannerImage = async () => {
   try {
     project.value = await fetchApi(`/projects/${projectId}/banner-image`, { method: 'DELETE' })
     toastSuccess('Banner removido')
-  } catch (e) {
+  } catch (e: any) {
     toastFromError(e, 'Erro ao remover banner')
   }
 }
 
-const uploadMediaFile = async (e) => {
-  const file = e.target.files?.[0]
+const uploadMediaFile = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
   uploadingMedia.value = true
   try {
@@ -1634,17 +2029,17 @@ const uploadMediaFile = async (e) => {
   } catch (err) {
     toastFromError(err, 'Erro ao enviar mídia')
   }
-  e.target.value = ''
+  (e.target as HTMLInputElement).value = ''
   uploadingMedia.value = false
 }
 
-const deleteMedia = async (id) => {
+const deleteMedia = async (id: string) => {
   if (!confirm('Excluir esta mídia?')) return
   try {
     await fetchApi(`/projects/${projectId}/media/${id}`, { method: 'DELETE' })
     media.value = media.value.filter(m => m.id !== id)
     toastSuccess('Mídia excluída')
-  } catch (e) {
+  } catch (e: any) {
     toastFromError(e, 'Erro ao excluir mídia')
   }
 }
@@ -1763,5 +2158,189 @@ onMounted(async () => {
 }
 .form-input.is-invalid {
   border-color: #ef4444 !important;
+}
+
+/* Financing Layout */
+.financing-layout-v4 {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+@media (max-width: 1200px) {
+  .financing-layout-v4 { flex-direction: column; }
+  .financing-preview-sidebar { width: 100% !important; flex: none !important; position: static !important; }
+}
+.financing-preview-sidebar {
+  flex: 0 0 380px;
+  position: sticky;
+  top: 20px;
+}
+.preview-header {
+  margin-bottom: 20px;
+}
+.preview-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.preview-header p {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--gray-500);
+}
+
+/* Simulator V4 Styles (Copied from LotDetailsView) */
+:root {
+  --v4-primary: #0071e3;
+  --v4-primary-light: rgba(0, 113, 227, 0.05);
+  --v4-border: #d2d2d7;
+  --v4-text: #1d1d1f;
+  --v4-text-muted: #86868b;
+}
+
+.simulator-card-v4 {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid var(--v4-border);
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+}
+.sim-header {
+  padding: 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--v4-border);
+}
+.sim-header .h-item { display: flex; flex-direction: column; gap: 4px; padding: 0; }
+.sim-header .l { font-size: 12px; color: var(--v4-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.sim-header .v { font-weight: 700; color: var(--v4-primary); }
+
+.sim-body { padding: 24px; }
+
+.input-group-v4 { display: flex; flex-direction: column; gap: 8px; }
+.ig-label { font-size: 14px; font-weight: 600; color: var(--v4-text); }
+.ig-flex { display: flex; gap: 8px; }
+.ig-field { 
+  display: flex; 
+  align-items: center; 
+  background: #f1f5f9; 
+  border: 1px solid #e2e8f0; 
+  border-radius: 10px; 
+  padding: 0 12px;
+  flex: 1;
+}
+.ig-curr { font-size: 12px; font-weight: 700; color: #64748b; }
+.ig-input { 
+  border: none !important; 
+  background: transparent !important; 
+  width: 100% !important; 
+  padding: 10px 6px !important; 
+  font-size: 16px !important; 
+  font-weight: 700 !important; 
+  color: var(--v4-text) !important; 
+  outline: none !important;
+  box-shadow: none !important;
+  height: auto !important;
+}
+.ig-hint { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+.range-slider-v4 {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  outline: none;
+  margin: 15px 0;
+}
+.range-slider-v4::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--v4-primary);
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; font-weight: 600; }
+
+.sim-result-v4 {
+  margin-top: 30px;
+  background: var(--v4-primary-light);
+  padding: 24px;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid rgba(0, 112, 227, 0.1);
+}
+.r-label { font-size: 13px; font-weight: 600; color: var(--v4-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.r-value { font-weight: 800; color: var(--v4-primary); letter-spacing: -1px; }
+.r-detail { font-size: 12px; color: var(--v4-primary); opacity: 0.8; font-weight: 600; margin-top: 4px; }
+
+.sim-disclaimer-v4 {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Standardized Remove Buttons */
+.btn-remove-v4 {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff3b30; /* Apple Red */
+  border: 2px solid white;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 12px;
+  transition: all 0.2s;
+  z-index: 10;
+}
+.btn-remove-v4:hover {
+  transform: scale(1.1);
+  background: #d70015;
+}
+
+/* Infrastructure Badges */
+.infra-badge-v4 {
+  background: #f5f5f7;
+  color: #1d1d1f;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #d2d2d7;
+}
+
+.infra-badge-remove {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  background: #d2d2d7;
+  color: #1d1d1f;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all 0.2s;
+}
+.infra-badge-remove:hover {
+  background: #ff3b30;
+  color: white;
 }
 </style>

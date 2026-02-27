@@ -35,13 +35,14 @@ export class PanoramaService {
     });
   }
 
-  async findByProjectPublic(projectId: string) {
+  async findByProjectPublic(projectId: string, _isPreview = false) {
     return this.prisma.panorama.findMany({
-      where: { projectId, published: true },
+      where: { 
+        projectId
+      },
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
         beacons: {
-          where: { visible: true },
           orderBy: { createdAt: 'asc' }
         }
       },

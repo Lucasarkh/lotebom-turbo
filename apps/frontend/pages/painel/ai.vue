@@ -123,7 +123,7 @@ function openCreate() {
     provider: 'openai',
     model: 'gpt-4o',
     apiKey: '',
-    systemPrompt: 'Você é um assistente virtual especializado em ajudar clientes a encontrar o lote ideal.',
+    systemPrompt: '',
     temperature: 0.7,
     maxTokens: 1000,
     isActive: true
@@ -264,12 +264,6 @@ onMounted(() => {
               <label class="form-label">Máximo de Tokens</label>
               <input v-model.number="form.maxTokens" type="number" class="form-input" />
             </div>
-          </div>
-
-          <div class="form-group mt-4">
-            <label class="form-label">Instruções do Sistema (System Prompt) - Opcional</label>
-            <textarea v-model="form.systemPrompt" class="form-textarea" rows="4" placeholder="Defina a personalidade e regras base do assistente..."></textarea>
-            <small class="text-muted">Nota: O sistema já inclui travas de segurança automáticas.</small>
           </div>
 
           <div class="form-group mt-4 flex items-center gap-2">

@@ -98,6 +98,10 @@ const props = defineProps({
   slug: {
     type: String,
     default: ''
+  },
+  id: {
+    type: String,
+    default: ''
   }
 })
 
@@ -106,7 +110,12 @@ const tenantStore = useTenantStore()
 const { fetchPublic } = usePublicApi()
 
 const projectSlug = computed(() => (tenantStore.config?.project?.slug || props.slug || route.params.slug || '') as string)
+const isPreview = computed(() => !!props.id || !!route.query.previewId)
+const previewId = computed(() => (props.id || route.query.previewId) as string)
 const pathPrefix = computed(() => {
+  if (isPreview.value) {
+    return `/preview/${previewId.value}`
+  }
   const host = process.client ? window.location.host : ''
   const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
   return isMainDomain ? `/${projectSlug.value}` : ''
@@ -150,7 +159,8 @@ function openLightbox(idx: number) {
 
 onMounted(async () => {
   try {
-    project.value = await fetchPublic(`/p/${projectSlug.value}`)
+    const baseUrl = isPreview.value ? `/p/preview/${previewId.value}` : `/p/${projectSlug.value}`
+    project.value = await fetchPublic(baseUrl)
     if (project.value) {
       useHead({
         title: `Galeria — ${project.value.name}`,

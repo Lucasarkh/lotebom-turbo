@@ -14,10 +14,25 @@ export class UpsertLotDetailsDto {
   @IsEnum(LotStatus)
   status?: LotStatus;
 
+  @ApiPropertyOptional({ example: 'B' })
+  @IsOptional()
+  @IsString()
+  block?: string;
+
+  @ApiPropertyOptional({ example: '31' })
+  @IsOptional()
+  @IsString()
+  lotNumber?: string;
+
   @ApiPropertyOptional({ example: 120000 })
   @IsOptional()
   @IsNumber()
   price?: number;
+
+  @ApiPropertyOptional({ example: 928.0 })
+  @IsOptional()
+  @IsNumber()
+  pricePerM2?: number;
 
   @ApiPropertyOptional({ example: 300 })
   @IsOptional()

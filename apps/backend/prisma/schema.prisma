@@ -185,6 +185,10 @@ model Project {
   bannerImageUrl  String?
   mapData         Json?
   highlightsJson  Json?
+  highlightsTitle String?       @default("Sua família merece o melhor.")
+  highlightsSubtitle String?    @default("Qualidade de vida, segurança e infraestrutura completa em um só lugar.")
+  traditionalHighlightsTitle String? @default("Destaques")
+  traditionalHighlightsSubtitle String? @default("Diferenciais pensados para o seu bem-estar.")
   locationText    String?       @db.Text
   address         String?       @db.Text
   googleMapsUrl   String?       @db.Text
@@ -260,7 +264,10 @@ model LotDetails {
   mapElement     MapElement @relation(fields: [mapElementId], references: [id], onDelete: Cascade)
   version        Int        @default(0)
   status         LotStatus  @default(AVAILABLE)
+  block          String?
+  lotNumber      String?
   price          Decimal?   @db.Decimal(12, 2)
+  pricePerM2     Decimal?   @db.Decimal(12, 2)
   areaM2         Float?
   frontage       Float?
   depth          Float?
