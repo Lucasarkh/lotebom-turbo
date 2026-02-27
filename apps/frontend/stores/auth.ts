@@ -4,8 +4,9 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'SYSADMIN' | 'LOTEADORA' | 'CORRETOR';
+  role: 'SYSADMIN' | 'LOTEADORA' | 'IMOBILIARIA' | 'CORRETOR';
   tenantId?: string;
+  agencyId?: string;
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -19,9 +20,10 @@ export const useAuthStore = defineStore('auth', {
     isLoggedIn: (state) => !!state.accessToken,
     isSysAdmin: (state) => state.user?.role === 'SYSADMIN',
     isLoteadora: (state) => state.user?.role === 'LOTEADORA',
+    isImobiliaria: (state) => state.user?.role === 'IMOBILIARIA',
     isCorretor: (state) => state.user?.role === 'CORRETOR',
     canManageTenants: (state) => state.user?.role === 'SYSADMIN',
-    canManageUsers: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
+    canManageUsers: (state) => ['SYSADMIN', 'LOTEADORA', 'IMOBILIARIA'].includes(state.user?.role ?? ''),
     canEdit: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
     userRole: (state) => state.user?.role ?? null,
   },

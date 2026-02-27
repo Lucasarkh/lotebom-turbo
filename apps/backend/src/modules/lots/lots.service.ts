@@ -32,7 +32,6 @@ export class LotsService {
           mapElement: true,
           medias: { orderBy: { createdAt: 'desc' } }
         },
-        orderBy: { mapElement: { code: 'asc' } },
         skip,
         take: limit
       }),
@@ -40,6 +39,13 @@ export class LotsService {
         where: { tenantId, projectId }
       })
     ]);
+
+    // Ordenação manual para lidar com números dentro de strings (Ex: L-14 antes de L-140)
+    data.sort((a, b) => {
+      const codeA = a.mapElement?.code || '';
+      const codeB = b.mapElement?.code || '';
+      return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     return {
       data,

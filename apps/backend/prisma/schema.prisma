@@ -15,6 +15,7 @@ datasource db {
 enum UserRole {
   SYSADMIN
   LOTEADORA
+  IMOBILIARIA
   CORRETOR
 }
 
@@ -151,12 +152,68 @@ model Tenant {
   paymentGateways   PaymentConfig[]
   aiConfigs         AiConfig[]
   schedulings       Scheduling[]
+  agencies          Agency[]
+  invites           Invite[]
+}
+
+model Agency {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  email     String   @unique
+  phone     String?
+  creci     String?
+  isActive  Boolean  @default(true)
+  isPending Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  realtors Realtor[]
+  invites  Invite[]
+
+  @@index([tenantId])
+}
+
+model Realtor {
+  id        String   @id @default(cuid())
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creci     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+}
+
+model Invite {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email      String
+  role       UserRole
+  agencyId   String?  // If inviting to a specific agency
+  agency     Agency?  @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  token      String   @unique
+  used       Boolean  @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([token])
 }
 
 model User {
   id           String   @id @default(cuid())
   tenantId     String?
   tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agencyId     String?
+  agency       Agency?  @relation(fields: [agencyId], references: [id], onDelete: SetNull)
   name         String
   email        String   @unique
   passwordHash String
@@ -167,10 +224,12 @@ model User {
   updatedAt    DateTime @updatedAt
 
   realtorLink RealtorLink?
+  realtor     Realtor?
   campaigns   Campaign[]
   schedulings Scheduling[]
 
   @@index([tenantId])
+  @@index([agencyId])
 }
 
 model Project {
@@ -760,6 +819,9 @@ model SchedulingConfig {
   startTime           String   @default("08:00")
   endTime             String   @default("18:00")
   maxSimultaneous     Int      @default(1)
+  lunchStart          String?  // e.g. "12:00"
+  lunchEnd            String?  // e.g. "13:00"
+  breaks              Json?    // Array of { start: string, end: string }
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }

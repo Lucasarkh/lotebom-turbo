@@ -39,4 +39,19 @@ export class UpdateSchedulingConfigDto {
   @Min(1)
   @IsOptional()
   maxSimultaneous?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  lunchStart?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  lunchEnd?: string;
+
+  @ApiProperty({ required: false, type: [Object] })
+  @IsArray()
+  @IsOptional()
+  breaks?: any[];
 }

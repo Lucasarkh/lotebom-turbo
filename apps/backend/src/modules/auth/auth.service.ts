@@ -3,7 +3,8 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
+  Logger
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -17,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class AuthService {
   private readonly jwtSecret: string;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     private jwtService: JwtService,
@@ -98,12 +100,16 @@ export class AuthService {
       };
     });
 
-    // Send welcome email
-    await this.emailQueueService.queueWelcomeTenantEmail(
-      dto.email.toLowerCase(),
-      dto.name,
-      dto.tenantName
-    );
+    // Send welcome email (non-blocking — don't fail registration if queue is down)
+    try {
+      await this.emailQueueService.queueWelcomeTenantEmail(
+        dto.email.toLowerCase(),
+        dto.name,
+        dto.tenantName
+      );
+    } catch (error: any) {
+      this.logger.error(`Failed to queue welcome email for ${dto.email}:`, error.message);
+    }
 
     return result;
   }
@@ -222,11 +228,15 @@ export class AuthService {
         }
       });
 
-      await this.emailQueueService.queuePasswordResetEmail(
-        user.email,
-        user.name,
-        token
-      );
+      try {
+        await this.emailQueueService.queuePasswordResetEmail(
+          user.email,
+          user.name,
+          token
+        );
+      } catch (error: any) {
+        this.logger.error(`Failed to queue password reset email for ${user.email}:`, error.message);
+      }
     }
 
     return { message: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.' };

@@ -136,8 +136,7 @@ export class ProjectsService {
                 updatedAt: true
               }
             }
-          },
-          orderBy: { createdAt: 'asc' }
+          }
         },
         projectMedias: {
           where: { lotDetailsId: null },
@@ -163,6 +162,15 @@ export class ProjectsService {
 
     if (!project)
       throw new NotFoundException('Projeto não encontrado ou não publicado.');
+
+    // Ordenação manual dos mapElements considerando números na string do código
+    if (project.mapElements) {
+      project.mapElements.sort((a: any, b: any) => {
+        const codeA = a.code || '';
+        const codeB = b.code || '';
+        return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+    }
 
     // 2. Save to Redis (short TTL: 2 minutes for public info)
     if (this.redis) {

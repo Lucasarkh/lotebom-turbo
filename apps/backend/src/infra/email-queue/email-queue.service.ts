@@ -3,7 +3,7 @@ import { RabbitMqService } from '@infra/rabbitmq/rabbitmq.service';
 import { SendPulseService } from '@infra/sendpulse/sendpulse.service';
 
 export interface EmailJob {
-  type: 'welcome-tenant' | 'welcome-realtor' | 'password-reset';
+  type: 'welcome-tenant' | 'welcome-realtor' | 'password-reset' | 'invite';
   to: string;
   data: Record<string, any>;
   attempts: number;
@@ -34,7 +34,7 @@ export class EmailQueueService implements OnModuleInit {
       attempts: 0
     };
 
-    await this.rabbitMqService.sendToQueue(EMAIL_QUEUE, job);
+    await this.rabbitMqService.sendToQueue(EMAIL_QUEUE, job, { withDeadLetter: true });
     this.logger.debug(`Email queued: ${type} to ${to}`);
   }
 
@@ -50,14 +50,19 @@ export class EmailQueueService implements OnModuleInit {
     await this.queueEmail('password-reset', to, { userName, resetToken });
   }
 
+  async queueInviteEmail(to: string, token: string, role: string, email: string): Promise<void> {
+    await this.queueEmail('invite', to, { token, role, email });
+  }
+
   private async startEmailConsumer(): Promise<void> {
     await this.rabbitMqService.createConsumer({
       queue: EMAIL_QUEUE,
       prefetch: 5,
+      withDeadLetter: true,
       onMessage: async (payload: any) => {
         if (!this.isValidEmailJob(payload)) {
-          this.logger.warn('Received invalid email job payload, skipping...');
-          return;
+          this.logger.warn('Received invalid email job payload, sending to DLQ');
+          throw new Error('Invalid email job format');
         }
 
         await this.processEmailJob(payload as EmailJob);
@@ -70,6 +75,7 @@ export class EmailQueueService implements OnModuleInit {
       payload &&
       typeof payload.to === 'string' &&
       typeof payload.type === 'string' &&
+      ['welcome-tenant', 'welcome-realtor', 'password-reset', 'invite'].includes(payload.type) &&
       payload.data &&
       typeof payload.data === 'object' &&
       typeof payload.attempts === 'number'
@@ -85,16 +91,21 @@ export class EmailQueueService implements OnModuleInit {
 
       if (job.attempts + 1 < this.maxRetries) {
         const retryJob: EmailJob = { ...job, attempts: job.attempts + 1 };
-        // Wait a bit before retrying (exponential backoff)
-        const delay = Math.pow(5, job.attempts + 1) * 1000;
-        
-        this.logger.log(`Retrying email in ${delay / 1000}s (Attempt ${retryJob.attempts})`);
-        
-        setTimeout(async () => {
-          await this.rabbitMqService.sendToQueue(EMAIL_QUEUE, retryJob);
-        }, delay);
+        const delay = Math.pow(2, job.attempts + 1) * 1000; // 2s, 4s, 8s
+
+        this.logger.log(
+          `Scheduling retry ${retryJob.attempts}/${this.maxRetries} for email ${job.type} to ${job.to} in ${delay / 1000}s`
+        );
+
+        // Re-queue synchronously to avoid fire-and-forget issues with setTimeout
+        // The delay is approximate — we await a timer then enqueue
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        await this.rabbitMqService.sendToQueue(EMAIL_QUEUE, retryJob, { withDeadLetter: true });
       } else {
-        this.logger.error(`Max retries reached for email ${job.type} to ${job.to}`);
+        this.logger.error(
+          `Max retries (${this.maxRetries}) reached for email ${job.type} to ${job.to}. Sending to DLQ.`
+        );
+        throw error; // Propagate error to trigger NACK → DLQ
       }
     }
   }
@@ -121,8 +132,17 @@ export class EmailQueueService implements OnModuleInit {
           job.data.resetToken
         );
         break;
+      case 'invite':
+        await this.sendPulseService.sendInviteEmail(
+          job.to,
+          job.data.token,
+          job.data.role,
+          job.data.email
+        );
+        break;
       default:
         this.logger.warn(`Unknown email job type: ${(job as any).type}`);
+        throw new Error(`Unknown email job type: ${(job as any).type}`);
     }
   }
 }

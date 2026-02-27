@@ -92,6 +92,34 @@
         </div>
       </div>
 
+      <!-- Highlights & Info -->
+      <section v-if="hasInfo" class="v4-section" id="info">
+        <div class="v4-container">
+          <!-- Text content if exists -->
+          <div v-if="hasMeaningfulLocationText" class="v4-rich-content" v-html="formattedLocationText" style="margin-bottom: 80px;"></div>
+
+          <!-- Sophisticated Infrastructure Grid (Based on image) -->
+          <div v-if="infrastructureCategories.length" class="v4-infra-split">
+            <div class="v4-infra-left">
+              <h2 class="v4-infra-hero-text" v-html="project.highlightsTitle || 'Sua família<br>merece o melhor.'"></h2>
+              <p class="v4-infra-sub-text">{{ project.highlightsSubtitle || 'Qualidade de vida, segurança e infraestrutura completa em um só lugar.' }}</p>
+              <div class="v4-infra-divider"></div>
+            </div>
+            <div class="v4-infra-right">
+              <div v-for="cat in infrastructureCategories" :key="cat.title" class="v4-infra-group">
+                <h3 class="v4-infra-group-title">{{ cat.title }}</h3>
+                <ul class="v4-infra-items-list">
+                  <li v-for="it in cat.items" :key="it" class="v4-infra-list-item">
+                    <span class="v4-infra-bullet">•</span>
+                    {{ it }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Planta Interativa -->
       <section v-if="plantMap" class="v4-section" id="planta">
         <div class="v4-container">
@@ -140,52 +168,6 @@
         </div>
       </section>
 
-      <!-- Highlights & Info -->
-      <section v-if="hasInfo" class="v4-section" id="info">
-        <div class="v4-container">
-          <!-- Text content if exists -->
-          <div v-if="hasMeaningfulLocationText" class="v4-rich-content" v-html="formattedLocationText" style="margin-bottom: 80px;"></div>
-
-          <!-- Sophisticated Infrastructure Grid (Based on image) -->
-          <div v-if="infrastructureCategories.length" class="v4-infra-split">
-            <div class="v4-infra-left">
-              <h2 class="v4-infra-hero-text" v-html="project.highlightsTitle || 'Sua família<br>merece o melhor.'"></h2>
-              <p class="v4-infra-sub-text">{{ project.highlightsSubtitle || 'Qualidade de vida, segurança e infraestrutura completa em um só lugar.' }}</p>
-              <div class="v4-infra-divider"></div>
-            </div>
-            <div class="v4-infra-right">
-              <div v-for="cat in infrastructureCategories" :key="cat.title" class="v4-infra-group">
-                <h3 class="v4-infra-group-title">{{ cat.title }}</h3>
-                <ul class="v4-infra-items-list">
-                  <li v-for="it in cat.items" :key="it" class="v4-infra-list-item">
-                    <span class="v4-infra-bullet">•</span>
-                    {{ it }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <!-- New Traditional Highlights "Destaques" -->
-          <div v-if="traditionalHighlights.length" class="v4-destaques-grid-v2" :style="infrastructureCategories.length ? 'margin-top: 120px;' : ''">
-            <div class="v4-section-header center" style="margin-bottom: 56px;">
-              <h2 class="v4-section-title">{{ project.traditionalHighlightsTitle || 'Destaques' }}</h2>
-              <p class="v4-section-subtitle">{{ project.traditionalHighlightsSubtitle || 'Diferenciais pensados para o seu bem-estar.' }}</p>
-            </div>
-            
-            <div class="v4-destaques-items">
-              <div v-for="h in traditionalHighlights" :key="h.label" class="v4-destaque-card-minimal">
-                <div class="v4-destaque-marker-dot"></div>
-                <div class="v4-destaque-info">
-                  <h4 class="v4-destaque-title">{{ h.label }}</h4>
-                  <p v-if="h.value" class="v4-destaque-detail">{{ h.value }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Video Presentation -->
       <section v-if="project.youtubeVideoUrl" class="v4-section" id="video-apresentacao">
         <div class="v4-container">
@@ -204,6 +186,27 @@
             <a v-else :href="project.youtubeVideoUrl" target="_blank" class="v4-video-placeholder">
               <span>Assistir Vídeo no YouTube</span>
             </a>
+          </div>
+        </div>
+      </section>
+
+      
+      <!-- New Traditional Highlights "Destaques" -->
+      <section v-if="hasInfo" class="v4-section" id="info">
+        <div v-if="traditionalHighlights.length" class="v4-destaques-grid-v2">
+          <div class="v4-section-header center" style="margin-bottom: 56px;">
+            <h2 class="v4-section-title">{{ project.traditionalHighlightsTitle || 'Destaques' }}</h2>
+            <p class="v4-section-subtitle">{{ project.traditionalHighlightsSubtitle || 'Diferenciais pensados para o seu bem-estar.' }}</p>
+          </div>
+          
+          <div class="v4-destaques-items">
+            <div v-for="h in traditionalHighlights" :key="h.label" class="v4-destaque-card-minimal">
+              <div class="v4-destaque-marker-dot"></div>
+              <div class="v4-destaque-info">
+                <h4 class="v4-destaque-title">{{ h.label }}</h4>
+                <p v-if="h.value" class="v4-destaque-detail">{{ h.value }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

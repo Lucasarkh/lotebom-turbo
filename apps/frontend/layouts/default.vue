@@ -59,6 +59,11 @@
             <span v-if="!sidebarCollapsed">Agendamentos</span>
           </NuxtLink>
 
+          <NuxtLink to="/painel/imobiliarias" class="nav-item" :title="sidebarCollapsed ? 'Imobiliárias' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7M4 21v-4m5 4v-4m5 4v-4m5 4v-4m-11-7a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v2z"/></svg>
+            <span v-if="!sidebarCollapsed">Imobiliárias</span>
+          </NuxtLink>
+
           <NuxtLink to="/painel/corretores" class="nav-item" :title="sidebarCollapsed ? 'Corretores' : undefined">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             <span v-if="!sidebarCollapsed">Corretores</span>
@@ -93,8 +98,20 @@
           </NuxtLink>
         </template>
 
+        <!-- IMOBILIARIA Menu -->
+        <template v-if="authStore.isImobiliaria">
+          <NuxtLink to="/painel/metricas-imobiliaria" class="nav-item" :title="sidebarCollapsed ? 'Minha Imobiliária' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span v-if="!sidebarCollapsed">Minha Imobiliária</span>
+          </NuxtLink>
+          <NuxtLink to="/painel/leads" class="nav-item" :title="sidebarCollapsed ? 'Leads da Imobiliária' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <span v-if="!sidebarCollapsed">Leads</span>
+          </NuxtLink>
+        </template>
+
         <!-- Common items like Metrics if allowed -->
-        <NuxtLink v-if="!authStore.isSysAdmin" to="/painel/metricas" class="nav-item" :title="sidebarCollapsed ? 'Métricas' : undefined">
+        <NuxtLink v-if="!authStore.isSysAdmin && !authStore.isImobiliaria" to="/painel/metricas" class="nav-item" :title="sidebarCollapsed ? 'Métricas' : undefined">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span v-if="!sidebarCollapsed">Métricas</span>
         </NuxtLink>
@@ -158,6 +175,7 @@ const roleLabel = computed(() => {
   const map = { 
     SYSADMIN: 'System Admin', 
     LOTEADORA: 'Loteadora', 
+    IMOBILIARIA: 'Imobiliária',
     CORRETOR: 'Corretor' 
   }
   return map[authStore.user?.role] ?? 'Usuário'

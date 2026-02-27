@@ -2,7 +2,8 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
+  Logger
 } from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -23,6 +24,8 @@ const USER_SELECT = {
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private prisma: PrismaService,
     private emailQueueService: EmailQueueService
@@ -75,11 +78,15 @@ export class UserService {
         });
       });
 
-      await this.emailQueueService.queueWelcomeTenantEmail(
-        user.email,
-        user.name,
-        user.tenant?.name || dto.name
-      );
+      try {
+        await this.emailQueueService.queueWelcomeTenantEmail(
+          user.email,
+          user.name,
+          user.tenant?.name || dto.name
+        );
+      } catch (error: any) {
+        this.logger.error(`Failed to queue welcome tenant email for ${user.email}:`, error.message);
+      }
 
       return user;
     }
@@ -99,15 +106,19 @@ export class UserService {
       select: { ...USER_SELECT, tenant: { select: { name: true } } }
     });
 
-    // Send correct welcome email based on role
-    if (user.role === UserRole.CORRETOR) {
-      await this.emailQueueService.queueWelcomeRealtorEmail(user.email, user.name);
-    } else if (user.role === UserRole.LOTEADORA && tenantId) {
-      await this.emailQueueService.queueWelcomeTenantEmail(
-        user.email,
-        user.name,
-        user.tenant?.name || 'sua empresa'
-      );
+    // Send correct welcome email based on role (non-blocking)
+    try {
+      if (user.role === UserRole.CORRETOR) {
+        await this.emailQueueService.queueWelcomeRealtorEmail(user.email, user.name);
+      } else if (user.role === UserRole.LOTEADORA && tenantId) {
+        await this.emailQueueService.queueWelcomeTenantEmail(
+          user.email,
+          user.name,
+          user.tenant?.name || 'sua empresa'
+        );
+      }
+    } catch (error: any) {
+      this.logger.error(`Failed to queue welcome email for ${user.email}:`, error.message);
     }
 
     return user;

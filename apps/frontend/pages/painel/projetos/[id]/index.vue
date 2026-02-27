@@ -262,6 +262,135 @@
         </div>
       </div>
 
+      <!-- Tab: Agendamento -->
+      <div v-if="activeTab === 'scheduling'">
+        <div class="card" style="max-width: 900px;">
+          <div class="flex justify-between items-center" style="margin-bottom: var(--space-6);">
+            <div>
+              <h3 style="margin:0; display: flex; align-items: center; gap: 8px;">
+                <span>📅</span> Configurações de Agendamento de Visitas
+              </h3>
+              <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">Defina os horários e regras para que clientes agendem visitas ao empreendimento.</p>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" v-model="schedulingForm.enabled" id="chkSchedEnabled" />
+              <label for="chkSchedEnabled"></label>
+            </div>
+          </div>
+
+          <div v-if="loadingScheduling" class="flex justify-center p-8">
+            <div class="loader"></div>
+          </div>
+
+          <template v-else>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- Horários Base -->
+              <div style="background: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid var(--gray-200);">
+                <h4 style="margin-bottom: 20px; font-size: 0.9rem; text-transform: uppercase; color: var(--gray-500); letter-spacing: 0.5px;">Atendimento Base</h4>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="form-group">
+                    <label class="form-label">Início do Expediente</label>
+                    <input v-model="schedulingForm.startTime" type="time" class="form-input" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Fim do Expediente</label>
+                    <input v-model="schedulingForm.endTime" type="time" class="form-input" />
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                  <label class="form-label">Intervalo entre Visitas (minutos)</label>
+                  <select v-model.number="schedulingForm.scheduleInterval" class="form-input">
+                    <option :value="15">15 minutos</option>
+                    <option :value="30">30 minutos</option>
+                    <option :value="45">45 minutos</option>
+                    <option :value="60">1 hora</option>
+                    <option :value="90">1 hora e 30 min</option>
+                    <option :value="120">2 horas</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                  <label class="form-label">Visitas Simultâneas (Limite por horário)</label>
+                  <input v-model.number="schedulingForm.maxSimultaneous" type="number" min="1" class="form-input" placeholder="Ex: 1" />
+                  <small class="text-muted">Quantos corretores podem atender no mesmo horário.</small>
+                </div>
+              </div>
+
+              <!-- Dias Disponíveis -->
+              <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--gray-200);">
+                <h4 style="margin-bottom: 20px; font-size: 0.9rem; text-transform: uppercase; color: var(--gray-500); letter-spacing: 0.5px;">Dias da Semana</h4>
+                <div class="grid grid-cols-1 gap-2">
+                  <label v-for="day in [
+                    {k: 'MON', label: 'Segunda-feira'}, 
+                    {k: 'TUE', label: 'Terça-feira'}, 
+                    {k: 'WED', label: 'Quarta-feira'}, 
+                    {k: 'THU', label: 'Quinta-feira'}, 
+                    {k: 'FRI', label: 'Sexta-feira'}, 
+                    {k: 'SAT', label: 'Sábado'}, 
+                    {k: 'SUN', label: 'Domingo'}
+                  ]" :key="day.k" class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer transition-colors">
+                    <input type="checkbox" :value="day.k" v-model="schedulingForm.availableDays" class="w-4 h-4 cursor-pointer" />
+                    <span style="font-size: 0.9rem; font-weight: 500;">{{ day.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Intervals & Breaks -->
+            <div style="margin-top: var(--space-6);">
+              <h4 style="margin-bottom: 20px; font-size: 0.9rem; text-transform: uppercase; color: var(--gray-500); letter-spacing: 0.5px;">Intervalos e Pausas</h4>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Almoço -->
+                <div style="padding: 20px; border: 1px dashed var(--gray-300); border-radius: 12px;">
+                  <h5 style="margin-bottom: 12px; font-weight: 600;">🍽️ Intervalo de Almoço</h5>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Início</label>
+                      <input v-model="schedulingForm.lunchStart" type="time" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Fim</label>
+                      <input v-model="schedulingForm.lunchEnd" type="time" class="form-input" />
+                    </div>
+                  </div>
+                  <small class="text-muted">Horários bloqueados diariamente.</small>
+                </div>
+
+                <!-- Custom Breaks -->
+                <div style="padding: 20px; border: 1px dashed var(--gray-300); border-radius: 12px;">
+                  <div class="flex justify-between items-center" style="margin-bottom: 12px;">
+                    <h5 style="margin:0; font-weight: 600;">☕ Outras Pausas Curtas</h5>
+                    <button @click="addBreak" class="btn btn-xs btn-ghost">+ Adicionar</button>
+                  </div>
+                  
+                  <div v-if="schedulingForm.breaks.length === 0" class="text-center py-4 text-muted" style="font-size: 0.8rem;">
+                    Nenhuma outra pausa configurada.
+                  </div>
+
+                  <div v-for="(b, idx) in schedulingForm.breaks" :key="idx" 
+                       style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; background: #f1f5f9; padding: 8px; border-radius: 8px;">
+                    <input v-model="b.name" placeholder="Motivo" class="form-input btn-xs" style="flex: 2" />
+                    <input v-model="b.start" type="time" class="form-input btn-xs" style="flex: 1" />
+                    <span style="font-size: 10px; color: var(--gray-400);">até</span>
+                    <input v-model="b.end" type="time" class="form-input btn-xs" style="flex: 1" />
+                    <button @click="removeBreak(idx)" class="btn btn-xs btn-ghost btn-danger" style="padding: 0 4px;">✕</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-8" style="border-top: 1px solid var(--gray-100); margin-top: 32px;">
+              <button class="btn btn-primary" @click="saveSchedulingSettings" :disabled="savingScheduling" style="min-width: 200px; height: 48px; border-radius: 12px;">
+                {{ savingScheduling ? 'Salvando...' : '💾 Salvar Configuração de Agenda' }}
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+
       <!-- Tab: Financiamento -->
       <div v-if="activeTab === 'financing'" class="financing-layout-v4">
         <div class="card" style="flex: 1; max-width: 800px;">
@@ -1447,6 +1576,62 @@ const locationOrigin = computed(() => {
 
 const publicUrl = computed(() => project.value ? `/${project.value.slug}` : null)
 
+const schedulingForm = ref({
+  enabled: false,
+  scheduleInterval: 60,
+  availableDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'] as string[],
+  startTime: '08:00',
+  endTime: '18:00',
+  maxSimultaneous: 1,
+  lunchStart: '',
+  lunchEnd: '',
+  breaks: [] as any[]
+})
+const loadingScheduling = ref(false)
+const savingScheduling = ref(false)
+
+const loadSchedulingConfig = async () => {
+  loadingScheduling.value = true
+  try {
+    const config = await fetchApi(`/scheduling/config/${projectId}`)
+    schedulingForm.value = {
+      enabled: config.enabled ?? false,
+      scheduleInterval: config.scheduleInterval ?? 60,
+      availableDays: Array.isArray(config.availableDays) ? config.availableDays : ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+      startTime: config.startTime || '08:00',
+      endTime: config.endTime || '18:00',
+      maxSimultaneous: config.maxSimultaneous ?? 1,
+      lunchStart: config.lunchStart || '',
+      lunchEnd: config.lunchEnd || '',
+      breaks: Array.isArray(config.breaks) ? config.breaks : []
+    }
+  } catch (e) {
+    console.error('Error loading scheduling config', e)
+  }
+  loadingScheduling.value = false
+}
+
+const saveSchedulingSettings = async () => {
+  savingScheduling.value = true
+  try {
+    await fetchApi(`/scheduling/config/${projectId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(schedulingForm.value)
+    })
+    toastSuccess('Configurações de agendamento salvas!')
+  } catch (e) {
+    toastFromError(e, 'Erro ao salvar agendamento')
+  }
+  savingScheduling.value = false
+}
+
+const addBreak = () => {
+  schedulingForm.value.breaks.push({ name: '', start: '', end: '' })
+}
+const removeBreak = (idx: number) => {
+  schedulingForm.value.breaks.splice(idx, 1)
+}
+
 const editForm = ref({
   name: '',
   slug: '',
@@ -1873,6 +2058,7 @@ const tabs = [
   { key: 'lots', label: '📍 Lotes' },
   { key: 'public', label: '📄 Pág. Pública' },
   { key: 'financing', label: '🧮 Simulação' },
+  { key: 'scheduling', label: '📅 Agendamento' },
   { key: 'payment', label: '💳 Pagamentos' },
   { key: 'ai', label: '🤖 Assistente IA' },
   { key: 'settings', label: '⚙️ Config' },
@@ -1887,6 +2073,12 @@ const formatCurrencyToBrasilia = (val: number | string) => {
   const num = typeof val === 'string' ? parseFloat(val) : val
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num)
 }
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'scheduling') {
+    loadSchedulingConfig()
+  }
+})
 
 const loadLotsPaginated = async (page = 1) => {
   try {

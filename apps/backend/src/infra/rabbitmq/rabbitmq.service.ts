@@ -33,9 +33,9 @@ export class RabbitMqService implements OnModuleDestroy {
     });
   }
 
-  async sendToQueue(queue: string, payload: unknown) {
+  async sendToQueue(queue: string, payload: unknown, options?: { withDeadLetter?: boolean }) {
     await this.producerChannel.waitForConnect();
-    await this.ensureQueue(queue);
+    await this.ensureQueue(queue, options);
 
     // Since channel is created with json: true, send the payload directly
     // The library handles JSON serialization automatically
@@ -44,13 +44,27 @@ export class RabbitMqService implements OnModuleDestroy {
     } as Parameters<ChannelWrapper['sendToQueue']>[2]);
   }
 
-  private async ensureQueue(queue: string) {
+  private async ensureQueue(queue: string, options?: { withDeadLetter?: boolean }) {
     if (this.assertedQueues.has(queue)) {
       return;
     }
 
     await this.producerChannel.addSetup(async (channel) => {
-      await channel.assertQueue(queue, { durable: true });
+      const queueOptions: any = { durable: true };
+
+      if (options?.withDeadLetter) {
+        const dlqName = `${queue}.dlq`;
+        const exchangeName = `${queue}.dlx`;
+
+        await channel.assertExchange(exchangeName, 'direct', { durable: true });
+        await channel.assertQueue(dlqName, { durable: true });
+        await channel.bindQueue(dlqName, exchangeName, 'dead-letter');
+
+        queueOptions.deadLetterExchange = exchangeName;
+        queueOptions.deadLetterRoutingKey = 'dead-letter';
+      }
+
+      await channel.assertQueue(queue, queueOptions);
     });
 
     this.assertedQueues.add(queue);
@@ -59,12 +73,28 @@ export class RabbitMqService implements OnModuleDestroy {
   async createConsumer(options: {
     queue: string;
     prefetch?: number;
+    withDeadLetter?: boolean;
     onMessage: (payload: unknown) => Promise<void>;
   }) {
     const channel = this.connection.createChannel({
       json: true,
       setup: async (ch) => {
-        await ch.assertQueue(options.queue, { durable: true });
+        const queueOptions: any = { durable: true };
+        const dlqName = `${options.queue}.dlq`;
+        const exchangeName = `${options.queue}.dlx`;
+
+        if (options.withDeadLetter) {
+          // Setup DLX and DLQ
+          await ch.assertExchange(exchangeName, 'direct', { durable: true });
+          await ch.assertQueue(dlqName, { durable: true });
+          await ch.bindQueue(dlqName, exchangeName, 'dead-letter');
+
+          // Configure main queue to use DLX
+          queueOptions.deadLetterExchange = exchangeName;
+          queueOptions.deadLetterRoutingKey = 'dead-letter';
+        }
+
+        await ch.assertQueue(options.queue, queueOptions);
 
         if (options.prefetch && options.prefetch > 0) {
           await ch.prefetch(options.prefetch);

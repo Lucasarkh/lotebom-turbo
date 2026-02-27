@@ -132,7 +132,21 @@ const onDateChange = async () => {
     const endLimit = new Date(year, month - 1, day, endH, endM, 0, 0);
 
     while (current < endLimit) {
-        slots.push(current.getHours().toString().padStart(2, '0') + ':' + current.getMinutes().toString().padStart(2, '0'));
+        const h = current.getHours();
+        const m = current.getMinutes();
+        const timeStr = h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
+        
+        // Skip lunch break
+        const isLunch = config.value.lunchStart && config.value.lunchEnd && 
+                        timeStr >= config.value.lunchStart && timeStr < config.value.lunchEnd;
+        
+        // Skip custom breaks
+        const isBreak = config.value.breaks?.some((b: any) => timeStr >= b.start && timeStr < b.end);
+
+        if (!isLunch && !isBreak) {
+            slots.push(timeStr);
+        }
+        
         current = new Date(current.getTime() + interval * 60000);
     }
     

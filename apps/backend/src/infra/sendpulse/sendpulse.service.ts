@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 
@@ -17,7 +17,7 @@ interface SendPulseTokenResponse {
 }
 
 @Injectable()
-export class SendPulseService {
+export class SendPulseService implements OnModuleInit {
   private readonly logger = new Logger(SendPulseService.name);
   private readonly client: AxiosInstance;
   private readonly apiBaseUrl = 'https://api.sendpulse.com';
@@ -25,8 +25,10 @@ export class SendPulseService {
   private readonly clientSecret: string;
   private readonly fromEmail: string;
   private readonly fromName: string;
+  private readonly frontendUrl: string;
   private accessToken: string | null = null;
   private tokenExpiresAt: number = 0;
+  private tokenRefreshPromise: Promise<string> | null = null;
 
   constructor(private configService: ConfigService) {
     this.client = axios.create({
@@ -42,6 +44,21 @@ export class SendPulseService {
       'suporte@lotio.com.br';
     this.fromName =
       this.configService.get<string>('SENDPULSE_FROM_NAME') || 'Lotio';
+    this.frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'https://app.lotio.com.br';
+  }
+
+  onModuleInit() {
+    if (!this.clientId || !this.clientSecret) {
+      this.logger.warn(
+        'SendPulse credentials (SENDPULSE_CLIENT_ID / SENDPULSE_CLIENT_SECRET) not configured. Email sending will fail.'
+      );
+    }
+    if (!this.configService.get<string>('FRONTEND_URL')) {
+      this.logger.warn(
+        'FRONTEND_URL not configured. Email links will use fallback URL.'
+      );
+    }
   }
 
   private async getAccessToken(): Promise<string> {
@@ -49,6 +66,20 @@ export class SendPulseService {
       return this.accessToken;
     }
 
+    // Prevent concurrent token refresh requests
+    if (this.tokenRefreshPromise) {
+      return this.tokenRefreshPromise;
+    }
+
+    this.tokenRefreshPromise = this.refreshToken();
+    try {
+      return await this.tokenRefreshPromise;
+    } finally {
+      this.tokenRefreshPromise = null;
+    }
+  }
+
+  private async refreshToken(): Promise<string> {
     try {
       const response = await this.client.post<SendPulseTokenResponse>(
         '/oauth/access_token',
@@ -123,6 +154,15 @@ export class SendPulseService {
       .trim();
   }
 
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   private getBaseTemplate(content: string): string {
     return `
 <!DOCTYPE html>
@@ -166,9 +206,12 @@ export class SendPulseService {
   }
 
   async sendWelcomeTenantEmail(to: string, userName: string, tenantName: string): Promise<boolean> {
+    const safeUserName = this.escapeHtml(userName);
+    const safeTenantName = this.escapeHtml(tenantName);
+
     const html = this.getBaseTemplate(`
-      <h2>Seja bem-vindo(a), ${userName}!</h2>
-      <p>É um prazer ter a <strong>${tenantName}</strong> conosco na plataforma Lotio.</p>
+      <h2>Seja bem-vindo(a), ${safeUserName}!</h2>
+      <p>É um prazer ter a <strong>${safeTenantName}</strong> conosco na plataforma Lotio.</p>
       <p>Agora você tem acesso a todas as ferramentas para gerenciar seus empreendimentos, mapas e leads de forma integrada e profissional.</p>
       <div class="info-box">
         <p><strong>Destaques da plataforma:</strong></p>
@@ -180,20 +223,22 @@ export class SendPulseService {
         </ul>
       </div>
       <p style="text-align: center; margin-top: 32px;">
-        <a href="${this.configService.get<string>('FRONTEND_URL')}/login" class="btn">Acessar Painel da Loteadora</a>
+        <a href="${this.frontendUrl}/login" class="btn">Acessar Painel da Loteadora</a>
       </p>
     `);
 
-    return this.sendEmail({ to, subject: `Bem-vindo à Lotio - ${tenantName}`, html });
+    return this.sendEmail({ to, subject: `Bem-vindo à Lotio - ${safeTenantName}`, html });
   }
 
   async sendWelcomeRealtorEmail(to: string, userName: string): Promise<boolean> {
+    const safeUserName = this.escapeHtml(userName);
+
     const html = this.getBaseTemplate(`
-      <h2>Olá, ${userName}!</h2>
+      <h2>Olá, ${safeUserName}!</h2>
       <p>Você acaba de ganhar acesso à plataforma Lotio para consultar a disponibilidade e informações dos empreendimentos.</p>
       <p>Com seu acesso de corretor, você poderá visualizar mapas interativos, preços e gerar links personalizados para seus clientes.</p>
       <p style="text-align: center; margin-top: 32px;">
-        <a href="${this.configService.get<string>('FRONTEND_URL')}/login" class="btn">Acessar Painel do Corretor</a>
+        <a href="${this.frontendUrl}/login" class="btn">Acessar Painel do Corretor</a>
       </p>
       <p style="margin-top: 24px; font-size: 14px;">Boas vendas!</p>
     `);
@@ -202,10 +247,12 @@ export class SendPulseService {
   }
 
   async sendPasswordResetEmail(to: string, userName: string, resetToken: string): Promise<boolean> {
-    const resetUrl = `${this.configService.get<string>('FRONTEND_URL')}/redefinir-senha?token=${resetToken}`;
+    const resetUrl = `${this.frontendUrl}/redefinir-senha?token=${encodeURIComponent(resetToken)}`;
+    const safeUserName = this.escapeHtml(userName);
+
     const html = this.getBaseTemplate(`
       <h2>Recuperação de senha</h2>
-      <p>Olá, <strong>${userName}</strong>,</p>
+      <p>Olá, <strong>${safeUserName}</strong>,</p>
       <p>Recebemos uma solicitação para redefinir a sua senha no Lotio. Se foi você, clique no botão abaixo para criar uma nova senha:</p>
       <p style="text-align: center; margin: 32px 0;">
         <a href="${resetUrl}" class="btn">Redefinir Senha</a>
@@ -219,5 +266,34 @@ export class SendPulseService {
     `);
 
     return this.sendEmail({ to, subject: 'Recuperação de Senha - Lotio', html });
+  }
+
+  async sendInviteEmail(to: string, token: string, role: string, email: string): Promise<boolean> {
+    const inviteUrl = `${this.frontendUrl}/aceitar-convite?token=${encodeURIComponent(token)}`;
+    const roleMap: Record<string, string> = {
+      ADMIN: 'Administrador',
+      TENANT_ADMIN: 'Gestor da Loteadora',
+      REALTOR_ADMIN: 'Gestor da Imobiliária',
+      REALTOR: 'Escritório de Corretagem'
+    };
+
+    const roleName = roleMap[role] || 'Usuário';
+
+    const html = this.getBaseTemplate(`
+      <h2>Olá! Você foi convidado para o Lotio</h2>
+      <p>Você foi convidado para participar da plataforma de Gestão de Loteamentos como <strong>${roleName}</strong>.</p>
+      <p>Com sua conta, você poderá acessar os empreendimentos e ferramentas exclusivas da plataforma.</p>
+      <div class="info-box">
+        <p style="margin: 0; font-size: 14px;">Para aceitar o convite e configurar seu perfil, clique no botão abaixo:</p>
+      </div>
+      <p style="text-align: center; margin: 32px 0;">
+        <a href="${inviteUrl}" class="btn">Aceitar Convite e Acessar</a>
+      </p>
+      <p style="font-size: 12px; color: #94a3b8; word-break: break-all;">
+        Caso o botão não funcione, copie o link abaixo:<br>${inviteUrl}
+      </p>
+    `);
+
+    return this.sendEmail({ to, subject: 'Convite para Lotio - Nova Conta', html });
   }
 }

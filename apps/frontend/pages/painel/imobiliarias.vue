@@ -1,0 +1,792 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+const { get, post, put } = useApi()
+const toast = useToast()
+
+const agencies = ref<any[]>([])
+const loading = ref(true)
+const showModal = ref(false)
+const showInviteModal = ref(false)
+const editingAgency = ref(null)
+
+const form = ref({
+  name: '',
+  email: '',
+  phone: '',
+  creci: ''
+})
+
+const inviteForm = ref({
+  email: '',
+  role: 'IMOBILIARIA',
+  agencyId: ''
+})
+
+async function fetchAgencies() {
+  loading.value = true
+  try {
+    const data = await get('/agencies')
+    agencies.value = Array.isArray(data) ? data : []
+  } catch (err) {
+    console.error('Fetch error:', err)
+    toast.error('Erro ao conectar com o servidor')
+    agencies.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+async function saveAgency() {
+  if (!form.value.name || !form.value.email) {
+    toast.error('Nome e Email são obrigatórios')
+    return
+  }
+
+  try {
+    if (editingAgency.value) {
+      await put(`/agencies/${(editingAgency.value as any).id}`, form.value)
+      toast.success('Imobiliária atualizada com sucesso')
+    } else {
+      await post('/agencies', form.value)
+      toast.success('Imobiliária cadastrada com sucesso')
+    }
+    showModal.value = false
+    await fetchAgencies()
+  } catch (err) {
+    toast.error('Ocorreu um erro ao salvar os dados')
+  }
+}
+
+async function sendInvite() {
+  if (!inviteForm.value.email) {
+    toast.error('O e-mail é obrigatório para o convite')
+    return
+  }
+
+  try {
+    await post('/agencies/invite', inviteForm.value)
+    toast.success('Convite enviado por e-mail!')
+    showInviteModal.value = false
+    await fetchAgencies() // Refresh to show link button
+  } catch (err: any) {
+    toast.error(err.data?.message || 'Erro ao processar convite')
+  }
+}
+
+async function copyInviteLink(agency: any) {
+  let token = agency.invites?.[0]?.token
+
+  if (!token) {
+    try {
+      const res = await post('/agencies/invite', {
+        email: agency.email,
+        role: 'IMOBILIARIA',
+        agencyId: agency.id
+      })
+      token = res.token
+      await fetchAgencies()
+    } catch (err: any) {
+      toast.error('Erro ao gerar link de convite')
+      return
+    }
+  }
+
+  const magicLink = `${window.location.origin}/aceitar-convite?token=${token}`
+  try {
+    await navigator.clipboard.writeText(magicLink)
+    toast.success('Link de convite copiado!')
+  } catch {
+    toast.error('Erro ao copiar para a área de transferência')
+  }
+}
+
+function openEdit(agency: any) {
+  editingAgency.value = agency
+  form.value = { 
+    name: agency.name, 
+    email: agency.email, 
+    phone: agency.phone || '', 
+    creci: agency.creci || '' 
+  }
+  showModal.value = true
+}
+
+function openInvite(agency: any) {
+  inviteForm.value.agencyId = agency.id
+  inviteForm.value.email = agency.email // Auto-populate with registered email
+  inviteForm.value.role = 'IMOBILIARIA'
+  showInviteModal.value = true
+}
+
+onMounted(fetchAgencies)
+</script>
+
+<template>
+  <div class="painel-layout">
+    <div class="container-fluid py-5 px-lg-5">
+      <!-- Header de Alta Performance -->
+      <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-4">
+        <div class="header-content">
+          <h1 class="display-5 fw-bold text-dark tracking-tight mb-2">Imobiliárias</h1>
+          <p class="lead text-secondary opacity-75 mb-0">Gestão centralizada de parceiros e canais de venda.</p>
+        </div>
+        <div class="header-actions">
+          <button 
+            class="btn btn-primary btn-lg rounded-pill px-4 py-2 shadow-hover d-flex align-items-center gap-2"
+            @click="editingAgency = null; form = { name: '', email: '', phone: '', creci: '' }; showModal = true"
+          >
+            <span class="fs-4 line-height-1">+</span>
+            <span class="fw-semibold">Nova Imobiliária</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Grid de Conteúdo com Loading Skeleton -->
+      <div v-if="loading" class="row g-4 mt-2">
+        <div v-for="i in 3" :key="i" class="col-12 col-md-6 col-lg-4">
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+
+      <div v-else-if="agencies.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
+        <div class="text-center p-5 rounded-5 bg-white shadow-soft max-w-500">
+          <div class="icon-blob mx-auto mb-4">🏢</div>
+          <h3 class="fw-bold text-dark mb-3">Expanda sua rede de vendas</h3>
+          <p class="text-muted mb-4 px-4">Conecte-se com imobiliárias parceiras para multiplicar o alcance dos seus empreendimentos.</p>
+          <button class="btn btn-dark btn-lg rounded-pill px-5" @click="showModal = true">Começar Agora</button>
+        </div>
+      </div>
+
+      <!-- Grid Section Premium -->
+      <div v-else class="lotio-grid-container">
+        <div v-for="agency in agencies" :key="agency.id" class="lotio-grid-item">
+          <div class="agency-glass-card">
+            <!-- Glass Glow Decor -->
+            <div class="card-glow"></div>
+            
+            <!-- Header: Icon & Status -->
+            <div class="card-header-premium">
+              <div class="agency-icon-wrapper">
+                <span class="fs-3">🏢</span>
+              </div>
+              <div v-if="agency.isPending" class="status-badge-pending">
+                <span class="status-dot"></span>
+                Pendente
+              </div>
+              <div v-else :class="['status-badge-premium', agency.isActive ? 'is-active' : 'is-inactive']">
+                <span class="status-dot"></span>
+                {{ agency.isActive ? 'Ativa' : 'Inativa' }}
+              </div>
+            </div>
+
+            <!-- Body: Identify & Contact -->
+            <div class="card-body-premium">
+              <h2 class="agency-name-title">{{ agency.name }}</h2>
+              <div class="agency-email-row">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span>{{ agency.email }}</span>
+              </div>
+            </div>
+
+            <!-- Stats: High Contrast Bar -->
+            <div class="card-stats-premium">
+              <div class="stat-item border-end">
+                <span class="stat-label">Equipe</span>
+                <span class="stat-value">{{ agency._count?.realtors || 0 }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">CRECI</span>
+                <span class="stat-value text-truncate px-2">{{ agency.creci || '---' }}</span>
+              </div>
+            </div>
+
+            <!-- Actions: Precision Buttons -->
+            <div class="card-actions-premium">
+              <button class="btn-lotio-secondary" @click="openEdit(agency)">
+                Configurar
+              </button>
+              
+              <template v-if="agency.isPending">
+                <button class="btn-lotio-primary flex-grow-1" @click="openInvite(agency)">
+                  Enviar E-mail
+                </button>
+                <button class="btn-lotio-link" @click="copyInviteLink(agency)" title="Copiar Link de Convite">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path></svg>
+                </button>
+              </template>
+              
+              <button v-else class="btn-lotio-primary" disabled>
+                Registrada
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Premium Architecture -->
+    <Teleport to="body">
+      <Transition name="modal-fade">
+        <div v-if="showModal || showInviteModal" class="modal-overlay-custom" @click.self="showModal = false; showInviteModal = false">
+          
+          <!-- Modal Container -->
+          <div class="modal-window-custom animate-in">
+            <!-- Modal Header -->
+            <header class="modal-header-custom">
+              <div class="d-flex align-items-center gap-3">
+                <div class="modal-icon-context bg-primary-soft p-2 rounded-3 text-primary">
+                  {{ showModal ? '🏢' : '✉️' }}
+                </div>
+                <h3 class="h5 fw-black text-dark mb-0">
+                  {{ showInviteModal ? 'Enviar Convite' : (editingAgency ? 'Editar Imobiliária' : 'Nova Imobiliária') }}
+                </h3>
+              </div>
+              <button class="btn-close-custom" @click="showModal = false; showInviteModal = false">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </header>
+
+            <!-- Modal Content (Main Form) -->
+            <main v-if="showModal" class="modal-body-custom">
+              <div class="row g-4">
+                <div class="col-12">
+                  <div class="input-wrapper focus-within-primary mb-3">
+                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">Nome Fantasia</label>
+                    <input v-model="form.name" type="text" class="form-control-custom" placeholder="Ex: Central Brokers S/A">
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="input-wrapper focus-within-primary mb-3">
+                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">E-mail Corporativo</label>
+                    <input v-model="form.email" type="email" class="form-control-custom" placeholder="contato@empresa.com.br">
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="input-wrapper focus-within-primary mb-3">
+                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">Telefone</label>
+                    <input v-model="form.phone" type="text" class="form-control-custom" placeholder="(00) 00000-0000">
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="input-wrapper focus-within-primary mb-3">
+                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">CRECI Jurídico</label>
+                    <input v-model="form.creci" type="text" class="form-control-custom" placeholder="00.000-J">
+                  </div>
+                </div>
+              </div>
+            </main>
+
+            <!-- Modal Content (Invite) -->
+            <main v-if="showInviteModal" class="modal-body-custom">
+              <div class="info-alert d-flex gap-3 p-4 rounded-4 mb-4 border border-primary-subtle">
+                <div class="info-icon">💡</div>
+                <p class="small text-primary-dark mb-0 fw-medium">
+                  Este link permitirá que o administrador defina sua credencial de acesso exclusiva para esta imobiliária.
+                </p>
+              </div>
+              <div class="input-wrapper focus-within-primary">
+                <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">E-mail do Destinatário</label>
+                <input v-model="inviteForm.email" type="email" class="form-control-custom form-control-lg" placeholder="admin@parceiro.com.br">
+              </div>
+            </main>
+
+            <!-- Modal Footer -->
+            <footer class="modal-footer-custom">
+              <button 
+                class="btn-dismiss-custom fw-black text-uppercase tracking-widest" 
+                @click="showModal = false; showInviteModal = false"
+              >
+                Descartar
+              </button>
+              <button 
+                class="btn btn-primary px-5 rounded-pill fw-black shadow-primary-soft py-3 min-w-200" 
+                @click="showInviteModal ? sendInvite() : saveAgency()"
+              >
+                {{ showInviteModal ? 'Gerar Link & Enviar' : 'Salvar Registro' }}
+              </button>
+            </footer>
+          </div>
+          
+        </div>
+      </Transition>
+    </Teleport>
+  </div>
+</template>
+
+<style scoped>
+/* 
+   FORÇANDO ESCOPO TOTAL PARA EVITAR CONFLITOS COM main.css 
+   Identifiquei que main.css possui múltiplas definições de .modal-overlay e .modal-content
+*/
+
+.painel-layout {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.max-w-500 { max-width: 500px; }
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-tighter { letter-spacing: -0.05em; }
+.fw-black { font-weight: 900; }
+.text-xs { font-size: 0.75rem; }
+.line-height-1 { line-height: 1; }
+.min-w-200 { min-width: 200px; }
+
+/* Custom Grid System */
+.lotio-grid-container {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  margin: 1.5rem 0 !important;
+  padding: 0 !important;
+}
+
+.lotio-grid-item {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) {
+  .lotio-grid-item { width: 50% !important; }
+}
+
+@media (min-width: 1200px) {
+  .lotio-grid-item { width: 33.333% !important; }
+}
+
+/* THE SENIOR CARD ARCHITECTURE */
+.agency-glass-card {
+  background: #ffffff !important;
+  border-radius: 32px !important;
+  border: 1px solid #f1f5f9 !important;
+  padding: 32px !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03), 0 8px 10px -6px rgba(0,0,0,0.03) !important;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.agency-glass-card:hover {
+  transform: translateY(-12px) scale(1.01) !important;
+  box-shadow: 0 30px 60px -12px rgba(15, 23, 42, 0.12) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Card Section: Header */
+.card-header-premium {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  margin-bottom: 28px !important;
+}
+
+.agency-icon-wrapper {
+  width: 64px !important;
+  height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #f8fafc !important;
+  border-radius: 20px !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+  border: 4px solid white !important;
+}
+
+.status-badge-premium {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 16px !important;
+  border-radius: 100px !important;
+  font-size: 0.7rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+}
+
+.status-badge-premium.is-active {
+  background: #ecfdf5 !important;
+  color: #059669 !important;
+}
+
+.status-badge-pending {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 16px !important;
+  border-radius: 100px !important;
+  font-size: 0.7rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  background: #fffbeb !important;
+  color: #d97706 !important;
+}
+
+.status-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: currentColor !important;
+}
+
+/* Card Section: Content */
+.card-body-premium {
+  margin-bottom: 32px !important;
+}
+
+.agency-name-title {
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.04em !important;
+  margin-bottom: 8px !important;
+  line-height: 1.1 !important;
+}
+
+.agency-email-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #64748b !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+}
+
+/* Card Section: Stats Bar (The Fix) */
+.card-stats-premium {
+  background: #f8fafc !important;
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 24px !important;
+  display: flex !important;
+  padding: 20px 0 !important;
+  margin-bottom: 32px !important;
+  margin-top: auto !important;
+}
+
+.stat-item {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+}
+
+.stat-label {
+  font-size: 0.65rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  color: #94a3b8 !important;
+  letter-spacing: 0.15em !important;
+}
+
+.stat-value {
+  font-size: 1.25rem !important;
+  font-weight: 900 !important;
+  color: #1e293b !important;
+  line-height: 1 !important;
+}
+
+/* Card Section: Actions */
+.card-actions-premium {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.btn-lotio-primary, .btn-lotio-secondary {
+  flex: 1 !important;
+  padding: 14px !important;
+  border-radius: 16px !important;
+  font-weight: 800 !important;
+  font-size: 0.85rem !important;
+  transition: all 0.2s !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.btn-lotio-primary {
+  background: #2563eb !important;
+  color: white !important;
+  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.3) !important;
+}
+
+.btn-lotio-primary:hover {
+  background: #1d4ed8 !important;
+  transform: translateY(-2px) !important;
+}
+
+.btn-lotio-secondary {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.btn-lotio-secondary:hover {
+  background: #e2e8f0 !important;
+}
+
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* OVERRIDE TOTAL - MODAL CUSTOM */
+.modal-overlay-custom {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  padding: 2rem;
+}
+
+.modal-window-custom {
+  width: 100% !important;
+  max-width: 640px !important;
+  background: white !important;
+  border-radius: 32px !important;
+  box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.modal-header-custom {
+  padding: 1.5rem 2.5rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: white !important;
+}
+
+.modal-body-custom {
+  padding: 2.5rem !important;
+  background: white !important;
+  flex-grow: 1 !important;
+}
+
+.modal-footer-custom {
+  padding: 2rem 2.5rem !important;
+  background: #f8fafc !important;
+  border-top: 1px solid #f1f5f9 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+/* Botão Descartar Customizado */
+.btn-dismiss-custom {
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  font-size: 0.75rem !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 10px !important;
+  transition: all 0.2s !important;
+  cursor: pointer !important;
+}
+.btn-dismiss-custom:hover {
+  color: #0f172a !important;
+  background: #e2e8f0 !important;
+}
+
+/* FORM OVERRIDES */
+.input-wrapper label {
+  transition: color 0.2s;
+}
+
+.input-wrapper:focus-within label {
+  color: #3b82f6 !important;
+}
+
+.form-control-custom {
+  width: 100% !important;
+  padding: 1rem 1.25rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  color: #1e293b !important;
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+}
+
+.form-control-custom:focus {
+  outline: none !important;
+  background-color: white !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.12) !important;
+}
+
+.bg-light-soft {
+  background-color: #f8fafc !important;
+}
+
+
+/* BUTTONS */
+.btn-primary-soft {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+.shadow-primary-soft { box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4) !important; }
+
+/* Custom Close */
+.btn-close-custom {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  padding: 8px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s !important;
+}
+.btn-close-custom:hover { background: #f1f5f9 !important; color: #1e293b !important; }
+
+/* Animations */
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.3s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+
+.animate-in {
+  animation: modalEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.95) translateY(40px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.skeleton-card {
+  height: 280px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  border-radius: 28px;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.icon-blob {
+  width: 100px;
+  height: 100px;
+  background: #f0f7ff;
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: blob-morph 8s infinite alternate ease-in-out;
+}
+
+@keyframes blob-morph {
+  to { border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%; }
+}
+
+.btn-lotio-link {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  transition: all 0.3s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-lotio-link:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  transform: translateY(-2px) !important;
+}
+
+.btn-lotio-primary:disabled {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border-color: #e2e8f0 !important;
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+}
+</style>
+
+
+<style scoped>
+.painel-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.agency-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--gray-200);
+}
+
+.agency-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1.5rem;
+}
+
+.modal-container {
+  background: white !important;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.animate-in {
+  animation: modalScale 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+  from { opacity: 0; transform: scale(0.9) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.badge-tag {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.5px;
+}
+
+.badge-success { background: var(--success-light); color: var(--success); }
+.badge-danger { background: var(--danger-light); color: var(--danger); }
+</style>
+

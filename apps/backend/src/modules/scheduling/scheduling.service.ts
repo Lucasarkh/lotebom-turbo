@@ -99,6 +99,22 @@ export class SchedulingService {
       if (timeString < config.startTime || timeString > config.endTime) {
         throw new BadRequestException(`Agendamentos disponíveis apenas entre ${config.startTime} e ${config.endTime}.`);
       }
+
+      // Check lunch time
+      if (config.lunchStart && config.lunchEnd) {
+        if (timeString >= config.lunchStart && timeString < config.lunchEnd) {
+          throw new BadRequestException('Este horário coincide com o intervalo de almoço.');
+        }
+      }
+
+      // Check custom breaks
+      if (config.breaks && Array.isArray(config.breaks)) {
+        for (const b of config.breaks as any[]) {
+          if (timeString >= b.start && timeString < b.end) {
+            throw new BadRequestException('Este horário está bloqueado por um intervalo programado.');
+          }
+        }
+      }
     }
 
     let finalLeadId = leadId && leadId !== '' ? leadId : null;

@@ -58,8 +58,11 @@
                 <label class="field-label">Intervalo entre Visitas</label>
                 <div class="field-wrapper">
                   <select v-model="config.scheduleInterval" class="base-select">
+                    <option :value="15">15 minutos</option>
                     <option :value="30">30 minutos</option>
+                    <option :value="45">45 minutos</option>
                     <option :value="60">1 hora</option>
+                    <option :value="90">1 hora e 30 min</option>
                     <option :value="120">2 horas</option>
                   </select>
                 </div>
@@ -67,8 +70,47 @@
               <div class="field-group">
                 <label class="field-label">Atendimentos Simultâneos</label>
                 <div class="field-wrapper">
-                  <input v-model="config.maxSimultaneous" type="number" class="base-input" min="1">
+                  <input v-model.number="config.maxSimultaneous" type="number" class="base-input" min="1">
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Seção: Intervalos e Pausas -->
+          <section class="config-section">
+            <header class="section-header">
+              <h4 class="section-title">Intervalos e Pausas</h4>
+            </header>
+
+            <div class="grid-fields duo">
+              <div class="field-group">
+                <label class="field-label">Almoço (Início)</label>
+                <div class="field-wrapper">
+                  <input v-model="config.lunchStart" type="time" class="base-input">
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Almoço (Fim)</label>
+                <div class="field-wrapper">
+                  <input v-model="config.lunchEnd" type="time" class="base-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom Breaks -->
+            <div class="custom-breaks-list" style="margin-top: 16px;">
+              <header class="flex justify-between items-center mb-3">
+                <span style="font-size: 0.8rem; font-weight: 600; color: #666;">☕ Outras Pausas</span>
+                <button class="btn-text-sm" @click="addBreak">+ Adicionar</button>
+              </header>
+
+              <div v-for="(b, idx) in (config.breaks || [])" :key="idx" 
+                   class="break-item-row">
+                <input v-model="b.name" placeholder="Motivo" class="base-input sm-input" style="flex: 2">
+                <input v-model="b.start" type="time" class="base-input sm-input" style="flex: 1">
+                <span style="font-size: 10px; color: #999;">até</span>
+                <input v-model="b.end" type="time" class="base-input sm-input" style="flex: 1">
+                <button class="btn-delete-sm" @click="removeBreak(idx)">&times;</button>
               </div>
             </div>
           </section>
@@ -120,7 +162,10 @@ const config = ref({
   endTime: '18:00',
   scheduleInterval: 60,
   maxSimultaneous: 1,
-  availableDays: ['MON', 'TUE', 'WED', 'THU', 'FRI']
+  availableDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+  lunchStart: '',
+  lunchEnd: '',
+  breaks: [] as any[]
 });
 
 const dayOptions = [
@@ -136,13 +181,26 @@ const dayOptions = [
 onMounted(async () => {
   try {
     const data = await api.get(`/scheduling/config/${props.projectId}`);
-    if (data) config.value = data;
+    if (data) config.value = {
+      ...config.value,
+      ...data,
+      breaks: Array.isArray(data.breaks) ? data.breaks : []
+    };
   } catch (e) {
     toast.error('Erro ao carregar configurações');
   } finally {
     loading.value = false;
   }
 });
+
+const addBreak = () => {
+  if (!config.value.breaks) config.value.breaks = [];
+  config.value.breaks.push({ name: '', start: '', end: '' });
+}
+
+const removeBreak = (idx: number) => {
+  config.value.breaks.splice(idx, 1);
+}
 
 const save = async () => {
   saving.value = true;
@@ -369,6 +427,43 @@ input:checked + .toggle-track:before { transform: translateX(22px); }
   font-size: 0.75rem;
   color: #a1a1aa;
   margin-top: 4px;
+}
+
+.break-item-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: #f8fafc !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+  margin-bottom: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.sm-input {
+  height: 32px !important;
+  font-size: 0.8rem !important;
+  padding: 0 8px !important;
+}
+
+.btn-text-sm {
+  background: none !important;
+  border: none !important;
+  color: #2563eb !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+}
+
+.btn-delete-sm {
+  background: none !important;
+  border: none !important;
+  color: #ef4444 !important;
+  font-size: 1.2rem !important;
+  cursor: pointer !important;
+  padding: 0 4px !important;
+  line-height: 1 !important;
 }
 
 /* FOOTER */
