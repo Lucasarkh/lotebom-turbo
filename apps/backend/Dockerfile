@@ -103,8 +103,9 @@ COPY --from=build --chown=nestjs:nodejs /app/apps/backend/dist ./dist
 # 4) Prisma schema + migrations (for prisma migrate deploy)
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
 
-# 5) Package metadata
+# 5) Package metadata + seed tsconfig
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/package.json ./
+COPY --from=build --chown=nestjs:nodejs /app/apps/backend/tsconfig.seed.json ./
 
 # 6) Entrypoint script (wait for DB, run migrations, start app)
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/docker-entrypoint.sh ./docker-entrypoint.sh
