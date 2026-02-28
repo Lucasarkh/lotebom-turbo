@@ -94,6 +94,8 @@ EXPOSE 8080
 
 ENV NODE_ENV=production
 
+CMD ["node", "dist/main"]
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8080/docs',(r)=>{r.resume();r.on('end',()=>process.exit(r.statusCode<500?0:1))}).on('error',()=>process.exit(1))"
 
