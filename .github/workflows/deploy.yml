@@ -125,16 +125,32 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
 
             docker compose pull backend
-            docker compose down backend
             docker compose up -d backend
             
-            echo "Waiting for backend to start..."
-            sleep 20
+            echo "Waiting for backend to stabilize..."
+            for i in $(seq 1 20); do
+              STATUS=$(docker inspect --format='{{.State.Status}}' lotio_backend 2>/dev/null || echo "missing")
+              if [ "$STATUS" = "running" ]; then
+                echo "✓ Backend is running (attempt $i)"
+                break
+              fi
+              if [ "$i" -eq 20 ]; then
+                echo "❌ Backend failed to start. Logs:"
+                docker logs --tail=100 lotio_backend 2>&1 || true
+                exit 1
+              fi
+              echo "  Status: $STATUS — waiting 5s... ($i/20)"
+              sleep 5
+            done
 
+            # Extra wait for app to initialize
+            sleep 10
+
+            echo "Running database migrations..."
             docker compose exec -T backend npx prisma migrate deploy
 
             echo "Latest logs from backend:"
-            docker logs --tail=100 lotio_backend
+            docker logs --tail=50 lotio_backend
             
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -n 20
 
