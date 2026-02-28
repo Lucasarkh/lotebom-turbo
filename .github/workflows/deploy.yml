@@ -154,11 +154,14 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
 
+            # Normalize repository owner to lowercase for Docker image reference
+            OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+
             # Login GHCR
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Pull latest backend image
-            docker compose -f docker-compose.prod.yml pull backend
+            docker pull ghcr.io/$OWNER_LC/lotio-backend:latest
 
             # Run database migrations BEFORE swapping containers
             docker compose -f docker-compose.prod.yml run --rm -T \
