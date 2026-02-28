@@ -47,7 +47,8 @@ RUN cp -rL node_modules/prisma /tmp/prisma-cli 2>/dev/null || true
 # -- Stage 4: Production deps (standalone, no symlinks) -------------------
 FROM deps AS prod-deploy
 
-RUN pnpm --filter lotio-backend deploy --prod /deploy
+# Use --legacy flag for pnpm v10 compatibility in workspaces
+RUN pnpm --filter lotio-backend deploy --prod --legacy /deploy
 
 # -- Stage 5: Production runner -------------------------------------------
 FROM node:22-alpine AS runner
