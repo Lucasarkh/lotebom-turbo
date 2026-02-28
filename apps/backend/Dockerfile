@@ -54,6 +54,16 @@ RUN mkdir -p /tmp/prisma-generated/client && \
       echo "FATAL: .prisma/client not found anywhere under /app" && exit 1; \
     fi
 
+# Stage Prisma Engines (Required for Prisma CLI to run migrations)
+RUN mkdir -p /tmp/prisma-engines && \
+    ENGINES_DIR=$(find /app -path "*/@prisma/engines" -type d 2>/dev/null | head -1) && \
+    if [ -n "$ENGINES_DIR" ]; then \
+      cp -rL "$ENGINES_DIR"/* /tmp/prisma-engines/ && \
+      echo "✓ Prisma engines copied from: $ENGINES_DIR"; \
+    else \
+      echo "WARNING: @prisma/engines not found, migrations might fail" ; \
+    fi
+
 # -- Stage 4: Production deps (standalone, no symlinks) -------------------
 FROM deps AS prod-deploy
 
@@ -79,6 +89,7 @@ COPY --from=build /tmp/prisma-generated ./node_modules/.prisma
 
 # 3) Prisma CLI for running migrations on deploy
 COPY --from=build /tmp/prisma-cli ./node_modules/prisma
+COPY --from=build /tmp/prisma-engines ./node_modules/@prisma/engines
 RUN mkdir -p node_modules/.bin && \
     ln -sf ../prisma/build/index.js node_modules/.bin/prisma && \
     chmod +x node_modules/.bin/prisma 2>/dev/null || true
