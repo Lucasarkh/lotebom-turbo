@@ -55,11 +55,21 @@ RUN mkdir -p /tmp/prisma-generated && \
       echo "FATAL: .prisma/client not found anywhere under /app" && exit 1; \
     fi
 
-# -- Stage 4: Production deps (standalone, no symlinks) -------------------
-FROM deps AS prod-deploy
+# -- Stage 4: Production deps -------------------
+FROM base AS prod-deploy
 
-RUN pnpm config set force-legacy-deploy true && \
-    pnpm --filter lotio-backend deploy --prod --legacy /deploy
+WORKDIR /deploy
+
+# Copy ONLY the files needed for production install
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/backend/package.json ./apps/backend/
+COPY apps/frontend/package.json ./apps/frontend/
+
+# Install only production dependencies (flattened)
+RUN pnpm install --frozen-lockfile --prod --shamefully-hoist
+
+# Move the hoisted node_modules to the root
+RUN mv node_modules ./prod_node_modules
 
 # -- Stage 5: Production runner -------------------------------------------
 FROM node:22-alpine AS runner
@@ -72,8 +82,8 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001 -G nodejs -h /home/nestjs
 
-# 1) Production node_modules from pnpm deploy (includes prisma CLI + all transitive deps)
-COPY --from=prod-deploy --chown=nestjs:nodejs /deploy/node_modules ./node_modules
+# 1) Production node_modules (hoisted)
+COPY --from=prod-deploy --chown=nestjs:nodejs /deploy/prod_node_modules ./node_modules
 
 # 2) Prisma generated client (query engine binary + generated types)
 #    This is the ONLY thing we need from the build stage
