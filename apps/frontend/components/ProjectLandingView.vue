@@ -121,7 +121,7 @@
       </section>
 
       <!-- Planta Interativa -->
-      <section v-if="plantMap" class="v4-section" id="planta">
+      <section v-if="plantMap" class="v4-section v4-section-alt" id="planta">
         <div class="v4-container">
           <div class="v4-section-header center">
             <h2 class="v4-section-title">Planta Interativa</h2>
@@ -169,7 +169,7 @@
       </section>
 
       <!-- Video Presentation -->
-      <section v-if="project.youtubeVideoUrl" class="v4-section" id="video-apresentacao">
+      <section v-if="project.youtubeVideoUrl" class="v4-section v4-section-alt" id="video-apresentacao">
         <div class="v4-container">
           <div class="v4-section-header center">
             <h2 class="v4-section-title">Apresentação</h2>
@@ -214,7 +214,7 @@
       </section>
 
       <!-- Available Lots Grid -->
-      <section v-if="unifiedAvailableLots.length" class="v4-section" id="lotes">
+      <section v-if="unifiedAvailableLots.length" class="v4-section v4-section-alt" id="lotes">
         <div class="v4-container">
           <div class="v4-section-header">
             <h2 class="v4-section-title">Lotes Disponíveis</h2>
@@ -292,7 +292,7 @@
       </section>
 
       <!-- Media gallery -->
-      <section v-if="project.projectMedias?.length" class="v4-section" id="galeria">
+      <section v-if="project.projectMedias?.length" class="v4-section v4-section-alt" id="galeria">
         <div class="v4-container">
           <div class="v4-section-header">
             <h2 class="v4-section-title">Galeria de Fotos</h2>
@@ -1041,6 +1041,10 @@ function openLightbox(idx: number) {
   --v4-mobile-padding: 20px;
   --v4-section-spacing-mobile: 48px;
   --v4-section-column-gap-mobile: 24px;
+  
+  /* Section Delimitation Tokens */
+  --v4-hairline: 1px solid rgba(0, 0, 0, 0.08);
+  --v4-hairline-dark: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Base Layout */
@@ -1052,12 +1056,14 @@ function openLightbox(idx: number) {
   font-weight: 400;
   letter-spacing: -0.022em;
   -webkit-font-smoothing: antialiased;
+  /* Prevent margin collapse at the page level */
+  padding-top: 0.1px;
 }
 
 .v4-container {
   max-width: 1040px; /* More focused container like Apple */
   margin: 0 auto;
-  padding: 0 22px;
+  padding: 0 40px; /* Increased desktop padding for symmetry */
 }
 
 @media (max-width: 768px) {
@@ -1066,29 +1072,38 @@ function openLightbox(idx: number) {
 
 /* Spacing & Sections */
 .v4-section {
-  padding: 80px 0;
+  padding: 100px 0; /* Consistent desk padding */
   position: relative;
+  border-bottom: var(--v4-hairline); /* Apple style hairline separator */
 }
 
 @media (max-width: 768px) {
-  .v4-section { padding: var(--v4-section-spacing-mobile) 0; }
+  .v4-section { padding: 64px 0; } /* Consistent mobile padding */
 }
+
+/* Fix for nested element margins leaking into section paddings */
+.v4-section > .v4-container > *:first-child {
+  margin-top: 0 !important;
+}
+
+.v4-section > .v4-container > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Specific section variations for delimitation */
+.v4-section:last-of-type { border-bottom: none; }
 
 .v4-section-alt {
   background: var(--v4-bg-alt);
 }
 
 .v4-section-header {
-  margin-bottom: 24px;
+  margin-bottom: 56px;
   max-width: 800px;
 }
 
 @media (max-width: 768px) {
-  .v4-section-header { margin-bottom: 16px; }
-}
-
-@media (max-width: 768px) {
-  .v4-section-header { margin-bottom: 24px; }
+  .v4-section-header { margin-bottom: 32px; }
 }
 
 .v4-section-header.center {
