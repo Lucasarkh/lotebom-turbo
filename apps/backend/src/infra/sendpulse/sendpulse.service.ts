@@ -273,8 +273,11 @@ export class SendPulseService implements OnModuleInit {
     const roleMap: Record<string, string> = {
       ADMIN: 'Administrador',
       TENANT_ADMIN: 'Gestor da Loteadora',
+      LOTEADORA: 'Gestor da Loteadora',
+      IMOBILIARIA: 'Gestor da Imobiliária',
       REALTOR_ADMIN: 'Gestor da Imobiliária',
-      REALTOR: 'Escritório de Corretagem'
+      CORRETOR: 'Corretor de Imóveis',
+      REALTOR: 'Corretor de Imóveis'
     };
 
     const roleName = roleMap[role] || 'Usuário';

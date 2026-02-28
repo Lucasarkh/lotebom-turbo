@@ -623,6 +623,12 @@ const save = async () => {
      toast.error('Preencha os campos obrigatórios');
      return;
   }
+
+  // Validação obrigatória de Lead (ou selecionar existente ou preencher dados de novo)
+  if (!form.value.leadId && !form.value.leadName) {
+    toast.error('É obrigatório vincular um lead ou preencher o nome para um novo cadastro.');
+    return;
+  }
   
   saving.value = true;
   try {

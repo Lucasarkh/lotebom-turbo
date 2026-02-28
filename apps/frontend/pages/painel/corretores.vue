@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const auth = useAuthStore()
 const { get, post, patch, delete: del } = useApi()
 const toast = useToast()
 
@@ -6,6 +7,7 @@ const realtors = ref([])
 const projects = ref([])
 const loading = ref(true)
 const showModal = ref(false)
+const showInviteModal = ref(false)
 const editingRealtor = ref(null)
 
 const emailError = ref('')
@@ -14,6 +16,12 @@ const emailAvailable = ref(false)
 const codeAvailable = ref(false)
 const emailLoading = ref(false)
 const codeLoading = ref(false)
+
+const inviteForm = ref({
+  email: '',
+  role: 'CORRETOR',
+  agencyId: ''
+})
 
 let emailDebounceTimer: any = null
 let codeDebounceTimer: any = null
@@ -97,11 +105,9 @@ function onNameInput() {
 async function fetchData() {
   loading.value = true
   try {
-    const [realtorsData, projectsRes] = await Promise.all([
-      get('/realtor-links'),
-      get('/projects')
-    ])
-    realtors.value = realtorsData
+    const res = await get('/realtor-links')
+    realtors.value = res
+    const projectsRes = await get('/projects')
     projects.value = projectsRes.data
   } catch (error) {
     console.error('Error fetching realtors:', error)
@@ -214,6 +220,30 @@ function copyLink(realtor, project = null) {
   toast.success('Link copiado!')
 }
 
+async function sendInvite() {
+  if (!inviteForm.value.email) {
+    toast.error('O e-mail é obrigatório para o convite')
+    return
+  }
+
+  try {
+    await post('/agencies/invite', inviteForm.value)
+    toast.success('Convite enviado por e-mail!')
+    showInviteModal.value = false
+    await fetchData() // Refresh
+  } catch (err: any) {
+    toast.error(err.data?.message || 'Erro ao processar convite')
+  }
+}
+
+function openInvite() {
+  inviteForm.value.email = ''
+  inviteForm.value.role = 'CORRETOR'
+  // No agencyId = Direct broker if LOTEADORA, or the API will handle if it's IMOBILIARIA
+  inviteForm.value.agencyId = ''
+  showInviteModal.value = true
+}
+
 onMounted(fetchData)
 
 definePageMeta({
@@ -228,9 +258,14 @@ definePageMeta({
         <h1>Gestão de Corretores</h1>
         <p class="subtitle">Gerencie os links e CRECI dos corretores</p>
       </div>
-      <button class="btn btn-primary" @click="openCreate">
-        Novo Corretor
-      </button>
+      <div class="header-actions" style="display: flex; gap: 12px;">
+        <button class="btn btn-outline" @click="openInvite">
+          Convidar Corretor via E-mail
+        </button>
+        <button class="btn btn-primary" @click="openCreate">
+          Vincular Corretor Manualmente
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="loading">Carregando...</div>
@@ -373,6 +408,38 @@ definePageMeta({
             <div class="modal-actions">
               <button type="button" class="btn btn-outline" @click="showModal = false">Cancelar</button>
               <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Invite Modal -->
+    <Teleport to="body">
+      <div v-if="showInviteModal" class="modal-overlay" @click="showInviteModal = false">
+        <div class="modal-content" @click.stop>
+          <h2>Convidar Corretor</h2>
+          <p class="subtitle" style="margin-bottom: 24px;">Envie um e-mail de convite para o corretor se cadastrar sozinho.</p>
+          
+          <form @submit.prevent="sendInvite" class="form">
+            <div class="form-group">
+              <label class="form-label">E-mail do Corretor</label>
+              <input 
+                v-model="inviteForm.email" 
+                type="email" 
+                class="form-input" 
+                placeholder="email@corretor.com.br" 
+                required
+              >
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn btn-outline" @click="showInviteModal = false">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="!inviteForm.email">
+                Enviar Convite (E-mail e Sistema)
+              </button>
             </div>
           </form>
         </div>

@@ -119,7 +119,8 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId
+      tenantId: user.tenantId,
+      agencyId: user.agencyId
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -148,7 +149,8 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
+        agencyId: user.agencyId
       }
     };
   }
@@ -174,7 +176,8 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId
+      tenantId: user.tenantId,
+      agencyId: user.agencyId
     };
 
     return {
@@ -275,6 +278,7 @@ export class AuthService {
         name: true,
         role: true,
         tenantId: true,
+        agencyId: true,
         tenant: { select: { id: true, name: true, slug: true } }
       }
     });

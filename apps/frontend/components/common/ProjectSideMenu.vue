@@ -31,9 +31,9 @@ const props = defineProps<{
 
 const allItems = [
   { id: 'inicio', label: 'INÍCIO' },
+  { id: 'info', label: 'FICHA' },
   { id: 'planta', label: 'PLANTA' },
   { id: 'panorama', label: '360°' },
-  { id: 'info', label: 'FICHA' },
   { id: 'lotes', label: 'UNIDADES' },
   { id: 'galeria', label: 'GALERIA' },
   { id: 'localizacao', label: 'LOCAL' },

@@ -119,7 +119,12 @@ export class SchedulingService {
 
     let finalLeadId = leadId && leadId !== '' ? leadId : null;
 
-    if (!finalLeadId && (leadName || leadEmail || leadPhone)) {
+    // MANDATORY LEAD CHECK
+    if (!finalLeadId && !leadName) {
+      throw new BadRequestException('É necessário selecionar um lead existente ou preencher o nome para um novo lead.');
+    }
+
+    if (!finalLeadId && leadName) {
       // Find realtor link if code exists
       let realtorLinkId: string | undefined = undefined;
       if (realtorCode) {
@@ -141,11 +146,11 @@ export class SchedulingService {
           tenantId,
           projectId,
           realtorLinkId,
-          name: leadName || 'Novo Agendamento',
+          name: leadName, // Type is now guaranteed to be string
           email: leadEmail,
           phone: leadPhone,
           status: 'NEW',
-          source: 'SITE_AGENDAMENTO',
+          source: userId ? 'PAINEL_AGENDAMENTO' : 'SITE_AGENDAMENTO',
         },
       });
       finalLeadId = lead.id;
@@ -175,6 +180,7 @@ export class SchedulingService {
 
   async listSchedulings(tenantId: string, projectId: string | undefined, user: any) {
     const isBroker = user.role === 'CORRETOR';
+    const isAgency = user.role === 'IMOBILIARIA';
 
     return this.prisma.scheduling.findMany({
       where: {
@@ -184,6 +190,12 @@ export class SchedulingService {
           OR: [
             { userId: user.id },
             { lead: { realtorLink: { userId: user.id } } },
+          ],
+        }),
+        ...(isAgency && {
+          OR: [
+            { user: { agencyId: user.agencyId } },
+            { lead: { realtorLink: { agencyId: user.agencyId } } },
           ],
         }),
       },

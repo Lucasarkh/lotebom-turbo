@@ -19,7 +19,7 @@ export class SchedulingController {
   constructor(private readonly service: SchedulingService) {}
 
   @Get('config/:projectId')
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   getConfig(@Param('projectId') projectId: string) {
     return this.service.getProjectConfig(projectId);
   }
@@ -31,7 +31,7 @@ export class SchedulingController {
   }
 
   @Post()
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   create(
     @TenantId() tenantId: string,
     @Body() dto: CreateSchedulingDto,
@@ -41,7 +41,7 @@ export class SchedulingController {
   }
 
   @Get()
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   findAll(
     @TenantId() tenantId: string, 
     @CurrentUser() user: any,
@@ -51,13 +51,13 @@ export class SchedulingController {
   }
 
   @Patch(':id/status')
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   updateStatus(@Param('id') id: string, @Body('status') status: SchedulingStatus) {
     return this.service.updateSchedulingStatus(id, status);
   }
 
   @Delete(':id')
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   delete(@Param('id') id: string) {
     return this.service.deleteScheduling(id);
   }

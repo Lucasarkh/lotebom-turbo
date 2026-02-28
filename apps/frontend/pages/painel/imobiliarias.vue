@@ -4,6 +4,13 @@ const { get, post, put } = useApi()
 const toast = useToast()
 
 const agencies = ref<any[]>([])
+const search = ref('')
+const meta = ref({
+  total: 0,
+  page: 1,
+  limit: 12,
+  totalPages: 1
+})
 const loading = ref(true)
 const showModal = ref(false)
 const showInviteModal = ref(false)
@@ -22,11 +29,19 @@ const inviteForm = ref({
   agencyId: ''
 })
 
-async function fetchAgencies() {
+let searchTimeout: any = null
+async function fetchAgencies(page = 1) {
   loading.value = true
   try {
-    const data = await get('/agencies')
-    agencies.value = Array.isArray(data) ? data : []
+    const query = new URLSearchParams({
+      page: page.toString(),
+      limit: '12',
+      search: search.value
+    }).toString()
+    
+    const res: any = await get(`/agencies?${query}`)
+    agencies.value = res.items || []
+    meta.value = res.meta || meta.value
   } catch (err) {
     console.error('Fetch error:', err)
     toast.error('Erro ao conectar com o servidor')
@@ -34,6 +49,18 @@ async function fetchAgencies() {
   } finally {
     loading.value = false
   }
+}
+
+function onSearchInput() {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    fetchAgencies(1)
+  }, 400)
+}
+
+const goToPage = (page: number) => {
+  if (page < 1 || page > meta.value.totalPages) return
+  fetchAgencies(page)
 }
 
 async function saveAgency() {
@@ -130,13 +157,22 @@ onMounted(fetchAgencies)
           <h1 class="display-5 fw-bold text-dark tracking-tight mb-2">Imobiliárias</h1>
           <p class="lead text-secondary opacity-75 mb-0">Gestão centralizada de parceiros e canais de venda.</p>
         </div>
-        <div class="header-actions">
+        <div class="header-actions d-flex gap-3">
+          <div class="search-box-minimal">
+            <i class="pi pi-search"></i>
+            <input 
+              v-model="search" 
+              type="text" 
+              placeholder="Buscar por nome, email ou CRECI..." 
+              @input="onSearchInput"
+            >
+          </div>
           <button 
-            class="btn btn-primary btn-lg rounded-pill px-4 py-2 shadow-hover d-flex align-items-center gap-2"
+            class="btn btn-primary rounded-pill px-4 shadow-sm d-flex align-items-center gap-2"
             @click="editingAgency = null; form = { name: '', email: '', phone: '', creci: '' }; showModal = true"
           >
             <span class="fs-4 line-height-1">+</span>
-            <span class="fw-semibold">Nova Imobiliária</span>
+            <span class="fw-bold">Nova Imobiliária</span>
           </button>
         </div>
       </header>
@@ -157,69 +193,100 @@ onMounted(fetchAgencies)
         </div>
       </div>
 
-      <!-- Grid Section Premium -->
-      <div v-else class="lotio-grid-container">
-        <div v-for="agency in agencies" :key="agency.id" class="lotio-grid-item">
-          <div class="agency-glass-card">
-            <!-- Glass Glow Decor -->
-            <div class="card-glow"></div>
-            
-            <!-- Header: Icon & Status -->
-            <div class="card-header-premium">
-              <div class="agency-icon-wrapper">
-                <span class="fs-3">🏢</span>
+      <!-- Grid Section Apple/Samsung Style -->
+      <div v-else>
+        <div class="row g-4 lotio-grid-v2">
+          <div v-for="agency in agencies" :key="agency.id" class="col-12 col-md-4 col-xl-3">
+            <div class="minimal-agency-card shadow-sm-hover animate-in">
+              <!-- Top Metadata & Symbol -->
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="agency-symbol-modern">
+                   <span v-if="agency.isPending" class="symbol-inner bg-warning"><i class="pi pi-clock"></i></span>
+                   <span v-else class="symbol-inner bg-primary-soft-v2"><i class="pi pi-building text-primary"></i></span>
+                </div>
+                <div :class="['minimal-badge', agency.isActive ? 'active' : 'inactive']">
+                  {{ agency.isActive ? 'Ativa' : 'Inativa' }}
+                </div>
               </div>
-              <div v-if="agency.isPending" class="status-badge-pending">
-                <span class="status-dot"></span>
-                Pendente
-              </div>
-              <div v-else :class="['status-badge-premium', agency.isActive ? 'is-active' : 'is-inactive']">
-                <span class="status-dot"></span>
-                {{ agency.isActive ? 'Ativa' : 'Inativa' }}
-              </div>
-            </div>
 
-            <!-- Body: Identify & Contact -->
-            <div class="card-body-premium">
-              <h2 class="agency-name-title">{{ agency.name }}</h2>
-              <div class="agency-email-row">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                <span>{{ agency.email }}</span>
+              <!-- Main Info -->
+              <div class="minimal-card-main mb-4 flex-grow-1">
+                <h3 class="minimal-agency-name" :title="agency.name">
+                  {{ agency.name }}
+                </h3>
+                <p class="minimal-agency-email">
+                   {{ agency.email }}
+                </p>
               </div>
-            </div>
 
-            <!-- Stats: High Contrast Bar -->
-            <div class="card-stats-premium">
-              <div class="stat-item border-end">
-                <span class="stat-label">Equipe</span>
-                <span class="stat-value">{{ agency._count?.realtors || 0 }}</span>
+              <!-- Compact Stats -->
+              <div class="minimal-stats-row mb-4">
+                <div class="stat-minimal-item">
+                  <span class="label">EQUIPE</span>
+                  <span class="value">{{ agency._count?.realtors || 0 }}</span>
+                </div>
+                <div class="stat-minimal-divider"></div>
+                <div class="stat-minimal-item">
+                    <span class="label">CRECI</span>
+                    <span class="value text-truncate w-100px">{{ agency.creci || '---' }}</span>
+                </div>
               </div>
-              <div class="stat-item">
-                <span class="stat-label">CRECI</span>
-                <span class="stat-value text-truncate px-2">{{ agency.creci || '---' }}</span>
-              </div>
-            </div>
 
-            <!-- Actions: Precision Buttons -->
-            <div class="card-actions-premium">
-              <button class="btn-lotio-secondary" @click="openEdit(agency)">
-                Configurar
-              </button>
-              
-              <template v-if="agency.isPending">
-                <button class="btn-lotio-primary flex-grow-1" @click="openInvite(agency)">
-                  Enviar E-mail
+              <!-- Refined Actions -->
+              <div class="d-flex align-items-center gap-3 mt-4">
+                <button class="btn btn-action-minimal" style="min-width: 100px;" @click="openEdit(agency)">
+                  Ajustar
                 </button>
-                <button class="btn-lotio-link" @click="copyInviteLink(agency)" title="Copiar Link de Convite">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path></svg>
-                </button>
-              </template>
-              
-              <button v-else class="btn-lotio-primary" disabled>
-                Registrada
-              </button>
+                
+                <div class="d-flex align-items-center gap-2">
+                  <template v-if="agency.isPending">
+                      <button class="btn btn-icon-minimal btn-primary-minimal" @click="openInvite(agency)" title="Enviar E-mail">
+                        <i class="pi pi-envelope"></i>
+                      </button>
+                      <button class="btn btn-icon-minimal" @click="copyInviteLink(agency)" title="Copiar Link">
+                        <i class="pi pi-link"></i>
+                      </button>
+                  </template>
+                  <div v-else class="verified-indicator" title="Imobiliária Ativa">
+                      <i class="pi pi-check-circle"></i>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div v-if="meta.totalPages > 1" class="pagination-footer mt-5 d-flex justify-content-center">
+            <nav class="apple-pagination d-flex align-items-center gap-2">
+                <button 
+                  class="btn-page-nav" 
+                  :disabled="meta.page === 1" 
+                  @click="goToPage(meta.page - 1)"
+                >
+                  <i class="pi pi-chevron-left"></i>
+                </button>
+                
+                <div class="page-numbers d-flex gap-1">
+                  <button 
+                    v-for="p in meta.totalPages" 
+                    :key="p" 
+                    class="btn-page-num" 
+                    :class="{ 'is-active': meta.page === p }"
+                    @click="goToPage(p)"
+                  >
+                    {{ p }}
+                  </button>
+                </div>
+
+                <button 
+                  class="btn-page-nav" 
+                  :disabled="meta.page === meta.totalPages" 
+                  @click="goToPage(meta.page + 1)"
+                >
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+            </nav>
         </div>
       </div>
     </div>
@@ -536,6 +603,263 @@ onMounted(fetchAgencies)
   display: inline-block;
   margin-right: 6px;
 }
+
+/* NOVO ESTILO MINIMALISTA (APPLE/SAMSUNG) */
+.minimal-agency-card {
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.minimal-agency-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px -10px rgba(0,0,0,0.1) !important;
+  border-color: #3b82f6;
+}
+
+.agency-symbol-modern {
+  width: 44px;
+  height: 44px;
+}
+
+.symbol-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  border: 1px solid #e2e8f0;
+}
+
+.bg-primary-soft-v2 {
+  background: #eff6ff;
+}
+
+.minimal-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 50px;
+  letter-spacing: 0.05em;
+}
+
+.minimal-badge.active { background: #ecfdf5; color: #10b981; }
+.minimal-badge.inactive { background: #fef2f2; color: #ef4444; }
+
+.minimal-agency-name {
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-top: 1.25rem;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.minimal-agency-email {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.minimal-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: #f8fafc;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-minimal-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.stat-minimal-item .label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.12em;
+}
+
+.stat-minimal-item .value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.stat-minimal-divider {
+  width: 1px;
+  height: 28px;
+  background: #e2e8f0;
+}
+
+.w-100px { width: 100px; }
+
+.btn-action-minimal {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #475569;
+  padding: 10px 16px;
+  margin-right: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-action-minimal:hover {
+  background: white;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.btn-icon-minimal {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  transition: all 0.2s;
+}
+
+.btn-icon-minimal:hover {
+  background: white;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.btn-primary-minimal {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary-minimal:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.verified-indicator {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  font-size: 1.4rem;
+  margin-left: 4px;
+}
+
+/* SEARCH BOX */
+.search-box-minimal {
+  position: relative;
+  width: 300px;
+}
+
+.search-box-minimal i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.search-box-minimal input {
+  width: 100%;
+  padding: 14px 14px 14px 40px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.3s;
+}
+
+.search-box-minimal input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+}
+
+/* PAGINAÇÃO APPLE STYLE */
+.apple-pagination {
+  background: #f8fafc;
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+}
+
+.btn-page-nav, .btn-page-num {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-page-num.is-active {
+  background: white;
+  color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.btn-page-num:hover:not(.is-active) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.btn-page-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.lotio-grid-v2 {
+  margin-top: 10px;
+}
+
+/* REMOÇÃO DO ESTILO ANTIGO (GAPS) */
+.lotio-grid-container { display: none; }
+
 
 /* OVERRIDE TOTAL - MODAL CUSTOM */
 .modal-overlay-custom {

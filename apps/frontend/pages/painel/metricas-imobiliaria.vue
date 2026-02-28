@@ -1,30 +1,171 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-const { get, post } = useApi()
-const toast = useToast()
-const authStore = useAuthStore()
+<template>
+  <div>
+    <div class="page-header">
+      <div>
+        <h1>Métricas da Equipe</h1>
+        <p>Acompanhe o desempenho de seus corretores em tempo real.</p>
+      </div>
+      <button class="btn btn-primary" @click="openInviteModal">
+        <i class="pi pi-user-plus me-2"></i>Convidar Corretor
+      </button>
+    </div>
 
-const metrics = ref([])
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-3">
+      <div class="stat-card stat-card--highlight">
+        <div class="stat-icon-wrap stat-icon--blue"><i class="pi pi-users"></i></div>
+        <div class="stat-value">{{ summary.totalRealtors }}</div>
+        <div class="stat-label">Corretores na equipe</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap stat-icon--green"><i class="pi pi-target"></i></div>
+        <div class="stat-value">{{ summary.totalLeads }}</div>
+        <div class="stat-label">Leads totais</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap stat-icon--purple"><i class="pi pi-eye"></i></div>
+        <div class="stat-value">{{ summary.totalSessions }}</div>
+        <div class="stat-label">Acessos totais</div>
+      </div>
+    </div>
+
+    <!-- Metrics Table -->
+    <div style="margin-top: var(--space-8);">
+      <div v-if="loading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <span>Carregando métricas...</span>
+      </div>
+
+      <div v-else-if="team.length === 0" class="empty-state" style="background: white; border-radius: var(--radius-lg); border: 1px solid var(--gray-200); padding: var(--space-12);">
+        <div class="empty-state-icon">📊</div>
+        <h3>Nenhum corretor na equipe</h3>
+        <p>Convide corretores para começar a acompanhar métricas.</p>
+        <button class="btn btn-primary" style="margin-top: var(--space-4);" @click="openInviteModal">Convidar Corretor</button>
+      </div>
+
+      <div v-else class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Corretor</th>
+              <th class="text-center-col">Leads</th>
+              <th class="text-center-col">Acessos</th>
+              <th class="text-center-col">Conversão</th>
+              <th class="text-center-col">Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in team" :key="r.id">
+              <td>
+                <div class="realtor-info">
+                  <div class="realtor-avatar-circle">{{ r.name?.charAt(0) || '?' }}</div>
+                  <div>
+                    <div class="realtor-name-text">{{ r.name }}</div>
+                    <div class="realtor-role-label">Corretor Ativo</div>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center-col">
+                <span class="badge badge-success">{{ r.leads || 0 }} leads</span>
+              </td>
+              <td class="text-center-col">
+                <span class="metric-number">{{ r.accesses || 0 }}</span>
+              </td>
+              <td class="text-center-col">
+                <span class="metric-conversion-val">
+                  {{ r.accesses ? ((r.leads / r.accesses) * 100).toFixed(1) + '%' : '0%' }}
+                </span>
+              </td>
+              <td class="text-center-col">
+                <button v-if="r.code" class="btn btn-ghost btn-sm" @click="copyRealtorLink(r)" title="Copiar link de divulgação">
+                  <i class="pi pi-copy"></i>
+                </button>
+                <span v-else class="text-muted-cell">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Invite Modal -->
+    <Teleport to="body">
+      <div v-if="showInviteModal" class="modal-overlay" @click="showInviteModal = false">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h2>Convidar Novo Corretor</h2>
+            <button class="modal-close" @click="showInviteModal = false">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <p style="color: var(--gray-500); font-size: 0.875rem; margin-bottom: var(--space-6);">
+              O corretor receberá um link para criar sua conta e será automaticamente vinculado à sua equipe.
+            </p>
+            <form @submit.prevent="sendInvite">
+              <div class="form-group">
+                <label class="form-label">Email do Corretor <span style="color: var(--danger);">*</span></label>
+                <input
+                  v-model="inviteForm.email"
+                  type="email"
+                  class="form-input"
+                  placeholder="corretor@imobiliaria.com"
+                  required
+                >
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" @click="showInviteModal = false">Cancelar</button>
+                <button type="submit" class="btn btn-primary" :disabled="inviteSending">
+                  {{ inviteSending ? 'Enviando...' : 'Enviar Convite' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+
+const { get, post } = useApi()
+const route = useRoute()
+const toast = useToast()
+
+const team = ref<any[]>([])
 const loading = ref(true)
 const showInviteModal = ref(false)
+const inviteSending = ref(false)
+const inviteForm = ref({ email: '', role: 'CORRETOR' })
 
-const inviteForm = ref({
-  email: '',
-  role: 'CORRETOR'
-})
+const summary = computed(() => ({
+  totalRealtors: team.value.length,
+  totalLeads: team.value.reduce((acc, r) => acc + (r.leads || 0), 0),
+  totalSessions: team.value.reduce((acc, r) => acc + (r.accesses || 0), 0),
+}))
 
 async function fetchMetrics() {
   loading.value = true
   try {
-    const data = await get('/agencies/metrics')
-    metrics.value = data || []
+    const agencyId = route.query.agencyId as string
+    const url = agencyId ? `/agencies/metrics?agencyId=${agencyId}` : '/agencies/metrics'
+    const data = await get(url)
+    team.value = data?.team || []
   } catch (err) {
     console.error(err)
     toast.error('Erro ao carregar métricas')
-    metrics.value = []
+    team.value = []
   } finally {
     loading.value = false
   }
+}
+
+function openInviteModal() {
+  inviteForm.value = { email: '', role: 'CORRETOR' }
+  showInviteModal.value = true
 }
 
 async function sendInvite() {
@@ -33,157 +174,113 @@ async function sendInvite() {
     return
   }
 
+  inviteSending.value = true
   try {
     const res = await post('/agencies/invite', inviteForm.value)
-    toast.success('Convite enviado com sucesso')
-    
-    // Magic link para cópia manual
+    toast.success('Convite enviado com sucesso!')
+
     const magicLink = `${window.location.origin}/aceitar-convite?token=${res.token}`
     await navigator.clipboard.writeText(magicLink)
-    toast.info('Magic Link copiado para a área de transferência')
-    
+    toast.info('Link de convite copiado para a área de transferência')
+
     showInviteModal.value = false
-  } catch (err) {
-    toast.error('Erro ao enviar convite')
+    fetchMetrics()
+  } catch (err: any) {
+    toast.error(err.message || 'Erro ao enviar convite')
+  } finally {
+    inviteSending.value = false
   }
 }
 
+function copyRealtorLink(r: any) {
+  const url = `${window.location.origin}/?c=${r.code}`
+  navigator.clipboard.writeText(url)
+  toast.success('Link de divulgação copiado!')
+}
+
 onMounted(fetchMetrics)
+
+definePageMeta({ layout: 'default' })
 </script>
 
-<template>
-  <div class="p-6 max-w-7xl mx-auto">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">Métricas da Equipe</h1>
-        <p class="text-gray-500 mt-1">Acompanhe o desempenho de seus corretores em tempo real.</p>
-      </div>
-      <UButton 
-        icon="i-heroicons-user-plus"
-        size="lg"
-        color="primary"
-        @click="inviteForm.email = ''; showInviteModal = true"
-      >
-        Convidar Corretor
-      </UButton>
-    </div>
+<style scoped>
+/* Stat highlight variant */
+.stat-card--highlight {
+  background: linear-gradient(135deg, var(--primary) 0%, #0062CC 100%);
+  border-color: transparent !important;
+  color: white;
+}
+.stat-card--highlight .stat-value { color: white; }
+.stat-card--highlight .stat-label { color: rgba(255, 255, 255, 0.7); }
+.stat-card--highlight .stat-icon-wrap { background: rgba(255, 255, 255, 0.2) !important; color: white !important; }
 
-    <!-- Stats Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <UCard class="bg-primary text-white">
-        <div class="flex items-center gap-4">
-          <div class="bg-white/20 p-3 rounded-lg">
-            <UIcon name="i-heroicons-users" class="w-6 h-6" />
-          </div>
-          <div>
-            <p class="text-white/70 text-sm font-medium uppercase tracking-wider">Total Equipe</p>
-            <p class="text-2xl font-bold">{{ metrics.length }} Corretores</p>
-          </div>
-        </div>
-      </UCard>
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="bg-green-100 p-3 rounded-lg">
-            <UIcon name="i-heroicons-user-group" class="w-6 h-6 text-green-600" />
-          </div>
-          <div>
-            <p class="text-gray-500 text-sm font-medium uppercase tracking-wider">Leads Totais</p>
-            <p class="text-2xl font-bold text-gray-900">{{ metrics.reduce((acc, curr) => acc + (curr.leads || 0), 0) }}</p>
-          </div>
-        </div>
-      </UCard>
-      <UCard>
-        <div class="flex items-center gap-4">
-          <div class="bg-blue-100 p-3 rounded-lg">
-            <UIcon name="i-heroicons-cursor-arrow-rays" class="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <p class="text-gray-500 text-sm font-medium uppercase tracking-wider">Cliques Totais</p>
-            <p class="text-2xl font-bold text-gray-900">{{ metrics.reduce((acc, curr) => acc + (curr.accesses || 0), 0) }}</p>
-          </div>
-        </div>
-      </UCard>
-    </div>
+.stat-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  margin-bottom: var(--space-3);
+}
 
-    <UCard :ui="{ body: { padding: 'p-0' } }">
-      <UTable 
-        :rows="metrics" 
-        :loading="loading"
-        :columns="[
-          { key: 'name', label: 'Corretor' },
-          { key: 'leads', label: 'Leads' },
-          { key: 'accesses', label: 'Acessos' },
-          { key: 'conversion', label: 'Conversão' }
-        ]"
-      >
-        <template #name-data="{ row }">
-          <div class="flex items-center gap-3 py-1 px-4">
-             <UAvatar
-               :alt="row.name"
-               size="sm"
-               class="bg-primary/10 text-primary font-bold"
-             />
-             <div class="flex flex-col">
-               <span class="font-bold text-gray-900">{{ row.name }}</span>
-               <span class="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Corretor Ativo</span>
-             </div>
-          </div>
-        </template>
+.stat-icon--blue { background: #e0f2fe; color: var(--primary); }
+.stat-icon--green { background: #dcfce7; color: #16a34a; }
+.stat-icon--purple { background: #f3e8ff; color: #9333ea; }
 
-        <template #leads-data="{ row }">
-          <div class="px-4">
-            <UBadge color="green" variant="subtle" class="font-bold">
-              {{ row.leads || 0 }} leads
-            </UBadge>
-          </div>
-        </template>
+/* Table */
+.text-center-col { text-align: center; }
 
-        <template #accesses-data="{ row }">
-          <div class="px-4">
-            <span class="text-gray-600 font-medium">{{ row.accesses || 0 }} cliques</span>
-          </div>
-        </template>
+.realtor-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
 
-        <template #conversion-data="{ row }">
-          <div class="px-4">
-            <span class="text-gray-400 text-sm italic">
-              {{ row.accesses ? ((row.leads / row.accesses) * 100).toFixed(1) + '%' : '0%' }}
-            </span>
-          </div>
-        </template>
-      </UTable>
+.realtor-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
 
-      <!-- Empty State Table -->
-      <div v-if="!loading && metrics.length === 0" class="p-12 text-center text-gray-500">
-        Nenhum corretor cadastrado para exibir métricas.
-      </div>
-    </UCard>
+.realtor-name-text {
+  font-weight: 700;
+  color: var(--gray-900);
+  font-size: 0.875rem;
+}
 
-    <UModal v-model="showInviteModal">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100' }">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-gray-900">Convidar Novo Corretor</h3>
-            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showInviteModal = false" />
-          </div>
-        </template>
-        
-        <div class="p-6">
-          <p class="text-sm text-gray-500 mb-6">
-            O corretor receberá um link para criar sua conta e será automaticamente vinculado à sua equipe para rastreamento de vendas.
-          </p>
-          <UFormGroup label="Email do Corretor" required>
-            <UInput v-model="inviteForm.email" type="email" icon="i-heroicons-envelope" placeholder="corretor@imobiliaria.com" size="lg" />
-          </UFormGroup>
-        </div>
+.realtor-role-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  letter-spacing: 0.04em;
+}
 
-        <template #footer>
-          <div class="flex justify-end gap-3 px-4 py-3">
-            <UButton color="gray" variant="ghost" @click="showInviteModal = false">Cancelar</UButton>
-            <UButton color="primary" @click="sendInvite">Enviar Convite</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
-  </div>
-</template>
+.metric-number {
+  font-weight: 600;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.metric-conversion-val {
+  font-size: 0.875rem;
+  color: var(--gray-400);
+  font-style: italic;
+}
+
+.text-muted-cell {
+  color: var(--gray-400);
+}
+
+.me-2 { margin-right: 0.5rem; }
+</style>

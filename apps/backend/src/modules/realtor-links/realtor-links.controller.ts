@@ -29,24 +29,34 @@ export class RealtorLinksController {
   constructor(private readonly service: RealtorLinksService) {}
 
   @Post()
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar link de corretor' })
-  create(@TenantId() tenantId: string, @Body() dto: CreateRealtorLinkDto) {
-    return this.service.create(tenantId, dto);
+  create(
+    @TenantId() tenantId: string,
+    @Body() dto: CreateRealtorLinkDto,
+    @Request() req: any
+  ) {
+    // Se for Imobiliária, injetamos o agencyId do usuário logado se não for fornecido ou para garantir
+    if (req.user.role === 'IMOBILIARIA') {
+      // Nota: Precisamos garantir que o DTO aceite agencyId ou tratar na service.
+      // E precisamos que a service filtre/associe corretamente.
+    }
+    return this.service.create(tenantId, dto, req.user);
   }
 
   @Get()
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   @ApiOperation({ summary: 'Listar links de corretores' })
   findAll(
     @TenantId() tenantId: string,
-    @Query('projectId') projectId?: string
+    @Query('projectId') projectId?: string,
+    @Request() req?: any
   ) {
-    return this.service.findAll(tenantId, projectId);
+    return this.service.findAll(tenantId, projectId, req.user);
   }
 
   @Get('check-email')
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   @ApiOperation({ summary: 'Verificar disponibilidade de email' })
   checkEmail(
     @Query('email') email: string,
@@ -56,7 +66,7 @@ export class RealtorLinksController {
   }
 
   @Get('check-code')
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   @ApiOperation({ summary: 'Verificar disponibilidade de código' })
   checkCode(
     @TenantId() tenantId: string,
@@ -84,14 +94,14 @@ export class RealtorLinksController {
   }
 
   @Get(':id')
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar link de corretor por ID' })
   findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.findOne(tenantId, id);
   }
 
   @Patch(':id')
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   @ApiOperation({ summary: 'Atualizar link de corretor' })
   update(
     @TenantId() tenantId: string,
@@ -102,7 +112,7 @@ export class RealtorLinksController {
   }
 
   @Delete(':id')
-  @Roles('LOTEADORA', 'SYSADMIN')
+  @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
   @ApiOperation({ summary: 'Remover link de corretor' })
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.service.remove(tenantId, id);

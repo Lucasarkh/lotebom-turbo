@@ -172,14 +172,15 @@ model Agency {
   users    User[]
   realtors Realtor[]
   invites  Invite[]
+  realtorLinks RealtorLink[]
 
   @@index([tenantId])
 }
 
 model Realtor {
   id        String   @id @default(cuid())
-  agencyId  String
-  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agencyId  String?
+  agency    Agency?  @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   creci     String?
@@ -486,6 +487,8 @@ model RealtorLink {
   id          String    @id @default(cuid())
   tenantId    String
   tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agencyId    String?
+  agency      Agency?   @relation(fields: [agencyId], references: [id], onDelete: SetNull)
   projects    Project[]
   userId      String?   @unique
   user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)

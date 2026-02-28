@@ -323,7 +323,7 @@ export class LeadsService {
   async findAll(
     tenantId: string,
     query: LeadsQueryDto,
-    user: { id: string; role: string }
+    user: { id: string; role: string; agencyId?: string }
   ): Promise<PaginatedResponse<any>> {
     const { projectId, status, search, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -337,11 +337,46 @@ export class LeadsService {
       realtorLinkId = realtor?.id || 'none';
     }
 
+    // New Agency restriction
+    let agencyId: string | undefined;
+    if (user.role === 'IMOBILIARIA') {
+      agencyId = user.agencyId || 'none';
+    }
+
     const where = {
       tenantId,
       ...(projectId && { projectId }),
       ...(status && { status }),
       ...(realtorLinkId && { realtorLinkId }),
+      ...(agencyId && {
+        OR: [
+          { realtorLink: { user: { agencyId } } },
+          { realtorLink: { user: null } } // This might need careful thought, but usually imobiliária only sees their team
+        ]
+      }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as any } },
+          { email: { contains: search, mode: 'insensitive' as any } },
+          { phone: { contains: search } }
+        ]
+      })
+    };
+    
+    // Correction for Agency filter: strictly team leads
+    if (user.role === 'IMOBILIARIA') {
+        const agencyId = user.agencyId;
+        (where as any).realtorLink = { user: { agencyId } };
+        delete (where as any).OR; // Clean up the search OR if we need to combine them, but here we just want to ensure agency
+    }
+    
+    // Final where construction for agency search
+    const finalWhere = {
+      tenantId,
+      ...(projectId && { projectId }),
+      ...(status && { status }),
+      ...(realtorLinkId && { realtorLinkId }),
+      ...(user.role === 'IMOBILIARIA' && { realtorLink: { user: { agencyId: user.agencyId } } }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' as any } },
@@ -353,16 +388,18 @@ export class LeadsService {
 
     const [data, totalItems] = await Promise.all([
       this.prisma.lead.findMany({
-        where,
+        where: finalWhere as any,
         include: {
           project: true,
-          realtorLink: { select: { name: true, code: true, phone: true } }
+          realtorLink: { 
+            include: { user: true }
+          }
         },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit
       }),
-      this.prisma.lead.count({ where })
+      this.prisma.lead.count({ where: finalWhere as any })
     ]);
 
     // Mask data for Realtors

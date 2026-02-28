@@ -11,7 +11,9 @@ export class PublicProjectsController {
   @ApiOperation({ summary: 'Resolver contexto de tenant/projeto via Host' })
   async resolveTenant(@Req() req: any) {
     if (!req.tenantId) {
-      throw new NotFoundException('Loteadora não identificada.');
+      // In development or when no tenant is resolved, we might want to return null instead of 404
+      // This avoids console noise on the main landing page/index.vue
+      return null;
     }
     
     // You could fetch more data here (theme, logo, etc)

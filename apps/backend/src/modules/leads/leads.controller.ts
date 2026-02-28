@@ -34,7 +34,7 @@ export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
 
   @Post()
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   create(
     @TenantId() tenantId: string,
     @Body() dto: CreateManualLeadDto,
@@ -44,7 +44,7 @@ export class LeadsController {
   }
 
   @Get()
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   findAll(
     @TenantId() tenantId: string,
     @Query() query: LeadsQueryDto,
@@ -54,7 +54,7 @@ export class LeadsController {
   }
 
   @Get(':id')
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   findOne(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -64,7 +64,7 @@ export class LeadsController {
   }
 
   @Patch(':id')
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -75,7 +75,7 @@ export class LeadsController {
   }
 
   @Patch(':id/status')
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   updateStatus(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -86,7 +86,7 @@ export class LeadsController {
   }
 
   @Post(':id/documents')
-  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
   addDocument(
     @TenantId() tenantId: string,
     @Param('id') leadId: string,

@@ -23,7 +23,7 @@ export const useAuthStore = defineStore('auth', {
     isImobiliaria: (state) => state.user?.role === 'IMOBILIARIA',
     isCorretor: (state) => state.user?.role === 'CORRETOR',
     canManageTenants: (state) => state.user?.role === 'SYSADMIN',
-    canManageUsers: (state) => ['SYSADMIN', 'LOTEADORA', 'IMOBILIARIA'].includes(state.user?.role ?? ''),
+    canManageUsers: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
     canEdit: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
     userRole: (state) => state.user?.role ?? null,
   },

@@ -14,13 +14,16 @@ import { UserRole } from '@prisma/client';
 export class RealtorLinksService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(tenantId: string, dto: CreateRealtorLinkDto) {
+  async create(tenantId: string, dto: CreateRealtorLinkDto, currentUser?: any) {
     const { projectIds, accountEmail, accountPassword, ...data } = dto;
     const existing = await this.prisma.realtorLink.findUnique({
       where: { tenantId_code: { tenantId, code: dto.code } }
     });
     if (existing)
       throw new ConflictException('Já existe um corretor com este código.');
+
+    // If IMOBILIARIA role, force their agencyId
+    let agencyId = currentUser?.role === 'IMOBILIARIA' ? currentUser.agencyId : (dto as any).agencyId;
 
     // If account credentials are provided, create User + RealtorLink in a transaction
     if (accountEmail && accountPassword) {
@@ -36,12 +39,25 @@ export class RealtorLinksService {
         const user = await tx.user.create({
           data: {
             tenantId,
+            agencyId,
             name: data.name,
             email: accountEmail.toLowerCase(),
             passwordHash,
             role: UserRole.CORRETOR
           }
         });
+
+        // If agencyId is set, also create a Realtor standard profile for team management
+        if (agencyId) {
+          const realtor = await tx.realtor.create({
+            data: {
+              userId: user.id,
+              agencyId
+            }
+          });
+          // Update the RealtorLink with the agencyId for future filters
+          (data as any).agencyId = agencyId; 
+        }
 
         return tx.realtorLink.create({
           data: {
@@ -65,6 +81,7 @@ export class RealtorLinksService {
       data: {
         tenantId,
         ...data,
+        agencyId, // Save agencyId directly in the link if no user account? (Schema has it?)
         projects: projectIds?.length
           ? { connect: projectIds.map((id) => ({ id })) }
           : undefined
@@ -73,17 +90,25 @@ export class RealtorLinksService {
     });
   }
 
-  async findAll(tenantId: string, projectId?: string) {
+  async findAll(tenantId: string, projectId?: string, currentUser?: any) {
+    // If IMOBILIARIA role, only return realtors from their agency
+    let agencyId: string | undefined;
+    if (currentUser?.role === 'IMOBILIARIA') {
+      agencyId = currentUser.agencyId;
+      if (!agencyId) return [];
+    }
+
     return this.prisma.realtorLink.findMany({
       where: {
         tenantId,
-        ...(projectId ? { projects: { some: { id: projectId } } } : {})
+        ...(projectId ? { projects: { some: { id: projectId } } } : {}),
+        ...(agencyId ? { user: { agencyId } } : {})
       },
       include: {
         _count: { select: { leads: true } },
         projects: { select: { id: true, name: true, slug: true } },
         tenant: { select: { id: true, name: true, slug: true } },
-        user: { select: { id: true, email: true, name: true } }
+        user: { select: { id: true, email: true, name: true, agencyId: true } }
       },
       orderBy: { createdAt: 'desc' }
     });

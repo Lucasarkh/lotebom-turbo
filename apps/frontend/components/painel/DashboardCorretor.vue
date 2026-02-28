@@ -84,6 +84,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { formatDateToBrasilia } from '~/utils/date'
 
 const authStore = useAuthStore()
 const { fetchApi } = useApi()

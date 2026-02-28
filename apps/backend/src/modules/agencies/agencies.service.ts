@@ -29,20 +29,48 @@ export class AgenciesService {
     });
   }
 
-  async listAgencies(tenantId: string) {
-    return this.prisma.agency.findMany({
-      where: { tenantId },
-      include: {
-        invites: {
-          where: { used: false, expiresAt: { gt: new Date() } },
-          orderBy: { createdAt: 'desc' },
-          take: 1
+  async listAgencies(tenantId: string, page = 1, limit = 12, search?: string) {
+    const skip = (page - 1) * limit;
+    
+    const where: any = { tenantId };
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { creci: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.agency.findMany({
+        where,
+        include: {
+          invites: {
+            where: { used: false, expiresAt: { gt: new Date() } },
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          },
+          _count: {
+            select: { realtors: true, users: true }
+          }
         },
-        _count: {
-          select: { realtors: true, users: true }
-        }
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.agency.count({ where })
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
       }
-    });
+    };
   }
 
   async getAgency(id: string, tenantId: string) {
@@ -85,6 +113,12 @@ export class AgenciesService {
       if (dto.role !== UserRole.CORRETOR) throw new ForbiddenException('Imobiliárias só podem convidar corretores.');
       if (!sender.agencyId) throw new BadRequestException('Usuário imobiliária sem agencyId associado.');
       dto.agencyId = sender.agencyId;
+    }
+
+    if (sender.role === UserRole.LOTEADORA) {
+      if (dto.role !== UserRole.IMOBILIARIA && dto.role !== UserRole.CORRETOR) {
+        throw new ForbiddenException('Loteadoras só podem convidar imobiliárias ou seus próprios corretores.');
+      }
     }
 
     // Se for convite para Administrador de Imobiliária (feito pela Loteadora)
@@ -161,11 +195,39 @@ export class AgenciesService {
         }
       });
 
-      if (invite.role === UserRole.CORRETOR && invite.agencyId) {
+      if (invite.role === UserRole.CORRETOR) {
+        // Se houver agencyId, associa à imobiliária. Se não, é corretor direto da loteadora.
         await tx.realtor.create({
           data: {
             userId: user.id,
-            agencyId: invite.agencyId,
+            agencyId: invite.agencyId || null,
+          }
+        });
+
+        // Tenta encontrar ou criar um RealtorLink para esse usuário para ele poder ter seu link próprio
+        const baseCode = dto.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+        
+        // Garante código único
+        let finalCode = baseCode;
+        let counter = 1;
+        while (await tx.realtorLink.findUnique({ where: { tenantId_code: { tenantId: invite.tenantId, code: finalCode } } })) {
+          finalCode = `${baseCode}-${counter}`;
+          counter++;
+        }
+
+        await tx.realtorLink.create({
+          data: {
+            tenantId: invite.tenantId,
+            userId: user.id,
+            name: dto.name,
+            email: invite.email,
+            code: finalCode,
+            agencyId: invite.agencyId || null,
           }
         });
       }
@@ -221,11 +283,30 @@ export class AgenciesService {
       }
     });
 
-    return realtors.map(r => ({
-      id: r.id,
-      name: r.user.name,
-      leads: r.user.realtorLink?._count.leads || 0,
-      accesses: r.user.realtorLink?._count.trackingSessions || 0,
-    }));
+    const team = realtors.map(r => {
+      const leads = r.user.realtorLink?._count.leads || 0;
+      const sessions = r.user.realtorLink?._count.trackingSessions || 0;
+      const conversionRate = sessions > 0 ? parseFloat(((leads / sessions) * 100).toFixed(1)) : 0;
+
+      return {
+        id: r.id,
+        name: r.user.name,
+        code: r.user.realtorLink?.code || '',
+        leads,
+        sessions,
+        accesses: sessions,
+        conversionRate,
+      };
+    });
+
+    const totalLeads = team.reduce((acc, t) => acc + t.leads, 0);
+    const totalSessions = team.reduce((acc, t) => acc + t.sessions, 0);
+
+    return {
+      team,
+      totalLeads,
+      totalSessions,
+      totalRealtors: team.length,
+    };
   }
 }

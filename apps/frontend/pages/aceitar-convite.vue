@@ -9,6 +9,7 @@ const token = route.query.token as string
 const loading = ref(false)
 const validationLoading = ref(true)
 const errorMsg = ref('')
+const inviteData = ref<any>(null)
 
 const form = ref({
   email: '',
@@ -22,6 +23,7 @@ async function fetchInvite() {
   
   try {
     const data = await get(`/agencies/invite/${token}`)
+    inviteData.value = data
     form.value.email = data.email
   } catch (err: any) {
     errorMsg.value = err.data?.message || 'Este convite não é mais válido.'
@@ -30,6 +32,16 @@ async function fetchInvite() {
     validationLoading.value = false
   }
 }
+
+const roleName = computed(() => {
+  if (!inviteData.value) return 'Sua conta'
+  const map: Record<string, string> = {
+    'IMOBILIARIA': 'Gestor de Imobiliária',
+    'CORRETOR': 'Corretor de Imóveis',
+    'LOTEADORA': 'Gestor da Loteadora'
+  }
+  return map[inviteData.value.role] || 'Usuário'
+})
 
 async function acceptInvite() {
   if (!form.value.name || !form.value.password) {
@@ -91,7 +103,7 @@ onMounted(() => {
         <img src="/img/logo.svg" alt="Lotio" class="login-logo" />
         <h1 class="auth-title">Finalizar Cadastro</h1>
         <p class="auth-subtitle">
-          Complete seus dados para ativar sua conta na plataforma.
+          Complete seus dados para ativar sua conta de <strong>{{ roleName }}</strong> no Lotio.
         </p>
       </div>
 
