@@ -30,9 +30,7 @@ COPY apps/backend/ apps/backend/
 WORKDIR /app/apps/backend
 
 # Generate Prisma client (query engine for linux-musl / Alpine)
-RUN npx prisma generate && \
-    cp -r node_modules/.prisma /tmp/prisma-generated 2>/dev/null || \
-    cp -r ../../node_modules/.prisma /tmp/prisma-generated 2>/dev/null || true
+RUN npx prisma generate
 
 # Build NestJS application
 RUN npx nest build
@@ -45,6 +43,9 @@ RUN pnpm config set force-legacy-deploy true
 
 # Copy prisma CLI (devDep) with symlink resolution for migrations
 RUN cp -rL node_modules/prisma /tmp/prisma-cli 2>/dev/null || true
+
+# Helper to find where Prisma generated its client
+RUN find . -name ".prisma" -type d -exec cp -r {} /tmp/prisma-generated \; || true
 
 # -- Stage 4: Production deps (standalone, no symlinks) -------------------
 FROM deps AS prod-deploy
@@ -67,10 +68,10 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=prod-deploy --chown=nestjs:nodejs /deploy/node_modules ./node_modules
 
 # 2) Prisma generated client (query engine + generated types)
-COPY --from=build --chown=nestjs:nodejs /tmp/prisma-generated ./node_modules/.prisma
+COPY --from=build /tmp/prisma-generated ./node_modules/.prisma
 
 # 3) Prisma CLI for running migrations on deploy
-COPY --from=build --chown=nestjs:nodejs /tmp/prisma-cli ./node_modules/prisma
+COPY --from=build /tmp/prisma-cli ./node_modules/prisma
 RUN mkdir -p node_modules/.bin && \
     ln -sf ../prisma/build/index.js node_modules/.bin/prisma && \
     chmod +x node_modules/.bin/prisma 2>/dev/null || true
