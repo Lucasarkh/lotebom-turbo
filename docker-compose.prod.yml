@@ -147,10 +147,6 @@ services:
         condition: service_healthy
     networks:
       - app_network
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     logging:
       driver: "json-file"
       options:
