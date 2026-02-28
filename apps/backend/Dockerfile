@@ -44,8 +44,15 @@ RUN pnpm config set force-legacy-deploy true
 # Copy prisma CLI (devDep) with symlink resolution for migrations
 RUN cp -rL node_modules/prisma /tmp/prisma-cli 2>/dev/null || true
 
-# Helper to find where Prisma generated its client
-RUN find . -name ".prisma" -type d -exec cp -r {} /tmp/prisma-generated \; || true
+# Stage Prisma generated client — search entire /app since pnpm hoists to workspace root
+RUN mkdir -p /tmp/prisma-generated/client && \
+    PRISMA_CLIENT=$(find /app -path "*/.prisma/client" -type d 2>/dev/null | head -1) && \
+    if [ -n "$PRISMA_CLIENT" ]; then \
+      cp -rL "$PRISMA_CLIENT"/* /tmp/prisma-generated/client/ && \
+      echo "✓ Prisma client copied from: $PRISMA_CLIENT"; \
+    else \
+      echo "FATAL: .prisma/client not found anywhere under /app" && exit 1; \
+    fi
 
 # -- Stage 4: Production deps (standalone, no symlinks) -------------------
 FROM deps AS prod-deploy
