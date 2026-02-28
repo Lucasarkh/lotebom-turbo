@@ -80,12 +80,11 @@ export class BackupService {
       const password = url.password;
 
       // Create pg_dump command with gzip compression
-      const pgDumpCmd = `PGPASSWORD="${password}" pg_dump -h ${host} -p ${port} -U ${username} -d ${database} --no-owner --no-acl | gzip > "${tempPath}"`;
+      const pgDumpCmd = `pg_dump -h ${host} -p ${port} -U ${username} -d ${database} --no-owner --no-acl | gzip > "${tempPath}"`;
 
       this.logger.debug(`Executando pg_dump para ${database}@${host}...`);
 
       await execAsync(pgDumpCmd, {
-        shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/sh',
         env: { ...process.env, PGPASSWORD: password }
       });
 
@@ -304,10 +303,9 @@ export class BackupService {
       // Restore database
       this.logger.warn('Iniciando restauração do banco de dados...');
 
-      const restoreCmd = `PGPASSWORD="${password}" psql -h ${host} -p ${port} -U ${username} -d ${database} -f "${sqlPath}"`;
+      const restoreCmd = `psql -h ${host} -p ${port} -U ${username} -d ${database} -f "${sqlPath}"`;
 
       await execAsync(restoreCmd, {
-        shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/sh',
         env: { ...process.env, PGPASSWORD: password }
       });
 
