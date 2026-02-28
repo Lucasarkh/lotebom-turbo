@@ -108,6 +108,7 @@ jobs:
   backend-deploy:
     runs-on: ubuntu-latest
     needs: [detect-changes, backend-build]
+    environment: production
     if: |
       always() &&
       (needs.detect-changes.outputs.backend == 'true' || github.event.inputs.force_backend == 'true') &&
@@ -124,6 +125,7 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
 
             docker compose pull backend
+            docker compose down backend
             docker compose up -d backend
             docker compose exec -T backend npx prisma migrate deploy
 
@@ -186,6 +188,7 @@ jobs:
   frontend-deploy:
     runs-on: ubuntu-latest
     needs: [detect-changes, frontend-build, backend-deploy]
+    environment: production
     if: |
       always() &&
       (needs.detect-changes.outputs.frontend == 'true' || github.event.inputs.force_frontend == 'true') &&
