@@ -193,18 +193,20 @@
       
       <!-- New Traditional Highlights "Destaques" -->
       <section v-if="hasInfo" class="v4-section" id="info">
-        <div v-if="traditionalHighlights.length" class="v4-destaques-grid-v2">
-          <div class="v4-section-header center" style="margin-bottom: 56px;">
-            <h2 class="v4-section-title">{{ project.traditionalHighlightsTitle || 'Destaques' }}</h2>
-            <p class="v4-section-subtitle">{{ project.traditionalHighlightsSubtitle || 'Diferenciais pensados para o seu bem-estar.' }}</p>
-          </div>
-          
-          <div class="v4-destaques-items">
-            <div v-for="h in traditionalHighlights" :key="h.label" class="v4-destaque-card-minimal">
-              <div class="v4-destaque-marker-dot"></div>
-              <div class="v4-destaque-info">
-                <h4 class="v4-destaque-title">{{ h.label }}</h4>
-                <p v-if="h.value" class="v4-destaque-detail">{{ h.value }}</p>
+        <div v-if="traditionalHighlights.length" class="v4-container">
+          <div class="v4-destaques-grid-v2">
+            <div class="v4-section-header center" style="margin-bottom: 56px;">
+              <h2 class="v4-section-title">{{ project.traditionalHighlightsTitle || 'Destaques' }}</h2>
+              <p class="v4-section-subtitle">{{ project.traditionalHighlightsSubtitle || 'Diferenciais pensados para o seu bem-estar.' }}</p>
+            </div>
+            
+            <div class="v4-destaques-items">
+              <div v-for="h in traditionalHighlights" :key="h.label" class="v4-destaque-card-minimal">
+                <div class="v4-destaque-marker-dot"></div>
+                <div class="v4-destaque-info">
+                  <h4 class="v4-destaque-title">{{ h.label }}</h4>
+                  <p v-if="h.value" class="v4-destaque-detail">{{ h.value }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -346,12 +348,12 @@
       <!-- Agendamento Section -->
       <section v-if="project && schedulingConfig?.enabled" class="v4-section" id="agendamento" style="background: #1d1d1f; color: white;">
         <div class="v4-container">
-          <div class="v4-schedule-row" style="align-items: center; justify-content: space-between; gap: 80px; padding: 60px 0;">
+          <div class="v4-schedule-row">
             <div class="v4-schedule-info">
               <h2 class="v4-section-title" style="color: white;">Ficou interessado?<br>Venha conhecer de perto.</h2>
               <p class="v4-section-subtitle" style="color: #a1a1a6; max-width: 480px;">Nada supera a sensação de estar no local onde será construído o seu futuro. Agende uma visita guiada com nossos especialistas.</p>
               
-              <div class="v4-perks" style="margin-top: 48px; border-left: 2px solid #333; padding-left: 32px;">
+              <div class="v4-perks">
                 <div class="v4-perk-item">
                   <div class="v4-perk-content">
                     <strong style="color: white;">Atendimento VIP</strong>
@@ -1034,6 +1036,11 @@ function openLightbox(idx: number) {
   --v4-radius-sm: 8px;
   --v4-shadow-soft: 0 4px 24px rgba(0,0,0,0.04);
   --v4-shadow-elevated: 0 20px 40px rgba(0,0,0,0.08);
+
+  /* New mobile-specific tokens */
+  --v4-mobile-padding: 20px;
+  --v4-section-spacing-mobile: 48px;
+  --v4-section-column-gap-mobile: 24px;
 }
 
 /* Base Layout */
@@ -1054,17 +1061,17 @@ function openLightbox(idx: number) {
 }
 
 @media (max-width: 768px) {
-  .v4-container { padding: 0 8px; }
+  .v4-container { padding: 0 var(--v4-mobile-padding); }
 }
 
 /* Spacing & Sections */
 .v4-section {
-  padding: 50px 0;
+  padding: 80px 0;
   position: relative;
 }
 
 @media (max-width: 768px) {
-  .v4-section { padding: 24px 0; }
+  .v4-section { padding: var(--v4-section-spacing-mobile) 0; }
 }
 
 .v4-section-alt {
@@ -1678,7 +1685,7 @@ function openLightbox(idx: number) {
 .v4-infra-split {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 60px;
+  gap: 24px;
 }
 @media (min-width: 992px) {
   .v4-infra-split { grid-template-columns: 1fr 1.5fr; gap: 100px; }
@@ -1692,12 +1699,30 @@ function openLightbox(idx: number) {
   margin-bottom: 24px;
   letter-spacing: -0.02em;
 }
+
+@media (max-width: 768px) {
+  .v4-infra-hero-text {
+    font-size: 28px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+}
+
 .v4-infra-sub-text {
   font-size: 19px;
   color: var(--v4-text-muted);
   line-height: 1.4;
   margin-bottom: 40px;
 }
+
+@media (max-width: 768px) {
+  .v4-infra-sub-text {
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+}
+
 .v4-infra-divider {
   width: 60px;
   height: 4px;
@@ -1705,10 +1730,23 @@ function openLightbox(idx: number) {
   border-radius: 2px;
 }
 
+@media (max-width: 768px) {
+  .v4-infra-divider {
+    margin: 0 auto 32px;
+  }
+}
+
 .v4-infra-right {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 40px;
+}
+
+@media (max-width: 768px) {
+  .v4-infra-right {
+    gap: 32px;
+    grid-template-columns: 1fr;
+  }
 }
 
 .v4-infra-group-title {
@@ -1719,6 +1757,13 @@ function openLightbox(idx: number) {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .v4-infra-group-title {
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
 }
 
 .v4-infra-items-list {
@@ -2098,6 +2143,16 @@ function openLightbox(idx: number) {
   justify-content: center;
 }
 
+@media (max-width: 900px) {
+  .v4-conversion-header-new {
+    background: #1d1d1f; /* Dark background like the example */
+    color: white;
+    text-align: center;
+    padding: 60px 24px;
+    align-items: center;
+  }
+}
+
 .v4-form-container-new {
   flex: 1.2;
   padding: 80px 60px;
@@ -2105,7 +2160,10 @@ function openLightbox(idx: number) {
 
 @media (max-width: 900px) {
   .v4-conversion-header-new { padding: 48px 32px; }
-  .v4-form-container-new { padding: 48px 32px; }
+  .v4-form-container-new { 
+    padding: 40px 20px; 
+    background: white;
+  }
 }
 
 .v4-badge-clean {
@@ -2119,21 +2177,11 @@ function openLightbox(idx: number) {
   margin-bottom: 24px;
 }
 
-.v4-pulse-blue {
-  width: 8px;
-  height: 8px;
-  background: #0071e3;
-  border-radius: 50%;
-  position: relative;
-}
-
-.v4-pulse-blue::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border: 2px solid #0071e3;
-  border-radius: 50%;
-  animation: v4-ping 1.5s infinite;
+@media (max-width: 900px) {
+  .v4-badge-clean {
+    color: #40a9ff;
+    margin-bottom: 16px;
+  }
 }
 
 .v4-title-display {
@@ -2145,11 +2193,27 @@ function openLightbox(idx: number) {
   letter-spacing: -0.02em;
 }
 
+@media (max-width: 900px) {
+  .v4-title-display {
+    font-size: 32px;
+    color: white;
+    margin-bottom: 16px;
+  }
+}
+
 .v4-subtitle-clean {
   font-size: 19px;
   line-height: 1.5;
   color: #86868b;
   margin-bottom: 40px;
+}
+
+@media (max-width: 900px) {
+  .v4-subtitle-clean {
+    font-size: 16px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 32px;
+  }
 }
 
 .v4-lot-badge-minimal {
@@ -2163,6 +2227,16 @@ function openLightbox(idx: number) {
   gap: 12px;
   font-size: 16px;
   color: #1d1d1f;
+}
+
+@media (max-width: 900px) {
+  .v4-lot-badge-minimal {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 14px;
+    padding: 12px 20px;
+  }
 }
 
 .v4-form-modern {
@@ -2543,8 +2617,10 @@ function openLightbox(idx: number) {
 .v4-schedule-row {
   display: flex;
   align-items: center;
-  gap: 48px;
   margin-top: 40px;
+  justify-content: space-between;
+  gap: 80px;
+  padding: 60px 0;
 }
 
 @media (max-width: 992px) {
@@ -2552,6 +2628,7 @@ function openLightbox(idx: number) {
     flex-direction: column;
     text-align: center;
     gap: 32px;
+    padding: 0;
   }
 }
 
@@ -2569,6 +2646,16 @@ function openLightbox(idx: number) {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  margin-top: 48px;
+  border-left: 2px solid #333;
+  padding-left: 32px;
+}
+
+@media (max-width: 992px) {
+  .v4-perks {
+    border-left: none;
+    padding-left: 0;
+  }
 }
 
 .v4-perk-item {
