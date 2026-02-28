@@ -1220,7 +1220,6 @@ async function submitReservation() {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
   max-width: 100vw;
 }
 
@@ -1267,6 +1266,7 @@ async function submitReservation() {
   position: relative;
   display: flex;
   min-height: calc(100vh - 60px);
+  overflow: clip;
 }
 
 .main-content-flow-v4 {
@@ -1394,41 +1394,32 @@ async function submitReservation() {
 .finance-note { padding: 24px 40px; background: #fafafa; display: flex; align-items: flex-start; gap: 16px; color: var(--v4-text-muted); font-size: 14px; border-top: 1px solid var(--v4-border); }
 
 /* Sidebar V4 */
-.sticky-conversion-card { position: sticky; top: 100px; z-index: 10; }
-
-.lead-form-v4 { background: white; padding: 32px; border-radius: 20px; border: 1px solid var(--v4-border); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
-.form-header-v4 h3 { font-size: 24px; font-weight: 600; color: var(--v4-text); margin-bottom: 12px; }
-
-/* Success Page V4 */
-.form-success-v4 {
-  text-align: center;
-  padding: 40px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.sticky-conversion-card { 
+  position: sticky; 
+  top: 80px; 
+  z-index: 10; 
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
-.success-circle-v4 {
-  width: 72px;
-  height: 72px;
-  background: #32d74b;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 32px;
-  animation: scale-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+.sticky-conversion-card::-webkit-scrollbar { width: 4px; }
+.sticky-conversion-card::-webkit-scrollbar-thumb { background: #d2d2d7; border-radius: 10px; }
+
+.lead-form-v4 { background: white; padding: 24px; border-radius: 20px; border: 1px solid var(--v4-border); box-shadow: 0 20px 40px rgba(0,0,0,0.06); }
+.form-header-v4 h3 { font-size: 20px; font-weight: 600; color: var(--v4-text); margin-bottom: 8px; }
+.form-header-v4 p { font-size: 14px; color: var(--v4-text-muted); margin-bottom: 20px; }
+
+.booking-section-v4 {
+  background: #f5faff;
+  border: 1px solid #cce4ff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
 }
-.success-circle-v4 svg { width: 36px; height: 36px; stroke-dasharray: 40; stroke-dashoffset: 40; animation: checkmark 0.3s 0.3s ease-in-out forwards; }
-.form-success-v4 h4 { font-size: 22px; font-weight: 700; color: var(--v4-text); margin-bottom: 12px; letter-spacing: -0.01em; }
-.form-success-v4 p { font-size: 15px; color: var(--v4-text-muted); line-height: 1.5; margin-bottom: 40px; }
-.btn-success-reset-v4 { background: #f5f5f7; border: 1px solid var(--v4-border); color: var(--v4-text); padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-.btn-success-reset-v4:hover { background: #e8e8ed; }
-
-@keyframes scale-up { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
-@keyframes checkmark { 0% { stroke-dashoffset: 40; } 100% { stroke-dashoffset: 0; } }
-
-.form-header-v4 p { font-size: 15px; color: var(--v4-text-muted); margin-bottom: 24px; }
+.h-reserve-v4 { display: flex; align-items: center; gap: 8px; color: var(--v4-primary); font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+.booking-intro p { font-size: 14px; color: #4b5563; margin-bottom: 16px; line-height: 1.4; }
+.cta-reserve-v4 { width: 100%; padding: 12px; background: var(--v4-primary); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+.reserve-small { font-size: 12px; color: var(--v4-text-muted); text-align: center; margin-top: 8px; }
 .f-field { margin-bottom: 12px; }
 .f-field input { width: 100%; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--v4-border); background: #f5f5f7; font-size: 16px; transition: all 0.2s; }
 .f-field input:focus { border-color: var(--v4-primary); outline: none; background: white; }
@@ -1657,7 +1648,19 @@ async function submitReservation() {
   .sim-body, .sim-header { padding: 20px 16px; }
   .ig-input { font-size: 16px; }
   
-  .lot-header-v4 { padding: 8px 0; }
+  .sticky-conversion-card { 
+    position: static; 
+    max-height: none; 
+    overflow: visible; 
+    padding: 0;
+  }
+  
+  .lot-header-v4 { 
+    padding: 8px 0; 
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
   .back-link-v4 span { display: none; }
   .back-link-v4::after { content: "Ver Todos"; margin-left: 4px; }
   
