@@ -38,13 +38,16 @@ RUN npx nest build
 # Resolve TypeScript path aliases (@/* → relative paths) in compiled output
 RUN npx --yes tsc-alias -p tsconfig.json
 
+# Resolve pnpm v10 legacy deploy requirement
+RUN pnpm config set force-legacy-deploy true
+
 # Copy prisma CLI (devDep) with symlink resolution for migrations
 RUN cp -rL node_modules/prisma /tmp/prisma-cli 2>/dev/null || true
 
 # -- Stage 4: Production deps (standalone, no symlinks) -------------------
 FROM deps AS prod-deploy
 
-RUN pnpm --filter condosaas-backend deploy --prod /deploy
+RUN pnpm --filter lotio-backend deploy --prod /deploy
 
 # -- Stage 5: Production runner -------------------------------------------
 FROM node:22-alpine AS runner
