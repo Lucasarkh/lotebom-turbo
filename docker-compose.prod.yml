@@ -109,6 +109,9 @@ services:
   # ── Backend (NestJS) ──────────────────────────
   backend:
     image: ghcr.io/${GHCR_OWNER:?Defina GHCR_OWNER}/lotio-backend:${BACKEND_TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
     container_name: lotio_backend
     restart: always
     ports:

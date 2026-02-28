@@ -38,11 +38,19 @@ WORKDIR /app/apps/backend
 # Generate Prisma client (query engine for linux-musl / Alpine)
 RUN npx prisma generate
 
-# Build NestJS application
-RUN npx nest build
+# Build NestJS application (uses tsconfig.build.json with rootDir=src)
+RUN npx nest build --config nest-cli.json
 
 # Resolve TypeScript path aliases (@/* → relative paths) in compiled output
-RUN npx --yes tsc-alias -p tsconfig.json
+# Use tsconfig.build.json so tsc-alias respects rootDir=src
+RUN npx --yes tsc-alias -p tsconfig.build.json
+
+# Verify build output: main.js must be at dist/main.js (not dist/src/main.js)
+RUN if [ ! -f dist/main.js ]; then \
+      echo "FATAL: dist/main.js not found. Build output structure:" && \
+      find dist -name 'main.js' -type f && \
+      exit 1; \
+    fi && echo '✓ dist/main.js exists'
 
 # Stage the generated Prisma client to a known location
 # pnpm hoists to /app/node_modules, so we search from /app
@@ -98,6 +106,10 @@ COPY --from=build --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
 # 5) Package metadata
 COPY --from=build --chown=nestjs:nodejs /app/apps/backend/package.json ./
 
+# 6) Entrypoint script (wait for DB, run migrations, start app)
+COPY --from=build --chown=nestjs:nodejs /app/apps/backend/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
 USER nestjs
 
 EXPOSE 8080
@@ -110,4 +122,4 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=5 \
   CMD node -e "require('http').get('http://localhost:8080/api/health',(r)=>{r.resume();r.on('end',()=>process.exit(r.statusCode===200?0:1))}).on('error',()=>process.exit(1))"
 
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["sh", "./docker-entrypoint.sh"]
