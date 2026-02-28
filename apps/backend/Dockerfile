@@ -94,10 +94,10 @@ EXPOSE 8080
 
 ENV NODE_ENV=production
 
-CMD ["node", "dist/main"]
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:8080/docs',(r)=>{r.resume();r.on('end',()=>process.exit(r.statusCode<500?0:1))}).on('error',()=>process.exit(1))"
+# Healthcheck: /api/health responds 200 when app is ready
+# start-period gives NestJS time to connect to DB, Redis, RabbitMQ
+HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=5 \
+  CMD node -e "require('http').get('http://localhost:8080/api/health',(r)=>{r.resume();r.on('end',()=>process.exit(r.statusCode===200?0:1))}).on('error',()=>process.exit(1))"
 
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/main.js"]

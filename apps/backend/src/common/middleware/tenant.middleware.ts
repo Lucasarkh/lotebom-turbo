@@ -48,10 +48,9 @@ export class TenantMiddleware implements NestMiddleware {
     }
 
     // Ignorar logs para caminhos de infraestrutura/documentação para reduzir ruído
-    const ignoredPaths = ['/favicon.ico', '/docs', '/api/metrics', '/'];
-    if (!ignoredPaths.some(p => req.path === p || req.path.startsWith('/docs'))) {
-        // Log sparingly in production, or use a proper logger
-        // console.log(`[TenantMiddleware] Resolved host: "${host}" for path: ${req.path}`);
+    const ignoredPaths = ['/favicon.ico', '/docs', '/api/metrics', '/api/health', '/'];
+    if (ignoredPaths.some(p => req.path === p) || req.path.startsWith('/docs')) {
+        return next();
     }
     
     // Main domain can be configured via Env, default to 'lotio.com.br'

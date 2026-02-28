@@ -29,6 +29,7 @@ import { SendPulseModule } from '@infra/sendpulse/sendpulse.module';
 import { EmailQueueModule } from '@infra/email-queue/email-queue.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { BackupModule } from '@infra/backup/backup.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -76,7 +77,7 @@ import { BackupModule } from '@infra/backup/backup.module';
     SystemSettingsModule,
     BackupModule
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,
