@@ -248,12 +248,12 @@ jobs:
             mkdir -p "$RELEASE"
             tar -xzf /tmp/front.tar.gz -C "$RELEASE"
 
-            # Atomic swap
+            # Garantir que o diretório base existe
             sudo mkdir -p "$DEPLOY_PATH"
-            sudo rm -rf "${DEPLOY_PATH}.old" || true
-            sudo mv "$DEPLOY_PATH" "${DEPLOY_PATH}.old" || true
-            sudo mkdir -p "$DEPLOY_PATH"
-            sudo cp -a "$RELEASE/public/." "$DEPLOY_PATH/"
+
+            # Sincroniza apenas o conteúdo da pasta public para o destino
+            # Isso evita apagar e recriar a pasta, apenas atualiza arquivos novos/alterados
+            sudo cp -rv "$RELEASE/public/." "$DEPLOY_PATH/"
 
             # Secure permissions
             sudo chown -R www-data:www-data "$DEPLOY_PATH"
