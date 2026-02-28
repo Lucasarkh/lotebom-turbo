@@ -1,0 +1,82 @@
+# =============================================
+# .dockerignore — Lotio Monorepo
+# Reduces Docker build context size
+# =============================================
+
+# Version control
+.git
+.gitignore
+.github
+
+# Dependencies (installed inside container)
+node_modules
+**/node_modules
+
+# Build caches
+.turbo
+**/.turbo
+.nuxt
+**/.nuxt
+.output
+**/.output
+dist
+**/dist
+
+# Environment files (secrets must NOT leak into image)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# IDE & OS
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+LICENSE
+
+# Docker files (avoid recursive context)
+docker-compose*.yml
+Dockerfile
+**/Dockerfile
+
+# Frontend app (not needed for backend build context)
+# NOTE: We still need apps/frontend/package.json for pnpm lockfile validation
+apps/frontend/app
+apps/frontend/assets
+apps/frontend/components
+apps/frontend/composables
+apps/frontend/layouts
+apps/frontend/middleware
+apps/frontend/pages
+apps/frontend/plugins
+apps/frontend/public
+apps/frontend/stores
+apps/frontend/utils
+apps/frontend/__tests__
+apps/frontend/_backup_map
+apps/frontend/vitest.config.ts
+apps/frontend/nuxt.config.ts
+apps/frontend/.env*
+
+# Test & dev files
+**/*.spec.ts
+**/*.test.ts
+**/__tests__
+apps/backend/check_*.js
+apps/backend/check-*.ts
+apps/backend/fix-*.ts
+apps/backend/test_*.js
+apps/backend/test-*.ts
+
+# Monitoring configs (not needed in image)
+prometheus*.yml
+grafana
+
+# WAL archive (if present)
+.wal_archive

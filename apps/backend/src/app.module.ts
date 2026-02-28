@@ -28,6 +28,7 @@ import { RabbitMqModule } from '@infra/rabbitmq/rabbitmq.module';
 import { SendPulseModule } from '@infra/sendpulse/sendpulse.module';
 import { EmailQueueModule } from '@infra/email-queue/email-queue.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
+import { BackupModule } from '@infra/backup/backup.module';
 
 @Module({
   imports: [
@@ -72,7 +73,8 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
     AiModule,
     SchedulingModule,
     AgenciesModule,
-    SystemSettingsModule
+    SystemSettingsModule,
+    BackupModule
   ],
   controllers: [],
   providers: [

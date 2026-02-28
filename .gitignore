@@ -2,3 +2,28 @@ node_modules/
 **/node_modules/
 .turbo/
 .next/
+
+# Environment files (NEVER commit secrets)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Build outputs
+dist/
+**/dist/
+.output/
+**/.output/
+.nuxt/
+**/.nuxt/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Docker volumes / WAL
+.wal_archive/

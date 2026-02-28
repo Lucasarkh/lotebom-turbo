@@ -1,0 +1,315 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "turbo.json"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      force_backend:
+        description: "Forçar deploy do Backend"
+        required: false
+        type: boolean
+        default: false
+      force_frontend:
+        description: "Forçar deploy do Frontend"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ============================================
+  # Detecta quais apps mudaram
+  # ============================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+            frontend:
+              - 'apps/frontend/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+
+  # ============================================
+  # Backend: Build & Push Docker Image
+  # ============================================
+  backend-build:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || github.event.inputs.force_backend == 'true'
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set OWNER lowercase
+        id: owner
+        run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner_lc }}/lotio-backend
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ============================================
+  # Backend: Deploy
+  # ============================================
+  backend-deploy:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, backend-build]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.backend == 'true' || github.event.inputs.force_backend == 'true') &&
+      needs.backend-build.result == 'success'
+    steps:
+      - name: Checkout (compose + configs)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docker-compose.prod.yml
+            prometheus.prod.yml
+
+      - name: Sync compose files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "docker-compose.prod.yml,prometheus.prod.yml"
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # Login GHCR
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest backend image
+            docker compose -f docker-compose.prod.yml pull backend
+
+            # Run database migrations BEFORE swapping containers
+            docker compose -f docker-compose.prod.yml run --rm -T \
+              --entrypoint "" backend \
+              npx prisma migrate deploy
+
+            # Restart backend (recreate only, no deps restart)
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait backend
+
+            # Verify deployment
+            echo "--- Container Status ---"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -n 20
+
+            # Wait for health check
+            echo "--- Health Check ---"
+            for i in $(seq 1 30); do
+              if docker inspect --format='{{.State.Health.Status}}' lotio_backend 2>/dev/null | grep -q healthy; then
+                echo "✅ Backend healthy!"
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "❌ Health check timeout!"
+                docker logs --tail=50 lotio_backend || true
+                exit 1
+              fi
+              echo "  Attempt $i/30 — waiting 5s..."
+              sleep 5
+            done
+
+            docker logs --tail=30 lotio_backend || true
+
+  # ============================================
+  # Frontend: Build (Nuxt static generation)
+  # ============================================
+  frontend-build:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true' || github.event.inputs.force_frontend == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build + Generate (Nuxt static)
+        working-directory: apps/frontend
+        env:
+          NUXT_PUBLIC_API_BASE: ${{ secrets.FRONTEND_API_URL }}
+        run: |
+          pnpm run build
+          pnpm run generate
+
+      - name: Pack static output
+        run: tar -czf front.tar.gz -C apps/frontend/.output public
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: front-static
+          path: front.tar.gz
+          retention-days: 3
+
+  # ============================================
+  # Frontend: Deploy (aguarda backend se ambos mudaram)
+  # ============================================
+  frontend-deploy:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, frontend-build, backend-deploy]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.frontend == 'true' || github.event.inputs.force_frontend == 'true') &&
+      needs.frontend-build.result == 'success' &&
+      (
+        (needs.detect-changes.outputs.backend != 'true' && github.event.inputs.force_backend != 'true') ||
+        needs.backend-deploy.result == 'success'
+      )
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: front-static
+
+      - name: Upload to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "front.tar.gz"
+          target: "/tmp"
+
+      - name: Publish (atomic swap)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            DEPLOY_PATH="${{ secrets.FRONT_DEPLOY_PATH }}"
+            RELEASE="/tmp/front_release_$(date +%s)"
+
+            mkdir -p "$RELEASE"
+            tar -xzf /tmp/front.tar.gz -C "$RELEASE"
+
+            # Atomic swap
+            sudo mkdir -p "$DEPLOY_PATH"
+            sudo rm -rf "${DEPLOY_PATH}.old" || true
+            sudo mv "$DEPLOY_PATH" "${DEPLOY_PATH}.old" || true
+            sudo mkdir -p "$DEPLOY_PATH"
+            sudo cp -a "$RELEASE/public/." "$DEPLOY_PATH/"
+
+            # Secure permissions
+            sudo chown -R www-data:www-data "$DEPLOY_PATH"
+            sudo find "$DEPLOY_PATH" -type d -exec chmod 755 {} \;
+            sudo find "$DEPLOY_PATH" -type f -exec chmod 644 {} \;
+
+            # Cleanup
+            rm -rf "$RELEASE"
+            rm -f /tmp/front.tar.gz
+
+            echo "✅ Frontend publicado em $DEPLOY_PATH"
+
+  # ============================================
+  # Summary
+  # ============================================
+  summary:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, backend-deploy, frontend-deploy]
+    if: always()
+    steps:
+      - name: Deploy Summary
+        run: |
+          echo "## Deploy Summary — Lotio" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| App | Changed | Force | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|---------|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.detect-changes.outputs.backend }} | ${{ github.event.inputs.force_backend || 'false' }} | ${{ needs.backend-deploy.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.detect-changes.outputs.frontend }} | ${{ github.event.inputs.force_frontend || 'false' }} | ${{ needs.frontend-deploy.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY

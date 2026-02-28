@@ -1,0 +1,22 @@
+# =============================================
+# Prometheus — Produção
+# Targets apontam para serviços na rede Docker
+# =============================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "lotio-backend"
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ["backend:8080"]
+        labels:
+          environment: production
+
+  - job_name: "postgres-exporter"
+    static_configs:
+      - targets: ["lotio_pg_exporter:9187"]
+        labels:
+          environment: production
