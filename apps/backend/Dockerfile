@@ -30,7 +30,9 @@ COPY apps/backend/ apps/backend/
 WORKDIR /app/apps/backend
 
 # Generate Prisma client (query engine for linux-musl / Alpine)
-RUN npx prisma generate
+RUN npx prisma generate && \
+    cp -r node_modules/.prisma /tmp/prisma-generated 2>/dev/null || \
+    cp -r ../../node_modules/.prisma /tmp/prisma-generated 2>/dev/null || true
 
 # Build NestJS application
 RUN npx nest build
@@ -65,7 +67,7 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=prod-deploy --chown=nestjs:nodejs /deploy/node_modules ./node_modules
 
 # 2) Prisma generated client (query engine + generated types)
-COPY --from=build --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build --chown=nestjs:nodejs /tmp/prisma-generated ./node_modules/.prisma
 
 # 3) Prisma CLI for running migrations on deploy
 COPY --from=build --chown=nestjs:nodejs /tmp/prisma-cli ./node_modules/prisma
