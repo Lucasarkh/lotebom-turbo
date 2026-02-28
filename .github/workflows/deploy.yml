@@ -127,10 +127,16 @@ jobs:
             docker compose pull backend
             docker compose down backend
             docker compose up -d backend
+            
+            echo "Waiting for backend to start..."
+            sleep 20
+
             docker compose exec -T backend npx prisma migrate deploy
 
+            echo "Latest logs from backend:"
+            docker logs --tail=100 lotio_backend
+            
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -n 20
-            docker logs --tail=80 lotio_backend || true
 
   # ============================================
   # Frontend: Build (Nuxt static generation)
