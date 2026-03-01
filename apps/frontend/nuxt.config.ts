@@ -11,6 +11,12 @@ export default defineNuxtConfig({
     }
   },
   modules: ['@pinia/nuxt'],
+  postcss: {
+    plugins: {
+      '@tailwindcss/postcss': {},
+      autoprefixer: {},
+    },
+  },
   css: [
     '@/assets/css/main.css',
     'vue3-toastify/dist/index.css',

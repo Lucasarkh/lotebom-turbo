@@ -12,7 +12,8 @@ export const useLeads = () => {
 
   const loadProjects = async () => {
     try {
-      projects.value = await fetchApi('/projects');
+      const res = await fetchApi('/projects?limit=100');
+      projects.value = res.data || [];
     } catch (e) {
       fromError(e, 'Erro ao carregar projetos');
     }

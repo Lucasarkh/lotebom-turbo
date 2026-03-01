@@ -571,7 +571,7 @@
                 <td style="font-weight: 500;">{{ l.areaM2 ? `${l.areaM2.toFixed(2)} m²` : '—' }}</td>
                 <td v-if="authStore.canEdit">
                   <div class="flex gap-2">
-                     <button class="btn btn-sm btn-secondary" @click="openEditLot(l)">Editar Dados</button>
+                     <button class="btn btn-sm btn-dark" style="background: #222; color: #fff; border: none;" @click="openEditLot(l)">Editar Dados</button>
                      <a v-if="publicUrl && l.mapElement" :href="`/${project.slug}/${l.mapElement.code}`" target="_blank" class="btn btn-sm btn-outline">Ver Página</a>
                   </div>
                 </td>
@@ -791,9 +791,9 @@
             <input type="file" accept="image/*" style="display:none" @change="uploadLotPanoramaFile" :disabled="uploadingPanorama" />
           </label>
 
-          <div class="modal-actions" style="margin-top: var(--space-6);">
-            <button class="btn btn-secondary" @click="editingLot = null">Cancelar</button>
-            <button class="btn btn-primary" :disabled="savingLot" @click="saveLotDetails">
+          <div class="modal-actions" style="margin-top: var(--space-6); display: flex; justify-content: flex-end; gap: var(--space-3);">
+            <button class="btn btn-secondary" style="background: #f3f4f6; color: #374151; border: 1px solid #d1d5db;" @click="editingLot = null">Cancelar</button>
+            <button class="btn btn-primary" style="background: #3b82f6; color: #fff; border: none; font-weight: 600;" :disabled="savingLot" @click="saveLotDetails">
               {{ savingLot ? 'Salvando...' : 'Salvar Detalhes' }}
             </button>
           </div>
@@ -2534,5 +2534,24 @@ onMounted(async () => {
 .infra-badge-remove:hover {
   background: #ff3b30;
   color: white;
+}
+
+/* Fix for button contrast issues */
+.btn-sm.btn-secondary {
+  background: #222 !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.modal-actions .btn-secondary {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.modal-actions .btn-primary {
+  background: #3b82f6 !important;
+  color: #fff !important;
+  border: none !important;
 }
 </style>
