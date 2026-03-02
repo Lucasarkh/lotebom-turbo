@@ -89,50 +89,32 @@
         </div>
       </div>
 
-      <!-- Tabs / Navigation -->
-      <div class="flex items-center justify-between gap-4" style="margin-bottom: 32px;">
-        <div class="filter-bar">
-          <button 
-            v-for="t in tabs" 
-            :key="t.key" 
-            class="filter-btn" 
-            :class="{ active: activeTab === t.key }" 
-            @click="activeTab = t.key"
-          >
-            {{ t.label }}
-          </button>
-        </div>
+      <!-- Sidebar + Content Layout -->
+      <div class="project-layout">
+        <aside class="project-sidebar">
+          <nav class="sidebar-nav">
+            <button v-for="s in sidebarSections" :key="s.id" class="sidebar-link" :class="{ active: activeSection === s.id }" @click="activeSection = s.id">
+              <span class="sidebar-icon">{{ s.icon }}</span>
+              <span class="sidebar-label">{{ s.label }}</span>
+            </button>
+          </nav>
+          <div class="sidebar-divider"></div>
+          <div class="sidebar-tools">
+            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="sidebar-tool-link">
+              <span class="sidebar-icon">🗺️</span>
+              <span class="sidebar-label">Planta Interativa</span>
+            </NuxtLink>
+            <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="sidebar-tool-link">
+              <span class="sidebar-icon">🌄</span>
+              <span class="sidebar-label">Panorama 360°</span>
+            </NuxtLink>
+          </div>
+        </aside>
 
-        <div style="width: 1px; height: 24px; background: rgba(255, 255, 255, 0.06); align-self: center;"></div>
+        <main class="project-content">
 
-        <div class="filter-bar" style="background: rgba(255, 255, 255, 0.06);">
-          <!-- Planta Interativa — main visual tool -->
-          <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="filter-btn filter-btn-primary active" style="text-decoration: none;">
-            🗺️ Planta Interativa
-          </NuxtLink>
-          <!-- Panorama 360° -->
-          <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="filter-btn filter-btn-dark active" style="text-decoration: none;">
-            🌄 Panorama 360°
-          </NuxtLink>
-        </div>
-      </div>
-
-      <!-- Sub-tabs: Comercial -->
-      <div v-if="activeTab === 'commercial'" class="sub-tab-bar">
-        <button v-for="st in commercialSubTabs" :key="st.key" class="sub-tab-btn" :class="{ active: commercialSubTab === st.key }" @click="commercialSubTab = st.key">
-          {{ st.label }}
-        </button>
-      </div>
-
-      <!-- Sub-tabs: Operacional -->
-      <div v-if="activeTab === 'operational'" class="sub-tab-bar">
-        <button v-for="st in operationalSubTabs" :key="st.key" class="sub-tab-btn" :class="{ active: operationalSubTab === st.key }" @click="operationalSubTab = st.key">
-          {{ st.label }}
-        </button>
-      </div>
-
-      <!-- Tab: Configurações -->
-      <div v-if="activeTab === 'settings'">
+      <!-- Configurações do Projeto -->
+      <section v-if="activeSection === 'configuracoes'" id="configuracoes" class="content-section">
         <div class="card" style="max-width: 600px;">
           <form @submit.prevent="saveSettings">
             <div class="form-group">
@@ -152,19 +134,15 @@
               <input v-model="editForm.customDomain" class="form-input" placeholder="ex: vendas.meu-loteamento.com" />
               <small class="text-muted">Informe o domínio completo ou subdomínio que aponta para cá.</small>
             </div>
-            <div class="form-group" style="display:flex; align-items:center; gap: 8px; margin-top: 16px; margin-bottom: 20px;">
-              <input type="checkbox" v-model="editForm.showPaymentConditions" id="chkShowPayment" style="width:18px; height:18px; cursor:pointer;" />
-              <label for="chkShowPayment" class="form-label" style="margin-bottom:0; cursor:pointer; font-weight:600;">Exibir tabela de financiamento nas páginas dos lotes</label>
-            </div>
             <div v-if="settingsError" class="alert alert-error">{{ settingsError }}</div>
             <div v-if="settingsSaved" class="alert alert-success">Salvo com sucesso!</div>
             <button type="submit" class="btn btn-primary" :disabled="savingSettings">{{ savingSettings ? 'Salvando...' : 'Salvar' }}</button>
           </form>
         </div>
-      </div>
+      </section>
 
-      <!-- Tab: Comercial > Pagamentos -->
-      <div v-if="activeTab === 'commercial' && commercialSubTab === 'payment'">
+      <!-- Pagamentos & Taxas -->
+      <section v-if="activeSection === 'pagamentos'" id="pagamentos" class="content-section">
         <div class="card" style="max-width: 800px;">
           <h3>💳 Ativar Gateways de Pagamento</h3>
           <p class="text-muted">Selecione abaixo quais perfis de pagamento globais você deseja habilitar para este projeto.</p>
@@ -236,7 +214,7 @@
                 <label class="form-label">
                   {{ editForm.reservationFeeType === 'FIXED' ? 'Valor da Reserva (R$)' : 'Porcentagem da Reserva (%)' }}
                 </label>
-                <input v-model="editForm.reservationFeeValue" type="number" step="0.01" class="form-input" 
+                <input v-model.number="editForm.reservationFeeValue" type="number" step="0.01" class="form-input" 
                        :placeholder="editForm.reservationFeeType === 'FIXED' ? 'Ex: 500.00' : 'Ex: 0.5'" />
                 <small v-if="editForm.reservationFeeType === 'PERCENTAGE'" style="color: var(--color-surface-400); font-size: 0.75rem;">
                   Ex: 0.5 = 0,5% do valor total do lote.
@@ -259,10 +237,10 @@
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Tab: Operacional > Assistente IA -->
-      <div v-if="activeTab === 'operational' && operationalSubTab === 'ai'">
+      <!-- Assistente IA -->
+      <section v-if="activeSection === 'assistente-ia'" id="assistente-ia" class="content-section">
         <div class="card" style="max-width: 600px;">
           <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
             <span>🤖</span> Assistente de IA
@@ -301,10 +279,10 @@
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Tab: Operacional > Agendamento -->
-      <div v-if="activeTab === 'operational' && operationalSubTab === 'scheduling'">
+      <!-- Agendamento de Visitas -->
+      <section v-if="activeSection === 'agendamento'" id="agendamento" class="content-section">
         <div class="card" style="max-width: 900px;">
           <div class="flex justify-between items-center" style="margin-bottom: 24px;">
             <div>
@@ -435,10 +413,11 @@
             </div>
           </template>
         </div>
-      </div>
+      </section>
 
-      <!-- Tab: Comercial > Simulação Financeira -->
-      <div v-if="activeTab === 'commercial' && commercialSubTab === 'financing'" class="financing-layout-v4">
+      <!-- Simulação Financeira -->
+      <section v-if="activeSection === 'financeiro'" id="financeiro" class="content-section">
+      <div class="financing-layout-v4">
         <div class="card" style="flex: 1; max-width: 800px;">
           <h3 style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
             <span>🧮</span> Regras de Simulação Financeira
@@ -580,9 +559,10 @@
           </div>
         </div>
       </div>
+      </section>
 
-      <!-- Tab: Lotes (Elementos do Projeto) -->
-      <div v-if="activeTab === 'lots'">
+      <!-- Lotes -->
+      <section v-if="activeSection === 'lotes'" id="lotes" class="content-section">
         <div v-if="lots.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
           <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
             <div class="icon-blob mx-auto mb-4">🗺️</div>
@@ -629,7 +609,7 @@
           </table>
           <CommonPagination :meta="lotsMeta" @change="loadLotsPaginated" />
         </div>
-      </div>
+      </section>
 
       <!-- Lot Edit Modal -->
       <div v-if="editingLot" class="modal-overlay" @click.self="editingLot = null">
@@ -850,571 +830,313 @@
       </div>
 
 
-      <!-- Tab: Pág. Pública -->
-      <div v-if="activeTab === 'public'">
-        <div class="flex justify-between items-center" style="margin-bottom: 40px;">
-          <div>
-            <h2 style="margin:0; font-size: 1.25rem;">Conteúdo da Página Pública</h2>
-            <p style="margin:0; font-size: 0.875rem; color: var(--color-surface-400);">Gerencie o que seus clientes verão ao acessar o link do loteamento.</p>
+      <!-- Página Pública -->
+      <section v-if="activeSection === 'pagina-publica'" id="pagina-publica" class="content-section pub-page">
+
+        <!-- ── Banner & Vídeo (lado a lado) ── -->
+        <div class="pub-row pub-row--2col">
+          <div class="pub-card">
+            <h4 class="pub-card__title">Banner</h4>
+            <div v-if="project.bannerImageUrl" style="position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--glass-border-subtle); aspect-ratio: 16/6;">
+              <img :src="project.bannerImageUrl" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;" />
+              <button v-if="authStore.canEdit" class="pub-card__overlay-btn" @click="removeBannerImage">Remover</button>
+            </div>
+            <div v-else style="border: 2px dashed var(--glass-border-subtle); background: var(--glass-bg-heavy); border-radius: 10px; padding: 32px; text-align: center;">
+              <p style="color: var(--color-surface-500); font-size: 0.8rem; margin: 0;">Nenhum banner configurado</p>
+            </div>
+            <label v-if="authStore.canEdit" class="pub-card__upload-btn">
+              {{ uploadingBanner ? 'Enviando...' : 'Enviar Banner' }}
+              <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage" :disabled="uploadingBanner" />
+            </label>
           </div>
-          <div v-if="authStore.canEdit" class="flex items-center gap-4">
-            <transition name="fade">
-              <span v-if="pubInfoSaved" style="color: var(--color-success); font-weight: 600; font-size: 0.875rem;">✅ Salvo!</span>
-            </transition>
-            <button class="btn btn-primary" style="min-width: 160px;" :disabled="savingPubInfo" @click="savePubInfo">
-              {{ savingPubInfo ? 'Salvando...' : '💾 Salvar Alterações' }}
-            </button>
+
+          <div class="pub-card">
+            <h4 class="pub-card__title">Vídeo de Apresentação</h4>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label">Link do YouTube</label>
+              <input v-model="pubInfoForm.youtubeVideoUrl" class="form-input" placeholder="https://www.youtube.com/embed/..." :disabled="!authStore.canEdit" />
+              <small style="color: var(--color-surface-500); font-size: 0.7rem;">Cole a URL embed do YouTube.</small>
+            </div>
+            <div v-if="pubInfoForm.youtubeVideoUrl" style="margin-top: 16px; border-radius: 10px; overflow: hidden; border: 1px solid var(--glass-border-subtle); aspect-ratio: 16/9;">
+              <iframe v-if="pubInfoForm.youtubeVideoUrl.includes('embed/')" :src="pubInfoForm.youtubeVideoUrl" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+              <div v-else style="padding: 20px; text-align: center; background: var(--glass-bg-heavy); color: var(--color-surface-500); height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">
+                Preview disponível ao usar link /embed/.
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="card-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; align-items: start;">
-          
-          <!-- Column 1 -->
-          <div class="flex flex-col" style="gap: 40px;">
-            <!-- Section: Hero Banner -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-                <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.1); color: var(--color-primary-500); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🖼️</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Banner do Loteamento</h3>
-                </div>
-              </div>
-
-              <div v-if="project.bannerImageUrl" class="banner-preview" style="position: relative; margin-bottom: 16px; border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border-subtle); box-shadow: 0 2px 4px rgba(0,0,0,0.3); aspect-ratio: 16/5;">
-                <img :src="project.bannerImageUrl" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;" />
-                <div v-if="authStore.canEdit" style="position: absolute; bottom: 12px; right: 12px;">
-                  <button class="btn btn-danger btn-xs" style="background: var(--glass-bg); color: var(--color-danger); border: 1px solid var(--color-danger);" @click="removeBannerImage">🗑️ Remover</button>
-                </div>
-              </div>
-              
-              <div v-else class="banner-placeholder" style="margin-bottom: 16px; border: 2px dashed var(--glass-border-subtle); background: var(--glass-bg-heavy); border-radius: 12px; padding: 24px; text-align: center;">
-                <p style="color: var(--color-surface-400); font-size: 0.75rem;">Nenhum banner configurado.</p>
-              </div>
-
-              <div v-if="authStore.canEdit" class="flex justify-start">
-                <label class="btn btn-secondary btn-sm" style="cursor:pointer; display: flex; align-items: center; gap: 8px;">
-                  <span>{{ uploadingBanner ? '⌛ Enviando...' : '📤 Upload do Banner' }}</span>
-                  <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage" :disabled="uploadingBanner" />
-                </label>
-              </div>
-            </section>
-
-            <!-- Section: Price & Conditions -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 24px;">
-                <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.1); color: var(--color-primary-500); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">💰</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Preços e Condições</h3>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2" style="gap: 20px; margin-bottom: 20px;">
-                <div class="form-group" style="margin:0;">
-                  <label class="form-label">A partir de (R$)</label>
-                  <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="144000" :disabled="!authStore.canEdit" />
-                </div>
-                <div class="form-group" style="margin:0;">
-                  <label class="form-label">Parcelamento (Vezes)</label>
-                  <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="120" :disabled="!authStore.canEdit" />
-                </div>
-              </div>
-
-              <div class="form-group" style="margin:0;">
-                <label class="form-label">Resumo das Condições</label>
-                <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Entrada facilitada em 6x e saldo em 120 meses." :disabled="!authStore.canEdit" />
-              </div>
-            </section>
-
-            <!-- Section: Construction Status -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-                <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏗️</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Acompanhamento de Obras</h3>
-                </div>
-              </div>
-
-              <div v-if="pubInfoForm.constructionStatus.length === 0" class="empty-state" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px; margin-bottom: 16px;">
-                <p style="font-size: 0.8rem;">Nenhum status configurado.</p>
-              </div>
-
-              <div v-else style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
-                <div v-for="(item, i) in pubInfoForm.constructionStatus" :key="i" style="background: var(--glass-bg); border: 1px solid var(--glass-border-subtle); padding: 16px; border-radius: 8px; position: relative;">
-                  <div class="flex justify-between items-center" style="margin-bottom: 10px;">
-                    <span style="font-weight: 600; font-size: 0.875rem;">{{ item.label }}</span>
-                    <span style="font-weight: 700; color: var(--color-success); font-size: 0.875rem;">{{ item.percentage }}%</span>
-                  </div>
-                  <div style="width: 100%; height: 8px; background: var(--glass-bg); border-radius: 4px; overflow: hidden;">
-                    <div :style="{ width: item.percentage + '%', background: 'var(--color-success)' }" style="height: 100%; transition: width 0.3s ease;"></div>
-                  </div>
-                  <button v-if="authStore.canEdit" class="btn-remove-v4" title="Remover Etapa" @click="removeWorkStage(i)">✕</button>
-                </div>
-              </div>
-
-              <!-- New Work Stage Form -->
-              <div v-if="authStore.canEdit" style="background: var(--glass-bg-heavy); padding: 20px; border-radius: 8px; border: 1px solid var(--glass-border-subtle);">
-                <div style="display: grid; grid-template-columns: 1fr 80px; gap: 16px; align-items: end;">
-                  <div class="form-group" style="margin:0;">
-                    <label class="form-label" style="font-size: 0.75rem;">Nova Etapa (ex: Terraplanagem)</label>
-                    <input v-model="newWorkStage.label" class="form-input btn-sm" placeholder="Nome da etapa..." />
-                  </div>
-                  <div class="form-group" style="margin:0;">
-                    <label class="form-label" style="font-size: 0.75rem;">%</label>
-                    <input v-model.number="newWorkStage.percentage" type="number" min="0" max="100" class="form-input btn-sm" />
-                  </div>
-                </div>
-                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px;" @click="addWorkStage">Adicionar Etapa</button>
-              </div>
-            </section>
-
-            <!-- Section: Location -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-                <div style="width: 32px; height: 32px; background: rgba(59, 130, 246, 0.12); color: #38bdf8; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">📍</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Localização</h3>
-                </div>
-              </div>
-
-              <div class="form-group" style="margin-bottom: 24px;">
-                <label class="form-label" style="font-size: 0.75rem;">Endereço</label>
-                <input v-model="pubInfoForm.address" class="form-input btn-sm" placeholder="Av. Brasil, 1000 - Centro" :disabled="!authStore.canEdit" />
-              </div>
-
-              <div class="form-group" style="margin:0;">
-                <label class="form-label" style="font-size: 0.75rem;">Link Google Maps</label>
-                <input v-model="pubInfoForm.googleMapsUrl" class="form-input btn-sm" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
-              </div>
-            </section>
-
-            <!-- Section: Nearby Places -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-                <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.12); color: #34d399; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏪</div>
-                <div style="flex: 1;">
-                  <h3 style="margin:0; font-size: 1rem;">Proximidades</h3>
-                  <p style="margin: 2px 0 0; font-size: 0.7rem; color: #888;">Locais próximos ao empreendimento</p>
-                </div>
-                <div v-if="hasAddress" class="toggle-switch" style="margin-left: auto;" title="Mostrar ou esconder proximidades na página pública">
-                  <input type="checkbox" id="nearby-toggle" v-model="nearbyEnabled" @change="toggleNearby" :disabled="!authStore.canEdit" />
-                  <label for="nearby-toggle"></label>
-                </div>
-              </div>
-
-              <!-- No address warning -->
-              <div v-if="!hasAddress" style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 10px; font-size: 0.8rem;">
-                <span style="font-size: 1.1rem;">📍</span>
-                <div>
-                  <span style="color: #d97706; font-weight: 500;">Endereço não cadastrado</span>
-                  <p style="margin: 4px 0 0; color: #888; font-size: 0.72rem;">Cadastre o endereço do empreendimento acima para gerar as proximidades automaticamente.</p>
-                </div>
-              </div>
-
-              <!-- Has address -->
-              <template v-else>
-                <!-- Status -->
-                <div v-if="nearbyStatus" style="margin-bottom: 16px;">
-                  <div v-if="nearbyStatus.status === 'ok' && nearbyStatus.itemCount > 0" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(16, 185, 129, 0.08); border-radius: 8px; font-size: 0.8rem;">
-                    <span style="color: #10b981;">✓</span>
-                    <span style="color: #6b7280;">{{ nearbyStatus.itemCount }} locais encontrados</span>
-                    <span v-if="nearbyEnabled" style="color: #10b981; font-size: 0.65rem; margin-left: 4px;">• visível no site</span>
-                    <span v-else style="color: #9ca3af; font-size: 0.65rem; margin-left: 4px;">• oculto no site</span>
-                    <span v-if="nearbyStatus.generatedAt" style="color: #9ca3af; margin-left: auto; font-size: 0.7rem;">{{ new Date(nearbyStatus.generatedAt).toLocaleDateString('pt-BR') }}</span>
-                  </div>
-                  <div v-else-if="nearbyStatus.status === 'ok' && nearbyStatus.itemCount === 0" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(107, 114, 128, 0.08); border-radius: 8px; font-size: 0.8rem;">
-                    <span style="color: #9ca3af;">—</span>
-                    <span style="color: #6b7280;">Nenhum local próximo encontrado no raio de busca</span>
-                  </div>
-                  <div v-else-if="nearbyStatus.status === 'error'" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; font-size: 0.8rem;">
-                    <span style="color: #ef4444;">✗</span>
-                    <span style="color: #6b7280;">{{ nearbyStatus.errorMessage || 'Erro ao gerar proximidades' }}</span>
-                  </div>
-                  <div v-else style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(107, 114, 128, 0.08); border-radius: 8px; font-size: 0.8rem;">
-                    <span style="color: #9ca3af;">—</span>
-                    <span style="color: #6b7280;">Proximidades ainda não geradas</span>
-                  </div>
-                </div>
-
-                <button
-                  class="btn btn-secondary btn-sm"
-                  style="width: 100%;"
-                  @click="regenerateNearby"
-                  :disabled="!authStore.canEdit || nearbyRegenerating"
-                >
-                  <span v-if="nearbyRegenerating">⏳ Gerando proximidades...</span>
-                  <span v-else-if="nearbyStatus?.status === 'ok' && nearbyStatus?.itemCount > 0">🔄 Regerar Proximidades</span>
-                  <span v-else>🔍 Gerar Proximidades</span>
-                </button>
-
-                <!-- Nearby items list -->
-                <div v-if="nearbyStatus?.items?.length" style="margin-top: 16px;">
-                  <div v-for="group in nearbyGrouped" :key="group.category" style="margin-bottom: 14px;">
-                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                      <span style="font-size: 0.9rem;">{{ nearbyCategoryIcon(group.category) }}</span>
-                      <span style="font-size: 0.78rem; font-weight: 600; color: #d1d5db;">{{ group.categoryLabel }}</span>
-                      <span style="font-size: 0.65rem; color: #6b7280; margin-left: 2px;">({{ group.items.length }})</span>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 0;">
-                      <div
-                        v-for="(item, idx) in group.items"
-                        :key="item.name"
-                        style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; font-size: 0.75rem; border-radius: 6px;"
-                        :style="idx % 2 === 0 ? 'background: rgba(255,255,255,0.03)' : ''"
-                      >
-                        <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #d1d5db;">{{ item.name }}</span>
-                        <span style="color: #6b7280; white-space: nowrap; font-size: 0.7rem;">{{ item.distanceLabel }}</span>
-                        <span v-if="item.drivingLabel" style="color: #6b7280; white-space: nowrap; font-size: 0.68rem;">🚗 {{ item.drivingLabel }}</span>
-                        <span v-if="item.walkingLabel" style="color: #6b7280; white-space: nowrap; font-size: 0.68rem;">🚶 {{ item.walkingLabel }}</span>
-                        <a
-                          :href="item.routeUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style="color: #60a5fa; font-size: 0.68rem; text-decoration: none; white-space: nowrap; flex-shrink: 0;"
-                          title="Ver rota"
-                        >↗ Rota</a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </section>
-          </div>
-
-          <!-- Column 2 -->
-          <div class="flex flex-col" style="gap: 40px;">
-            <!-- Section: Video & Multimedia -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-                <div style="width: 32px; height: 32px; background: rgba(239, 68, 68, 0.12); color: #f87171; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🎬</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Vídeo de Apresentação</h3>
-                </div>
-              </div>
-
-              <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-label">Link do YouTube</label>
-                <div class="flex gap-2">
-                  <input v-model="pubInfoForm.youtubeVideoUrl" class="form-input" placeholder="https://www.youtube.com/watch?v=..." :disabled="!authStore.canEdit" />
-                </div>
-                <small style="color:var(--color-surface-500); font-size:0.75rem;">O vídeo será incorporado na página do empreendimento.</small>
-              </div>
-
-              <div v-if="pubInfoForm.youtubeVideoUrl" style="margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border-subtle); aspect-ratio: 16/9;">
-                 <iframe 
-                    v-if="pubInfoForm.youtubeVideoUrl.includes('embed/')"
-                    :src="pubInfoForm.youtubeVideoUrl" 
-                    width="100%" height="100%" frameborder="0" allowfullscreen
-                 ></iframe>
-                 <div v-else style="padding: 20px; text-align: center; background: var(--glass-bg-heavy); color: var(--color-surface-400); height: 100%; display: flex; align-items: center; justify-content: center;">
-                    <p style="font-size: 0.8rem;">Preview disponível após salvar o link.</p>
-                 </div>
-              </div>
-            </section>
-
-            <!-- Section: Infraestrutura -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 24px;">
-                <div style="width: 32px; height: 32px; background: rgba(236, 72, 153, 0.12); color: #f472b6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏗️</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Infraestrutura</h3>
-                </div>
-              </div>
-
-              <!-- Infrastructure Titles -->
-              <div style="background: var(--glass-bg-heavy); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border-subtle); margin-bottom: 32px;">
-                <h4 style="font-size: 0.75rem; color: var(--color-surface-500); text-transform: uppercase; margin-bottom: 16px;">Títulos da Seção</h4>
-                <div class="form-group">
-                  <label class="form-label" style="font-size: 0.7rem;">Título Principal (Ex: Sua família merece o melhor)</label>
-                  <input v-model="pubInfoForm.highlightsTitle" class="form-input" placeholder="Sua família merece o melhor." />
-                </div>
-                <div class="form-group" style="margin: 0;">
-                  <label class="form-label" style="font-size: 0.7rem;">Subtítulo (Abaixo do título)</label>
-                  <input v-model="pubInfoForm.highlightsSubtitle" class="form-input" placeholder="Qualidade de vida, segurança..." />
-                </div>
-              </div>
-
-              <!-- Infrastructure Categories -->
-              <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'category').length" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px;">
-                <h4 style="font-size: 0.75rem; color: var(--color-surface-500); text-transform: uppercase;">Categorias de Infraestrutura</h4>
-                <div v-for="(cat, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="cat.type === 'category'" style="background: var(--glass-bg); border: 1px solid var(--glass-border-subtle); padding: 20px; border-radius: 12px; position: relative;">
-                  <div class="flex justify-between items-center" style="margin-bottom: 16px;">
-                    <strong style="font-size: 0.95rem; color: var(--color-surface-100); font-weight: 700;">{{ cat.title }}</strong>
-                    <button v-if="authStore.canEdit" class="btn-remove-v4" title="Remover Categoria" @click="removeHighlight(idx)">✕</button>
-                  </div>
-                  
-                  <!-- Items list -->
-                  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
-                    <div v-for="(it, itIdx) in cat.items" :key="itIdx" class="infra-badge-v4">
-                      {{ it }}
-                      <span v-if="authStore.canEdit" class="infra-badge-remove" @click="removeInfraItem(idx, itIdx)">✕</span>
-                    </div>
-                  </div>
-
-                  <!-- Add item to category -->
-                  <div v-if="authStore.canEdit" style="display: flex; gap: 10px;">
-                    <input 
-                      v-model="infraItemInputs[idx]"
-                      @keyup.enter="addInfraItem(idx)"
-                      class="form-input" 
-                      placeholder="Adicionar item..." 
-                      style="flex: 1; font-size: 0.8125rem; height: 42px; border-radius: 8px;" 
-                    />
-                    <button class="btn btn-dark" style="width: 42px; height: 42px; padding: 0; border-radius: 8px; background: var(--glass-bg-heavy); color: white;" @click="addInfraItem(idx)">+</button>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="authStore.canEdit" style="background: var(--glass-bg-heavy); padding: 24px; border-radius: 12px; border: 1px solid var(--glass-border-subtle);">
-                <p style="font-size: 0.7rem; color: var(--color-surface-400); margin-bottom: 12px; font-weight: 700; text-transform: uppercase;">Nova Categoria de Infraestrutura</p>
-                <input v-model="newInfraCategory" class="form-input" placeholder="Título da Categoria (ex: Equipamentos)" style="height: 48px; border-radius: 8px;" />
-                <button class="btn btn-primary" style="width: 100%; margin-top: 16px; height: 48px; border-radius: 12px; font-weight: 600; background: #3b82f6;" @click="addInfraCategory">Criar Categoria</button>
-              </div>
-            </section>
-
-            <!-- Section: Destaques -->
-            <section class="card" style="padding: 24px; margin: 0;">
-              <div class="flex items-center gap-3" style="margin-bottom: 24px;">
-                <div style="width: 32px; height: 32px; background: rgba(249, 115, 22, 0.12); color: #f97316; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">✨</div>
-                <div>
-                  <h3 style="margin:0; font-size: 1rem;">Destaques</h3>
-                </div>
-              </div>
-
-              <!-- Highlights Titles -->
-              <div style="background: var(--glass-bg-heavy); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border-subtle); margin-bottom: 32px;">
-                <h4 style="font-size: 0.75rem; color: var(--color-surface-500); text-transform: uppercase; margin-bottom: 16px;">Títulos da Seção</h4>
-                <div class="form-group">
-                  <label class="form-label" style="font-size: 0.7rem;">Título da Seção (Ex: Destaques)</label>
-                  <input v-model="pubInfoForm.traditionalHighlightsTitle" class="form-input" placeholder="Destaques" />
-                </div>
-                <div class="form-group" style="margin: 0;">
-                  <label class="form-label" style="font-size: 0.7rem;">Subtítulo (Abaixo do título)</label>
-                  <input v-model="pubInfoForm.traditionalHighlightsSubtitle" class="form-input" placeholder="Diferenciais pensados para..." />
-                </div>
-              </div>
-
-              <!-- General Highlights -->
-              <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'highlight' || !h.type).length" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
-                <h4 style="font-size: 0.75rem; color: var(--color-surface-500); text-transform: uppercase;">Diferenciais Individuais</h4>
-                <div v-for="(h, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="h.type === 'highlight' || !h.type" style="padding: 12px 16px; border: 1px solid var(--glass-border-subtle); border-radius: 8px; position: relative; background: var(--glass-bg); display: flex; align-items: center; gap: 10px;">
-                  <div style="font-size: 1rem; color: #059669;">{{ h.icon || '✅' }}</div>
-                  <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    <strong style="font-size: 0.8125rem;">{{ h.label }}</strong>
-                    <span style="font-size: 0.75rem; color: var(--color-surface-400); margin-left: 4px;">{{ h.value }}</span>
-                  </div>
-                  <button v-if="authStore.canEdit" class="btn-remove-v4" title="Remover" @click="removeHighlight(idx)">✕</button>
-                </div>
-              </div>
-
-              <div v-if="authStore.canEdit" style="background: var(--glass-bg-heavy); padding: 24px; border-radius: 12px; border: 1px solid var(--glass-border-subtle);">
-                <p style="font-size: 0.7rem; color: var(--color-surface-400); margin-bottom: 12px; font-weight: 700; text-transform: uppercase;">Novo Diferencial Simples</p>
-                <div class="grid grid-cols-2 gap-4">
-                  <input v-model="newHighlight.label" class="form-input" placeholder="Rótulo (ex: Segurança)" style="height: 48px; border-radius: 8px;" />
-                  <input v-model="newHighlight.value" class="form-input" placeholder="Detalhe (ex: 24h)" style="height: 48px; border-radius: 8px;" />
-                </div>
-                <button class="btn btn-dark" style="width: 100%; margin-top: 16px; height: 48px; background: var(--glass-bg-heavy); color: white; border-radius: 12px; font-weight: 600;" @click="addHighlight">Adicionar Diferencial</button>
-              </div>
-            </section>
-          </div>
-
-          <!-- Section: Details Text (Full Width) -->
-          <section class="card" style="padding: 24px; grid-column: span 2; margin-top: 12px;">
-            <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-              <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.1); color: var(--color-primary-500); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">📝</div>
-              <div>
-                <h3 style="margin:0; font-size: 1rem;">Texto Descritivo</h3>
-              </div>
-            </div>
-            
+        <!-- ── Preços & Condições ── -->
+        <div class="pub-card pub-card--compact">
+          <h4 class="pub-card__title">Preços e Condições</h4>
+          <div class="pub-row pub-row--3col" style="margin-bottom: 0;">
             <div class="form-group" style="margin:0;">
-              <div v-if="authStore.canEdit" class="flex gap-2" style="margin-bottom: 12px;">
-                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('bold')"><b>B</b></button>
-                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('italic')"><i>I</i></button>
-                <button class="btn btn-xs btn-outline" @click.prevent="execCommand('insertUnorderedList')">• Lista</button>
-              </div>
-              <div 
-                ref="richEditor"
-                contenteditable="true"
-                class="form-textarea rich-editor-v4"
-                :class="{ 'disabled': !authStore.canEdit }"
-                @input="updateFromEditor"
-                @blur="updateFromEditor"
-                v-html="initialEditorContent"
-                style="min-height: 250px; padding: 20px; line-height: 1.6; border-radius: 8px; font-size: 0.875rem; background: var(--glass-bg); border: 1px solid var(--glass-border); overflow-y: auto;"
-              ></div>
+              <label class="form-label">A partir de (R$)</label>
+              <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="144000" :disabled="!authStore.canEdit" />
             </div>
-          </section>
-
-          <!-- Section: Media Gallery (Full Width) -->
-          <section class="card" style="padding: 24px; grid-column: span 2; margin-top: 12px;">
-            <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-              <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.12); color: #34d399; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">📸</div>
-              <div style="flex: 1;">
-                <h3 style="margin:0; font-size: 1rem;">Galeria de Mídia</h3>
-              </div>
-              <div v-if="authStore.canEdit" class="flex gap-3">
-                <label class="btn btn-primary btn-sm" style="cursor:pointer;">
-                  {{ uploadingMedia ? 'Enviando...' : '+ Adicionar Fotos/Vídeos' }}
-                  <input type="file" accept="image/*,video/*" style="display:none" @change="uploadMediaFile" :disabled="uploadingMedia" />
-                </label>
-              </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Parcelamento (Vezes)</label>
+              <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="180" :disabled="!authStore.canEdit" />
             </div>
-
-            <div v-if="media.length === 0" class="empty-state" style="padding: 40px; background: var(--glass-bg-heavy); border-radius: 12px;">
-              <p style="font-size: 0.875rem; color: var(--color-surface-500);">Nenhuma foto ou vídeo na galeria.</p>
-            </div>
-            <div v-else style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px;">
-              <div v-for="m in media" :key="m.id" class="media-card-v4" style="aspect-ratio: 1/1; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border-subtle);">
-                <img v-if="m.type === 'PHOTO'" :src="m.url" class="media-thumb-v4" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-                <video v-else :src="m.url" class="media-thumb-v4" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-                <div class="media-overlay-v4">
-                   <button v-if="authStore.canEdit" class="delete-btn-circ" title="Remover" @click="deleteMedia(m.id)">✕</button>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <!-- Section: Informações Legais -->
-        <section class="card" style="padding: 24px; margin-top: 12px;">
-          <div class="flex items-center gap-3" style="margin-bottom: 16px;">
-            <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">⚖️</div>
-            <div style="flex: 1;">
-              <h3 style="margin:0; font-size: 1rem;">Informações Legais / Registros</h3>
-              <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--color-surface-400);">Texto exibido no final da página pública, antes do rodapé. Ideal para dados de registro, aprovações e licenças.</p>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Resumo das Condições</label>
+              <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Entrada facilitada em 6x e saldo em 120 meses." :disabled="!authStore.canEdit" />
             </div>
           </div>
-          <textarea v-model="pubInfoForm.legalNotice" class="form-textarea" rows="5" placeholder="Ex: Loteamento aprovado pela Prefeitura Municipal, através do Decreto n.º... Registrado no Cartório de Registro de Imóveis..." :disabled="!authStore.canEdit" style="font-size: 0.85rem; line-height: 1.6;"></textarea>
-        </section>
-
-        <!-- Footer-ish Action Bar -->
-        <div v-if="authStore.canEdit" class="flex justify-end items-center gap-4" style="margin-top: 48px;">
-          <div v-if="pubInfoSaved" style="color: var(--color-success); font-weight: 600; font-size: 0.875rem;">✅ Alterações salvas!</div>
-          <button class="btn btn-primary" style="min-width: 180px; padding: 12px 24px;" :disabled="savingPubInfo" @click="savePubInfo">
-            {{ savingPubInfo ? 'Salvando...' : '💾 Salvar Alterações' }}
-          </button>
         </div>
-      </div>
 
-      <!-- Tab: Comercial > Corretores -->
-      <div v-if="activeTab === 'commercial' && commercialSubTab === 'corretores'">
-        <!-- Warning: Project not published -->
-        <div v-if="project.status !== 'PUBLISHED'" style="padding: 14px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; margin-bottom: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.2rem;">⚠️</span>
-          <div>
-            <span style="color: #fbbf24; font-weight: 600;">Projeto não publicado</span>
-            <p style="margin: 2px 0 0; color: var(--color-surface-400); font-size: 0.8rem;">Os links de corretores só estarão acessíveis após publicar o projeto.</p>
+        <!-- ── Acompanhamento de Obras ── -->
+        <div class="pub-card">
+          <h4 class="pub-card__title">Acompanhamento de Obras</h4>
+
+          <div v-if="pubInfoForm.constructionStatus.length === 0" class="pub-empty">
+            Nenhuma etapa cadastrada. Adicione etapas para exibir o progresso da obra na página pública.
+          </div>
+
+          <div v-else class="pub-works-grid">
+            <div v-for="(item, i) in pubInfoForm.constructionStatus" :key="i" class="pub-work-item">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: 600; font-size: 0.8rem;">{{ item.label }}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-weight: 700; color: var(--color-success); font-size: 0.8rem;">{{ item.percentage }}%</span>
+                  <button v-if="authStore.canEdit" class="pub-remove-btn" @click="removeWorkStage(i)">✕</button>
+                </div>
+              </div>
+              <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                <div :style="{ width: item.percentage + '%' }" style="height: 100%; background: var(--color-success); transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="authStore.canEdit" class="pub-inline-form" style="margin-top: 16px;">
+            <input v-model="newWorkStage.label" class="form-input" placeholder="Nome da etapa..." style="flex: 1;" />
+            <input v-model.number="newWorkStage.percentage" type="number" min="0" max="100" class="form-input" placeholder="%" style="width: 80px;" />
+            <button class="btn btn-primary btn-sm" @click="addWorkStage">Adicionar</button>
           </div>
         </div>
 
-        <div class="card" style="margin-bottom: 20px;">
-          <h3 style="margin-bottom: 8px;">Links de Corretor</h3>
-          <p style="color: var(--color-surface-400); font-size:0.875rem;">Cada corretor tem um link personalizado. Quando acessado, a página exibe os dados do corretor para contato. Leads capturados por esse link são vinculados ao corretor.</p>
-        </div>
+        <!-- ── Localização & Proximidades ── -->
+        <div class="pub-row pub-row--2col">
+          <div class="pub-card">
+            <h4 class="pub-card__title">Localização</h4>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label">Endereço</label>
+              <input v-model="pubInfoForm.address" class="form-input" placeholder="Av. Brasil, 1000 - Centro" :disabled="!authStore.canEdit" />
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label">Link Google Maps</label>
+              <input v-model="pubInfoForm.googleMapsUrl" class="form-input" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
+            </div>
+          </div>
 
-        <div v-if="authStore.canEdit" style="margin-bottom: 20px;">
-          <button class="btn btn-primary" @click="showNewCorretor = !showNewCorretor">
-            {{ showNewCorretor ? '✕ Cancelar' : '+ Novo Corretor' }}
-          </button>
-
-          <div v-if="showNewCorretor" class="card" style="margin-top: 16px; max-width: 800px;">
-            <h4 style="margin-bottom: 16px;">Novo Link de Corretor</h4>
-            <div class="grid grid-cols-2" style="gap: 16px;">
-              <div class="form-group col-span-2">
-                <label class="form-label">Nome do Corretor <span class="required" style="color:#ef4444;">*</span></label>
-                <input v-model="corretorForm.name" class="form-input" placeholder="Nome completo" required @input="onNameInput" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Código (URL) <span class="required" style="color:#ef4444;">*</span></label>
-                <div class="input-wrapper" style="position: relative; display: flex; align-items: center;">
-                  <input v-model="corretorForm.code" class="form-input" :class="{ 'is-invalid': codeError, 'is-valid': codeAvailable }" placeholder="joao-corretor" required style="width: 100%;" />
-                  <span v-if="codeAvailable" style="position: absolute; right: 10px; color: #10b981; font-weight: bold;">✓</span>
-                </div>
-                <span v-if="codeError" class="error-text" style="color:#ef4444; font-size:0.75rem;">{{ codeError }}</span>
-                <span v-else-if="codeLoading" class="help-text" style="color:var(--color-surface-400); font-size:0.75rem;">Verificando...</span>
-                <small v-else style="color:var(--color-surface-400); font-size:0.75rem;">Usado como ?c={{ corretorForm.code || '...' }}</small>
-              </div>
-              <div class="form-group">
-                <label class="form-label">CRECI</label>
-                <input v-model="corretorForm.creci" class="form-input" placeholder="Ex: 12345-F" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Telefone (WhatsApp) <span class="required" style="color:#ef4444;">*</span></label>
-                <input v-model="corretorForm.phone" class="form-input" placeholder="(DD) 9XXXX-XXXX" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">URL da Foto</label>
-                <input v-model="corretorForm.photoUrl" class="form-input" placeholder="URL da foto/avatar" />
-              </div>
-              <div class="form-group col-span-2">
-                <label class="form-label">E-mail</label>
-                <div class="input-wrapper" style="position: relative; display: flex; align-items: center;">
-                  <input v-model="corretorForm.email" type="email" class="form-input" :class="{ 'is-invalid': emailError, 'is-valid': emailAvailable }" placeholder="corretor@email.com" style="width: 100%;" />
-                  <span v-if="emailAvailable" style="position: absolute; right: 10px; color: #10b981; font-weight: bold;">✓</span>
-                </div>
-                <span v-if="emailError" class="error-text" style="color:#ef4444; font-size:0.75rem;">{{ emailError }}</span>
-                <span v-else-if="emailLoading" class="help-text" style="color:var(--color-surface-400); font-size:0.75rem;">Verificando...</span>
+          <div class="pub-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 class="pub-card__title" style="margin: 0;">Proximidades</h4>
+              <div v-if="hasAddress" class="toggle-switch" title="Exibir na página pública">
+                <input type="checkbox" id="nearby-toggle" v-model="nearbyEnabled" @change="toggleNearby" :disabled="!authStore.canEdit" />
+                <label for="nearby-toggle"></label>
               </div>
             </div>
-            <div v-if="corretorError" class="alert alert-error" style="margin-top: 12px;">{{ corretorError }}</div>
-            <div class="modal-actions" style="margin-top: 16px;">
-              <button class="btn btn-secondary" @click="showNewCorretor = false">Cancelar</button>
-              <button class="btn btn-primary" :disabled="creatingCorretor || !corretorForm.name || !corretorForm.code" @click="createCorretor">
-                {{ creatingCorretor ? 'Criando...' : 'Criar Corretor' }}
+
+            <div v-if="!hasAddress" class="pub-notice pub-notice--warn">
+              Cadastre o endereço ao lado para gerar as proximidades automaticamente.
+            </div>
+
+            <template v-else>
+              <div v-if="nearbyStatus" style="margin-bottom: 12px;">
+                <div v-if="nearbyStatus.status === 'ok' && nearbyStatus.itemCount > 0" class="pub-notice pub-notice--ok">
+                  {{ nearbyStatus.itemCount }} locais encontrados
+                  <span v-if="nearbyEnabled"> · visível no site</span>
+                  <span v-else> · oculto</span>
+                </div>
+                <div v-else-if="nearbyStatus.status === 'error'" class="pub-notice pub-notice--error">
+                  {{ nearbyStatus.errorMessage || 'Erro ao gerar' }}
+                </div>
+                <div v-else class="pub-notice pub-notice--neutral">
+                  Proximidades ainda não geradas
+                </div>
+              </div>
+
+              <button class="btn btn-secondary btn-sm" style="width: 100%;" @click="regenerateNearby" :disabled="!authStore.canEdit || nearbyRegenerating">
+                <span v-if="nearbyRegenerating">Gerando...</span>
+                <span v-else-if="nearbyStatus?.status === 'ok' && nearbyStatus?.itemCount > 0">Regerar Proximidades</span>
+                <span v-else>Gerar Proximidades</span>
               </button>
+
+              <!-- Collapsible nearby list -->
+              <div v-if="nearbyStatus?.items?.length" style="margin-top: 12px;">
+                <button class="pub-collapse-toggle" @click="nearbyListExpanded = !nearbyListExpanded">
+                  {{ nearbyListExpanded ? '▾ Ocultar detalhes' : '▸ Ver ' + nearbyStatus.itemCount + ' locais encontrados' }}
+                </button>
+                <div v-if="nearbyListExpanded" class="pub-nearby-list">
+                  <div v-for="group in nearbyGrouped" :key="group.category" style="margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 4px 0;">
+                      <span style="font-size: 0.85rem;">{{ nearbyCategoryIcon(group.category) }}</span>
+                      <span style="font-size: 0.72rem; font-weight: 700; color: var(--color-surface-200);">{{ group.categoryLabel }}</span>
+                      <span style="font-size: 0.6rem; color: var(--color-surface-500);">({{ group.items.length }})</span>
+                    </div>
+                    <div v-for="(item, idx) in group.items.slice(0, 3)" :key="item.name" class="pub-nearby-item" :style="idx % 2 === 0 ? 'background: rgba(255,255,255,0.02)' : ''">
+                      <span class="pub-nearby-item__name">{{ item.name }}</span>
+                      <span class="pub-nearby-item__dist">{{ item.distanceLabel }}</span>
+                      <a :href="item.routeUrl" target="_blank" rel="noopener" class="pub-nearby-item__link">Rota ↗</a>
+                    </div>
+                    <div v-if="group.items.length > 3" style="padding: 2px 10px; font-size: 0.65rem; color: var(--color-surface-500);">
+                      +{{ group.items.length - 3 }} mais
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- ── Infraestrutura & Destaques ── -->
+        <div class="pub-row pub-row--2col">
+          <!-- Infraestrutura -->
+          <div class="pub-card">
+            <h4 class="pub-card__title">Infraestrutura</h4>
+
+            <div class="pub-sub-section">
+              <span class="pub-sub-label">Títulos da seção no site</span>
+              <div class="form-group" style="margin-bottom: 8px;">
+                <input v-model="pubInfoForm.highlightsTitle" class="form-input" placeholder="Sua família merece o melhor." />
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <input v-model="pubInfoForm.highlightsSubtitle" class="form-input" placeholder="Qualidade de vida, segurança..." />
+              </div>
+            </div>
+
+            <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'category').length">
+              <div v-for="(cat, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="cat.type === 'category'" class="pub-infra-cat">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <strong style="font-size: 0.85rem; color: var(--color-surface-100);">{{ cat.title }}</strong>
+                  <button v-if="authStore.canEdit" class="pub-remove-btn" @click="removeHighlight(idx)">✕</button>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                  <div v-for="(it, itIdx) in cat.items" :key="itIdx" class="infra-badge-v4">
+                    {{ it }}
+                    <span v-if="authStore.canEdit" class="infra-badge-remove" @click="removeInfraItem(idx, itIdx)">✕</span>
+                  </div>
+                </div>
+                <div v-if="authStore.canEdit" class="pub-inline-form">
+                  <input v-model="infraItemInputs[idx]" @keyup.enter="addInfraItem(idx)" class="form-input" placeholder="Adicionar item..." style="flex: 1;" />
+                  <button class="btn btn-dark btn-sm" style="padding: 0 14px;" @click="addInfraItem(idx)">+</button>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="authStore.canEdit" class="pub-sub-section" style="margin-top: 16px;">
+              <span class="pub-sub-label">Nova Categoria</span>
+              <div class="pub-inline-form">
+                <input v-model="newInfraCategory" class="form-input" placeholder="Ex: Equipamentos" style="flex: 1;" />
+                <button class="btn btn-primary btn-sm" @click="addInfraCategory">Criar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Destaques -->
+          <div class="pub-card">
+            <h4 class="pub-card__title">Destaques</h4>
+
+            <div class="pub-sub-section">
+              <span class="pub-sub-label">Títulos da seção no site</span>
+              <div class="form-group" style="margin-bottom: 8px;">
+                <input v-model="pubInfoForm.traditionalHighlightsTitle" class="form-input" placeholder="Destaques" />
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <input v-model="pubInfoForm.traditionalHighlightsSubtitle" class="form-input" placeholder="Diferenciais pensados para..." />
+              </div>
+            </div>
+
+            <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'highlight' || !h.type).length" style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+              <div v-for="(h, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="h.type === 'highlight' || !h.type" class="pub-highlight-item">
+                <span style="color: #059669; font-size: 0.9rem;">{{ h.icon || '✅' }}</span>
+                <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <strong style="font-size: 0.8rem;">{{ h.label }}</strong>
+                  <span style="font-size: 0.72rem; color: var(--color-surface-400); margin-left: 4px;">{{ h.value }}</span>
+                </div>
+                <button v-if="authStore.canEdit" class="pub-remove-btn" @click="removeHighlight(idx)">✕</button>
+              </div>
+            </div>
+
+            <div v-if="authStore.canEdit" class="pub-sub-section" style="margin-top: 16px;">
+              <span class="pub-sub-label">Novo Diferencial</span>
+              <div class="pub-inline-form">
+                <input v-model="newHighlight.label" class="form-input" placeholder="Rótulo (ex: Segurança)" style="flex: 1;" />
+                <input v-model="newHighlight.value" class="form-input" placeholder="Detalhe (ex: 24h)" style="flex: 1;" />
+                <button class="btn btn-primary btn-sm" @click="addHighlight">Adicionar</button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div v-if="loadingCorretores" class="loading-state"><div class="loading-spinner"></div></div>
-
-        <div v-else-if="corretores.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-          <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-            <div class="icon-blob mx-auto mb-4">🤝</div>
-            <h3 class="fw-bold mb-3">Nenhum corretor cadastrado</h3>
-            <p class="mb-4 px-4">Crie links personalizados para corretores divulgarem o loteamento.</p>
+        <!-- ── Texto Descritivo ── -->
+        <div class="pub-card">
+          <h4 class="pub-card__title">Texto Descritivo</h4>
+          <div class="form-group" style="margin: 0;">
+            <div v-if="authStore.canEdit" class="flex gap-2" style="margin-bottom: 8px;">
+              <button class="btn btn-xs btn-outline" @click.prevent="execCommand('bold')"><b>B</b></button>
+              <button class="btn btn-xs btn-outline" @click.prevent="execCommand('italic')"><i>I</i></button>
+              <button class="btn btn-xs btn-outline" @click.prevent="execCommand('insertUnorderedList')">• Lista</button>
+            </div>
+            <div
+              ref="richEditor"
+              contenteditable="true"
+              class="form-textarea rich-editor-v4"
+              :class="{ 'disabled': !authStore.canEdit }"
+              @input="updateFromEditor"
+              @blur="updateFromEditor"
+              v-html="initialEditorContent"
+              style="min-height: 200px; padding: 16px; line-height: 1.6; border-radius: 8px; font-size: 0.85rem; background: var(--glass-bg); border: 1px solid var(--glass-border); overflow-y: auto;"
+            ></div>
           </div>
         </div>
 
-        <div v-else class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Código</th>
-                <th>Telefone</th>
-                <th>Leads</th>
-                <th>Status</th>
-                <th>Link do Loteamento</th>
-                <th v-if="authStore.canEdit">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="c in corretores" :key="c.id">
-                <td><strong>{{ c.name }}</strong></td>
-                <td><code>{{ c.code }}</code></td>
-                <td>{{ c.phone || '—' }}</td>
-                <td>{{ c._count?.leads ?? 0 }}</td>
-                <td>
-                  <span class="badge" :class="c.enabled ? 'badge-success' : 'badge-neutral'">{{ c.enabled ? 'Ativo' : 'Inativo' }}</span>
-                </td>
-                <td>
-                  <div v-if="publicUrl" class="flex gap-2 items-center">
-                    <code style="font-size:0.75rem; color: var(--color-surface-200);">?c={{ c.code }}</code>
-                    <button class="btn btn-sm btn-outline" @click="copyLink(`${locationOrigin}${publicUrl}?c=${c.code}`)">📋 Copiar</button>
-                  </div>
-                  <span v-else style="color:var(--color-surface-500); font-size:0.8rem;">Publique o projeto</span>
-                </td>
-                <td v-if="authStore.canEdit">
-                  <div class="flex gap-2">
-                    <button class="btn btn-sm btn-secondary" @click="toggleCorretor(c)">{{ c.enabled ? 'Desativar' : 'Ativar' }}</button>
-                    <button class="btn btn-sm btn-danger" @click="deleteCorretor(c)">Excluir</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- ── Galeria de Mídia ── -->
+        <div class="pub-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 class="pub-card__title" style="margin: 0;">Galeria de Mídia</h4>
+            <label v-if="authStore.canEdit" class="btn btn-primary btn-sm" style="cursor: pointer;">
+              {{ uploadingMedia ? 'Enviando...' : '+ Adicionar' }}
+              <input type="file" accept="image/*,video/*" style="display:none" @change="uploadMediaFile" :disabled="uploadingMedia" />
+            </label>
+          </div>
+
+          <div v-if="media.length === 0" class="pub-empty">
+            Nenhuma foto ou vídeo na galeria.
+          </div>
+          <div v-else style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
+            <div v-for="m in media" :key="m.id" class="media-card-v4" style="aspect-ratio: 1/1; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border-subtle);">
+              <img v-if="m.type === 'PHOTO'" :src="m.url" class="media-thumb-v4" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+              <video v-else :src="m.url" class="media-thumb-v4" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+              <div class="media-overlay-v4">
+                <button v-if="authStore.canEdit" class="delete-btn-circ" title="Remover" @click="deleteMedia(m.id)">✕</button>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- ── Informações Legais ── -->
+        <div class="pub-card">
+          <h4 class="pub-card__title">Informações Legais</h4>
+          <p style="font-size: 0.75rem; color: var(--color-surface-400); margin: 0 0 12px;">Texto exibido no final da página pública. Ideal para dados de registro, aprovações e licenças.</p>
+          <textarea v-model="pubInfoForm.legalNotice" class="form-textarea" rows="4" placeholder="Ex: Loteamento aprovado pela Prefeitura Municipal, através do Decreto n.º..." :disabled="!authStore.canEdit" style="font-size: 0.85rem; line-height: 1.5;"></textarea>
+        </div>
+
+        <!-- ── Save Bar ── -->
+        <div v-if="authStore.canEdit" class="pub-save-bar">
+          <transition name="fade">
+            <span v-if="pubInfoSaved" style="color: var(--color-success); font-weight: 600; font-size: 0.85rem;">Salvo!</span>
+          </transition>
+          <button class="btn btn-primary" style="min-width: 180px; padding: 10px 24px;" :disabled="savingPubInfo" @click="savePubInfo">
+            {{ savingPubInfo ? 'Salvando...' : 'Salvar Alterações' }}
+          </button>
+        </div>
+      </section>
+
+
+
+        </main>
       </div>
     </template>
 
@@ -1488,9 +1210,7 @@ const lotStats = computed(() => {
   const sold = lots.value.filter((l: any) => l.status === 'SOLD').length
   return { total, available, reserved, sold }
 })
-const activeTab = ref('lots')
-const commercialSubTab = ref('financing')
-const operationalSubTab = ref('scheduling')
+const activeSection = ref('configuracoes')
 const uploadingBanner = ref(false)
 const uploadingMedia = ref(false)
 const savingSettings = ref(false)
@@ -1608,16 +1328,17 @@ const saveLotDetails = async () => {
   savingLot.value = true
   try {
     const calc = lotContractArea.value
+    const toNum = (v: any) => v != null ? Number(v) : undefined
     const payload: Record<string, any> = {
       status: lotForm.value.status,
       block: lotForm.value.block || undefined,
       lotNumber: lotForm.value.lotNumber || undefined,
-      price: lotForm.value.price ?? undefined,
-      pricePerM2: lotForm.value.pricePerM2 ?? undefined,
-      frontage: lotForm.value.frontage ?? undefined,
-      depth: lotForm.value.depth ?? undefined,
-      sideLeft: lotForm.value.sideLeft ?? undefined,
-      sideRight: lotForm.value.sideRight ?? undefined,
+      price: toNum(lotForm.value.price),
+      pricePerM2: toNum(lotForm.value.pricePerM2),
+      frontage: toNum(lotForm.value.frontage),
+      depth: toNum(lotForm.value.depth),
+      sideLeft: toNum(lotForm.value.sideLeft),
+      sideRight: toNum(lotForm.value.sideRight),
       slope: lotForm.value.slope,
       panoramaUrl: lotForm.value.panoramaUrl || null,
       notes: lotForm.value.notes || undefined,
@@ -1788,9 +1509,14 @@ const loadSchedulingConfig = async () => {
 const saveSchedulingSettings = async () => {
   savingScheduling.value = true
   try {
+    const payload = {
+      ...schedulingForm.value,
+      scheduleInterval: Number(schedulingForm.value.scheduleInterval),
+      maxSimultaneous: Number(schedulingForm.value.maxSimultaneous),
+    }
     await fetchApi(`/scheduling/config/${projectId}`, {
       method: 'PATCH',
-      body: JSON.stringify(schedulingForm.value)
+      body: JSON.stringify(payload)
     })
     toastSuccess('Configurações de agendamento salvas!')
   } catch (e) {
@@ -1940,6 +1666,7 @@ const newWorkStage = ref({ label: '', percentage: 0 })
 // ── Nearby Places ─────────────────────────────────────────
 const hasAddress = computed(() => !!pubInfoForm.value.address?.trim())
 const nearbyEnabled = ref(true)
+const nearbyListExpanded = ref(false)
 const nearbyStatus = ref<any>(null)
 const nearbyRegenerating = ref(false)
 
@@ -1956,7 +1683,7 @@ const nearbyGrouped = computed(() => {
     if (!groups[item.category]) {
       groups[item.category] = { category: item.category, categoryLabel: item.categoryLabel, items: [] }
     }
-    groups[item.category].items.push(item)
+    groups[item.category]!.items.push(item)
   }
   return Object.values(groups)
 })
@@ -2290,24 +2017,24 @@ const loadAiConfigs = async () => {
 // ─────────────────────────────────────────────────────────
 
 // ── Tabs ─────────────────────────────────────────────────
-const tabs = [
-  { key: 'lots', label: '📍 Lotes' },
-  { key: 'public', label: '📄 Página Pública' },
-  { key: 'commercial', label: '💰 Comercial' },
-  { key: 'operational', label: '⚡ Operacional' },
-  { key: 'settings', label: '⚙️ Configurações' },
-]
-
-const commercialSubTabs = [
-  { key: 'financing', label: '🧮 Simulação Financeira' },
-  { key: 'payment', label: '💳 Pagamentos & Taxas' },
-  { key: 'corretores', label: '🤝 Corretores' },
-]
-
-const operationalSubTabs = [
-  { key: 'scheduling', label: '📅 Agendamento' },
-  { key: 'ai', label: '🤖 Assistente IA' },
-]
+const sidebarSections = computed(() => {
+  const sections = [
+    { id: 'configuracoes', icon: '⚙️', label: 'Configurações' },
+    { id: 'lotes', icon: '📍', label: 'Lotes' },
+    { id: 'pagina-publica', icon: '📄', label: 'Página Pública' },
+    { id: 'financeiro', icon: '🧮', label: 'Simulação Financeira' },
+    { id: 'agendamento', icon: '📅', label: 'Agendamento' },
+  ]
+  // Only show Pagamentos if there are global payment configs available
+  if (allConfigs.value.length > 0) {
+    sections.push({ id: 'pagamentos', icon: '💳', label: 'Pagamentos & Taxas' })
+  }
+  // Only show Assistente IA if there are AI configs available
+  if (aiConfigs.value.length > 0) {
+    sections.push({ id: 'assistente-ia', icon: '🤖', label: 'Assistente IA' })
+  }
+  return sections
+})
 
 const lotBadge = (s: string) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[s] || 'badge-neutral')
 const lotLabel = (s: string) => ({ AVAILABLE: 'Disponível', RESERVED: 'Reservado', SOLD: 'Vendido' }[s] || s)
@@ -2318,12 +2045,6 @@ const formatCurrencyToBrasilia = (val: number | string) => {
   const num = typeof val === 'string' ? parseFloat(val) : val
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num)
 }
-
-watch(activeTab, (newTab) => {
-  if (newTab === 'operational') {
-    loadSchedulingConfig()
-  }
-})
 
 const loadLotsPaginated = async (page = 1) => {
   try {
@@ -2411,7 +2132,19 @@ const togglePublish = async () => {
 const saveSettings = async () => {
   savingSettings.value = true; settingsError.value = ''; settingsSaved.value = false
   try {
-    project.value = await fetchApi(`/projects/${projectId}`, { method: 'PATCH', body: JSON.stringify(editForm.value) })
+    // Exclude paymentConditions (not in UpdateProjectDto)
+    const { paymentConditions: _pc, ...raw } = editForm.value
+    // Coerce numeric fields to ensure they're numbers, not strings
+    const settingsPayload = {
+      ...raw,
+      reservationFeeValue: raw.reservationFeeValue != null ? Number(raw.reservationFeeValue) : undefined,
+      reservationExpiryHours: raw.reservationExpiryHours != null ? Number(raw.reservationExpiryHours) : undefined,
+      minDownPaymentPercent: raw.minDownPaymentPercent != null ? Number(raw.minDownPaymentPercent) : undefined,
+      minDownPaymentValue: raw.minDownPaymentValue != null ? Number(raw.minDownPaymentValue) : undefined,
+      monthlyInterestRate: raw.monthlyInterestRate != null ? Number(raw.monthlyInterestRate) : undefined,
+      maxInstallments: raw.maxInstallments != null ? Number(raw.maxInstallments) : undefined,
+    }
+    project.value = await fetchApi(`/projects/${projectId}`, { method: 'PATCH', body: JSON.stringify(settingsPayload) })
     settingsSaved.value = true
     toastSuccess('Configurações salvas!')
     setTimeout(() => settingsSaved.value = false, 2000)
@@ -2486,7 +2219,7 @@ const deleteMedia = async (id: string) => {
 
 onMounted(async () => {
   await loadProject()
-  await loadCorretores()
+  await loadSchedulingConfig()
   if (typeof document !== 'undefined') {
     document.execCommand('defaultParagraphSeparator', false, 'p');
   }
@@ -2494,6 +2227,160 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* ─── Project Layout: Sidebar + Content ──────────────── */
+.project-layout {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  min-height: calc(100vh - 200px);
+}
+
+.project-sidebar {
+  position: sticky;
+  top: 24px;
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: var(--color-surface-400);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.sidebar-link:hover {
+  background: var(--glass-bg-heavy);
+  color: var(--color-surface-200);
+}
+
+.sidebar-link.active {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-primary-400, #34d399);
+  font-weight: 700;
+}
+
+.sidebar-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--glass-border-subtle);
+  margin: 4px 0;
+}
+
+.sidebar-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-tool-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: var(--color-surface-300);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  background: var(--glass-bg-heavy);
+  border: 1px solid var(--glass-border-subtle);
+}
+
+.sidebar-tool-link:hover {
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-400, #34d399);
+  transform: translateX(2px);
+}
+
+.project-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.content-section {
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+  .project-layout {
+    flex-direction: column;
+  }
+  .project-sidebar {
+    position: static;
+    flex: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .sidebar-link {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+  .sidebar-divider {
+    display: none;
+  }
+  .sidebar-tools {
+    flex-direction: row;
+    gap: 4px;
+  }
+  .sidebar-tool-link {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+/* ─── Existing Styles ──────────────────────────────────── */
 .media-card-v4 {
   position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border-subtle); background: var(--glass-bg-heavy); transition: all 0.2s; aspect-ratio: 16/10;
 }
@@ -2803,42 +2690,6 @@ onMounted(async () => {
   border: none !important;
 }
 
-/* Sub-tab navigation */
-.sub-tab-bar {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--glass-bg-heavy);
-  border-radius: 12px;
-  margin-bottom: 28px;
-  border: 1px solid var(--glass-border-subtle);
-  width: fit-content;
-}
-
-.sub-tab-btn {
-  padding: 8px 18px;
-  border: none;
-  background: transparent;
-  color: var(--color-surface-400);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.sub-tab-btn:hover {
-  background: var(--glass-bg);
-  color: var(--color-surface-200);
-}
-
-.sub-tab-btn.active {
-  background: var(--color-primary-600, #059669);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
-}
-
 /* Project Stats Bar */
 .project-stats-bar {
   display: flex;
@@ -2870,4 +2721,258 @@ onMounted(async () => {
 .stat-chip-success .stat-chip-value { color: #10b981; }
 .stat-chip-warning .stat-chip-value { color: #f59e0b; }
 .stat-chip-danger .stat-chip-value { color: #ef4444; }
+
+/* ── Página Pública layout ── */
+.pub-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pub-row {
+  display: grid;
+  gap: 20px;
+}
+.pub-row--2col {
+  grid-template-columns: 1fr 1fr;
+}
+.pub-row--3col {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.pub-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+}
+.pub-card--compact {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.pub-card__title {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-surface-200);
+  letter-spacing: -0.01em;
+}
+
+.pub-card__overlay-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.75);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.3);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.pub-card__overlay-btn:hover {
+  background: rgba(239,68,68,0.2);
+}
+
+.pub-card__upload-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 16px;
+  background: var(--glass-bg-heavy);
+  border: 1px solid var(--glass-border-subtle);
+  color: var(--color-surface-200);
+  font-size: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pub-card__upload-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+/* Empty / notices */
+.pub-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-surface-500);
+  background: var(--glass-bg-heavy);
+  border-radius: 8px;
+}
+
+.pub-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.pub-notice--warn {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+.pub-notice--ok {
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--color-surface-400);
+}
+.pub-notice--error {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+.pub-notice--neutral {
+  background: rgba(107, 114, 128, 0.08);
+  color: var(--color-surface-400);
+}
+
+/* Work stages */
+.pub-works-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pub-work-item {
+  background: var(--glass-bg-heavy);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+/* Inline forms */
+.pub-inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Sub-sections */
+.pub-sub-section {
+  background: var(--glass-bg-heavy);
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid var(--glass-border-subtle);
+  margin-bottom: 16px;
+}
+.pub-sub-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-surface-500);
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+/* Infra categories */
+.pub-infra-cat {
+  background: var(--glass-bg-heavy);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+/* Highlights list */
+.pub-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 8px;
+  background: var(--glass-bg);
+}
+
+/* Remove button */
+.pub-remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-surface-500);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.pub-remove-btn:hover {
+  color: #ef4444;
+  background: rgba(239,68,68,0.1);
+}
+
+/* Collapsible nearby */
+.pub-collapse-toggle {
+  background: none;
+  border: none;
+  color: var(--color-surface-400);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+.pub-collapse-toggle:hover {
+  color: var(--color-surface-200);
+}
+.pub-nearby-list {
+  margin-top: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--glass-bg-heavy);
+}
+.pub-nearby-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  border-radius: 4px;
+}
+.pub-nearby-item__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-surface-300);
+}
+.pub-nearby-item__dist {
+  color: var(--color-surface-500);
+  white-space: nowrap;
+  font-size: 0.68rem;
+}
+.pub-nearby-item__link {
+  color: #60a5fa;
+  font-size: 0.66rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pub-nearby-item__link:hover {
+  text-decoration: underline;
+}
+
+/* Save bar */
+.pub-save-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--glass-border-subtle);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .pub-row--2col,
+  .pub-row--3col {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

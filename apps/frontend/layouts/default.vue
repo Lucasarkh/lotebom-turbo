@@ -308,7 +308,7 @@ const handleLogout = async () => {
   max-width: 100%;
   overflow-x: hidden;
   background:
-    linear-gradient(rgba(10, 15, 13, 0.62), rgba(10, 15, 13, 0.62)),
+    linear-gradient(rgba(10, 15, 13, 1), rgba(10, 15, 13, 0.62)),
     url('/img/banner-hero.jpg') center / cover fixed;
   background-attachment: fixed;
   position: relative;

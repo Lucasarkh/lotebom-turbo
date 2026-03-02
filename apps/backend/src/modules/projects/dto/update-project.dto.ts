@@ -1,6 +1,7 @@
 import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus, ReservationFeeType } from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class UpdateProjectDto {
   @ApiPropertyOptional({ example: 'Residencial Parque dos Ipês v2' })
@@ -67,16 +68,21 @@ export class UpdateProjectDto {
     description: 'Exibe tabela de condições de pagamento nas páginas públicas'
   })
   @IsOptional()
+  @IsBoolean()
   showPaymentConditions?: boolean;
 
   @ApiPropertyOptional({
     description: 'Valor inicial do investimento (ex: 144000)'
   })
   @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
   startingPrice?: number;
 
   @ApiPropertyOptional({ description: 'Quantidade máxima de parcelas' })
   @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
   maxInstallments?: number;
 
   @ApiPropertyOptional({
@@ -123,6 +129,7 @@ export class UpdateProjectDto {
   })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   reservationExpiryHours?: number;
 
   @ApiPropertyOptional({
@@ -139,21 +146,25 @@ export class UpdateProjectDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   reservationFeeValue?: number;
 
   @ApiPropertyOptional({ description: 'Porcentagem de entrada mínima' })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   minDownPaymentPercent?: number;
 
   @ApiPropertyOptional({ description: 'Valor de entrada mínima fixa' })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   minDownPaymentValue?: number;
 
   @ApiPropertyOptional({ description: 'Taxa de juros mensal' })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   monthlyInterestRate?: number;
 
   @ApiPropertyOptional({ description: 'Indexador de correção monetária' })

@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { LotStatus, SlopeType } from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class UpsertLotDetailsDto {
   @ApiPropertyOptional({ enum: LotStatus, example: 'AVAILABLE' })
@@ -27,36 +28,43 @@ export class UpsertLotDetailsDto {
   @ApiPropertyOptional({ example: 120000 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   price?: number;
 
   @ApiPropertyOptional({ example: 928.0 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   pricePerM2?: number;
 
   @ApiPropertyOptional({ example: 300 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   areaM2?: number;
 
   @ApiPropertyOptional({ example: 12 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   frontage?: number;
 
   @ApiPropertyOptional({ example: 25 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   depth?: number;
 
   @ApiPropertyOptional({ example: 10 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   sideLeft?: number;
 
   @ApiPropertyOptional({ example: 10 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   sideRight?: number;
 
   @ApiPropertyOptional({ enum: SlopeType, example: 'FLAT' })

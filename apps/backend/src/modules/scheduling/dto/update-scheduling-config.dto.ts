@@ -1,5 +1,6 @@
 import { IsBoolean, IsInt, IsString, IsOptional, IsArray, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class UpdateSchedulingConfigDto {
   @ApiProperty({ required: false })
@@ -12,6 +13,7 @@ export class UpdateSchedulingConfigDto {
   @Min(15)
   @Max(240)
   @IsOptional()
+  @Type(() => Number)
   scheduleInterval?: number;
 
   @ApiProperty({ required: false })
@@ -38,6 +40,7 @@ export class UpdateSchedulingConfigDto {
   @IsInt()
   @Min(1)
   @IsOptional()
+  @Type(() => Number)
   maxSimultaneous?: number;
 
   @ApiProperty({ required: false })
