@@ -2,7 +2,8 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  Inject
+  Inject,
+  Logger
 } from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -10,12 +11,16 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectStatus, Project, User, UserRole } from '@prisma/client';
 import { PaginationQueryDto } from '@common/dto/pagination-query.dto';
 import { PaginatedResponse } from '@common/dto/paginated-response.dto';
+import { NearbyService } from '@modules/nearby/nearby.service';
 
 @Injectable()
 export class ProjectsService {
+  private readonly logger = new Logger(ProjectsService.name);
+
   constructor(
     private prisma: PrismaService,
-    @Inject('REDIS_SERVICE') private redis: any
+    @Inject('REDIS_SERVICE') private redis: any,
+    private nearbyService: NearbyService
   ) {}
 
   async create(tenantId: string, dto: CreateProjectDto, user?: User) {
@@ -263,7 +268,7 @@ export class ProjectsService {
       if (existing) throw new ConflictException('Domínio já em uso.');
     }
 
-    return (this.prisma as any).project.update({
+    const updated = await (this.prisma as any).project.update({
       where: { id },
       data: {
         ...(dto.name && { name: dto.name }),
@@ -343,7 +348,9 @@ export class ProjectsService {
           reservationFeeValue: dto.reservationFeeValue
         }),
         ...(dto.aiEnabled !== undefined && { aiEnabled: dto.aiEnabled }),
-        ...(dto.aiConfigId !== undefined && { aiConfigId: dto.aiConfigId || null })
+        ...(dto.aiConfigId !== undefined && { aiConfigId: dto.aiConfigId || null }),
+        ...(dto.legalNotice !== undefined && { legalNotice: dto.legalNotice }),
+        ...(dto.nearbyEnabled !== undefined && { nearbyEnabled: dto.nearbyEnabled })
       },
       include: {
         tenant: { select: { slug: true, name: true } },
@@ -353,6 +360,16 @@ export class ProjectsService {
         }
       }
     });
+
+    // Trigger nearby regeneration if address changed
+    if (dto.address !== undefined && dto.address !== project.address) {
+      this.logger.log(`Address changed for project ${id}, triggering nearby regeneration`);
+      this.nearbyService.generateNearby(id).catch((err) => {
+        this.logger.error(`Nearby generation failed after address update: ${err.message}`);
+      });
+    }
+
+    return updated;
   }
 
   async publish(tenantId: string, id: string) {

@@ -941,6 +941,47 @@
                 <input v-model="pubInfoForm.googleMapsUrl" class="form-input btn-sm" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
               </div>
             </section>
+
+            <!-- Section: Nearby Places -->
+            <section class="card" style="padding: 24px; margin: 0;">
+              <div class="flex items-center gap-3" style="margin-bottom: 16px;">
+                <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.12); color: #34d399; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🏪</div>
+                <div style="flex: 1;">
+                  <h3 style="margin:0; font-size: 1rem;">Proximidades</h3>
+                  <p style="margin: 2px 0 0; font-size: 0.7rem; color: #888;">Locais próximos ao empreendimento</p>
+                </div>
+                <label class="toggle-switch" style="margin-left: auto;">
+                  <input type="checkbox" v-model="nearbyEnabled" @change="toggleNearby" :disabled="!authStore.canEdit" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div v-if="nearbyStatus" style="margin-bottom: 16px;">
+                <div v-if="nearbyStatus.status === 'ok'" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(16, 185, 129, 0.08); border-radius: 8px; font-size: 0.8rem;">
+                  <span style="color: #10b981;">✓</span>
+                  <span style="color: #6b7280;">{{ nearbyStatus.itemCount }} locais encontrados</span>
+                  <span v-if="nearbyStatus.generatedAt" style="color: #9ca3af; margin-left: auto; font-size: 0.7rem;">{{ new Date(nearbyStatus.generatedAt).toLocaleDateString('pt-BR') }}</span>
+                </div>
+                <div v-else-if="nearbyStatus.status === 'error'" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; font-size: 0.8rem;">
+                  <span style="color: #ef4444;">✗</span>
+                  <span style="color: #6b7280;">{{ nearbyStatus.errorMessage || 'Erro ao gerar proximidades' }}</span>
+                </div>
+                <div v-else style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(107, 114, 128, 0.08); border-radius: 8px; font-size: 0.8rem;">
+                  <span style="color: #9ca3af;">—</span>
+                  <span style="color: #6b7280;">Proximidades ainda não geradas</span>
+                </div>
+              </div>
+
+              <button
+                class="btn btn-secondary btn-sm"
+                style="width: 100%;"
+                @click="regenerateNearby"
+                :disabled="!authStore.canEdit || nearbyRegenerating"
+              >
+                <span v-if="nearbyRegenerating">Gerando...</span>
+                <span v-else>🔄 Regerar Proximidades</span>
+              </button>
+            </section>
           </div>
 
           <!-- Column 2 -->
@@ -1137,6 +1178,18 @@
             </div>
           </section>
         </div>
+
+        <!-- Section: Informações Legais -->
+        <section class="card" style="padding: 24px; margin-top: 12px;">
+          <div class="flex items-center gap-3" style="margin-bottom: 16px;">
+            <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">⚖️</div>
+            <div style="flex: 1;">
+              <h3 style="margin:0; font-size: 1rem;">Informações Legais / Registros</h3>
+              <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--color-surface-400);">Texto exibido no final da página pública, antes do rodapé. Ideal para dados de registro, aprovações e licenças.</p>
+            </div>
+          </div>
+          <textarea v-model="pubInfoForm.legalNotice" class="form-textarea" rows="5" placeholder="Ex: Loteamento aprovado pela Prefeitura Municipal, através do Decreto n.º... Registrado no Cartório de Registro de Imóveis..." :disabled="!authStore.canEdit" style="font-size: 0.85rem; line-height: 1.6;"></textarea>
+        </section>
 
         <!-- Footer-ish Action Bar -->
         <div v-if="authStore.canEdit" class="flex justify-end items-center gap-4" style="margin-top: 48px;">
@@ -1761,12 +1814,54 @@ const pubInfoForm = ref({
   address: '',
   googleMapsUrl: '',
   youtubeVideoUrl: '',
-  constructionStatus: [] as { label: string, percentage: number }[]
+  constructionStatus: [] as { label: string, percentage: number }[],
+  legalNotice: ''
 })
 const savingPubInfo = ref(false)
 const pubInfoSaved = ref(false)
 const newHighlight = ref({ label: '', value: '' })
 const newWorkStage = ref({ label: '', percentage: 0 })
+
+// ── Nearby Places ─────────────────────────────────────────
+const nearbyEnabled = ref(true)
+const nearbyStatus = ref<any>(null)
+const nearbyRegenerating = ref(false)
+
+const loadNearbyStatus = async () => {
+  if (!project.value?.id) return
+  try {
+    nearbyStatus.value = await fetchApi(`/nearby/${project.value.id}/status`)
+    nearbyEnabled.value = nearbyStatus.value?.enabled ?? true
+  } catch { /* silent */ }
+}
+
+const toggleNearby = async () => {
+  if (!project.value?.id) return
+  try {
+    await fetchApi(`/nearby/${project.value.id}/toggle`, {
+      method: 'PATCH',
+      body: JSON.stringify({ enabled: nearbyEnabled.value })
+    })
+    toastSuccess(nearbyEnabled.value ? 'Proximidades ativadas' : 'Proximidades desativadas')
+  } catch (e: any) { toastFromError(e, 'Erro ao alterar proximidades') }
+}
+
+const regenerateNearby = async () => {
+  if (!project.value?.id) return
+  nearbyRegenerating.value = true
+  try {
+    await fetchApi(`/nearby/${project.value.id}/generate`, { method: 'POST' })
+    toastSuccess('Geração de proximidades iniciada!')
+    // Poll status after a delay
+    setTimeout(async () => {
+      await loadNearbyStatus()
+      nearbyRegenerating.value = false
+    }, 5000)
+  } catch (e: any) {
+    toastFromError(e, 'Erro ao regerar proximidades')
+    nearbyRegenerating.value = false
+  }
+}
 
 // Infraestrutura Categorizada
 const newInfraCategory = ref('')
@@ -1851,7 +1946,8 @@ const savePubInfo = async () => {
         address: pubInfoForm.value.address || null,
         googleMapsUrl: mapUrl || null,
         youtubeVideoUrl: ytUrl || null,
-        constructionStatus: pubInfoForm.value.constructionStatus
+        constructionStatus: pubInfoForm.value.constructionStatus,
+        legalNotice: pubInfoForm.value.legalNotice || null
       }),
     })
     pubInfoSaved.value = true
@@ -2146,9 +2242,12 @@ const loadProject = async () => {
       address: p.address || '',
       googleMapsUrl: p.googleMapsUrl || '',
       youtubeVideoUrl: p.youtubeVideoUrl || '',
-      constructionStatus: Array.isArray(p.constructionStatus) ? p.constructionStatus : []
+      constructionStatus: Array.isArray(p.constructionStatus) ? p.constructionStatus : [],
+      legalNotice: p.legalNotice || ''
     }
     initialEditorContent.value = p.locationText || '<p></p>'
+    // Load nearby status
+    loadNearbyStatus()
   } catch (e) {
     error.value = 'Não foi possível carregar o projeto.'
     toastFromError(e, 'Erro ao carregar projeto')

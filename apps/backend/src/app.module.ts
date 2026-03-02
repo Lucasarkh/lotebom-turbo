@@ -29,6 +29,8 @@ import { SendPulseModule } from '@infra/sendpulse/sendpulse.module';
 import { EmailQueueModule } from '@infra/email-queue/email-queue.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { BackupModule } from '@infra/backup/backup.module';
+import { GoogleModule } from '@infra/google/google.module';
+import { NearbyModule } from '@modules/nearby/nearby.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -75,7 +77,9 @@ import { AppController } from './app.controller';
     SchedulingModule,
     AgenciesModule,
     SystemSettingsModule,
-    BackupModule
+    BackupModule,
+    GoogleModule,
+    NearbyModule
   ],
   controllers: [AppController],
   providers: [

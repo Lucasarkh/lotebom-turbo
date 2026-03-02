@@ -24,6 +24,7 @@
         :has-lots="unifiedAvailableLots.length > 0"
         :has-gallery="!!project.projectMedias?.length"
         :has-location="!!project.googleMapsUrl || !!project.address"
+        :has-nearby="hasNearbyData"
         :has-scheduling="schedulingConfig?.enabled"
       />
 
@@ -345,6 +346,9 @@
         </div>
       </section>
 
+      <!-- Proximidades -->
+      <NearbyPlaces v-if="projectSlug" :project-slug="projectSlug" />
+
       <!-- Agendamento Section -->
       <section v-if="project && schedulingConfig?.enabled" class="v4-section" id="agendamento" style="background: #1d1d1f; color: white;">
         <div class="v4-container">
@@ -464,6 +468,16 @@
                 </form>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Legal Notice -->
+      <section v-if="project.legalNotice" class="v4-legal-notice">
+        <div class="v4-container">
+          <div class="v4-legal-inner">
+            <div class="v4-legal-icon">📋</div>
+            <p class="v4-legal-text">{{ project.legalNotice }}</p>
           </div>
         </div>
       </section>
@@ -699,6 +713,7 @@ const plantMap = ref<PlantMap | null>(null)
 const { getPublicPlantMap } = usePublicPlantMap()
 const panoramas = ref<Panorama[]>([])
 const schedulingConfig = ref<any>(null)
+const hasNearbyData = ref(false)
 const { getPublicPanoramas } = usePublicPanorama()
 
 const leadForm = ref({ name: '', email: '', phone: '', mapElementId: '', message: '' })
@@ -1036,6 +1051,12 @@ onMounted(async () => {
       getPublicPanoramas(p.value.id, isPreview.value).then((panos) => {
         panoramas.value = panos ?? []
       }).catch(() => {})
+      // Check if nearby data exists (non-blocking, for side menu)
+      if (!isPreview.value) {
+        fetchPublic(`/p/${projectSlug.value}/nearby`).then((res) => {
+          hasNearbyData.value = res?.enabled && res?.items?.length > 0
+        }).catch(() => {})
+      }
     }
     else error.value = (p.reason as any)?.message || 'Projeto não encontrado'
     if (c.status === 'fulfilled' && c.value) corretor.value = c.value
@@ -2507,6 +2528,36 @@ function openLightbox(idx: number) {
   width: 100%; background: var(--v4-primary); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: background 0.2s;
 }
 .v4-btn-submit:hover { background: var(--v4-primary-hover); }
+
+/* Legal Notice */
+.v4-legal-notice {
+  padding: 40px 0;
+  background: var(--v4-bg-alt);
+  border-top: 1px solid var(--v4-border);
+}
+.v4-legal-inner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 28px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--v4-border);
+  border-radius: 12px;
+}
+.v4-legal-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.v4-legal-text {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--v4-text-muted);
+  margin: 0;
+  white-space: pre-line;
+}
 
 /* Footer */
 .v4-footer { padding: 80px 0; border-top: 1px solid var(--v4-border); background: var(--v4-bg-alt); }

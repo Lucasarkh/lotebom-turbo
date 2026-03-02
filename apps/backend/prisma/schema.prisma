@@ -264,6 +264,7 @@ model Project {
   paymentConditionsSummary String? @db.Text
   youtubeVideoUrl  String?
   constructionStatus Json?
+  legalNotice     String?       @db.Text
   reservationFeeType    ReservationFeeType @default(FIXED)
   reservationFeeValue   Decimal            @default(500) @db.Decimal(12, 2)
   reservationExpiryHours Int               @default(24)
@@ -281,11 +282,20 @@ model Project {
   campaigns        Campaign[]
   paymentGateways  PaymentConfig[] @relation("ProjectGateways")
 
+  // Geolocation & Nearby
+  latitude            Float?
+  longitude           Float?
+  nearbyEnabled       Boolean  @default(true)
+  nearbyGeneratedAt   DateTime?
+  nearbyStatus        String?  // ok | error
+  nearbyErrorMessage  String?  @db.Text
+
   aiEnabled        Boolean       @default(false)
   aiConfigId       String?
   aiConfig         AiConfig?     @relation(fields: [aiConfigId], references: [id], onDelete: SetNull)
   schedulingConfig SchedulingConfig?
   schedulings      Scheduling[]
+  nearbyItems      NearbyItem[]
 
   @@index([tenantId])
   @@index([slug])
@@ -847,4 +857,30 @@ model Scheduling {
 
   @@index([tenantId, projectId])
   @@index([scheduledAt])
+}
+
+// ─── NEARBY PLACES ──────────────────────────────────────
+
+model NearbyItem {
+  id                      String   @id @default(cuid())
+  projectId               String
+  project                 Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category                String   // school, supermarket, pharmacy, hospital, park, restaurant, gym, shopping_mall
+  placeId                 String   // Google place_id
+  name                    String
+  shortAddress            String?
+  lat                     Float
+  lng                     Float
+  distanceMeters          Int
+  durationSecondsDriving  Int?
+  durationSecondsWalking  Int?
+  distanceLabel           String   // "2,3 km"
+  drivingLabel            String?  // "6 min"
+  walkingLabel            String?  // "18 min"
+  routeUrl                String   @db.Text
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([projectId])
+  @@unique([projectId, placeId])
 }

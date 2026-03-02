@@ -170,4 +170,14 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   financingDisclaimer?: string;
+
+  @ApiPropertyOptional({ description: 'Informações legais / registros do loteamento exibidas na página pública' })
+  @IsOptional()
+  @IsString()
+  legalNotice?: string;
+
+  @ApiPropertyOptional({ description: 'Ativar/desativar seção de proximidades' })
+  @IsOptional()
+  @IsBoolean()
+  nearbyEnabled?: boolean;
 }
