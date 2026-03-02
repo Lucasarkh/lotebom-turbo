@@ -19,6 +19,26 @@
           </div>
           <h1 style="margin: 0; font-size: 1.75rem; letter-spacing: -0.02em;">{{ project.name }}</h1>
           <p style="margin: 0; color: var(--color-surface-400); font-weight: 500;">{{ project.description || 'Sem descrição' }}</p>
+
+          <!-- Quick Stats -->
+          <div v-if="lots.length > 0" class="project-stats-bar">
+            <div class="stat-chip">
+              <span class="stat-chip-value">{{ lotStats.total }}</span>
+              <span class="stat-chip-label">Lotes</span>
+            </div>
+            <div class="stat-chip stat-chip-success">
+              <span class="stat-chip-value">{{ lotStats.available }}</span>
+              <span class="stat-chip-label">Disponíveis</span>
+            </div>
+            <div class="stat-chip stat-chip-warning">
+              <span class="stat-chip-value">{{ lotStats.reserved }}</span>
+              <span class="stat-chip-label">Reservados</span>
+            </div>
+            <div class="stat-chip stat-chip-danger">
+              <span class="stat-chip-value">{{ lotStats.sold }}</span>
+              <span class="stat-chip-label">Vendidos</span>
+            </div>
+          </div>
         </div>
 
         <div class="flex items-center gap-4">
@@ -97,6 +117,20 @@
         </div>
       </div>
 
+      <!-- Sub-tabs: Comercial -->
+      <div v-if="activeTab === 'commercial'" class="sub-tab-bar">
+        <button v-for="st in commercialSubTabs" :key="st.key" class="sub-tab-btn" :class="{ active: commercialSubTab === st.key }" @click="commercialSubTab = st.key">
+          {{ st.label }}
+        </button>
+      </div>
+
+      <!-- Sub-tabs: Operacional -->
+      <div v-if="activeTab === 'operational'" class="sub-tab-bar">
+        <button v-for="st in operationalSubTabs" :key="st.key" class="sub-tab-btn" :class="{ active: operationalSubTab === st.key }" @click="operationalSubTab = st.key">
+          {{ st.label }}
+        </button>
+      </div>
+
       <!-- Tab: Configurações -->
       <div v-if="activeTab === 'settings'">
         <div class="card" style="max-width: 600px;">
@@ -129,8 +163,8 @@
         </div>
       </div>
 
-      <!-- Tab: Pagamentos -->
-      <div v-if="activeTab === 'payment'">
+      <!-- Tab: Comercial > Pagamentos -->
+      <div v-if="activeTab === 'commercial' && commercialSubTab === 'payment'">
         <div class="card" style="max-width: 800px;">
           <h3>💳 Ativar Gateways de Pagamento</h3>
           <p class="text-muted">Selecione abaixo quais perfis de pagamento globais você deseja habilitar para este projeto.</p>
@@ -177,12 +211,18 @@
             </p>
           </div>
 
-          <!-- NEW: Reservation Fee Config -->
+          <!-- Reservation Fee Config -->
           <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--glass-border-subtle);">
             <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
               <span>🎟️</span> Taxa de Reserva Online
             </h3>
             <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure o valor que o cliente deve pagar para reservar um lote online via cartão ou PIX.</p>
+
+            <!-- Guard: no gateways active -->
+            <div v-if="activeConfigs.length === 0 && allConfigs.length > 0" style="padding: 12px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 10px; margin-bottom: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;">
+              <span>⚠️</span>
+              <span style="color: #d97706;">Nenhum gateway de pagamento habilitado para este projeto. Ative um acima para que a reserva online funcione.</span>
+            </div>
             
             <div class="grid grid-cols-2 gap-6">
               <div class="form-group">
@@ -221,8 +261,8 @@
         </div>
       </div>
 
-      <!-- Tab: AI -->
-      <div v-if="activeTab === 'ai'">
+      <!-- Tab: Operacional > Assistente IA -->
+      <div v-if="activeTab === 'operational' && operationalSubTab === 'ai'">
         <div class="card" style="max-width: 600px;">
           <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
             <span>🤖</span> Assistente de IA
@@ -263,8 +303,8 @@
         </div>
       </div>
 
-      <!-- Tab: Agendamento -->
-      <div v-if="activeTab === 'scheduling'">
+      <!-- Tab: Operacional > Agendamento -->
+      <div v-if="activeTab === 'operational' && operationalSubTab === 'scheduling'">
         <div class="card" style="max-width: 900px;">
           <div class="flex justify-between items-center" style="margin-bottom: 24px;">
             <div>
@@ -384,7 +424,12 @@
             </div>
 
             <div class="flex justify-end pt-8" style="border-top: 1px solid var(--glass-border-subtle); margin-top: 32px;">
-              <button class="btn btn-primary" @click="saveSchedulingSettings" :disabled="savingScheduling" style="min-width: 200px; height: 48px; border-radius: 12px;">
+              <!-- Guard: enabled but no days selected -->
+              <div v-if="schedulingForm.enabled && schedulingForm.availableDays.length === 0" style="padding: 10px 14px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 8px; margin-right: auto; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                <span>❌</span>
+                <span style="color: #f87171;">Selecione ao menos um dia da semana para habilitar o agendamento.</span>
+              </div>
+              <button class="btn btn-primary" @click="saveSchedulingSettings" :disabled="savingScheduling || (schedulingForm.enabled && schedulingForm.availableDays.length === 0)" style="min-width: 200px; height: 48px; border-radius: 12px;">
                 {{ savingScheduling ? 'Salvando...' : '💾 Salvar Configuração de Agenda' }}
               </button>
             </div>
@@ -392,8 +437,8 @@
         </div>
       </div>
 
-      <!-- Tab: Financiamento -->
-      <div v-if="activeTab === 'financing'" class="financing-layout-v4">
+      <!-- Tab: Comercial > Simulação Financeira -->
+      <div v-if="activeTab === 'commercial' && commercialSubTab === 'financing'" class="financing-layout-v4">
         <div class="card" style="flex: 1; max-width: 800px;">
           <h3 style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
             <span>🧮</span> Regras de Simulação Financeira
@@ -1251,8 +1296,17 @@
         </div>
       </div>
 
-      <!-- Tab: Corretores -->
-      <div v-if="activeTab === 'corretores'">
+      <!-- Tab: Comercial > Corretores -->
+      <div v-if="activeTab === 'commercial' && commercialSubTab === 'corretores'">
+        <!-- Warning: Project not published -->
+        <div v-if="project.status !== 'PUBLISHED'" style="padding: 14px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; margin-bottom: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.2rem;">⚠️</span>
+          <div>
+            <span style="color: #fbbf24; font-weight: 600;">Projeto não publicado</span>
+            <p style="margin: 2px 0 0; color: var(--color-surface-400); font-size: 0.8rem;">Os links de corretores só estarão acessíveis após publicar o projeto.</p>
+          </div>
+        </div>
+
         <div class="card" style="margin-bottom: 20px;">
           <h3 style="margin-bottom: 8px;">Links de Corretor</h3>
           <p style="color: var(--color-surface-400); font-size:0.875rem;">Cada corretor tem um link personalizado. Quando acessado, a página exibe os dados do corretor para contato. Leads capturados por esse link são vinculados ao corretor.</p>
@@ -1426,7 +1480,17 @@ const mapElements = ref<any[]>([])
 const lots = ref<any[]>([])
 const lotsMeta = ref({ totalItems: 0, itemCount: 0, itemsPerPage: 50, totalPages: 0, currentPage: 1 })
 const media = ref<Media[]>([])
+
+const lotStats = computed(() => {
+  const total = lots.value.length
+  const available = lots.value.filter((l: any) => l.status === 'AVAILABLE').length
+  const reserved = lots.value.filter((l: any) => l.status === 'RESERVED').length
+  const sold = lots.value.filter((l: any) => l.status === 'SOLD').length
+  return { total, available, reserved, sold }
+})
 const activeTab = ref('lots')
+const commercialSubTab = ref('financing')
+const operationalSubTab = ref('scheduling')
 const uploadingBanner = ref(false)
 const uploadingMedia = ref(false)
 const savingSettings = ref(false)
@@ -2228,12 +2292,21 @@ const loadAiConfigs = async () => {
 // ── Tabs ─────────────────────────────────────────────────
 const tabs = [
   { key: 'lots', label: '📍 Lotes' },
-  { key: 'public', label: '📄 Pág. Pública' },
-  { key: 'financing', label: '🧮 Simulação' },
+  { key: 'public', label: '📄 Página Pública' },
+  { key: 'commercial', label: '💰 Comercial' },
+  { key: 'operational', label: '⚡ Operacional' },
+  { key: 'settings', label: '⚙️ Configurações' },
+]
+
+const commercialSubTabs = [
+  { key: 'financing', label: '🧮 Simulação Financeira' },
+  { key: 'payment', label: '💳 Pagamentos & Taxas' },
+  { key: 'corretores', label: '🤝 Corretores' },
+]
+
+const operationalSubTabs = [
   { key: 'scheduling', label: '📅 Agendamento' },
-  { key: 'payment', label: '💳 Pagamentos' },
   { key: 'ai', label: '🤖 Assistente IA' },
-  { key: 'settings', label: '⚙️ Config' },
 ]
 
 const lotBadge = (s: string) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[s] || 'badge-neutral')
@@ -2247,7 +2320,7 @@ const formatCurrencyToBrasilia = (val: number | string) => {
 }
 
 watch(activeTab, (newTab) => {
-  if (newTab === 'scheduling') {
+  if (newTab === 'operational') {
     loadSchedulingConfig()
   }
 })
@@ -2729,4 +2802,72 @@ onMounted(async () => {
   color: #fff !important;
   border: none !important;
 }
+
+/* Sub-tab navigation */
+.sub-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--glass-bg-heavy);
+  border-radius: 12px;
+  margin-bottom: 28px;
+  border: 1px solid var(--glass-border-subtle);
+  width: fit-content;
+}
+
+.sub-tab-btn {
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  color: var(--color-surface-400);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.sub-tab-btn:hover {
+  background: var(--glass-bg);
+  color: var(--color-surface-200);
+}
+
+.sub-tab-btn.active {
+  background: var(--color-primary-600, #059669);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+/* Project Stats Bar */
+.project-stats-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--glass-bg-heavy);
+  border-radius: 8px;
+  border: 1px solid var(--glass-border-subtle);
+  font-size: 0.75rem;
+}
+
+.stat-chip-value {
+  font-weight: 800;
+  color: var(--color-surface-100);
+}
+
+.stat-chip-label {
+  color: var(--color-surface-400);
+  font-weight: 500;
+}
+
+.stat-chip-success .stat-chip-value { color: #10b981; }
+.stat-chip-warning .stat-chip-value { color: #f59e0b; }
+.stat-chip-danger .stat-chip-value { color: #ef4444; }
 </style>

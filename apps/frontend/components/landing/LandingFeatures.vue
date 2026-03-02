@@ -105,6 +105,11 @@
     margin: 0 auto 80px;
   }
 }
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+  }
+}
 
 .section-title {
   font-size: 2.25rem;
