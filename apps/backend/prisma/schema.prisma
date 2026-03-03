@@ -125,6 +125,27 @@ enum PlantHotspotLinkType {
   NONE
 }
 
+// ─── BILLING ENUMS ───────────────────────────────────────
+
+enum BillingStatus {
+  OK
+  GRACE_PERIOD   // Within 5-day tolerance
+  INADIMPLENTE   // Past tolerance, features blocked
+  CANCELLED
+}
+
+enum FeatureCode {
+  AI_CHAT
+  MAP_360
+  GOOGLE_API
+  LEADS
+  PANORAMA
+  PLANT_MAP
+  SCHEDULING
+  CAMPAIGNS
+  NEARBY
+}
+
 // ─── CORE MODELS ────────────────────────────────────────
 
 model Tenant {
@@ -135,6 +156,12 @@ model Tenant {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // Billing fields
+  stripeCustomerId  String?        @unique
+  billingStatus     BillingStatus  @default(OK)
+  billingEmail      String?
+  gracePeriodEnd    DateTime?      // Set when payment fails, cleared when paid
 
   users         User[]
   projects      Project[]
@@ -154,6 +181,11 @@ model Tenant {
   schedulings       Scheduling[]
   agencies          Agency[]
   invites           Invite[]
+
+  // Billing relations
+  subscription      TenantSubscription?
+  tenantFeatures    TenantFeature[]
+  billingInvoices   BillingInvoice[]
 }
 
 model Agency {
@@ -887,4 +919,136 @@ model NearbyItem {
 
   @@index([projectId])
   @@unique([projectId, placeId])
+}
+
+// ─── BILLING & SUBSCRIPTIONS ─────────────────────────────
+
+model TenantSubscription {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId  String?  @unique
+  stripePriceId         String?  // Default base price (if any)
+  status                String   @default("active") // active, past_due, canceled, trialing
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  billingCycleAnchor    DateTime? // Custom billing date (legacy)
+  billingDay            Int?      // Day of month for billing (1-28)
+  cancelAtPeriodEnd     Boolean  @default(false)
+  trialEnd              DateTime?
+  comboId               String?  // Reference to applied combo
+  combo                 FeatureCombo? @relation(fields: [comboId], references: [id], onDelete: SetNull)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  items TenantSubscriptionItem[]
+
+  @@index([stripeSubscriptionId])
+  @@index([comboId])
+}
+
+model TenantSubscriptionItem {
+  id                       String      @id @default(cuid())
+  subscriptionId           String
+  subscription             TenantSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  featureCode              FeatureCode
+  stripeSubscriptionItemId String?     @unique
+  stripePriceId            String?
+  customPriceCents         Int?        // SysAdmin-defined price in cents for this tenant
+  isActive                 Boolean     @default(true)
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+
+  @@unique([subscriptionId, featureCode])
+  @@index([subscriptionId])
+}
+
+model TenantFeature {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  featureCode FeatureCode
+  isActive    Boolean     @default(true)
+  activatedAt DateTime    @default(now())
+  deactivatedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([tenantId, featureCode])
+  @@index([tenantId])
+}
+
+model BillingInvoice {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stripeInvoiceId    String   @unique
+  amountDue          Int      // cents
+  amountPaid         Int      @default(0)
+  currency           String   @default("brl")
+  status             String   // draft, open, paid, void, uncollectible
+  invoiceUrl         String?
+  invoicePdf         String?
+  periodStart        DateTime?
+  periodEnd          DateTime?
+  dueDate            DateTime?
+  paidAt             DateTime?
+  attemptCount       Int      @default(0)
+  lastAttemptAt      DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+// ─── FEATURE CATALOG (SysAdmin-managed) ──────────────────
+
+model FeatureCatalog {
+  id              String      @id @default(cuid())
+  code            FeatureCode @unique
+  name            String      // Display name: "Chat IA", "Mapa 360", etc.
+  description     String?     @db.Text
+  defaultPriceCents Int       @default(0) // Default monthly price in cents
+  stripePriceId   String?     // Default Stripe Price ID
+  stripeProductId String?     // Stripe Product ID
+  isAvailable     Boolean     @default(true) // Globally available for purchase
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+// ─── FEATURE COMBOS (SysAdmin-managed bundles) ───────────
+
+model FeatureCombo {
+  id              String            @id @default(cuid())
+  name            String            // e.g. "Plano Básico", "Plano Premium"
+  description     String?           @db.Text
+  discountPercent Int               @default(0) // 0-100 percentage discount on sum
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  items           FeatureComboItem[]
+  subscriptions   TenantSubscription[]
+}
+
+model FeatureComboItem {
+  id              String      @id @default(cuid())
+  comboId         String
+  combo           FeatureCombo @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  featureCode     FeatureCode
+  overridePriceCents Int?     // If set, overrides catalog default price within this combo
+  createdAt       DateTime    @default(now())
+
+  @@unique([comboId, featureCode])
+  @@index([comboId])
+}
+
+// ─── SYSTEM METADATA ─────────────────────────────────────
+// Key-value store for system-level flags (e.g. seed tracking)
+model SystemMeta {
+  key       String   @id
+  value     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

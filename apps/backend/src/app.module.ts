@@ -21,6 +21,7 @@ import { PaymentModule } from '@modules/payment/payment.module';
 import { AiModule } from '@modules/ai/ai.module';
 import { SchedulingModule } from '@modules/scheduling/scheduling.module';
 import { AgenciesModule } from '@modules/agencies/agencies.module';
+import { BillingModule } from '@modules/billing/billing.module';
 import { DbModule } from '@infra/db/db.module';
 import { RedisModule } from '@infra/redis/redis.module';
 import { SystemSettingsModule } from '@modules/system-settings/system-settings.module';
@@ -79,7 +80,8 @@ import { AppController } from './app.controller';
     SystemSettingsModule,
     BackupModule,
     GoogleModule,
-    NearbyModule
+    NearbyModule,
+    BillingModule
   ],
   controllers: [AppController],
   providers: [

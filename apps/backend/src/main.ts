@@ -10,7 +10,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true, // Required for Stripe webhook signature verification
+  });
 
   // Removendo headers que revelam tecnologia (obrigatório para auditoria)
   app.disable('x-powered-by');

@@ -77,6 +77,10 @@ export class TenantsService {
       slug: t.slug,
       customDomain: t.customDomain,
       isActive: t.isActive,
+      billingStatus: t.billingStatus || 'OK',
+      stripeCustomerId: t.stripeCustomerId || null,
+      billingEmail: t.billingEmail || null,
+      gracePeriodEnd: t.gracePeriodEnd || null,
       createdAt: t.createdAt,
       metrics: {
         brokers: t._count.users,

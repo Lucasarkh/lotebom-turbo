@@ -43,5 +43,7 @@ npx prisma migrate deploy --schema ./prisma/schema.prisma 2>&1 || {
 echo "[entrypoint] Migrations complete."
 
 # ── 3. Start the application ─────────────────────
+# NOTE: Seed is applied automatically on first startup via SeedRunnerService.
+# It checks the SystemMeta table and only runs once.
 echo "[entrypoint] Starting NestJS application..."
 exec node dist/main.js
