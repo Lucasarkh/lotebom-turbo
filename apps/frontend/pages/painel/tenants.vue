@@ -63,12 +63,13 @@
     </div>
 
     <!-- Create Tenant Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
+    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+      <div class="modal modal-lg" @click.stop>
         <div class="modal-header">
           <h2>{{ editingId ? 'Editar Loteadora' : 'Nova Loteadora' }}</h2>
-          <button class="close-btn" @click="showModal = false">&times;</button>
+          <button class="modal-close" @click="showModal = false">&times;</button>
         </div>
+        <div class="modal-body">
         <form @submit.prevent="handleCreate">
           <div class="form-group">
             <label class="form-label">Nome da Empresa</label>
@@ -102,25 +103,26 @@
           
           <div v-if="error" class="alert alert-error">{{ error }}</div>
           
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline" @click="showModal = false">Cancelar</button>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" @click="showModal = false">Cancelar</button>
             <button type="submit" class="btn btn-primary" :disabled="saving">
               {{ saving ? 'Processando...' : (editingId ? 'Salvar Alterações' : 'Criar Loteadora') }}
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
 
     <!-- Projects List Modal -->
-    <div v-if="showProjectsModal" class="modal-overlay">
-      <div class="modal-content" style="max-width: 900px;">
+    <div v-if="showProjectsModal" class="modal-overlay" @click.self="showProjectsModal = false">
+      <div class="modal modal-xl" @click.stop>
         <div class="modal-header">
           <div>
             <h2>Empreendimentos - {{ selectedTenant?.name }}</h2>
-            <p style="font-size: 0.85rem; color: var(--color-surface-400); margin: 0;">Configure domínios customizados para projetos desta loteadora.</p>
+            <p style="font-size: 0.85rem; color: var(--color-surface-200); margin: 0;">Configure domínios customizados para projetos desta loteadora.</p>
           </div>
-          <button class="close-btn" @click="showProjectsModal = false">&times;</button>
+          <button class="modal-close" @click="showProjectsModal = false">&times;</button>
         </div>
         
         <div v-if="loadingProjects" class="loading-state">
@@ -162,8 +164,8 @@
             </tbody>
           </table>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" @click="showProjectsModal = false">Fechar</button>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" @click="showProjectsModal = false">Fechar</button>
         </div>
       </div>
     </div>

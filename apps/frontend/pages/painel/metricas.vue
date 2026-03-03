@@ -72,6 +72,12 @@ const conversionRate = computed(() => {
   if (!metrics.value?.summary?.totalSessions) return '0'
   return ((metrics.value.summary.totalLeads / metrics.value.summary.totalSessions) * 100).toFixed(1)
 })
+
+// Filter out entries with no real campaign (utm is null/empty → label is "(Nenhuma)")
+const realCampaigns = computed(() => {
+  if (!metrics.value?.topUtmCampaigns?.length) return []
+  return metrics.value.topUtmCampaigns.filter((c: any) => c.utm && c.utm !== '' && c.label !== '(Nenhuma)')
+})
 </script>
 
 <template>
@@ -231,10 +237,10 @@ const conversionRate = computed(() => {
         </div>
 
         <!-- Campaigns -->
-        <div v-if="!auth.isCorretor && metrics.topUtmCampaigns?.length" class="details-card">
+        <div v-if="!auth.isCorretor && realCampaigns.length" class="details-card">
           <h3>Campanhas Ativas</h3>
           <div class="chart-list">
-            <div v-for="item in metrics.topUtmCampaigns" :key="item.utm" class="chart-item">
+            <div v-for="item in realCampaigns" :key="item.utm" class="chart-item">
               <span class="item-label">{{ item.label }}</span>
               <div class="bar-container">
                 <div class="bar bg-purple" :style="{ width: `${metrics.summary.totalSessions > 0 ? (item.count / metrics.summary.totalSessions) * 100 : 0}%` }"></div>
@@ -259,7 +265,7 @@ const conversionRate = computed(() => {
           <div v-else class="no-data-placeholder">Nenhum acesso via corretor registrado</div>
         </div>
 
-        <div class="details-card table-card">
+        <div v-if="!auth.isCorretor" class="details-card table-card">
           <h3>Cliques em Links e Botões</h3>
           <div class="table-container">
             <table class="simple-table">

@@ -115,6 +115,75 @@ export class AuthService {
   }
 
   async login(user: any) {
+    // Check if 2FA is enabled
+    const fullUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { twoFactorEnabled: true, email: true, name: true }
+    });
+
+    if (fullUser?.twoFactorEnabled) {
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date();
+      expiry.setMinutes(expiry.getMinutes() + 10);
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { twoFactorCode: code, twoFactorCodeExpiry: expiry }
+      });
+
+      // Send code via email
+      try {
+        await this.emailQueueService.queueTwoFactorEmail(
+          fullUser.email,
+          fullUser.name,
+          code
+        );
+      } catch (error: any) {
+        this.logger.error(`Failed to queue 2FA email for ${fullUser.email}:`, error.message);
+      }
+
+      return {
+        requiresTwoFactor: true,
+        userId: user.id,
+        message: 'Código de verificação enviado para seu e-mail.'
+      };
+    }
+
+    return this.issueTokens(user);
+  }
+
+  async verifyTwoFactor(userId: string, code: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, email: true, name: true, role: true,
+        tenantId: true, agencyId: true,
+        twoFactorCode: true, twoFactorCodeExpiry: true
+      }
+    });
+
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    if (!user.twoFactorCode || !user.twoFactorCodeExpiry) {
+      throw new BadRequestException('Nenhum código de verificação pendente');
+    }
+    if (user.twoFactorCodeExpiry < new Date()) {
+      throw new BadRequestException('Código expirado. Faça login novamente.');
+    }
+    if (user.twoFactorCode !== code) {
+      throw new UnauthorizedException('Código inválido');
+    }
+
+    // Clear the code
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorCode: null, twoFactorCodeExpiry: null }
+    });
+
+    return this.issueTokens(user);
+  }
+
+  private async issueTokens(user: any) {
     const payload = {
       sub: user.id,
       email: user.email,
@@ -279,11 +348,28 @@ export class AuthService {
         role: true,
         tenantId: true,
         agencyId: true,
+        twoFactorEnabled: true,
         tenant: { select: { id: true, name: true, slug: true } }
       }
     });
 
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
     return user;
+  }
+
+  async toggleTwoFactor(userId: string, enable: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: enable,
+        twoFactorCode: null,
+        twoFactorCodeExpiry: null
+      }
+    });
+
+    return { twoFactorEnabled: enable };
   }
 }

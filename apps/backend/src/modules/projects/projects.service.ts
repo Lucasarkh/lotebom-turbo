@@ -104,13 +104,16 @@ export class ProjectsService {
     return project;
   }
 
-  async checkSlugAvailability(slug: string) {
+  async checkSlugAvailability(slug: string, excludeId?: string) {
     const s = slug
       .toLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '');
-    const project = await this.prisma.project.findUnique({
-      where: { slug: s }
+    const project = await this.prisma.project.findFirst({
+      where: {
+        slug: s,
+        ...(excludeId ? { NOT: { id: excludeId } } : {})
+      }
     });
     return { available: !project };
   }

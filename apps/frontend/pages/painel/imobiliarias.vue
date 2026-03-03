@@ -291,112 +291,83 @@ onMounted(fetchAgencies)
       </div>
     </div>
 
-    <!-- Modal Premium Architecture -->
+    <!-- Modal Padrão -->
     <Teleport to="body">
-      <Transition name="modal-fade">
-        <div v-if="showModal || showInviteModal" class="modal-overlay-custom" @click.self="showModal = false; showInviteModal = false">
-          
-          <!-- Modal Container -->
-          <div class="modal-window-custom animate-in">
-            <!-- Modal Header -->
-            <header class="modal-header-custom">
-              <div class="d-flex align-items-center gap-3">
-                <div class="modal-icon-context p-2 rounded-3" style="background: rgba(16, 185, 129, 0.12); color: var(--color-primary-400);">
-                  {{ showModal ? '🏢' : '✉️' }}
-                </div>
-                <h3 class="h5 fw-black mb-0" style="color: var(--color-surface-50);">
-                  {{ showInviteModal ? 'Enviar Convite' : (editingAgency ? 'Editar Imobiliária' : 'Nova Imobiliária') }}
-                </h3>
-              </div>
-              <button class="btn-close-custom" @click="showModal = false; showInviteModal = false">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-              </button>
-            </header>
-
-            <!-- Modal Content (Main Form) -->
-            <main v-if="showModal" class="modal-body-custom">
-              <div class="row g-4">
-                <div class="col-12">
-                  <div class="input-wrapper focus-within-primary mb-3">
-                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">Nome Fantasia</label>
-                    <input v-model="form.name" type="text" class="form-control-custom" placeholder="Ex: Central Brokers S/A">
-                  </div>
-                </div>
-                <div class="col-12">
-                  <div class="input-wrapper focus-within-primary mb-3">
-                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">E-mail Corporativo</label>
-                    <input v-model="form.email" type="email" class="form-control-custom" placeholder="contato@empresa.com.br">
-                  </div>
-                </div>
-                <div class="col-12 col-md-6">
-                  <div class="input-wrapper focus-within-primary mb-3">
-                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">Telefone</label>
-                    <input v-model="form.phone" type="text" class="form-control-custom" placeholder="(00) 00000-0000">
-                  </div>
-                </div>
-                <div class="col-12 col-md-6">
-                  <div class="input-wrapper focus-within-primary mb-3">
-                    <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">CRECI Jurídico</label>
-                    <input v-model="form.creci" type="text" class="form-control-custom" placeholder="00.000-J">
-                  </div>
-                </div>
-              </div>
-            </main>
-
-            <!-- Modal Content (Invite) -->
-            <main v-if="showInviteModal" class="modal-body-custom">
-              <div class="info-alert d-flex gap-3 p-4 rounded-4 mb-4 border border-primary-subtle">
-                <div class="info-icon">💡</div>
-                <p class="small text-primary-dark mb-0 fw-medium">
-                  Este link permitirá que o administrador defina sua credencial de acesso exclusiva para esta imobiliária.
-                </p>
-              </div>
-              <div class="input-wrapper focus-within-primary">
-                <label class="text-uppercase text-xs fw-black text-muted tracking-widest mb-2 d-block">E-mail do Destinatário</label>
-                <input v-model="inviteForm.email" type="email" class="form-control-custom form-control-lg" placeholder="admin@parceiro.com.br">
-              </div>
-            </main>
-
-            <!-- Modal Footer -->
-            <footer class="modal-footer-custom">
-              <button 
-                class="btn-dismiss-custom fw-black text-uppercase tracking-widest" 
-                @click="showModal = false; showInviteModal = false"
-              >
-                Descartar
-              </button>
-              <button 
-                class="btn btn-primary px-5 rounded-pill fw-black shadow-primary-soft py-3 min-w-200" 
-                @click="showInviteModal ? sendInvite() : saveAgency()"
-              >
-                {{ showInviteModal ? 'Gerar Link & Enviar' : 'Salvar Registro' }}
-              </button>
-            </footer>
+      <div v-if="showModal || showInviteModal" class="modal-overlay" @click.self="showModal = false; showInviteModal = false">
+        <div class="modal" @click.stop>
+          <div class="modal-header">
+            <h2>{{ showInviteModal ? 'Enviar Convite' : (editingAgency ? 'Editar Imobiliária' : 'Nova Imobiliária') }}</h2>
+            <button class="modal-close" @click="showModal = false; showInviteModal = false">&times;</button>
           </div>
-          
+          <div class="modal-body">
+            <!-- Main Form -->
+            <form v-if="showModal" @submit.prevent="saveAgency">
+              <div class="form-group">
+                <label class="form-label">Nome Fantasia</label>
+                <input v-model="form.name" type="text" class="form-input" placeholder="Ex: Central Brokers S/A">
+              </div>
+              <div class="form-group">
+                <label class="form-label">E-mail Corporativo</label>
+                <input v-model="form.email" type="email" class="form-input" placeholder="contato@empresa.com.br">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label class="form-label">Telefone</label>
+                  <input v-model="form.phone" type="text" class="form-input" placeholder="(00) 00000-0000">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CRECI Jurídico</label>
+                  <input v-model="form.creci" type="text" class="form-input" placeholder="00.000-J">
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" @click="showModal = false">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar Registro</button>
+              </div>
+            </form>
+
+            <!-- Invite Form -->
+            <form v-if="showInviteModal" @submit.prevent="sendInvite">
+              <div class="info-box">
+                <span>💡</span>
+                <p>Este link permitirá que o administrador defina sua credencial de acesso exclusiva para esta imobiliária.</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label">E-mail do Destinatário</label>
+                <input v-model="inviteForm.email" type="email" class="form-input" placeholder="admin@parceiro.com.br">
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" @click="showInviteModal = false">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Gerar Link &amp; Enviar</button>
+              </div>
+            </form>
+          </div>
         </div>
-      </Transition>
+      </div>
     </Teleport>
   </div>
 </template>
 
 <style scoped>
-/* 
-   FORÇANDO ESCOPO TOTAL PARA EVITAR CONFLITOS COM main.css 
-   Identifiquei que main.css possui múltiplas definições de .modal-overlay e .modal-content
-*/
-
 .painel-layout {
   min-height: 100vh;
 }
 
-.max-w-500 { max-width: 500px; }
 .tracking-tight { letter-spacing: -0.025em; }
-.tracking-tighter { letter-spacing: -0.05em; }
 .fw-black { font-weight: 900; }
 .text-xs { font-size: 0.75rem; }
-.line-height-1 { line-height: 1; }
-.min-w-200 { min-width: 200px; }
+
+.info-box {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+.info-box span { font-size: 1.25rem; flex-shrink: 0; }
+.info-box p { font-size: 0.875rem; color: var(--color-surface-200); margin: 0; line-height: 1.5; }
 
 /* Custom Grid System */
 .lotio-grid-container {
@@ -858,144 +829,6 @@ onMounted(fetchAgencies)
 
 /* REMOÇÃO DO ESTILO ANTIGO (GAPS) */
 .lotio-grid-container { display: none; }
-
-
-/* OVERRIDE TOTAL - MODAL CUSTOM */
-.modal-overlay-custom {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  background: rgba(15, 23, 42, 0.8) !important;
-  backdrop-filter: blur(12px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 999999 !important;
-  padding: 2rem;
-}
-
-.modal-window-custom {
-  width: 100% !important;
-  max-width: 640px !important;
-  background: var(--glass-bg) !important;
-  border-radius: 32px !important;
-  box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  position: relative !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
-}
-
-.modal-header-custom {
-  padding: 1.5rem 2.5rem !important;
-  border-bottom: 1px solid var(--glass-border-subtle) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  background: var(--glass-bg) !important;
-}
-
-.modal-body-custom {
-  padding: 2.5rem !important;
-  background: var(--glass-bg) !important;
-  flex-grow: 1 !important;
-}
-
-.modal-footer-custom {
-  padding: 2rem 2.5rem !important;
-  background: var(--glass-bg-heavy) !important;
-  border-top: 1px solid var(--glass-border-subtle) !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  gap: 1rem !important;
-}
-
-/* Botão Descartar Customizado */
-.btn-dismiss-custom {
-  background: transparent !important;
-  border: none !important;
-  color: var(--color-surface-400) !important;
-  font-size: 0.75rem !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: 10px !important;
-  transition: all 0.2s !important;
-  cursor: pointer !important;
-}
-.btn-dismiss-custom:hover {
-  color: var(--color-surface-50) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-}
-
-/* FORM OVERRIDES */
-.input-wrapper label {
-  transition: color 0.2s;
-}
-
-.input-wrapper:focus-within label {
-  color: #3b82f6 !important;
-}
-
-.form-control-custom {
-  width: 100% !important;
-  padding: 1rem 1.25rem !important;
-  font-size: 1rem !important;
-  font-weight: 500 !important;
-  color: var(--color-surface-100) !important;
-  background: var(--glass-bg-heavy) !important;
-  border: 1px solid var(--glass-border-subtle) !important;
-  border-radius: 16px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: none !important;
-}
-
-.form-control-custom:focus {
-  outline: none !important;
-  background: var(--glass-bg) !important;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.12) !important;
-}
-
-.bg-light-soft {
-  background: var(--glass-bg-heavy) !important;
-}
-
-
-/* BUTTONS */
-.btn-primary-soft {
-  background: rgba(59, 130, 246, 0.1) !important;
-  color: #2563eb !important;
-}
-
-.shadow-primary-soft { box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4) !important; }
-
-/* Custom Close */
-.btn-close-custom {
-  background: transparent !important;
-  border: none !important;
-  color: var(--color-surface-400) !important;
-  padding: 8px !important;
-  border-radius: 12px !important;
-  transition: all 0.2s !important;
-}
-.btn-close-custom:hover { background: var(--glass-bg-heavy) !important; color: var(--color-surface-100) !important; }
-
-/* Animations */
-.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.3s ease; }
-.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
-
-.animate-in {
-  animation: modalEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes modalEnter {
-  from { opacity: 0; transform: scale(0.95) translateY(40px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
 
 .skeleton-card {
   height: 280px;

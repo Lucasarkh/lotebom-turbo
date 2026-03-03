@@ -236,6 +236,9 @@ export class TrackingService {
           deviceType,
           ip, // Still store raw IP for legacy, but we have ipHash too
           ipHash: hashedIp,
+          // Fill in tenantId/projectId if session was created without them
+          ...(!session.tenantId && tenantId ? { tenantId } : {}),
+          ...(!session.projectId && projectId ? { projectId } : {}),
           // Update Last-Touch if it changed
           ...(isNewAttribution && {
             ltUtmSource: utmSource,
@@ -379,9 +382,9 @@ export class TrackingService {
   ) {
     const { tenantId, projectId, startDate, endDate } = query;
 
-    // Use UTC boundaries for consistent filtering regardless of server timezone
-    const start = startDate ? new Date(`${startDate}T00:00:00.000Z`) : null;
-    const end = endDate ? new Date(`${endDate}T23:59:59.999Z`) : null;
+    // Use Brasilia timezone boundaries (UTC-3) for consistent filtering
+    const start = startDate ? new Date(`${startDate}T03:00:00.000Z`) : null;
+    const end = endDate ? new Date(new Date(`${endDate}T03:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000 - 1) : null;
 
     return {
       tenantId,
@@ -390,7 +393,7 @@ export class TrackingService {
       ...(context.agencyId && { realtorLink: { agencyId: context.agencyId } }),
       ...(start || end
         ? {
-            createdAt: {
+            lastSeenAt: {
               ...(start ? { gte: start } : {}),
               ...(end ? { lte: end } : {})
             }
@@ -407,9 +410,9 @@ export class TrackingService {
   ) {
     const { tenantId, projectId, startDate, endDate } = query;
 
-    // Use UTC boundaries for consistent filtering regardless of server timezone
-    const start = startDate ? new Date(`${startDate}T00:00:00.000Z`) : null;
-    const end = endDate ? new Date(`${endDate}T23:59:59.999Z`) : null;
+    // Use Brasilia timezone boundaries (UTC-3) for consistent filtering
+    const start = startDate ? new Date(`${startDate}T03:00:00.000Z`) : null;
+    const end = endDate ? new Date(new Date(`${endDate}T03:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000 - 1) : null;
 
     return {
       session: {
@@ -466,7 +469,7 @@ export class TrackingService {
       orderBy: { _count: { id: 'desc' } },
       take: 100
     });
-    return await this.processTopPaths(raw);
+    return await this.processTopPaths(raw, query.tenantId, query.projectId);
   }
 
   async getRealtorLinkClicks(
@@ -573,11 +576,11 @@ export class TrackingService {
         orderBy: { _count: { id: 'desc' } },
         take: 30
       }),
-      // Raw daily stats need to be processed manually by date after fetching sessions or using raw query
+      // Raw daily stats — use lastSeenAt so returning visitors count on the day they were active
       this.prisma.trackingSession.findMany({
         where: whereSession,
-        select: { createdAt: true },
-        orderBy: { createdAt: 'asc' }
+        select: { lastSeenAt: true },
+        orderBy: { lastSeenAt: 'asc' }
       }),
       // Project stats
       this.prisma.trackingSession.groupBy({
@@ -609,10 +612,10 @@ export class TrackingService {
       })
     ]);
 
-    // Grouping sessions per day
+    // Grouping sessions per day (by lastSeenAt = day of last activity)
     const history: Record<string, { sessions: number; views: number }> = {};
     dailyStats.forEach((s) => {
-      const day = s.createdAt.toISOString().split('T')[0];
+      const day = s.lastSeenAt.toISOString().split('T')[0];
       if (!history[day]) history[day] = { sessions: 0, views: 0 };
       history[day].sessions++;
     });
@@ -746,7 +749,7 @@ export class TrackingService {
           count: p._count.id
         };
       }),
-      topPaths: await this.processTopPaths(topPathsRaw),
+      topPaths: await this.processTopPaths(topPathsRaw, query.tenantId, query.projectId),
       topLinks: (topLinksRaw || []).map((l) => ({
         label: l.label || l.path,
         count: l._count.id
@@ -754,102 +757,172 @@ export class TrackingService {
     };
   }
 
-  private async processTopPaths(paths: any[]) {
+  private async processTopPaths(paths: any[], tenantId?: string, projectId?: string) {
     // Map with label as key to group by their friendly names
     const groupedByLabel = new Map<string, { count: number; path: string }>();
 
     // 1. Collect all potential IDs for batch lookup
     const potentialIds = new Set<string>();
+    const potentialSlugs = new Set<string>();
+
+    // If filtering by specific project, look it up by ID for guaranteed name resolution
+    let contextProjectName: string | null = null;
+    if (projectId && projectId !== 'all') {
+      const contextProject = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { name: true, slug: true }
+      });
+      if (contextProject) {
+        contextProjectName = contextProject.name;
+      }
+    }
+
     for (const p of paths) {
       const rawPath = p.path || '/';
       const cleanPath = rawPath.split('?')[0].split('#')[0];
       const parts = cleanPath.split('/').filter(Boolean);
-      const code =
-        parts[parts.length - 1] ||
-        (p.label && p.label.startsWith('lote-')
-          ? p.label.split('lote-')[1]
-          : null);
 
-      if (code && code.length > 20) {
-        potentialIds.add(code);
+      // Collect potential element IDs (CUIDs are 25+ chars)
+      for (const part of parts) {
+        if (part && part.length > 20) {
+          potentialIds.add(part);
+        }
       }
 
       // Also check if label itself is an ID
       if (p.label && p.label.length > 20) {
         potentialIds.add(p.label);
       }
+
+      // Collect first segment as potential project slug
+      if (parts[0] && parts[0].length <= 60 && parts[0] !== 'painel' && parts[0] !== 'login' && parts[0] !== 'undefined') {
+        potentialSlugs.add(parts[0]);
+      }
     }
 
-    // 2. Batch lookup
+    // 2. Batch lookups
     const elements =
       potentialIds.size > 0
         ? await this.prisma.mapElement.findMany({
             where: { id: { in: Array.from(potentialIds) } },
-            select: { id: true, code: true, name: true }
+            select: { id: true, code: true, name: true, project: { select: { name: true, slug: true } } }
           })
         : [];
 
-    const elementMap = new Map(elements.map((e) => [e.id, e.code || e.name]));
+    const elementMap = new Map(elements.map((e) => [e.id, { name: e.code || e.name, projectName: e.project?.name, projectSlug: e.project?.slug }]));
+
+    // Resolve project slugs to names
+    const projects =
+      potentialSlugs.size > 0
+        ? await this.prisma.project.findMany({
+            where: { slug: { in: Array.from(potentialSlugs) } },
+            select: { slug: true, name: true }
+          })
+        : [];
+
+    const projectSlugMap = new Map(projects.map((pr) => [pr.slug, pr.name]));
+
+    // If we have a context project and some slugs couldn't be resolved,
+    // use the context project name as a fallback for unresolved slugs
+    // This handles the case where a project slug was changed after tracking data was recorded
+    if (contextProjectName) {
+      for (const slug of potentialSlugs) {
+        if (!projectSlugMap.has(slug)) {
+          projectSlugMap.set(slug, contextProjectName);
+        }
+      }
+    }
+
+    // For global metrics (no specific project filter), also load all tenant projects
+    // to maximize resolution of any slugs
+    if ((!projectId || projectId === 'all') && tenantId && potentialSlugs.size > 0) {
+      const allTenantProjects = await this.prisma.project.findMany({
+        where: { tenantId },
+        select: { slug: true, name: true }
+      });
+      for (const p of allTenantProjects) {
+        if (!projectSlugMap.has(p.slug)) {
+          projectSlugMap.set(p.slug, p.name);
+        }
+      }
+    }
+
+    // Known page sub-paths mapping
+    const PAGE_LABELS: Record<string, string> = {
+      'unidades': 'Unidades',
+      'galeria': 'Galeria',
+      'contato': 'Contato',
+      'teste': 'Teste',
+      'planta': 'Planta',
+      'panorama': 'Panorama 360°',
+      'obrigado': 'Obrigado',
+      'pagamento': 'Pagamento',
+    };
 
     for (const p of paths) {
       // Clean query and anchors for grouping
       const rawPath = p.path || '/';
       const cleanPath = rawPath.split('?')[0].split('#')[0];
+      const parts = cleanPath.split('/').filter(Boolean);
 
-      // Normalize label
-      let label = (p.label || cleanPath || 'Visitante').trim();
-
-      // IF IT LOOKS LIKE A NUXT ROUTE NAME (which is what we see in the screenshot)
-      const looksLikeRoute =
-        /tenant|project|lote|code/i.test(label) && label.includes('-');
-
-      if (looksLikeRoute || label === 'index') {
-        // Fix route names back to human readable names
-        if (cleanPath.includes('/lote/')) {
-          const parts = cleanPath.split('/').filter(Boolean);
-          label = `lote-${parts[parts.length - 1]}`;
-        } else if (cleanPath.includes('/lote-')) {
-          label = `lote-${cleanPath.split('/lote-')[1]}`;
-        } else if (cleanPath.includes('/painel')) {
-          label = 'Painel Administrativo';
-        } else if (cleanPath.split('/').length > 2) {
-          // Probably a project root
-          const parts = cleanPath.split('/').filter(Boolean);
-          label = parts[parts.length - 1] || 'Início';
-        } else if (label.includes('lote') || label.includes('code')) {
-          label = 'Visualização de Unidade';
+      // Skip empty or root paths
+      if (parts.length === 0) {
+        const existing = groupedByLabel.get('Página Inicial');
+        if (existing) {
+          existing.count += p._count.id;
         } else {
-          label = 'Principal';
+          groupedByLabel.set('Página Inicial', { count: p._count.id, path: '/' });
+        }
+        continue;
+      }
+
+      // Skip junk: paths containing 'undefined', or painel admin pages
+      if (parts.some((pt: string) => pt === 'undefined' || pt === 'null')) {
+        continue; // skip garbage entries
+      }
+      if (parts[0] === 'painel' || parts[0] === 'login') {
+        continue; // skip admin/login pages from public metrics
+      }
+
+      let label = '';
+
+      // Determine what kind of page this is
+      const firstPart = parts[0];
+      const projectName = projectSlugMap.get(firstPart);
+
+      if (parts.length === 1) {
+        // Just project slug, this is the landing page
+        label = projectName ? `${projectName} - Início` : `${firstPart} - Início`;
+      } else if (parts.length >= 2) {
+        const secondPart = parts[1];
+
+        // Check if second part is a known sub-page
+        if (PAGE_LABELS[secondPart]) {
+          label = projectName
+            ? `${projectName} - ${PAGE_LABELS[secondPart]}`
+            : `${firstPart} - ${PAGE_LABELS[secondPart]}`;
+        } else if (secondPart.length > 20) {
+          // Likely a CUID (lot detail page)
+          const elementInfo = elementMap.get(secondPart);
+          if (elementInfo) {
+            const pName = elementInfo.projectName || projectName || firstPart;
+            label = `${pName} - Lote ${elementInfo.name}`;
+          } else {
+            // Unknown CUID, skip or give generic label
+            label = projectName
+              ? `${projectName} - Detalhe de Unidade`
+              : `${firstPart} - Detalhe de Unidade`;
+          }
+        } else {
+          // Some other sub-page
+          label = projectName
+            ? `${projectName} - ${secondPart}`
+            : `${firstPart}/${secondPart}`;
         }
       }
 
-      // Final sanitization for lot pages
-      if (cleanPath.includes('/lote/') || label.includes('lote-')) {
-        const parts = cleanPath.split('/').filter(Boolean);
-        // Normalize Lote labels to ensure grouping
-        let code =
-          parts[parts.length - 1] ||
-          (label.includes('lote-') ? label.split('lote-')[1] : '');
-
-        // RESOLVE CUID TO CODE IF POSSIBLE via local map
-        if (code && code.length > 20) {
-          code = elementMap.get(code) || code;
-        }
-
-        if (code) {
-          // We want to show the path components as requested: url/empreendimento/lote-01
-          const projectSlug = parts[0] || '---';
-          label = `${projectSlug}/${code}`;
-        }
-      } else if (cleanPath.split('/').filter(Boolean).length >= 1) {
-        // It's a project path, show as project-slug
-        const parts = cleanPath.split('/').filter(Boolean);
-        if (parts.length === 1) {
-          label = `${parts[0]}`;
-        } else if (parts.length === 2) {
-          // Likely /projectSlug/unidades or similar
-          label = `${parts[0]}/${parts[1]}`;
-        }
+      if (!label) {
+        label = cleanPath;
       }
 
       // Final TRIM and casing for the Map key to ensure deduplication
@@ -865,6 +938,11 @@ export class TrackingService {
 
     return Array.from(groupedByLabel.entries())
       .map(([label, data]) => ({ label, path: data.path, count: data.count }))
+      .filter((entry) => {
+        // Filter out entries with unresolved CUIDs in label
+        const hasCuid = /[a-z0-9]{25,}/.test(entry.label);
+        return !hasCuid;
+      })
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
   }

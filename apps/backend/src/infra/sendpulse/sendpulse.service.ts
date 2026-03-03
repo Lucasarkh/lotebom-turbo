@@ -299,4 +299,22 @@ export class SendPulseService implements OnModuleInit {
 
     return this.sendEmail({ to, subject: 'Convite para Lotio - Nova Conta', html });
   }
+
+  async sendTwoFactorEmail(to: string, userName: string, code: string): Promise<boolean> {
+    const safeUserName = this.escapeHtml(userName);
+
+    const html = this.getBaseTemplate(`
+      <h2>Código de Verificação</h2>
+      <p>Olá, <strong>${safeUserName}</strong>,</p>
+      <p>Seu código de autenticação em duas etapas para acessar o Lotio é:</p>
+      <div style="text-align: center; margin: 32px 0;">
+        <span style="display: inline-block; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #2563eb; background: #f1f5f9; padding: 16px 32px; border-radius: 8px;">${code}</span>
+      </div>
+      <div class="info-box">
+        <p style="font-size: 14px; margin: 0;">Este código é válido por 10 minutos. Se você não tentou fazer login, altere sua senha imediatamente.</p>
+      </div>
+    `);
+
+    return this.sendEmail({ to, subject: 'Código de Verificação - Lotio', html });
+  }
 }

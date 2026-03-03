@@ -52,6 +52,23 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  @Post('verify-2fa')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verificar código 2FA' })
+  async verifyTwoFactor(@Body() dto: any) {
+    return this.authService.verifyTwoFactor(dto.userId, dto.code);
+  }
+
+  @Post('toggle-2fa')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Ativar/desativar 2FA' })
+  async toggleTwoFactor(@Request() req: any, @Body() dto: any) {
+    return this.authService.toggleTwoFactor(req.user.id, dto.enabled);
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })

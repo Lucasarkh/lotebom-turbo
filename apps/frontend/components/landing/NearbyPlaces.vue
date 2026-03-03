@@ -148,6 +148,8 @@ watch(() => props.projectSlug, loadNearby)
   max-width: 1040px;
   margin: 0 auto;
   padding: 0 40px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .v4-section-header {
@@ -183,6 +185,7 @@ watch(() => props.projectSlug, loadNearby)
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
+  overflow: hidden;
 }
 
 /* ========================================
@@ -195,6 +198,8 @@ watch(() => props.projectSlug, loadNearby)
   padding: 28px 28px 20px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .nearby-category:hover {
@@ -248,6 +253,7 @@ watch(() => props.projectSlug, loadNearby)
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
+  min-width: 0;
 }
 
 .nearby-item:not(:last-child) {
@@ -260,6 +266,7 @@ watch(() => props.projectSlug, loadNearby)
   gap: 4px;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .nearby-item-name {
@@ -367,7 +374,7 @@ watch(() => props.projectSlug, loadNearby)
    ======================================== */
 @media (max-width: 480px) {
   .nearby-category {
-    padding: 18px;
+    padding: 16px;
     border-radius: 14px;
   }
 
@@ -384,12 +391,20 @@ watch(() => props.projectSlug, loadNearby)
   }
 
   .nearby-item-name {
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  .nearby-item-meta {
+    gap: 4px;
   }
 
   .nearby-meta-chip {
     font-size: 11px;
     padding: 2px 6px;
+  }
+
+  .nearby-meta-distance {
+    font-size: 12px;
   }
 }
 

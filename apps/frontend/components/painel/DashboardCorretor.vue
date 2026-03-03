@@ -24,7 +24,7 @@
           <div class="stat-label">Total de Leads</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">{{ campaigns.length }}</div>
+          <div class="stat-value">{{ activeCampaigns.length }}</div>
           <div class="stat-label">Campanhas Ativas</div>
         </div>
         <div class="stat-card">
@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { formatDateToBrasilia } from '~/utils/date'
 
@@ -94,6 +94,8 @@ const loading = ref(true)
 const realtorLink = ref(null)
 const campaigns = ref([])
 const recentLeads = ref([])
+
+const activeCampaigns = computed(() => campaigns.value.filter((c) => c.active))
 
 async function loadData() {
   loading.value = true

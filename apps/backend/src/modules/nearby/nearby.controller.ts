@@ -56,4 +56,14 @@ export class NearbyController {
   ) {
     return this.nearbyService.toggleNearby(projectId, body.enabled);
   }
+
+  @Patch('item/:itemId/visibility')
+  @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Mostrar/ocultar um local específico' })
+  toggleItemVisibility(
+    @Param('itemId') itemId: string,
+    @Body() body: { visible: boolean },
+  ) {
+    return this.nearbyService.toggleItemVisibility(itemId, body.visible);
+  }
 }

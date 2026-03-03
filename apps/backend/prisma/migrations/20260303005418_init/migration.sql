@@ -1,8 +1,11 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('SYSADMIN', 'LOTEADORA', 'CORRETOR');
+CREATE TYPE "UserRole" AS ENUM ('SYSADMIN', 'LOTEADORA', 'IMOBILIARIA', 'CORRETOR');
 
 -- CreateEnum
 CREATE TYPE "ProjectStatus" AS ENUM ('DRAFT', 'PUBLISHED');
+
+-- CreateEnum
+CREATE TYPE "ReservationFeeType" AS ENUM ('FIXED', 'PERCENTAGE');
 
 -- CreateEnum
 CREATE TYPE "MapElementType" AS ENUM ('LOT', 'ROAD', 'ROUNDABOUT', 'LAKE', 'GREEN', 'LABEL', 'PATH', 'POLYGON');
@@ -20,7 +23,19 @@ CREATE TYPE "SlopeType" AS ENUM ('FLAT', 'UPHILL', 'DOWNHILL');
 CREATE TYPE "MediaType" AS ENUM ('PHOTO', 'VIDEO');
 
 -- CreateEnum
-CREATE TYPE "LeadStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'NEGOTIATING', 'WON', 'LOST');
+CREATE TYPE "LeadStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'NEGOTIATING', 'RESERVATION', 'UNDER_REVIEW', 'WAITING_DOCS', 'WAITING_PAYMENT', 'WON', 'LOST', 'CANCELLED', 'ABANDONED', 'REVERSED');
+
+-- CreateEnum
+CREATE TYPE "LeadPaymentType" AS ENUM ('RESERVATION_FEE', 'ENTRY', 'INSTALLMENT', 'INTERMEDIARY');
+
+-- CreateEnum
+CREATE TYPE "LeadPaymentStatus" AS ENUM ('PENDING', 'PAID', 'OVERDUE', 'REVERSED');
+
+-- CreateEnum
+CREATE TYPE "SchedulingStatus" AS ENUM ('PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED');
+
+-- CreateEnum
+CREATE TYPE "PaymentProvider" AS ENUM ('STRIPE', 'MERCADO_PAGO', 'PAGSEGURO', 'ASAAS', 'PAGAR_ME', 'PIX_DIRECT');
 
 -- CreateEnum
 CREATE TYPE "PlantHotspotType" AS ENUM ('LOTE', 'PORTARIA', 'QUADRA', 'AREA_COMUM', 'OUTRO');
@@ -36,6 +51,7 @@ CREATE TABLE "Tenant" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
+    "customDomain" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -44,15 +60,64 @@ CREATE TABLE "Tenant" (
 );
 
 -- CreateTable
+CREATE TABLE "Agency" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT,
+    "creci" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isPending" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Agency_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Realtor" (
+    "id" TEXT NOT NULL,
+    "agencyId" TEXT,
+    "userId" TEXT NOT NULL,
+    "creci" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Realtor_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Invite" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "role" "UserRole" NOT NULL,
+    "agencyId" TEXT,
+    "token" TEXT NOT NULL,
+    "used" BOOLEAN NOT NULL DEFAULT false,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Invite_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT,
+    "agencyId" TEXT,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "role" "UserRole" NOT NULL DEFAULT 'CORRETOR',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "refreshToken" TEXT,
+    "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "twoFactorCode" TEXT,
+    "twoFactorCodeExpiry" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -65,20 +130,45 @@ CREATE TABLE "Project" (
     "tenantId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
+    "customDomain" TEXT,
     "description" TEXT,
     "status" "ProjectStatus" NOT NULL DEFAULT 'DRAFT',
     "bannerImageUrl" TEXT,
     "mapData" JSONB,
     "highlightsJson" JSONB,
+    "highlightsTitle" TEXT DEFAULT 'Sua família merece o melhor.',
+    "highlightsSubtitle" TEXT DEFAULT 'Qualidade de vida, segurança e infraestrutura completa em um só lugar.',
+    "traditionalHighlightsTitle" TEXT DEFAULT 'Destaques',
+    "traditionalHighlightsSubtitle" TEXT DEFAULT 'Diferenciais pensados para o seu bem-estar.',
     "locationText" TEXT,
     "address" TEXT,
     "googleMapsUrl" TEXT,
     "showPaymentConditions" BOOLEAN NOT NULL DEFAULT false,
-    "startingPrice" DOUBLE PRECISION,
-    "maxInstallments" INTEGER,
+    "startingPrice" DECIMAL(12,2),
+    "maxInstallments" INTEGER DEFAULT 180,
+    "minDownPaymentPercent" DECIMAL(5,2) DEFAULT 10,
+    "minDownPaymentValue" DECIMAL(12,2),
+    "monthlyInterestRate" DECIMAL(5,4) DEFAULT 0.9,
+    "indexer" TEXT DEFAULT 'IGP-M',
+    "allowIntermediary" BOOLEAN NOT NULL DEFAULT false,
+    "financingDisclaimer" TEXT,
     "paymentConditionsSummary" TEXT,
+    "youtubeVideoUrl" TEXT,
+    "constructionStatus" JSONB,
+    "legalNotice" TEXT,
+    "reservationFeeType" "ReservationFeeType" NOT NULL DEFAULT 'FIXED',
+    "reservationFeeValue" DECIMAL(12,2) NOT NULL DEFAULT 500,
+    "reservationExpiryHours" INTEGER NOT NULL DEFAULT 24,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
+    "nearbyEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "nearbyGeneratedAt" TIMESTAMP(3),
+    "nearbyStatus" TEXT,
+    "nearbyErrorMessage" TEXT,
+    "aiEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "aiConfigId" TEXT,
 
     CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
 );
@@ -107,8 +197,12 @@ CREATE TABLE "LotDetails" (
     "tenantId" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "mapElementId" TEXT NOT NULL,
+    "version" INTEGER NOT NULL DEFAULT 0,
     "status" "LotStatus" NOT NULL DEFAULT 'AVAILABLE',
-    "price" DOUBLE PRECISION,
+    "block" TEXT,
+    "lotNumber" TEXT,
+    "price" DECIMAL(12,2),
+    "pricePerM2" DECIMAL(12,2),
     "areaM2" DOUBLE PRECISION,
     "frontage" DOUBLE PRECISION,
     "depth" DOUBLE PRECISION,
@@ -153,21 +247,91 @@ CREATE TABLE "Lead" (
     "name" TEXT NOT NULL,
     "email" TEXT,
     "phone" TEXT,
+    "version" INTEGER NOT NULL DEFAULT 0,
+    "cpf" TEXT,
+    "rg" TEXT,
+    "birthDate" TIMESTAMP(3),
+    "maritalStatus" TEXT,
+    "occupation" TEXT,
+    "address" TEXT,
+    "addressCity" TEXT,
+    "addressState" TEXT,
+    "addressZip" TEXT,
     "message" TEXT,
     "source" TEXT,
     "status" "LeadStatus" NOT NULL DEFAULT 'NEW',
     "lastContactAt" TIMESTAMP(3),
+    "reservedAt" TIMESTAMP(3),
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "ftUtmSource" TEXT,
+    "ftUtmMedium" TEXT,
+    "ftUtmCampaign" TEXT,
+    "ftUtmContent" TEXT,
+    "ftUtmTerm" TEXT,
+    "ltUtmSource" TEXT,
+    "ltUtmMedium" TEXT,
+    "ltUtmCampaign" TEXT,
+    "ltUtmContent" TEXT,
+    "ltUtmTerm" TEXT,
+    "ltReferrer" TEXT,
+    "isRecurrent" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "Lead_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadDocument" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "uploadedBy" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LeadDocument_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadPayment" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "type" "LeadPaymentType" NOT NULL,
+    "status" "LeadPaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "amount" DECIMAL(12,2) NOT NULL,
+    "dueDate" TIMESTAMP(3) NOT NULL,
+    "paidDate" TIMESTAMP(3),
+    "receiptUrl" TEXT,
+    "notes" TEXT,
+    "externalId" TEXT,
+    "paymentUrl" TEXT,
+    "provider" "PaymentProvider",
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LeadPayment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadHistory" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "fromStatus" "LeadStatus",
+    "toStatus" "LeadStatus" NOT NULL,
+    "notes" TEXT,
+    "createdBy" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LeadHistory_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "RealtorLink" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
+    "agencyId" TEXT,
     "userId" TEXT,
     "name" TEXT NOT NULL,
     "phone" TEXT,
@@ -281,17 +445,36 @@ CREATE TABLE "TrackingSession" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT,
     "projectId" TEXT,
+    "realtorLinkId" TEXT,
     "userId" TEXT,
     "ip" TEXT,
+    "ipHash" TEXT,
     "userAgent" TEXT,
+    "deviceType" TEXT,
+    "landingPage" TEXT,
+    "firstSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "ftUtmSource" TEXT,
+    "ftUtmMedium" TEXT,
+    "ftUtmCampaign" TEXT,
+    "ftUtmContent" TEXT,
+    "ftUtmTerm" TEXT,
+    "ftReferrer" TEXT,
+    "ltUtmSource" TEXT,
+    "ltUtmMedium" TEXT,
+    "ltUtmCampaign" TEXT,
+    "ltUtmContent" TEXT,
+    "ltUtmTerm" TEXT,
+    "ltReferrer" TEXT,
     "utmSource" TEXT,
     "utmMedium" TEXT,
     "utmCampaign" TEXT,
     "utmContent" TEXT,
     "utmTerm" TEXT,
     "referrer" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastRealtorAt" TIMESTAMP(3),
 
     CONSTRAINT "TrackingSession_pkey" PRIMARY KEY ("id")
 );
@@ -324,7 +507,7 @@ CREATE TABLE "Campaign" (
     "utmCampaign" TEXT NOT NULL,
     "utmContent" TEXT,
     "utmTerm" TEXT,
-    "budget" DOUBLE PRECISION,
+    "budget" DECIMAL(12,2),
     "active" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -336,13 +519,143 @@ CREATE TABLE "Campaign" (
 CREATE TABLE "CampaignInvestment" (
     "id" TEXT NOT NULL,
     "campaignId" TEXT NOT NULL,
-    "amount" DOUBLE PRECISION NOT NULL,
+    "amount" DECIMAL(12,2) NOT NULL,
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "CampaignInvestment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SystemSetting" (
+    "id" TEXT NOT NULL,
+    "contactWhatsapp" TEXT,
+    "contactEmail" TEXT,
+    "leadFormEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SystemSetting_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SystemLead" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "message" TEXT,
+    "status" "LeadStatus" NOT NULL DEFAULT 'NEW',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SystemLead_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PasswordReset" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PasswordReset_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PaymentConfig" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "name" TEXT NOT NULL DEFAULT 'Gateway Principal',
+    "provider" "PaymentProvider" NOT NULL DEFAULT 'STRIPE',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "keysJson" JSONB,
+    "webhookSecret" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PaymentConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AiConfig" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "provider" TEXT NOT NULL DEFAULT 'openai',
+    "model" TEXT NOT NULL DEFAULT 'gpt-4o',
+    "apiKey" TEXT,
+    "systemPrompt" TEXT,
+    "temperature" DOUBLE PRECISION DEFAULT 0.7,
+    "maxTokens" INTEGER DEFAULT 1000,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AiConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SchedulingConfig" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT false,
+    "scheduleInterval" INTEGER NOT NULL DEFAULT 60,
+    "leadCaptureRequired" BOOLEAN NOT NULL DEFAULT true,
+    "availableDays" JSONB,
+    "startTime" TEXT NOT NULL DEFAULT '08:00',
+    "endTime" TEXT NOT NULL DEFAULT '18:00',
+    "maxSimultaneous" INTEGER NOT NULL DEFAULT 1,
+    "lunchStart" TEXT,
+    "lunchEnd" TEXT,
+    "breaks" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SchedulingConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Scheduling" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "userId" TEXT,
+    "scheduledAt" TIMESTAMP(3) NOT NULL,
+    "status" "SchedulingStatus" NOT NULL DEFAULT 'PENDING',
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Scheduling_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "NearbyItem" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "placeId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "shortAddress" TEXT,
+    "lat" DOUBLE PRECISION NOT NULL,
+    "lng" DOUBLE PRECISION NOT NULL,
+    "distanceMeters" INTEGER NOT NULL,
+    "durationSecondsDriving" INTEGER,
+    "durationSecondsWalking" INTEGER,
+    "distanceLabel" TEXT NOT NULL,
+    "drivingLabel" TEXT,
+    "walkingLabel" TEXT,
+    "routeUrl" TEXT NOT NULL,
+    "visible" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "NearbyItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -353,8 +666,40 @@ CREATE TABLE "_ProjectToRealtorLink" (
     CONSTRAINT "_ProjectToRealtorLink_AB_pkey" PRIMARY KEY ("A","B")
 );
 
+-- CreateTable
+CREATE TABLE "_ProjectGateways" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_ProjectGateways_AB_pkey" PRIMARY KEY ("A","B")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Tenant_slug_key" ON "Tenant"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Tenant_customDomain_key" ON "Tenant"("customDomain");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Agency_email_key" ON "Agency"("email");
+
+-- CreateIndex
+CREATE INDEX "Agency_tenantId_idx" ON "Agency"("tenantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Realtor_userId_key" ON "Realtor"("userId");
+
+-- CreateIndex
+CREATE INDEX "Realtor_agencyId_idx" ON "Realtor"("agencyId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Invite_token_key" ON "Invite"("token");
+
+-- CreateIndex
+CREATE INDEX "Invite_tenantId_idx" ON "Invite"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "Invite_token_idx" ON "Invite"("token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
@@ -363,10 +708,19 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE INDEX "User_tenantId_idx" ON "User"("tenantId");
 
 -- CreateIndex
-CREATE INDEX "Project_tenantId_idx" ON "Project"("tenantId");
+CREATE INDEX "User_agencyId_idx" ON "User"("agencyId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Project_slug_key" ON "Project"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Project_customDomain_key" ON "Project"("customDomain");
+
+-- CreateIndex
+CREATE INDEX "Project_tenantId_idx" ON "Project"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "Project_slug_idx" ON "Project"("slug");
 
 -- CreateIndex
 CREATE INDEX "MapElement_tenantId_projectId_code_idx" ON "MapElement"("tenantId", "projectId", "code");
@@ -393,7 +747,34 @@ CREATE INDEX "ProjectMedia_lotDetailsId_idx" ON "ProjectMedia"("lotDetailsId");
 CREATE INDEX "Lead_tenantId_projectId_idx" ON "Lead"("tenantId", "projectId");
 
 -- CreateIndex
-CREATE INDEX "Lead_status_idx" ON "Lead"("status");
+CREATE INDEX "Lead_status_createdAt_idx" ON "Lead"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Lead_email_idx" ON "Lead"("email");
+
+-- CreateIndex
+CREATE INDEX "Lead_phone_idx" ON "Lead"("phone");
+
+-- CreateIndex
+CREATE INDEX "Lead_cpf_idx" ON "Lead"("cpf");
+
+-- CreateIndex
+CREATE INDEX "Lead_sessionId_idx" ON "Lead"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "Lead_realtorLinkId_idx" ON "Lead"("realtorLinkId");
+
+-- CreateIndex
+CREATE INDEX "Lead_createdAt_idx" ON "Lead"("createdAt" DESC);
+
+-- CreateIndex
+CREATE INDEX "LeadDocument_leadId_idx" ON "LeadDocument"("leadId");
+
+-- CreateIndex
+CREATE INDEX "LeadPayment_leadId_idx" ON "LeadPayment"("leadId");
+
+-- CreateIndex
+CREATE INDEX "LeadHistory_leadId_idx" ON "LeadHistory"("leadId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RealtorLink_userId_key" ON "RealtorLink"("userId");
@@ -435,16 +816,28 @@ CREATE INDEX "PlantHotspot_tenantId_idx" ON "PlantHotspot"("tenantId");
 CREATE INDEX "TrackingSession_tenantId_projectId_idx" ON "TrackingSession"("tenantId", "projectId");
 
 -- CreateIndex
+CREATE INDEX "TrackingSession_projectId_lastSeenAt_idx" ON "TrackingSession"("projectId", "lastSeenAt");
+
+-- CreateIndex
+CREATE INDEX "TrackingSession_tenantId_createdAt_idx" ON "TrackingSession"("tenantId", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "TrackingSession_createdAt_idx" ON "TrackingSession"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "TrackingEvent_sessionId_idx" ON "TrackingEvent"("sessionId");
+CREATE INDEX "TrackingSession_lastSeenAt_idx" ON "TrackingSession"("lastSeenAt");
 
 -- CreateIndex
-CREATE INDEX "TrackingEvent_type_category_idx" ON "TrackingEvent"("type", "category");
+CREATE INDEX "TrackingEvent_sessionId_timestamp_idx" ON "TrackingEvent"("sessionId", "timestamp");
+
+-- CreateIndex
+CREATE INDEX "TrackingEvent_type_category_timestamp_idx" ON "TrackingEvent"("type", "category", "timestamp");
 
 -- CreateIndex
 CREATE INDEX "TrackingEvent_timestamp_idx" ON "TrackingEvent"("timestamp");
+
+-- CreateIndex
+CREATE INDEX "TrackingEvent_type_timestamp_idx" ON "TrackingEvent"("type", "timestamp");
 
 -- CreateIndex
 CREATE INDEX "Campaign_tenantId_idx" ON "Campaign"("tenantId");
@@ -456,13 +849,64 @@ CREATE INDEX "Campaign_projectId_idx" ON "Campaign"("projectId");
 CREATE INDEX "CampaignInvestment_campaignId_idx" ON "CampaignInvestment"("campaignId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "PasswordReset_token_key" ON "PasswordReset"("token");
+
+-- CreateIndex
+CREATE INDEX "PasswordReset_email_idx" ON "PasswordReset"("email");
+
+-- CreateIndex
+CREATE INDEX "PaymentConfig_tenantId_idx" ON "PaymentConfig"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "AiConfig_tenantId_idx" ON "AiConfig"("tenantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SchedulingConfig_projectId_key" ON "SchedulingConfig"("projectId");
+
+-- CreateIndex
+CREATE INDEX "Scheduling_tenantId_projectId_idx" ON "Scheduling"("tenantId", "projectId");
+
+-- CreateIndex
+CREATE INDEX "Scheduling_scheduledAt_idx" ON "Scheduling"("scheduledAt");
+
+-- CreateIndex
+CREATE INDEX "NearbyItem_projectId_idx" ON "NearbyItem"("projectId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "NearbyItem_projectId_placeId_key" ON "NearbyItem"("projectId", "placeId");
+
+-- CreateIndex
 CREATE INDEX "_ProjectToRealtorLink_B_index" ON "_ProjectToRealtorLink"("B");
+
+-- CreateIndex
+CREATE INDEX "_ProjectGateways_B_index" ON "_ProjectGateways"("B");
+
+-- AddForeignKey
+ALTER TABLE "Agency" ADD CONSTRAINT "Agency_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Realtor" ADD CONSTRAINT "Realtor_agencyId_fkey" FOREIGN KEY ("agencyId") REFERENCES "Agency"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Realtor" ADD CONSTRAINT "Realtor_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invite" ADD CONSTRAINT "Invite_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invite" ADD CONSTRAINT "Invite_agencyId_fkey" FOREIGN KEY ("agencyId") REFERENCES "Agency"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_agencyId_fkey" FOREIGN KEY ("agencyId") REFERENCES "Agency"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Project" ADD CONSTRAINT "Project_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Project" ADD CONSTRAINT "Project_aiConfigId_fkey" FOREIGN KEY ("aiConfigId") REFERENCES "AiConfig"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "MapElement" ADD CONSTRAINT "MapElement_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -504,7 +948,19 @@ ALTER TABLE "Lead" ADD CONSTRAINT "Lead_realtorLinkId_fkey" FOREIGN KEY ("realto
 ALTER TABLE "Lead" ADD CONSTRAINT "Lead_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "TrackingSession"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LeadDocument" ADD CONSTRAINT "LeadDocument_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LeadPayment" ADD CONSTRAINT "LeadPayment_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LeadHistory" ADD CONSTRAINT "LeadHistory_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_agencyId_fkey" FOREIGN KEY ("agencyId") REFERENCES "Agency"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RealtorLink" ADD CONSTRAINT "RealtorLink_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -543,6 +999,9 @@ ALTER TABLE "TrackingSession" ADD CONSTRAINT "TrackingSession_tenantId_fkey" FOR
 ALTER TABLE "TrackingSession" ADD CONSTRAINT "TrackingSession_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TrackingSession" ADD CONSTRAINT "TrackingSession_realtorLinkId_fkey" FOREIGN KEY ("realtorLinkId") REFERENCES "RealtorLink"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TrackingEvent" ADD CONSTRAINT "TrackingEvent_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "TrackingSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -558,7 +1017,37 @@ ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "CampaignInvestment" ADD CONSTRAINT "CampaignInvestment_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "PaymentConfig" ADD CONSTRAINT "PaymentConfig_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AiConfig" ADD CONSTRAINT "AiConfig_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SchedulingConfig" ADD CONSTRAINT "SchedulingConfig_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Scheduling" ADD CONSTRAINT "Scheduling_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Scheduling" ADD CONSTRAINT "Scheduling_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Scheduling" ADD CONSTRAINT "Scheduling_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Scheduling" ADD CONSTRAINT "Scheduling_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NearbyItem" ADD CONSTRAINT "NearbyItem_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "_ProjectToRealtorLink" ADD CONSTRAINT "_ProjectToRealtorLink_A_fkey" FOREIGN KEY ("A") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_ProjectToRealtorLink" ADD CONSTRAINT "_ProjectToRealtorLink_B_fkey" FOREIGN KEY ("B") REFERENCES "RealtorLink"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_ProjectGateways" ADD CONSTRAINT "_ProjectGateways_A_fkey" FOREIGN KEY ("A") REFERENCES "PaymentConfig"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_ProjectGateways" ADD CONSTRAINT "_ProjectGateways_B_fkey" FOREIGN KEY ("B") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;

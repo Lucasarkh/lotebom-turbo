@@ -92,17 +92,15 @@
 
     <!-- Invite Modal -->
     <Teleport to="body">
-      <div v-if="showInviteModal" class="modal-overlay" @click="showInviteModal = false">
-        <div class="modal-content" @click.stop>
+      <div v-if="showInviteModal" class="modal-overlay" @click.self="showInviteModal = false">
+        <div class="modal" @click.stop>
           <div class="modal-header">
             <h2>Convidar Novo Corretor</h2>
-            <button class="modal-close" @click="showInviteModal = false">
-              <i class="pi pi-times"></i>
-            </button>
+            <button class="modal-close" @click="showInviteModal = false">&times;</button>
           </div>
 
           <div class="modal-body">
-            <p style="color: var(--color-surface-400); font-size: 0.875rem; margin-bottom: 24px;">
+            <p style="color: var(--color-surface-200); font-size: 0.875rem; margin-bottom: 20px;">
               O corretor receberá um link para criar sua conta e será automaticamente vinculado à sua equipe.
             </p>
             <form @submit.prevent="sendInvite">

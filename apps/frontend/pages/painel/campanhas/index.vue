@@ -198,16 +198,14 @@ definePageMeta({
 
     <!-- Modal Form -->
     <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay" @click="showModal = false">
-        <div class="modal-content" @click.stop>
+      <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+        <div class="modal modal-lg" @click.stop>
           <div class="modal-header">
             <h2>{{ editingCampaign ? 'Editar Campanha' : 'Nova Campanha' }}</h2>
-            <button class="btn-icon" @click="showModal = false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            <button class="modal-close" @click="showModal = false">&times;</button>
           </div>
-          
-          <form @submit.prevent="saveCampaign" class="form mt-6">
+          <div class="modal-body">
+          <form @submit.prevent="saveCampaign">
             <div class="form-group">
               <label class="form-label">Nome da Campanha (Interno)</label>
               <input v-model="form.name" type="text" class="form-input" placeholder="Ex: Campanha Facebook Março" required />
@@ -262,12 +260,13 @@ definePageMeta({
             </div>
 
             <div class="modal-actions mt-8">
-              <button type="button" class="btn btn-secondary" @click="showModal = false">Cancelar</button>
+              <button type="button" class="btn btn-ghost" @click="showModal = false">Cancelar</button>
               <button type="submit" class="btn btn-primary">
                 {{ editingCampaign ? 'Salvar Alterações' : 'Criar Campanha' }}
               </button>
             </div>
           </form>
+          </div>
         </div>
       </div>
     </Teleport>

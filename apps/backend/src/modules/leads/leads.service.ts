@@ -290,7 +290,7 @@ export class LeadsService {
           projectId,
           mapElementId,
           realtorLinkId,
-          source: user.role === 'CORRETOR' ? 'corretor_manual' : 'loteadora_manual',
+          source: user.role === 'CORRETOR' ? 'corretor_manual' : user.role === 'IMOBILIARIA' ? 'imobiliaria_manual' : 'loteadora_manual',
           status: dto.status || 'NEW',
           reservedAt: dto.status === 'RESERVATION' ? new Date() : null,
           history: {
@@ -493,9 +493,9 @@ export class LeadsService {
     });
     if (!lead) throw new NotFoundException('Lead not found');
 
-    // Only Developer can mark as REVERSED (Estorno)
-    if (user.role === 'CORRETOR' && dto.status === 'REVERSED') {
-      throw new ForbiddenException('Only Developers can reverse a lead');
+    // Only LOTEADORA/SYSADMIN can mark as REVERSED (Estorno)
+    if (['CORRETOR', 'IMOBILIARIA'].includes(user.role) && dto.status === 'REVERSED') {
+      throw new ForbiddenException('Apenas a loteadora pode realizar estornos');
     }
 
     // Permission check for Realtors (they must own the lead)
@@ -505,6 +505,17 @@ export class LeadsService {
       });
       if (lead.realtorLinkId !== realtor?.id) {
         throw new ForbiddenException('You do not have access to this lead');
+      }
+    }
+
+    // Permission check for Imobiliárias (they can only manage leads from their agency's realtors)
+    if (user.role === 'IMOBILIARIA') {
+      const agencyUser = await this.prisma.user.findUnique({ where: { id: user.id }, select: { agencyId: true } });
+      if (agencyUser?.agencyId && lead.realtorLinkId) {
+        const realtor = await this.prisma.realtorLink.findUnique({ where: { id: lead.realtorLinkId }, select: { agencyId: true } });
+        if (realtor?.agencyId !== agencyUser.agencyId) {
+          throw new ForbiddenException('Você não tem acesso a este lead');
+        }
       }
     }
 

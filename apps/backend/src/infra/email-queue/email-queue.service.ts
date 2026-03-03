@@ -3,7 +3,7 @@ import { RabbitMqService } from '@infra/rabbitmq/rabbitmq.service';
 import { SendPulseService } from '@infra/sendpulse/sendpulse.service';
 
 export interface EmailJob {
-  type: 'welcome-tenant' | 'welcome-realtor' | 'password-reset' | 'invite';
+  type: 'welcome-tenant' | 'welcome-realtor' | 'password-reset' | 'invite' | 'two-factor';
   to: string;
   data: Record<string, any>;
   attempts: number;
@@ -54,6 +54,10 @@ export class EmailQueueService implements OnModuleInit {
     await this.queueEmail('invite', to, { token, role, email });
   }
 
+  async queueTwoFactorEmail(to: string, userName: string, code: string): Promise<void> {
+    await this.queueEmail('two-factor', to, { userName, code });
+  }
+
   private async startEmailConsumer(): Promise<void> {
     await this.rabbitMqService.createConsumer({
       queue: EMAIL_QUEUE,
@@ -75,7 +79,7 @@ export class EmailQueueService implements OnModuleInit {
       payload &&
       typeof payload.to === 'string' &&
       typeof payload.type === 'string' &&
-      ['welcome-tenant', 'welcome-realtor', 'password-reset', 'invite'].includes(payload.type) &&
+      ['welcome-tenant', 'welcome-realtor', 'password-reset', 'invite', 'two-factor'].includes(payload.type) &&
       payload.data &&
       typeof payload.data === 'object' &&
       typeof payload.attempts === 'number'
@@ -138,6 +142,13 @@ export class EmailQueueService implements OnModuleInit {
           job.data.token,
           job.data.role,
           job.data.email
+        );
+        break;
+      case 'two-factor':
+        await this.sendPulseService.sendTwoFactorEmail(
+          job.to,
+          job.data.userName,
+          job.data.code
         );
         break;
       default:

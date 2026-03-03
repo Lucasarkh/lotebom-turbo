@@ -85,6 +85,23 @@
             {{ loading ? 'Alterando...' : 'Atualizar Senha' }}
           </button>
         </form>
+
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--gray-200);" />
+
+        <h2 style="margin-bottom: 16px;">Autenticação em Duas Etapas (2FA)</h2>
+        <p style="font-size: 0.875rem; color: var(--gray-500); margin-bottom: 16px;">
+          Adicione uma camada extra de segurança à sua conta. Ao ativar, um código será enviado para seu e-mail a cada login.
+        </p>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label class="toggle-switch">
+            <input type="checkbox" :checked="twoFactorEnabled" @change="handleToggle2FA" :disabled="twoFactorLoading" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span style="font-size: 0.875rem; font-weight: 500;">
+            {{ twoFactorEnabled ? 'Ativado' : 'Desativado' }}
+          </span>
+          <span v-if="twoFactorLoading" style="font-size: 0.8125rem; color: var(--gray-400);">Salvando...</span>
+        </div>
       </div>
     </div>
   </div>
@@ -118,10 +135,15 @@ const realtorForm = ref({
   code: ''
 })
 
+// 2FA state
+const twoFactorEnabled = ref(false)
+const twoFactorLoading = ref(false)
+
 onMounted(async () => {
   if (authStore.user?.role === 'CORRETOR') {
     fetchRealtorData()
   }
+  fetch2FAStatus()
 })
 
 // Watcher for phone masking
@@ -195,4 +217,69 @@ async function handleChangePassword() {
     loading.value = false
   }
 }
+
+async function fetch2FAStatus() {
+  try {
+    const data = await fetchApi('/auth/me')
+    twoFactorEnabled.value = !!data.twoFactorEnabled
+  } catch (err) {
+    console.error('Falha ao buscar status 2FA', err)
+  }
+}
+
+async function handleToggle2FA() {
+  const newValue = !twoFactorEnabled.value
+  twoFactorLoading.value = true
+  try {
+    await fetchApi('/auth/toggle-2fa', {
+      method: 'POST',
+      body: { enabled: newValue }
+    })
+    twoFactorEnabled.value = newValue
+    toast.success(newValue ? '2FA ativado com sucesso!' : '2FA desativado.')
+  } catch (err) {
+    toast.error('Erro ao alterar configuração de 2FA.')
+  } finally {
+    twoFactorLoading.value = false
+  }
+}
 </script>
+
+<style scoped>
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--gray-300, #cbd5e1);
+  transition: 0.3s;
+  border-radius: 26px;
+}
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--primary, #2563eb);
+}
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(22px);
+}
+</style>

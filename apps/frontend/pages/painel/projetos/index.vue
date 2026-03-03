@@ -52,7 +52,7 @@
           <div v-if="createError" class="alert alert-error">{{ createError }}</div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" @click="showCreate = false">Cancelar</button>
-            <button type="submit" class="btn btn-primary" :disabled="creating">{{ creating ? 'Criando...' : 'Criar' }}</button>
+            <button type="submit" class="btn btn-primary" :disabled="creating || slugTaken">{{ creating ? 'Criando...' : 'Criar' }}</button>
           </div>
         </form>
       </div>

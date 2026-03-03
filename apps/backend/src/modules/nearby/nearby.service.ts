@@ -53,6 +53,7 @@ export class NearbyService {
         nearbyEnabled: true,
         nearbyStatus: true,
         nearbyItems: {
+          where: { visible: true },
           orderBy: { distanceMeters: 'asc' },
         },
       },
@@ -306,12 +307,14 @@ export class NearbyService {
         nearbyItems: {
           orderBy: { distanceMeters: 'asc' },
           select: {
+            id: true,
             category: true,
             name: true,
             distanceLabel: true,
             drivingLabel: true,
             walkingLabel: true,
             routeUrl: true,
+            visible: true,
           },
         },
       },
@@ -325,6 +328,7 @@ export class NearbyService {
       hasCoordinates: !!(project?.latitude && project?.longitude),
       itemCount: project?.nearbyItems?.length || 0,
       items: (project?.nearbyItems || []).map((item) => ({
+        id: item.id,
         category: item.category,
         categoryLabel: CATEGORY_LABELS[item.category] || item.category,
         name: item.name,
@@ -332,6 +336,7 @@ export class NearbyService {
         drivingLabel: item.drivingLabel,
         walkingLabel: item.walkingLabel,
         routeUrl: item.routeUrl,
+        visible: item.visible,
       })),
     };
   }
@@ -344,6 +349,17 @@ export class NearbyService {
       where: { id: projectId },
       data: { nearbyEnabled: enabled },
       select: { nearbyEnabled: true },
+    });
+  }
+
+  /**
+   * Toggle visibility of a single nearby item
+   */
+  async toggleItemVisibility(itemId: string, visible: boolean) {
+    return this.prisma.nearbyItem.update({
+      where: { id: itemId },
+      data: { visible },
+      select: { id: true, visible: true },
     });
   }
 }

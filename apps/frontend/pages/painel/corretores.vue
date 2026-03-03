@@ -33,7 +33,6 @@ const form = ref({
   phone: '',
   creci: '',
   code: '',
-  photoUrl: '',
   projectIds: [],
   accountEmail: '',
   accountPassword: ''
@@ -168,7 +167,7 @@ async function removeRealtor(id: string) {
 
 function openCreate() {
   editingRealtor.value = null
-  form.value = { name: '', phone: '', creci: '', code: '', photoUrl: '', projectIds: [], accountEmail: '', accountPassword: '' }
+  form.value = { name: '', phone: '', creci: '', code: '', projectIds: [], accountEmail: '', accountPassword: '' }
   slugManuallyEdited.value = false
   emailError.value = ''
   codeError.value = ''
@@ -184,7 +183,6 @@ function openEdit(realtor) {
     phone: realtor.phone,
     creci: realtor.creci || '',
     code: realtor.code,
-    photoUrl: realtor.photoUrl || '',
     projectIds: realtor.projects?.map(p => p.id) || [],
     accountEmail: '',
     accountPassword: ''
@@ -294,10 +292,7 @@ definePageMeta({
           <tr v-for="realtor in realtors" :key="realtor.id">
             <td>
               <div class="realtor-name">
-                <div v-if="realtor.photoUrl" class="realtor-photo">
-                  <img :src="realtor.photoUrl" alt="">
-                </div>
-                <div v-else class="realtor-avatar-placeholder">{{ realtor.name[0] }}</div>
+                <div class="realtor-avatar-placeholder">{{ realtor.name[0] }}</div>
                 <strong>{{ realtor.name }}</strong>
               </div>
             </td>
@@ -333,10 +328,14 @@ definePageMeta({
 
     <!-- Modal Modal -->
     <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay" @click="showModal = false">
-        <div class="modal-content" @click.stop>
-          <h2>{{ editingRealtor ? 'Editar Corretor' : 'Novo Corretor' }}</h2>
-          <form @submit.prevent="saveRealtor" class="form">
+      <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+        <div class="modal modal-lg" @click.stop>
+          <div class="modal-header">
+            <h2>{{ editingRealtor ? 'Editar Corretor' : 'Novo Corretor' }}</h2>
+            <button class="modal-close" @click="showModal = false">&times;</button>
+          </div>
+          <div class="modal-body">
+          <form @submit.prevent="saveRealtor">
             <div class="form-grid">
               <div class="form-group span-2">
                 <label class="form-label">Nome do Corretor <span class="required">*</span></label>
@@ -362,11 +361,6 @@ definePageMeta({
               <div class="form-group">
                 <label class="form-label">Telefone (WhatsApp) <span class="required">*</span></label>
                 <input v-model="form.phone" type="text" class="form-input" placeholder="(DD) 9XXXX-XXXX" required>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">URL da Foto</label>
-                <input v-model="form.photoUrl" type="text" class="form-input" placeholder="URL da foto/avatar">
               </div>
             </div>
 
@@ -410,42 +404,48 @@ definePageMeta({
             </div>
 
             <div class="modal-actions">
-              <button type="button" class="btn btn-outline" @click="showModal = false">Cancelar</button>
+              <button type="button" class="btn btn-ghost" @click="showModal = false">Cancelar</button>
               <button type="submit" class="btn btn-primary">Salvar</button>
             </div>
           </form>
+          </div>
         </div>
       </div>
     </Teleport>
 
     <!-- Invite Modal -->
     <Teleport to="body">
-      <div v-if="showInviteModal" class="modal-overlay" @click="showInviteModal = false">
-        <div class="modal-content" @click.stop>
-          <h2>Convidar Corretor</h2>
-          <p class="subtitle" style="margin-bottom: 24px;">Envie um e-mail de convite para o corretor se cadastrar sozinho.</p>
+      <div v-if="showInviteModal" class="modal-overlay" @click.self="showInviteModal = false">
+        <div class="modal" @click.stop>
+          <div class="modal-header">
+            <h2>Convidar Corretor</h2>
+            <button class="modal-close" @click="showInviteModal = false">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="color: var(--color-surface-200); margin-bottom: 20px; font-size: 0.875rem;">Envie um e-mail de convite para o corretor se cadastrar sozinho.</p>
           
-          <form @submit.prevent="sendInvite" class="form">
-            <div class="form-group">
-              <label class="form-label">E-mail do Corretor</label>
-              <input 
-                v-model="inviteForm.email" 
-                type="email" 
-                class="form-input" 
-                placeholder="email@corretor.com.br" 
-                required
-              >
-            </div>
+            <form @submit.prevent="sendInvite">
+              <div class="form-group">
+                <label class="form-label">E-mail do Corretor</label>
+                <input 
+                  v-model="inviteForm.email" 
+                  type="email" 
+                  class="form-input" 
+                  placeholder="email@corretor.com.br" 
+                  required
+                >
+              </div>
 
-            <div class="modal-actions">
-              <button type="button" class="btn btn-outline" @click="showInviteModal = false">
-                Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary" :disabled="!inviteForm.email">
-                Enviar Convite (E-mail e Sistema)
-              </button>
-            </div>
-          </form>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" @click="showInviteModal = false">
+                  Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary" :disabled="!inviteForm.email">
+                  Enviar Convite
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </Teleport>
