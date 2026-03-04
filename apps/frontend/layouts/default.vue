@@ -173,6 +173,13 @@
       <PainelBillingWarningBanner v-if="authStore.isLoteadora" />
       <slot />
     </main>
+
+    <!-- Terms Acceptance Modal -->
+    <CommonTermsAcceptanceModal
+      :visible="showTermsModal"
+      @accepted="onTermsAccepted"
+      @declined="onTermsDeclined"
+    />
   </div>
 </template>
 
@@ -185,6 +192,23 @@ const router = useRouter()
 const { success: toastSuccess } = useToast()
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen = ref(false)
+
+// Terms acceptance modal
+const showTermsModal = computed(() => {
+  return authStore.isLoggedIn && !authStore.hasAcceptedTerms
+})
+
+const onTermsAccepted = () => {
+  toastSuccess('Termos aceitos com sucesso!')
+}
+
+const onTermsDeclined = async () => {
+  const { fetchApi } = useApi()
+  try { await fetchApi('/auth/logout', { method: 'POST' }) } catch {}
+  authStore.logout()
+  toastSuccess('Sessão encerrada')
+  router.push('/login')
+}
 
 const initials = computed(() => {
   const n = authStore.user?.name ?? ''

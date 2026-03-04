@@ -253,10 +253,13 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  realtorLink RealtorLink?
-  realtor     Realtor?
-  campaigns   Campaign[]
-  schedulings Scheduling[]
+  termsAcceptedAt DateTime?
+
+  realtorLink       RealtorLink?
+  realtor           Realtor?
+  campaigns         Campaign[]
+  schedulings       Scheduling[]
+  termsAcceptances  TermsAcceptance[]
 
   @@index([tenantId])
   @@index([agencyId])
@@ -1010,6 +1013,23 @@ model BillingInvoice {
 
   @@index([tenantId])
   @@index([status])
+}
+
+// ─── TERMS ACCEPTANCE ────────────────────────────────────
+// Audit trail for legal compliance — stores every terms/privacy acceptance event
+model TermsAcceptance {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentType    String   // "terms_of_use" | "privacy_policy"
+  documentVersion String   // e.g. "1.0"
+  ipAddress       String   // IP at moment of acceptance
+  userAgent       String   @db.Text // Full User-Agent string
+  acceptedAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([documentType])
+  @@index([acceptedAt])
 }
 
 // ─── SYSTEM METADATA ─────────────────────────────────────

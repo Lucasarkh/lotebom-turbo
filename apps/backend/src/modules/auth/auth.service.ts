@@ -158,7 +158,7 @@ export class AuthService {
       where: { id: userId },
       select: {
         id: true, email: true, name: true, role: true,
-        tenantId: true, agencyId: true,
+        tenantId: true, agencyId: true, termsAcceptedAt: true,
         twoFactorCode: true, twoFactorCodeExpiry: true
       }
     });
@@ -231,7 +231,8 @@ export class AuthService {
         name: user.name,
         role: user.role,
         tenantId: user.tenantId,
-        agencyId: user.agencyId
+        agencyId: user.agencyId,
+        termsAcceptedAt: user.termsAcceptedAt || null
       }
     };
   }
@@ -361,12 +362,80 @@ export class AuthService {
         tenantId: true,
         agencyId: true,
         twoFactorEnabled: true,
+        termsAcceptedAt: true,
         tenant: { select: { id: true, name: true, slug: true } }
       }
     });
 
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
     return user;
+  }
+
+  async acceptTerms(userId: string, ipAddress: string, userAgent: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    const now = new Date();
+    const currentTermsVersion = '1.0';
+
+    await this.prisma.$transaction([
+      // Record terms of use acceptance
+      this.prisma.termsAcceptance.create({
+        data: {
+          userId,
+          documentType: 'terms_of_use',
+          documentVersion: currentTermsVersion,
+          ipAddress,
+          userAgent: userAgent || 'unknown',
+          acceptedAt: now,
+        },
+      }),
+      // Record privacy policy acceptance
+      this.prisma.termsAcceptance.create({
+        data: {
+          userId,
+          documentType: 'privacy_policy',
+          documentVersion: currentTermsVersion,
+          ipAddress,
+          userAgent: userAgent || 'unknown',
+          acceptedAt: now,
+        },
+      }),
+      // Mark user as having accepted terms
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { termsAcceptedAt: now },
+      }),
+    ]);
+
+    this.logger.log(`User ${userId} accepted terms v${currentTermsVersion} from IP ${ipAddress}`);
+
+    return {
+      accepted: true,
+      termsAcceptedAt: now.toISOString(),
+      version: currentTermsVersion,
+    };
+  }
+
+  async getTermsStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { termsAcceptedAt: true },
+    });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    const latestAcceptances = await this.prisma.termsAcceptance.findMany({
+      where: { userId },
+      orderBy: { acceptedAt: 'desc' },
+      take: 2,
+    });
+
+    return {
+      hasAccepted: !!user.termsAcceptedAt,
+      termsAcceptedAt: user.termsAcceptedAt,
+      currentVersion: '1.0',
+      acceptances: latestAcceptances,
+    };
   }
 
   async toggleTwoFactor(userId: string, enable: boolean) {

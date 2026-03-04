@@ -7,6 +7,7 @@ export interface User {
   role: 'SYSADMIN' | 'LOTEADORA' | 'IMOBILIARIA' | 'CORRETOR';
   tenantId?: string;
   agencyId?: string;
+  termsAcceptedAt?: string | null;
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -26,6 +27,7 @@ export const useAuthStore = defineStore('auth', {
     canManageUsers: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
     canEdit: (state) => ['SYSADMIN', 'LOTEADORA'].includes(state.user?.role ?? ''),
     userRole: (state) => state.user?.role ?? null,
+    hasAcceptedTerms: (state) => !!state.user?.termsAcceptedAt,
   },
 
   actions: {
@@ -65,6 +67,15 @@ export const useAuthStore = defineStore('auth', {
 
     getDashboardRoute(): string {
       return '/painel';
+    },
+
+    setTermsAccepted() {
+      if (this.user) {
+        this.user.termsAcceptedAt = new Date().toISOString();
+        if (import.meta.client) {
+          localStorage.setItem('user', JSON.stringify(this.user));
+        }
+      }
     },
   },
 });

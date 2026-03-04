@@ -117,4 +117,28 @@ export class AuthController {
   async me(@Request() req: any) {
     return this.authService.me(req.user.id);
   }
+
+  @Post('accept-terms')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Aceitar termos de uso e política de privacidade' })
+  async acceptTerms(@Request() req: any) {
+    const ipAddress =
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.connection?.remoteAddress ||
+      req.ip ||
+      'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return this.authService.acceptTerms(req.user.id, ipAddress, userAgent);
+  }
+
+  @Get('terms-status')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verificar status de aceite dos termos' })
+  async termsStatus(@Request() req: any) {
+    return this.authService.getTermsStatus(req.user.id);
+  }
 }
