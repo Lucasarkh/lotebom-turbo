@@ -1,13 +1,13 @@
 <template>
-  <section id="cta" class="cta">
+  <section id="cta" class="cta" ref="ctaSectionRef">
     <div class="container-landing">
       <div class="cta-inner">
-        <h2 class="cta-title">Sua gestão de loteamentos, <br> em outro nível.</h2>
-        <p class="cta-subtitle">
+        <h2 class="cta-title" ref="ctaTitleRef">Sua gestão de loteamentos, <br> em outro nível.</h2>
+        <p class="cta-subtitle" ref="ctaSubRef">
           A plataforma completa para gerir, vender e automatizar o seu loteamento com tecnologia de ponta.
         </p>
         
-        <div class="cta-form-container animate-slide-up-delay-1">
+        <div class="cta-form-container" ref="ctaFormRef">
           <form @submit.prevent="submitContact" class="cta-card-form">
             <div class="form-group">
               <input v-model="form.name" type="text" placeholder="Seu nome" required>
@@ -32,6 +32,9 @@
 </template>
 
 <script setup>
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
 const { get, post } = usePublicApi()
 const toast = useToast()
 
@@ -40,12 +43,58 @@ const showContactForm = ref(false)
 const submitting = ref(false)
 const form = ref({ name: '', email: '', phone: '' })
 
+const ctaSectionRef = ref(null)
+const ctaTitleRef = ref(null)
+const ctaSubRef = ref(null)
+const ctaFormRef = ref(null)
+
 onMounted(async () => {
   try {
     settings.value = await get('/p/settings')
   } catch (e) {
     console.error('Erro ao carregar configurações:', e)
   }
+
+  // GSAP scroll-triggered CTA animations
+  nextTick(() => {
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: ctaSectionRef.value,
+        start: 'top 75%',
+        once: true
+      }
+    })
+
+    // Title: slide up with scale
+    if (ctaTitleRef.value) {
+      gsap.set(ctaTitleRef.value, { opacity: 0, y: 60, scale: 0.96 })
+      tl.to(ctaTitleRef.value, {
+        opacity: 1, y: 0, scale: 1,
+        duration: 1,
+        ease: 'expo.out'
+      })
+    }
+
+    // Subtitle fade up
+    if (ctaSubRef.value) {
+      gsap.set(ctaSubRef.value, { opacity: 0, y: 30 })
+      tl.to(ctaSubRef.value, {
+        opacity: 1, y: 0,
+        duration: 0.8,
+        ease: 'power3.out'
+      }, '-=0.6')
+    }
+
+    // Form card: dramatic slide up with shadow
+    if (ctaFormRef.value) {
+      gsap.set(ctaFormRef.value, { opacity: 0, y: 50, scale: 0.95 })
+      tl.to(ctaFormRef.value, {
+        opacity: 1, y: 0, scale: 1,
+        duration: 0.9,
+        ease: 'back.out(1.2)'
+      }, '-=0.4')
+    }
+  })
 })
 
 const openWhatsapp = () => {

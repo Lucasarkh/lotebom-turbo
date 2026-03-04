@@ -1,8 +1,8 @@
 <template>
-  <div class="audience-strip">
+  <div class="audience-strip" ref="stripRef">
     <div class="container-landing">
       <div class="strip-content">
-        <div class="strip-items">
+        <div class="strip-items" ref="stripItemsRef">
           <span class="strip-text">Loteadoras</span>
           <span class="strip-dot"></span>
           <span class="strip-text">Incorporadoras</span>
@@ -15,6 +15,36 @@
     </div>
   </div>
 </template>
+
+<script setup>
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+const stripRef = ref(null)
+const stripItemsRef = ref(null)
+
+onMounted(() => {
+  nextTick(() => {
+    if (!stripItemsRef.value) return
+    const children = stripItemsRef.value.children
+    gsap.set(children, { opacity: 0, y: 16, scale: 0.85 })
+
+    gsap.to(children, {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      duration: 0.6,
+      stagger: 0.08,
+      ease: 'back.out(1.6)',
+      scrollTrigger: {
+        trigger: stripRef.value,
+        start: 'top 90%',
+        once: true
+      }
+    })
+  })
+})
+</script>
 
 <style scoped>
 .audience-strip {

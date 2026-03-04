@@ -2,15 +2,15 @@
   <section class="hero">
     <div class="hero-overlay"></div>
     <div class="container-landing">
-      <div class="hero-content">
-        <h1 class="hero-title animate-slide-up">
+      <div class="hero-content" ref="heroContentRef">
+        <h1 class="hero-title" ref="heroTitleRef">
           O futuro do loteamento é <span class="text-primary">interativo</span>.
         </h1>
-        <p class="hero-subtitle animate-slide-up-delay-1">
+        <p class="hero-subtitle" ref="heroSubRef">
           Transforme mapas estáticos em ferramentas de venda imersivas. 
           Gestão de estoque, captura de leads e automação para corretores em uma única plataforma.
         </p>
-        <div class="hero-actions animate-slide-up-delay-2">
+        <div class="hero-actions" ref="heroActionsRef">
           <button v-if="settings?.contactWhatsapp" @click="openWhatsapp" class="btn btn-primary btn-apple-lg btn-shadow">
             Falar com especialista
           </button>
@@ -58,6 +58,8 @@
 </template>
 
 <script setup>
+import { gsap } from 'gsap'
+
 const { get, post } = usePublicApi()
 const toast = useToast()
 
@@ -71,12 +73,54 @@ const form = ref({
   message: ''
 })
 
+const heroContentRef = ref(null)
+const heroTitleRef = ref(null)
+const heroSubRef = ref(null)
+const heroActionsRef = ref(null)
+
 onMounted(async () => {
   try {
     settings.value = await get('/p/settings')
   } catch (e) {
     console.error('Erro ao carregar configurações:', e)
   }
+
+  // GSAP entrance timeline
+  nextTick(() => {
+    const tl = gsap.timeline({ defaults: { ease: 'power4.out' } })
+
+    // Title: dramatic slide up with slight scale
+    if (heroTitleRef.value) {
+      gsap.set(heroTitleRef.value, { opacity: 0, y: 80, scale: 0.95 })
+      tl.to(heroTitleRef.value, {
+        opacity: 1, y: 0, scale: 1,
+        duration: 1.2,
+        ease: 'expo.out'
+      })
+    }
+
+    // Subtitle: fade up
+    if (heroSubRef.value) {
+      gsap.set(heroSubRef.value, { opacity: 0, y: 40 })
+      tl.to(heroSubRef.value, {
+        opacity: 1, y: 0,
+        duration: 0.9,
+        ease: 'power3.out'
+      }, '-=0.7')
+    }
+
+    // CTA buttons: staggered slide up
+    if (heroActionsRef.value) {
+      const buttons = heroActionsRef.value.children
+      gsap.set(buttons, { opacity: 0, y: 30, scale: 0.9 })
+      tl.to(buttons, {
+        opacity: 1, y: 0, scale: 1,
+        duration: 0.7,
+        stagger: 0.15,
+        ease: 'back.out(1.4)'
+      }, '-=0.4')
+    }
+  })
 })
 
 const openWhatsapp = () => {
