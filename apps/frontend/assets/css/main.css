@@ -233,12 +233,11 @@ a {
 }
 
 .btn-ghost {
-  background: transparent;
-  color: var(--color-surface-100);
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
 }
 .btn-ghost:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
-  color: var(--color-surface-50);
 }
 
 .btn-outline {
@@ -1475,15 +1474,6 @@ hr {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-
-/* Links inside public layout */
-.public-layout a {
-  color: var(--primary);
-}
-.public-layout a:hover {
-  color: var(--primary-hover);
-}
-
 /* Dividers / hr */
 .public-layout .divider,
 .public-layout hr {

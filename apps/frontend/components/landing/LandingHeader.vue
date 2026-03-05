@@ -8,8 +8,8 @@
       <!-- Desktop Nav -->
       <nav class="nav-desktop">
         <ul class="nav-list">
-          <li><a href="#features" class="nav-link">Funcionalidades</a></li>
-          <li><a href="#cta" class="nav-link">Contato</a></li>
+          <li><a href="/#features" class="nav-link">Funcionalidades</a></li>
+          <li><a href="/#cta" class="nav-link">Contato</a></li>
         </ul>
         
         <div class="nav-actions">

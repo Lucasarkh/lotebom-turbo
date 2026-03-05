@@ -39,4 +39,12 @@ export class AcceptInviteDto {
   @IsNotEmpty()
   @Matches(PASSWORD_POLICY_REGEX, { message: PASSWORD_POLICY_MESSAGE })
   password: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @IsString()
+  @IsOptional()
+  creci?: string;
 }

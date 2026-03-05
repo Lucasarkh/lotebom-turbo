@@ -1061,6 +1061,7 @@ const scrollToForm = () => {
   transition: border-color 0.2s, box-shadow 0.2s;
   font-family: var(--font-sans);
   outline: none;
+  width: 100%;
 }
 .lp-field input:focus,
 .lp-field select:focus,
@@ -1284,7 +1285,6 @@ const scrollToForm = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
   transition: transform 0.15s;
   position: relative;
 }
@@ -1318,7 +1318,7 @@ const scrollToForm = () => {
 .lp-notif-hl { background: var(--primary-50); color: var(--primary); padding: 1px 6px; border-radius: 4px; font-weight: 700; }
 .lp-notif-phone { color: var(--gray-500); }
 .lp-notif-actions { border-top: 1px solid var(--gray-100); padding-top: 12px; }
-.lp-notif-btn { font-size: 0.8rem; color: var(--primary); font-weight: 700; cursor: pointer; }
+.lp-notif-btn { font-size: 0.8rem; color: var(--primary); font-weight: 700; }
 
 /* Mock rank */
 .lp-mock-rank {
@@ -1375,7 +1375,6 @@ const scrollToForm = () => {
   font-size: 0.9rem;
   font-weight: 700;
   text-align: center;
-  cursor: pointer;
 }
 
 /* ──────────── More features ──────────── */

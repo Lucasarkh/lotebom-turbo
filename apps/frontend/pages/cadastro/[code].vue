@@ -25,14 +25,103 @@ const form = ref({
   confirmPassword: '',
   phone: '',
   creci: '',
-  agencyName: ''
+  agencyName: '',
+  sharingLinkCode: ''
 })
 
+const shareCodeChecking = ref(false)
+const shareCodeAvailable = ref<boolean | null>(null)
+const shareCodeError = ref('')
+let shareCodeDebounceTimeout: ReturnType<typeof setTimeout> | null = null
+let shareCodeValidationSeq = 0
+
 const isImobiliaria = computed(() => codeData.value?.role === 'IMOBILIARIA')
+const isCorretor = computed(() => codeData.value?.role === 'CORRETOR')
 
 const roleName = computed(() => {
   if (!codeData.value) return ''
   return codeData.value.role === 'IMOBILIARIA' ? 'Imobiliária' : 'Corretor de Imóveis'
+})
+
+function normalizeSharingLinkCode(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function resetShareCodeValidation() {
+  shareCodeAvailable.value = null
+  shareCodeChecking.value = false
+  shareCodeError.value = ''
+}
+
+async function validateSharingLinkAvailability(rawValue?: string) {
+  if (!isCorretor.value) return true
+
+  const normalizedCode = normalizeSharingLinkCode(rawValue ?? form.value.sharingLinkCode)
+  if (!normalizedCode) {
+    resetShareCodeValidation()
+    return false
+  }
+
+  const requestSeq = ++shareCodeValidationSeq
+  shareCodeChecking.value = true
+  shareCodeError.value = ''
+  try {
+    const response = await get(
+      `/agencies/invite-codes/public/${code}/check-sharing-link?value=${encodeURIComponent(normalizedCode)}`
+    )
+    if (requestSeq !== shareCodeValidationSeq) return false
+
+    const available = !!response?.available
+    shareCodeAvailable.value = available
+    shareCodeError.value = available ? '' : 'Este link de compartilhamento já está em uso.'
+    return available
+  } catch (err: any) {
+    if (requestSeq !== shareCodeValidationSeq) return false
+    shareCodeAvailable.value = null
+    shareCodeError.value = err.message || 'Não foi possível validar o link agora.'
+    return false
+  } finally {
+    if (requestSeq === shareCodeValidationSeq) {
+      shareCodeChecking.value = false
+    }
+  }
+}
+
+watch(() => form.value.sharingLinkCode, (newValue) => {
+  if (!isCorretor.value) return
+  const normalizedCode = normalizeSharingLinkCode(newValue)
+  if (newValue !== normalizedCode) {
+    form.value.sharingLinkCode = normalizedCode
+    return
+  }
+
+  if (!normalizedCode) {
+    resetShareCodeValidation()
+    return
+  }
+
+  if (shareCodeDebounceTimeout) {
+    clearTimeout(shareCodeDebounceTimeout)
+  }
+
+  shareCodeDebounceTimeout = setTimeout(() => {
+    validateSharingLinkAvailability(normalizedCode)
+  }, 450)
+})
+
+watch(isCorretor, (value) => {
+  if (!value) {
+    if (shareCodeDebounceTimeout) {
+      clearTimeout(shareCodeDebounceTimeout)
+    }
+    form.value.sharingLinkCode = ''
+    resetShareCodeValidation()
+  }
 })
 
 async function fetchCodeData() {
@@ -59,6 +148,20 @@ async function register() {
     return
   }
 
+  if (isCorretor.value) {
+    form.value.sharingLinkCode = normalizeSharingLinkCode(form.value.sharingLinkCode)
+    if (!form.value.sharingLinkCode) {
+      errorMsg.value = 'Informe seu link de compartilhamento.'
+      return
+    }
+
+    const available = await validateSharingLinkAvailability(form.value.sharingLinkCode)
+    if (!available) {
+      errorMsg.value = shareCodeError.value || 'Este link de compartilhamento já está em uso.'
+      return
+    }
+  }
+
   const pwd = form.value.password
   const passwordError = getPasswordPolicyError(pwd)
   if (passwordError) {
@@ -83,6 +186,9 @@ async function register() {
     if (isImobiliaria.value) {
       payload.agencyName = form.value.agencyName
     }
+    if (isCorretor.value) {
+      payload.sharingLinkCode = form.value.sharingLinkCode
+    }
 
     await post(`/agencies/invite-codes/public/${code}/register`, payload)
     success.value = true
@@ -97,6 +203,12 @@ async function register() {
 }
 
 onMounted(fetchCodeData)
+
+onBeforeUnmount(() => {
+  if (shareCodeDebounceTimeout) {
+    clearTimeout(shareCodeDebounceTimeout)
+  }
+})
 </script>
 
 <template>
@@ -139,38 +251,62 @@ onMounted(fetchCodeData)
         <div class="card-header">
           <h1>Cadastro de {{ roleName }}</h1>
           <p>
-            Você foi convidado para se cadastrar como <strong>{{ roleName }}</strong>
+            Voce foi convidado para se cadastrar como <strong>{{ roleName }}</strong>
             na plataforma da <strong>{{ codeData.tenantName }}</strong>.
           </p>
+
+          <p class="tenant-note">Loteadora: {{ codeData.tenantName }}</p>
+
           <p v-if="codeData.description" class="invite-note">{{ codeData.description }}</p>
         </div>
 
         <form class="form" @submit.prevent="register">
+          <p class="section-title">Dados pessoais</p>
+
           <div v-if="isImobiliaria" class="form-group">
             <label class="form-label">Nome da Imobiliária <span class="required">*</span></label>
-            <input v-model="form.agencyName" type="text" class="form-input" placeholder="Nome da sua imobiliária" required />
+            <input v-model="form.agencyName" type="text" class="form-input" placeholder="Nome da sua imobiliária" required autocomplete="organization" />
           </div>
 
           <div class="form-group">
             <label class="form-label">Seu Nome Completo <span class="required">*</span></label>
-            <input v-model="form.name" type="text" class="form-input" placeholder="Nome completo" required />
+            <input v-model="form.name" type="text" class="form-input" placeholder="Nome completo" required autocomplete="name" />
           </div>
 
           <div class="form-group">
             <label class="form-label">E-mail <span class="required">*</span></label>
-            <input v-model="form.email" type="email" class="form-input" placeholder="seu@email.com" required />
+            <input v-model="form.email" type="email" class="form-input" placeholder="seu@email.com" required autocomplete="email" />
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Telefone</label>
-              <input v-model="form.phone" type="tel" class="form-input" placeholder="(11) 99999-9999" />
+              <input v-model="form.phone" type="tel" class="form-input" placeholder="(11) 99999-9999" inputmode="tel" autocomplete="tel" />
             </div>
             <div class="form-group">
               <label class="form-label">CRECI</label>
-              <input v-model="form.creci" type="text" class="form-input" placeholder="Opcional" />
+              <input v-model="form.creci" type="text" class="form-input" placeholder="Opcional" autocomplete="off" />
             </div>
           </div>
+
+          <div v-if="isCorretor" class="form-group">
+            <label class="form-label">Seu Link de Compartilhamento <span class="required">*</span></label>
+            <input
+              v-model="form.sharingLinkCode"
+              type="text"
+              class="form-input"
+              :class="{ 'input-error': shareCodeAvailable === false, 'input-success': shareCodeAvailable === true }"
+              placeholder="ex: joao-silva"
+              autocomplete="off"
+              required
+            />
+            <small class="form-hint">Use letras, números e hífen. Esse link precisa ser único na sua loteadora.</small>
+            <small v-if="shareCodeChecking" class="form-hint">Validando disponibilidade...</small>
+            <small v-else-if="shareCodeAvailable === true" class="hint-success">Link disponível.</small>
+            <small v-else-if="shareCodeAvailable === false" class="hint-error">{{ shareCodeError || 'Este link de compartilhamento já está em uso.' }}</small>
+          </div>
+
+          <p class="section-title">Seguranca da conta</p>
 
           <div class="form-group">
             <label class="form-label">Senha <span class="required">*</span></label>
@@ -187,7 +323,7 @@ onMounted(fetchCodeData)
 
           <div v-if="errorMsg" class="alert-error">{{ errorMsg }}</div>
 
-          <button type="submit" class="btn btn-primary btn-full" :disabled="loading">
+          <button type="submit" class="btn btn-primary btn-full" :disabled="loading || shareCodeChecking">
             {{ loading ? 'Criando conta...' : 'Criar minha conta' }}
           </button>
 
@@ -208,97 +344,275 @@ onMounted(fetchCodeData)
 * { box-sizing: border-box; }
 
 .register-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   min-height: 100vh;
-  background: #f9fafb;
-  display: flex; justify-content: center; align-items: flex-start;
-  padding: 40px 16px;
+  background: var(--gray-50);
+  padding: var(--space-8) var(--space-4);
 }
 
 .register-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-  border: 1px solid #e5e7eb;
-  width: 100%; max-width: 480px;
-  padding: 32px 28px;
+  background: #fff;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 520px;
+  padding: var(--space-8) var(--space-7);
 }
 
 @media (max-width: 480px) {
-  .register-card { padding: 24px 20px; }
-  .register-page { padding: 24px 12px; }
+  .register-card {
+    padding: var(--space-6) var(--space-5);
+    border-radius: var(--radius-lg);
+  }
+
+  .register-page {
+    padding: var(--space-6) var(--space-3);
+  }
 }
 
-.brand { text-align: center; margin-bottom: 24px; }
-.logo { height: 44px; }
+.brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-6);
+}
 
-.card-header { text-align: center; margin-bottom: 24px; }
-.card-header h1 { font-size: 1.375rem; font-weight: 800; color: #111827; margin: 0 0 8px; }
-.card-header p { font-size: 0.875rem; color: #4b5563; margin: 0 0 4px; line-height: 1.5; }
-.card-header strong { color: #111827; }
+.logo {
+  height: 46px;
+}
+
+.card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.card-header h1 {
+  font-size: 1.75rem;
+  line-height: 1.25;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin: 0 0 var(--space-2);
+}
+
+.card-header p {
+  font-size: 0.9375rem;
+  color: var(--gray-600);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.card-header strong { color: var(--gray-900); }
+
+.tenant-note {
+  margin-top: var(--space-3) !important;
+  font-size: 0.8125rem !important;
+  color: var(--primary-hover) !important;
+  font-weight: 600;
+}
+
 .invite-note {
-  display: inline-block; margin-top: 8px;
-  font-size: 0.8125rem; color: #059669;
-  background: #f0fdf4; border: 1px solid #d1fae5;
-  border-radius: 8px; padding: 6px 12px;
+  margin-top: var(--space-3) !important;
+  font-size: 0.8125rem !important;
+  color: var(--gray-600) !important;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
 }
 
 .state-center {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 12px; padding: 32px 0; text-align: center;
-  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) 0;
+  text-align: center;
+  color: var(--gray-500);
 }
-.state-center h2 { font-size: 1.25rem; font-weight: 700; color: #111827; margin: 0; }
-.state-center p { margin: 0; font-size: 0.875rem; }
+
+.state-center h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.state-center p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
 .state-center.error { color: #dc2626; }
 .state-center.error h2 { color: #b91c1c; }
-.state-center.success { color: #059669; }
-.state-center.success h2 { color: #047857; }
+.state-center.success { color: var(--primary-hover); }
+.state-center.success h2 { color: var(--primary-hover); }
 
 .spinner {
-  width: 36px; height: 36px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #10b981;
-  border-radius: 50%; animation: spin 0.7s linear infinite;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.form { display: flex; flex-direction: column; gap: 14px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.form-group { display: flex; flex-direction: column; gap: 5px; }
-.form-label { font-size: 0.875rem; font-weight: 600; color: #374151; }
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.section-title {
+  margin: var(--space-2) 0 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gray-500);
+  font-weight: 700;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
 .required { color: #ef4444; }
 
 .form-input {
-  padding: 11px 14px; border-radius: 8px;
-  border: 1.5px solid #d1d5db; background: white;
-  color: #111827; font-size: 0.9375rem;
-  transition: all 150ms ease; width: 100%;
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--gray-300);
+  background: #ffffff;
+  color: var(--gray-900);
+  font-size: 0.9375rem;
+  transition: all 150ms ease;
 }
-.form-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
-.form-input::placeholder { color: #9ca3af; }
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.form-input::placeholder { color: var(--gray-400); }
+
+.input-error {
+  border-color: #ef4444 !important;
+}
+
+.input-success {
+  border-color: #10b981 !important;
+}
+
+.form-hint {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.hint-success {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.hint-error {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+:deep(.app-pw-wrapper .form-input) {
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--gray-300);
+  background: #ffffff;
+  color: var(--gray-900);
+}
+
+:deep(.app-pw-wrapper .form-input:focus) {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+:deep(.app-pw-toggle) {
+  color: var(--gray-500);
+}
+
+:deep(.app-pw-toggle:hover) {
+  color: var(--gray-800);
+}
 
 .alert-error {
-  padding: 10px 14px; border-radius: 8px;
-  background: #fef2f2; color: #b91c1c;
-  border: 1px solid rgba(239,68,68,0.2);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.2);
   font-size: 0.875rem;
 }
 
 .btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 12px 24px; border-radius: 8px;
-  font-weight: 700; font-size: 1rem;
-  cursor: pointer; transition: all 150ms ease; border: none;
-  text-decoration: none;
+  min-height: 52px;
+  font-size: 1rem;
+  font-weight: 700;
 }
-.btn-primary { background: #059669; color: white; }
-.btn-primary:hover:not(:disabled) { background: #047857; }
+
+.btn-primary {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
+}
+
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-full { width: 100%; }
 
 .footer-note {
-  font-size: 0.75rem; color: #9ca3af; text-align: center; margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-align: center;
+  margin: var(--space-2) 0 0;
+  line-height: 1.5;
 }
-.footer-note a { color: #059669; text-decoration: none; }
+
+.footer-note a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
 .footer-note a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .card-header h1 {
+    font-size: 1.45rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
 </style>

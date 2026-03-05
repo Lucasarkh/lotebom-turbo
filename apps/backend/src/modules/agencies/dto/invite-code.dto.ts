@@ -61,6 +61,11 @@ export class RegisterWithInviteCodeDto {
   @IsString()
   @IsOptional()
   agencyName?: string;
+
+  // For CORRETOR role: custom sharing link code
+  @IsString()
+  @IsOptional()
+  sharingLinkCode?: string;
 }
 
 export class UpdateInviteCodeDto {

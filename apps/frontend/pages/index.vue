@@ -77,7 +77,6 @@ definePageMeta({
   cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none !important;
-  color: inherit;
 }
 
 .btn-primary {

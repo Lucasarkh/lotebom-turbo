@@ -17,6 +17,15 @@ export class AgenciesService {
     private emailQueueService: EmailQueueService,
   ) {}
 
+  private normalizeSharingLinkCode(value: string | null | undefined): string {
+    return (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
   async createAgency(tenantId: string, dto: CreateAgencyDto) {
     const existing = await this.prisma.agency.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email de imobiliária já cadastrado.');
@@ -227,6 +236,8 @@ export class AgenciesService {
             userId: user.id,
             name: dto.name,
             email: invite.email,
+            phone: dto.phone || null,
+            creci: dto.creci || null,
             code: finalCode,
             agencyId: invite.agencyId || null,
           }
@@ -343,6 +354,39 @@ export class AgenciesService {
     };
   }
 
+  async checkInviteCodeSharingLinkAvailability(code: string, sharingLinkValue: string) {
+    const inviteCode = await this.prisma.tenantInviteCode.findFirst({
+      where: {
+        code,
+        isActive: true,
+        role: UserRole.CORRETOR,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      select: { tenantId: true },
+    });
+
+    if (!inviteCode) {
+      throw new BadRequestException('Link de cadastro inválido, expirado ou desativado.');
+    }
+
+    const normalizedCode = this.normalizeSharingLinkCode(sharingLinkValue);
+    if (!normalizedCode) {
+      throw new BadRequestException('Informe um link de compartilhamento válido.');
+    }
+
+    const existing = await this.prisma.realtorLink.findUnique({
+      where: {
+        tenantId_code: {
+          tenantId: inviteCode.tenantId,
+          code: normalizedCode,
+        },
+      },
+      select: { id: true },
+    });
+
+    return { available: !existing, normalizedCode };
+  }
+
   async registerWithInviteCode(code: string, dto: RegisterWithInviteCodeDto) {
     const inviteCode = await this.prisma.tenantInviteCode.findFirst({
       where: {
@@ -405,22 +449,18 @@ export class AgenciesService {
           data: { userId: user.id, agencyId: null },
         });
 
-        const baseCode = dto.name
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '');
+        const finalCode = this.normalizeSharingLinkCode(dto.sharingLinkCode);
+        if (!finalCode) {
+          throw new BadRequestException('Informe um link de compartilhamento válido.');
+        }
 
-        let finalCode = baseCode;
-        let counter = 1;
-        while (
-          await tx.realtorLink.findUnique({
-            where: { tenantId_code: { tenantId: inviteCode.tenantId, code: finalCode } },
-          })
-        ) {
-          finalCode = `${baseCode}-${counter}`;
-          counter++;
+        const existingCode = await tx.realtorLink.findUnique({
+          where: { tenantId_code: { tenantId: inviteCode.tenantId, code: finalCode } },
+          select: { id: true },
+        });
+
+        if (existingCode) {
+          throw new ConflictException('Este link de compartilhamento já está em uso.');
         }
 
         await tx.realtorLink.create({
@@ -429,6 +469,8 @@ export class AgenciesService {
             userId: user.id,
             name: dto.name,
             email: dto.email,
+            phone: dto.phone || null,
+            creci: dto.creci || null,
             code: finalCode,
             agencyId: null,
           },

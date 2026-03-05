@@ -88,6 +88,13 @@ export class AgenciesController {
     return this.agenciesService.getInviteCodePublicDetails(code);
   }
 
+  @Get('invite-codes/public/:code/check-sharing-link')
+  @Public()
+  @SkipTermsCheck()
+  checkSharingLinkAvailability(@Param('code') code: string, @Query('value') value: string) {
+    return this.agenciesService.checkInviteCodeSharingLinkAvailability(code, value);
+  }
+
   @Post('invite-codes/public/:code/register')
   @Public()
   @SkipTermsCheck()
