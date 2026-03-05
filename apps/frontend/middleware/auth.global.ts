@@ -38,6 +38,9 @@ export default defineNuxtRouteMiddleware((to) => {
   if (to.path.startsWith('/painel/tenants') && !authStore.canManageTenants) {
     return navigateTo('/painel');
   }
+  if (to.path.startsWith('/painel/backups') && !authStore.isSysAdmin) {
+    return navigateTo('/painel');
+  }
   if (to.path.startsWith('/painel/usuarios') && !authStore.canManageUsers) {
     return navigateTo('/painel');
   }

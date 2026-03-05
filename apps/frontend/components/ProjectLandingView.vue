@@ -920,8 +920,6 @@ const hasTraditionalInfo = computed(() => {
   return traditionalHighlights.value.length > 0
 })
 
-const lotElements = computed(() => (project.value?.mapElements || []).filter((e: any) => e.type === 'LOT'))
-const availableLotElements = computed(() => lotElements.value.filter((e: any) => (e.lotDetails?.status || 'AVAILABLE') === 'AVAILABLE'))
 
 const mapDataLots = computed(() => {
   const raw = project.value?.mapData
@@ -977,7 +975,8 @@ const unifiedAvailableLots = computed(() => {
         }
       })
   } else {
-    list = availableLotElements.value.map((e: any) => ({
+    // mapElements no longer returned by findBySlug; use teaserLots (first 6 available)
+    list = (project.value?.teaserLots || []).map((e: any) => ({
       id: e.id,
       name: e.name,
       code: e.code,

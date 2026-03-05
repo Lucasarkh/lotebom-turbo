@@ -179,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useTenantStore } from '~/stores/tenant'
 import { useAiChatStore } from '~/stores/aiChat'
 import { useTracking } from '~/composables/useTracking'
@@ -430,9 +430,9 @@ onMounted(async () => {
     if (p.status === 'fulfilled' && p.value) {
       project.value = p.value
       chatStore.setProject(p.value)
-      useHead({ title: `Busca de Unidades â€” ${p.value.name}` })
+      useHead({ title: `Busca de Unidades — ${p.value.name}` })
     } else {
-      error.value = 'Projeto nÃ£o encontrado'
+      error.value = 'Projeto não encontrado'
     }
 
     if (lotsRes.status === 'fulfilled' && lotsRes.value) {

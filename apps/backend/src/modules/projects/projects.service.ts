@@ -322,7 +322,7 @@ export class ProjectsService {
     const lotDetailsFilter: any = { status: 'AVAILABLE' };
     if (tags?.length) {
       Object.assign(lotDetailsFilter, matchMode === 'exact'
-        ? { AND: tags.map(t => ({ tags: { has: t } })) }
+        ? { tags: { hasEvery: tags } }
         : { tags: { hasSome: tags } }
       );
     }

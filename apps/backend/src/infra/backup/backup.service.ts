@@ -23,7 +23,7 @@ export class BackupService {
   private readonly s3Client: S3Client;
   private readonly bucketName: string;
   private readonly backupPrefix = 'database-backups';
-  private readonly retentionDays = 7;
+  private readonly retentionDays = 30;
 
   constructor(private configService: ConfigService) {
     this.s3Client = new S3Client({
@@ -37,9 +37,9 @@ export class BackupService {
   }
 
   /**
-   * Backup a cada 30 minutos (somente em produção)
+   * Backup 3x ao dia: 06h, 14h, 22h (somente em produção)
    */
-  @Cron('0 */30 * * * *')
+  @Cron('0 0 6,14,22 * * *')
   async handlePeriodicBackup() {
     if (process.env.NODE_ENV !== 'production') return;
     await this.createBackup('periodic');

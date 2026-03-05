@@ -60,4 +60,51 @@ export class SystemSettingsService {
       data: { status }
     });
   }
+
+  async getMaintenanceStatus(): Promise<{
+    enabled: boolean;
+    message: string;
+    enabledAt: string | null;
+    enabledBy: string | null;
+  }> {
+    const meta = await this.prisma.systemMeta.findUnique({
+      where: { key: 'maintenance_mode' }
+    });
+
+    if (!meta || !meta.value) {
+      return { enabled: false, message: '', enabledAt: null, enabledBy: null };
+    }
+
+    try {
+      return JSON.parse(meta.value);
+    } catch {
+      return { enabled: false, message: '', enabledAt: null, enabledBy: null };
+    }
+  }
+
+  async setMaintenanceMode(
+    enabled: boolean,
+    message: string,
+    userId: string
+  ): Promise<{
+    enabled: boolean;
+    message: string;
+    enabledAt: string | null;
+    enabledBy: string | null;
+  }> {
+    const value = JSON.stringify({
+      enabled,
+      message: message || 'Sistema em manutenção. Voltaremos em breve.',
+      enabledAt: enabled ? new Date().toISOString() : null,
+      enabledBy: enabled ? userId : null
+    });
+
+    await this.prisma.systemMeta.upsert({
+      where: { key: 'maintenance_mode' },
+      update: { value },
+      create: { key: 'maintenance_mode', value }
+    });
+
+    return JSON.parse(value);
+  }
 }

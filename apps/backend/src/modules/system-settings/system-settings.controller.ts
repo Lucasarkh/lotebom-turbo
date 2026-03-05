@@ -5,7 +5,8 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards
+  UseGuards,
+  Request
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -22,6 +23,11 @@ export class PublicSettingsController {
   @Get()
   getSettings() {
     return this.service.getPublicSettings();
+  }
+
+  @Get('maintenance')
+  getMaintenanceStatus() {
+    return this.service.getMaintenanceStatus();
   }
 
   @Post('contact')
@@ -71,5 +77,24 @@ export class AdminSettingsController {
     @Body('status') status: LeadStatus
   ) {
     return this.service.updateLeadStatus(id, status);
+  }
+
+  @Get('maintenance')
+  @Roles('SYSADMIN')
+  getMaintenanceStatus() {
+    return this.service.getMaintenanceStatus();
+  }
+
+  @Post('maintenance')
+  @Roles('SYSADMIN')
+  setMaintenanceMode(
+    @Body() dto: { enabled: boolean; message?: string },
+    @Request() req: any
+  ) {
+    return this.service.setMaintenanceMode(
+      dto.enabled,
+      dto.message || '',
+      req.user.id
+    );
   }
 }
