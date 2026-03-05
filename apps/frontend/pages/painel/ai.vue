@@ -197,6 +197,10 @@ onMounted(() => {
             <span class="detail-label">API Key</span>
             <span class="detail-value font-mono">{{ config.apiKey ? '••••••••••••' : 'Não configurada' }}</span>
           </div>
+          <div v-if="config.systemPrompt" class="detail-item">
+            <span class="detail-label">Prompt custom</span>
+            <span class="detail-value" style="font-size:0.75rem; color: var(--color-primary-400);">Configurado</span>
+          </div>
         </div>
 
         <div class="ai-card-actions mt-auto border-t border-gray-100 pt-5 flex gap-2">
@@ -252,7 +256,7 @@ onMounted(() => {
 
             <div class="form-group">
               <label class="form-label">Chave de API (API Key)</label>
-              <input v-model="form.apiKey" type="password" class="form-input" :placeholder="apiKeyPlaceholder" :class="{ 'input-error': validateApiKey }" required />
+              <AppPasswordInput v-model="form.apiKey" :placeholder="apiKeyPlaceholder" :class="{ 'input-error': validateApiKey }" required />
               <small v-if="validateApiKey" class="error-msg">{{ validateApiKey }}</small>
               <small v-else class="text-muted">Sua chave é salva com segurança.</small>
             </div>
@@ -271,6 +275,22 @@ onMounted(() => {
           <div class="form-group mt-4 flex items-center gap-2">
             <input type="checkbox" v-model="form.isActive" id="config-active" />
             <label for="config-active">Configuração Ativa</label>
+          </div>
+
+          <div class="form-group mt-4">
+            <label class="form-label">Prompt Personalizado (opcional)</label>
+            <textarea
+              v-model="form.systemPrompt"
+              class="form-input"
+              rows="5"
+              maxlength="2000"
+              placeholder="Ex: Seja sempre muito simpático e trate os clientes pelo nome. Mencione que nosso loteamento fica próximo ao Shopping XYZ."
+              style="resize: vertical; min-height: 100px;"
+            ></textarea>
+            <small class="text-muted" style="display:block; margin-top:4px;">
+              Instruções adicionais de personalidade e contexto para o assistente. São sempre acrescentadas <em>após</em> as regras de segurança obrigatórias da plataforma — você não pode desativá-las.
+              <span :style="{ color: form.systemPrompt.length > 1800 ? 'var(--color-danger)' : 'inherit' }">{{ form.systemPrompt.length }}/2000</span>
+            </small>
           </div>
 
           <div class="modal-footer mt-6">

@@ -16,7 +16,7 @@
               <input v-model="form.email" type="email" placeholder="E-mail corporativo" required>
             </div>
             <div class="form-group">
-              <input v-model="form.phone" type="tel" placeholder="WhatsApp" v-maska="'(##) #####-####'" required>
+              <input :value="form.phone" @input="form.phone = applyPhoneMask($event.target.value)" type="tel" placeholder="WhatsApp" required>
             </div>
             <button type="submit" class="btn btn-primary btn-apple-lg btn-block" :disabled="submitting">
               {{ submitting ? 'Enviando...' : 'Quero Ver na Prática' }}

@@ -148,8 +148,8 @@ onUnmounted(() => {
         <div class="bento-item highlight-payment">
           <div class="bento-content">
             <div class="bento-tag">Pagamentos</div>
-            <h3 class="bento-title">Reserva Online Instantânea</h3>
-            <p class="bento-desc">Integração nativa com Stripe, Asaas e Mercado Pago, PagarME e Pagbank. Transforme o interesse em venda real permitindo o pagamento da reserva via PIX ou Cartão.</p>
+            <h3 class="bento-title">Reserva Online com Gateway</h3>
+            <p class="bento-desc">Conecte seu gateway de pagamento preferido — Asaas, Mercado Pago, PagarME e outros — e habilite a cobrança da reserva via PIX ou Cartão diretamente na plataforma.</p>
           </div>
         </div>
 

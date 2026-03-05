@@ -108,6 +108,6 @@ export const useLeads = () => {
 
   return {
     loading, leads, meta, selectedLead, projects,
-    loadProjects, loadLeads, getLead, createLead, updateLeadStatus, addDocument, addPayment
+    loadProjects, loadLeads, getLead, createLead, updateLead, updateLeadStatus, addDocument, addPayment
   };
 };

@@ -32,7 +32,10 @@ import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { BackupModule } from '@infra/backup/backup.module';
 import { GoogleModule } from '@infra/google/google.module';
 import { NearbyModule } from '@modules/nearby/nearby.module';
+import { SupportModule } from '@modules/support/support.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { AppController } from './app.controller';
+import { TermsGuard } from './common/guards/terms.guard';
 
 @Module({
   imports: [
@@ -81,13 +84,19 @@ import { AppController } from './app.controller';
     BackupModule,
     GoogleModule,
     NearbyModule,
-    BillingModule
+    BillingModule,
+    SupportModule,
+    NotificationsModule
   ],
   controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TermsGuard
     }
   ]
 })

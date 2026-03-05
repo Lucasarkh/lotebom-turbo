@@ -777,6 +777,31 @@ const deleteScheduling = async (id: string) => {
 @keyframes sk-bouncedelay {
   0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); }
 }
+
+@media (max-width: 767px) {
+  .calendar-page { padding: 16px !important; }
+  .lotio-filter-bar { flex-direction: column; gap: 8px; }
+  .lotio-filter-bar > * { width: 100%; }
+  .lotio-calendar-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .calendar-header-grid, .calendar-main-grid { min-width: 560px; }
+  .calendar-cell { min-height: 72px; }
+  .glass-sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 70vh;
+    border-left: none;
+    border-top: 1px solid var(--glass-border);
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+  }
+  .agenda-timeline { overflow-y: auto; flex: 1; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
 </style>
 
 

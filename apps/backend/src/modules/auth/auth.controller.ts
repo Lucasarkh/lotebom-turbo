@@ -18,6 +18,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { SkipTermsCheck } from '@/common/decorators/skip-terms-check.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -62,6 +63,7 @@ export class AuthController {
 
   @Post('toggle-2fa')
   @UseGuards(AuthGuard('jwt'))
+  @SkipTermsCheck()
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Ativar/desativar 2FA' })
@@ -85,6 +87,7 @@ export class AuthController {
 
   @Post('change-password')
   @UseGuards(AuthGuard('jwt'))
+  @SkipTermsCheck()
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Alterar senha do usuário logado' })
@@ -112,6 +115,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
+  @SkipTermsCheck()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Dados do usuário autenticado' })
   async me(@Request() req: any) {
@@ -120,6 +124,7 @@ export class AuthController {
 
   @Post('accept-terms')
   @UseGuards(AuthGuard('jwt'))
+  @SkipTermsCheck()
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Aceitar termos de uso e política de privacidade' })
@@ -136,6 +141,7 @@ export class AuthController {
 
   @Get('terms-status')
   @UseGuards(AuthGuard('jwt'))
+  @SkipTermsCheck()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Verificar status de aceite dos termos' })
   async termsStatus(@Request() req: any) {

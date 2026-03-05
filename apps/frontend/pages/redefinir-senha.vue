@@ -24,11 +24,11 @@
       <form v-else @submit.prevent="handleSubmit">
         <div class="form-group">
           <label class="form-label">Nova Senha</label>
-          <input v-model="password" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required minlength="6" />
+          <AppPasswordInput v-model="password" placeholder="Mínimo 6 caracteres" required minlength="6" />
         </div>
         <div class="form-group">
           <label class="form-label">Confirmar Nova Senha</label>
-          <input v-model="confirmPassword" type="password" class="form-input" placeholder="Repita a nova senha" required minlength="6" />
+          <AppPasswordInput v-model="confirmPassword" placeholder="Repita a nova senha" required minlength="6" />
           <div v-if="confirmPassword && confirmPassword !== password" class="form-error">
             As senhas não coincidem
           </div>

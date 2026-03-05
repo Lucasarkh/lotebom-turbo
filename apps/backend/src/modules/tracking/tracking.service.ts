@@ -7,10 +7,14 @@ import {
 } from './dto/tracking.dto';
 import { ProjectStatus, MapElementType } from '@prisma/client';
 import * as crypto from 'crypto';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 @Injectable()
 export class TrackingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private hashIp(ip: string): string {
     return crypto.createHash('sha256').update(ip).digest('hex');
@@ -298,6 +302,11 @@ export class TrackingService {
           lastRealtorAt: currentRealtorLinkId ? new Date() : null
         }
       });
+
+      // Fire-and-forget: check access milestones for new sessions
+      if (tenantId && projectId) {
+        this.notifications.onNewSession(tenantId, projectId).catch(() => {});
+      }
     }
 
     // Auto-track realtor link click event if code provided

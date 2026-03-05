@@ -51,8 +51,8 @@
             <div class="sidebar-section">
               <label class="form-label text-xs uppercase text-gray-400 font-bold mb-2">Ações Rápidas</label>
               <div class="d-grid gap-2">
-                <select 
-                  :value="lead.status" 
+                <select
+                  :value="lead.status"
                   class="form-select"
                   @change="onStatusChange($event.target.value)"
                 >
@@ -61,6 +61,15 @@
                 <button v-if="lead.phone" class="btn btn-success btn-sm w-100" @click="openWhatsApp">
                   Chamar no WhatsApp
                 </button>
+                <!-- Reserve lot button for CORRETOR / IMOBILIARIA -->
+                <template v-if="(authStore.isCorretor || authStore.isImobiliaria) && canReserve">
+                  <button v-if="lead.mapElementId" class="btn btn-reserve-cta btn-sm w-100" @click="showReserveConfirm = true">
+                    🔒 Reservar para este Lead
+                  </button>
+                  <NuxtLink v-else to="/painel/reservar" class="btn btn-reserve-cta btn-sm w-100 text-center">
+                    🔒 Iniciar Reserva de Lote
+                  </NuxtLink>
+                </template>
               </div>
             </div>
           </div>
@@ -177,6 +186,23 @@
     </div>
 
     <!-- Modals Inner -->
+    <!-- Reserve Lot Confirmation -->
+    <div v-if="showReserveConfirm" class="modal-overlay" @click.self="showReserveConfirm = false">
+      <div class="modal sm">
+        <div class="modal-header"><h3>Confirmar Reserva</h3></div>
+        <div class="modal-body">
+          <p>Deseja reservar o lote <strong>{{ lead.mapElement?.code || lead.lotCode }}</strong> para <strong>{{ lead.name }}</strong>?</p>
+          <p style="font-size:0.875rem; color:var(--color-surface-400); margin-top:8px;">O lote ficará bloqueado para outros compradores imediatamente.</p>
+          <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+            <button class="btn btn-ghost btn-sm" @click="showReserveConfirm = false">Cancelar</button>
+            <button class="btn btn-primary btn-sm" :disabled="reserving" @click="confirmReserveLot">
+              {{ reserving ? 'Reservando...' : '🔒 Confirmar Reserva' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showAddDoc" class="modal-overlay" @click.self="showAddDoc = false">
       <div class="modal sm">
         <div class="modal-header"><h3>Novo Documento</h3></div>
@@ -208,6 +234,28 @@ const { updateLeadStatus, addDocument, addPayment } = useLeads()
 const authStore = useAuthStore()
 
 const activeTab = ref('info')
+
+// Reservation state
+const showReserveConfirm = ref(false)
+const reserving = ref(false)
+
+const canReserve = computed(() => {
+  const reservableStatuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'NEGOTIATING']
+  return reservableStatuses.includes(props.lead.status)
+})
+
+const confirmReserveLot = async () => {
+  reserving.value = true
+  try {
+    await updateLeadStatus(props.lead.id, 'RESERVATION', 'Reserva realizada via painel')
+    showReserveConfirm.value = false
+    emit('refresh')
+  } catch (e) {
+    // error handled in useLeads
+  } finally {
+    reserving.value = false
+  }
+}
 const tabs = computed(() => {
   const t = [
     { id: 'info', label: 'Dados' },
@@ -298,4 +346,7 @@ const saveDoc = async () => {
 .timeline-meta { display: flex; justify-content: space-between; font-size: 0.8125rem; margin-bottom: 4px; }
 .timeline-content { background: var(--glass-bg-heavy); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.875rem; }
 .timeline-footer { font-size: 0.6875rem; color: var(--color-surface-500); margin-top: 4px; }
+
+.btn-reserve-cta { background: linear-gradient(135deg, #1a3a2a, #1d4d35); color: #4ade80; border: 1px solid #2d6a47; font-weight: 600; }
+.btn-reserve-cta:hover { background: linear-gradient(135deg, #1d4d35, #22623f); color: #86efac; border-color: #3d7a57; }
 </style>

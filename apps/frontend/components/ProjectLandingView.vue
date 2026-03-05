@@ -32,13 +32,20 @@
       <section id="inicio" class="v4-hero" :class="{ 'has-banner': !!project.bannerImageUrl }">
         <div v-if="project.bannerImageUrl" class="v4-hero-bg" :style="{ backgroundImage: `url(${project.bannerImageUrl})` }"></div>
         <div class="v4-hero-overlay"></div>
-        
+
         <div class="v4-container">
           <div class="v4-hero-content">
-            <span class="v4-hero-tag">{{ project.tenant?.name || 'Vendas Iniciadas' }}</span>
-            <h1 class="v4-hero-title text-balance">{{ project.name }}</h1>
-            <p v-if="project.description" class="v4-hero-desc text-balance">{{ project.description }}</p>
-            
+            <div class="v4-hero-text">
+              <span class="v4-hero-tag">{{ project.tenant?.name || 'Vendas Iniciadas' }}</span>
+              <h1 class="v4-hero-title text-balance">{{ project.name }}</h1>
+              <p v-if="project.description" class="v4-hero-desc text-balance">{{ project.description }}</p>
+              <div class="v4-hero-actions">
+                <a href="#planta" class="v4-btn-primary" @click="tracking.trackClick('Botão: Ver Planta Interativa')">Ver Planta Interativa</a>
+                <a v-if="schedulingConfig?.enabled" href="#agendamento" class="v4-btn-white" @click="tracking.trackClick('Botão: Agendar Visita')">Agendar Visita</a>
+                <a href="#contato" class="v4-btn-white" @click="tracking.trackClick('Botão: Solicitar Informações')">Solicitar informações</a>
+              </div>
+            </div>
+
             <div class="v4-hero-stats">
               <div class="v4-stat-card">
                 <span class="v4-stat-label">Lotes Disponíveis</span>
@@ -46,22 +53,16 @@
               </div>
               <div v-if="minArea" class="v4-stat-card">
                 <span class="v4-stat-label">Área a partir de</span>
-                <span class="v4-stat-value">{{ minArea }}m²</span>
+                <span class="v4-stat-value">{{ minArea }}<small>m²</small></span>
               </div>
               <div v-if="priceRange" class="v4-stat-card">
                 <span class="v4-stat-label">Preços a partir de</span>
-                <span class="v4-stat-value">R$ {{ priceRange }}</span>
+                <span class="v4-stat-value"><small>R$</small> {{ priceRange }}</span>
                 <div v-if="project.maxInstallments || project.paymentConditionsSummary" class="v4-stat-meta">
                   <span v-if="project.maxInstallments" class="v4-stat-installments">em até {{ project.maxInstallments }}x</span>
                   <p v-if="project.paymentConditionsSummary" class="v4-stat-summary">{{ project.paymentConditionsSummary }}</p>
                 </div>
               </div>
-            </div>
-
-            <div class="v4-hero-actions">
-              <a href="#planta" class="v4-btn-primary" @click="tracking.trackClick('Botão: Ver Planta Interativa')">Ver Planta Interativa</a>
-              <a v-if="schedulingConfig?.enabled" href="#agendamento" class="v4-btn-white" @click="tracking.trackClick('Botão: Agendar Visita')">Agendar Visita</a>
-              <a href="#contato" class="v4-btn-white" @click="tracking.trackClick('Botão: Solicitar Informações')">Solicitar informações</a>
             </div>
           </div>
         </div>
@@ -433,7 +434,7 @@
                     </div>
                     <div class="v4-input-group">
                       <label>Telefone / WhatsApp *</label>
-                      <input v-model="leadForm.phone" v-maska="'(##) #####-####'" required placeholder="(00) 00000-0000" />
+                      <input :value="leadForm.phone" @input="leadForm.phone = applyPhoneMask(($event.target as HTMLInputElement).value)" required placeholder="(00) 00000-0000" />
                     </div>
                   </div>
 
@@ -1527,12 +1528,11 @@ function openLightbox(idx: number) {
   background: #000;
   color: white;
   overflow: hidden;
-  min-height: 85vh; /* Premium height */
+  min-height: 85vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 80px 0;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 0 0 0;
 }
 
 .v4-hero-bg {
@@ -1546,33 +1546,34 @@ function openLightbox(idx: number) {
 }
 
 .v4-hero.has-banner .v4-hero-bg {
-  filter: brightness(0.85); /* Maintain clarity, just tone down highlights */
+  filter: brightness(0.9);
   transform: none;
 }
 
 .v4-hero-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.2);
+  background: linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.15) 100%);
   z-index: 2;
 }
 
 .v4-hero.has-banner .v4-hero-overlay {
-  /* Subtle vignette that doesn't hide info, but grounds the text */
-  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.6) 100%);
+  background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.1) 70%, transparent 100%);
 }
 
 .v4-hero-content {
   position: relative;
   z-index: 3;
-  padding: 40px 24px;
-  max-width: 900px;
-  margin: 0 auto;
-  /* Glassmorphic content plate for extreme legibility over busy images without blurring the BG */
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 32px;
+  width: 100%;
+  padding: 48px 0 56px;
+  display: flex;
+  align-items: flex-end;
+  gap: 48px;
+}
+
+.v4-hero-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .v4-hero-tag {
@@ -1580,8 +1581,8 @@ function openLightbox(idx: number) {
   font-size: 13px;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 24px;
-  background: var(--v4-primary); /* Use primary color to pop against image */
+  margin-bottom: 16px;
+  background: var(--v4-primary);
   padding: 6px 16px;
   border-radius: 100px;
   text-transform: uppercase;
@@ -1590,43 +1591,41 @@ function openLightbox(idx: number) {
 }
 
 .v4-hero-title {
-  font-size: clamp(38px, 8vw, 72px); /* Slightly more balanced */
+  font-size: clamp(32px, 6vw, 64px);
   font-weight: 700;
   text-wrap: pretty;
   line-height: 1;
-  margin-bottom: 48px;
+  margin-bottom: 20px;
   color: #ffffff;
   text-shadow: 0 2px 10px rgba(0,0,0,0.3);
   text-transform: uppercase;
 }
 
 .v4-hero-desc {
-  font-size: clamp(17px, 3vw, 20px);
-  color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 32px;
-  max-width: 640px;
-  margin-inline: auto;
+  font-size: clamp(15px, 2vw, 18px);
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 28px;
+  max-width: 560px;
   line-height: 1.5;
 }
 
-/* Hero Stats Card */
+/* Hero Stats — vertical stack on the right */
 .v4-hero-stats {
+  flex: 0 0 auto;
   display: flex;
-  justify-content: center;
-  gap: 56px;
-  margin: 0 auto 48px;
-  flex-wrap: wrap;
-  padding: 0;
-  background: transparent;
-  border: none;
+  flex-direction: column;
+  gap: 20px;
+  padding-left: 40px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 8px;
 }
 
 .v4-stat-card {
-  text-align: center;
+  text-align: left;
   min-width: 140px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .v4-stat-label {
@@ -1635,16 +1634,23 @@ function openLightbox(idx: number) {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-weight: 700;
 }
 
 .v4-stat-value {
-  font-size: 52px;
+  font-size: 40px;
   font-weight: 700;
   color: #ffffff;
   line-height: 1;
   letter-spacing: -0.02em;
+}
+
+.v4-stat-value small {
+  font-size: 0.55em;
+  font-weight: 500;
+  opacity: 0.8;
+  vertical-align: middle;
 }
 
 .v4-stat-meta {
@@ -1671,8 +1677,9 @@ function openLightbox(idx: number) {
 
 .v4-hero-actions {
   display: flex;
-  justify-content: center;
-  gap: 16px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 /* Buttons */
@@ -2618,27 +2625,26 @@ function openLightbox(idx: number) {
 
 /* Responsive tweaks and improvements */
 @media (max-width: 768px) {
-  .v4-hero { min-height: 480px; padding: 40px 0; }
-  .v4-hero-content { 
-    padding: 32px 16px; 
-    text-align: center; 
-    border-radius: 20px; 
-    margin: 0 12px;
-  }
-  .v4-hero-title { font-size: 32px; margin-bottom: 24px; }
-  
+  .v4-hero { min-height: 520px; }
+  .v4-hero-content { flex-direction: column; gap: 24px; padding: 24px 0 40px; }
+  .v4-hero-title { font-size: 28px; margin-bottom: 12px; }
+  .v4-hero-desc { font-size: 15px; margin-bottom: 18px; }
+
   .v4-hero-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
-    padding: 0 4px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-left: none;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    padding-left: 0;
+    padding-top: 20px;
+    gap: 16px;
+    width: 100%;
   }
-  .v4-stat-card { min-width: 0; gap: 4px; }
-  .v4-stat-label { font-size: 9px; margin-bottom: 2px; -webkit-line-clamp: 1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; }
-  .v4-stat-value { font-size: 24px; }
+  .v4-stat-card { flex: 1; min-width: 80px; align-items: center; text-align: center; }
+  .v4-stat-label { font-size: 9px; }
+  .v4-stat-value { font-size: 26px; }
   .v4-stat-meta { display: none; }
-  
+
   .v4-hero-actions { flex-direction: column; width: 100%; gap: 12px; }
   .v4-btn-primary, .v4-btn-white { width: 100%; text-align: center; font-size: 16px; padding: 14px; }
   

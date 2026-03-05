@@ -110,6 +110,19 @@ const trialDaysLeft = computed(() => {
   return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)))
 })
 
+const lastTierQty = ref<Record<number, number>>({})
+
+function getLastTierQty(plan: any): number {
+  if (lastTierQty.value[plan.projectCount] === undefined) {
+    lastTierQty.value[plan.projectCount] = plan.projectCount
+  }
+  return lastTierQty.value[plan.projectCount]
+}
+
+function setLastTierQty(plan: any, val: number) {
+  lastTierQty.value[plan.projectCount] = Math.max(plan.projectCount, val || plan.projectCount)
+}
+
 onMounted(async () => {
   // Capture state before clearing params
   const isLimitReached = route.query.limit_reached === 'true'
@@ -327,9 +340,25 @@ onMounted(async () => {
                     <span class="plan-info-label">Total mensal</span>
                     <span class="plan-info-value plan-info-total">{{ formatCents(plan.totalMonthlyCents) }}</span>
                   </div>
-                  <div v-else class="plan-info-row">
-                    <span class="plan-info-label">Total mensal</span>
-                    <span class="plan-info-value plan-info-total">a partir de {{ formatCents(plan.totalMonthlyCents) }}</span>
+                  <div v-else class="plan-last-tier-qty">
+                    <div class="plan-info-row">
+                      <span class="plan-info-label">Projetos</span>
+                      <div class="qty-controls">
+                        <button class="qty-btn" @click="setLastTierQty(plan, getLastTierQty(plan) - 1)">−</button>
+                        <input
+                          type="number"
+                          class="qty-input"
+                          :min="plan.projectCount"
+                          :value="getLastTierQty(plan)"
+                          @change="setLastTierQty(plan, parseInt(($event.target as HTMLInputElement).value))"
+                        />
+                        <button class="qty-btn" @click="setLastTierQty(plan, getLastTierQty(plan) + 1)">+</button>
+                      </div>
+                    </div>
+                    <div class="plan-info-row">
+                      <span class="plan-info-label">Total mensal</span>
+                      <span class="plan-info-value plan-info-total">{{ formatCents(getLastTierQty(plan) * plan.unitPriceCents) }}</span>
+                    </div>
                   </div>
                   <div v-if="plan.discountPercent > 0" class="plan-discount-badge">
                     {{ plan.discountPercent }}% de desconto
@@ -346,7 +375,7 @@ onMounted(async () => {
                   <span class="plan-hint-current">&#10003; Seu plano atual</span>
                 </template>
                 <template v-else-if="plan.projectCount > (plans.paidPlanLevel || 0)">
-                  <button class="btn btn-sm btn-primary w-full" @click="subscribeToPlan(plan.projectCount)">
+                  <button class="btn btn-sm btn-primary w-full" @click="subscribeToPlan(plan.isLastTier ? getLastTierQty(plan) : plan.projectCount)">
                     Fazer upgrade
                   </button>
                 </template>
@@ -773,4 +802,67 @@ onMounted(async () => {
 .mt-4 { margin-top: 16px; }
 .mt-8 { margin-top: 32px; }
 .text-sm { font-size: 0.85rem; }
+
+/* ─── Last-tier quantity picker ───────── */
+.plan-last-tier-qty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qty-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-light);
+  color: var(--color-surface-200);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.qty-btn:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-400);
+}
+
+.qty-input {
+  width: 52px;
+  text-align: center;
+  padding: 3px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--color-surface-100);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.qty-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+}
+
+/* Hide number input arrows */
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.qty-input[type=number] { -moz-appearance: textfield; }
 </style>

@@ -35,9 +35,8 @@
       <div class="footer-bottom" ref="footerBottomRef">
         <p class="copyright">&copy; {{ getYearInBrasilia() }} Lotio. Tecnologia para o futuro imobiliário.</p>
         <div class="footer-policy">
-          <a href="#">Privacidade</a>
-          <a href="#">Termos de Uso</a>
-          <a href="#">Cookies</a>
+          <a href="/politica-de-privacidade">Privacidade</a>
+          <a href="/termos-de-uso">Termos de Uso</a>
         </div>
       </div>
     </div>

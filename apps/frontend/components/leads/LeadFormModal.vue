@@ -55,14 +55,14 @@
             </div>
             <div class="col-md-6 form-group mb-3">
               <label class="form-label">Telefone</label>
-              <input v-model="form.phone" v-maska="'(##) #####-####'" type="text" class="form-control" placeholder="(00) 00000-0000">
+              <input :value="form.phone" @input="form.phone = applyPhoneMask($event.target.value)" type="text" class="form-control" placeholder="(00) 00000-0000">
             </div>
           </div>
 
           <div class="row">
             <div class="col-md-4 form-group mb-3">
               <label class="form-label">CPF</label>
-              <input v-model="form.cpf" v-maska="'###.###.###-##'" type="text" class="form-control" placeholder="000.000.000-00">
+              <input :value="form.cpf" @input="form.cpf = applyCpfMask($event.target.value)" type="text" class="form-control" placeholder="000.000.000-00">
             </div>
             <div class="col-md-4 form-group mb-3">
               <label class="form-label">RG</label>
@@ -101,7 +101,7 @@
             </div>
             <div class="col-md-4 form-group mb-3">
               <label class="form-label">CEP</label>
-              <input v-model="form.addressZip" v-maska="'#####-###'" type="text" class="form-control">
+              <input :value="form.addressZip" @input="form.addressZip = applyCepMask($event.target.value)" type="text" class="form-control">
             </div>
           </div>
 

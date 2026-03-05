@@ -421,4 +421,13 @@ definePageMeta({
 .flex { display: flex; }
 .items-center { align-items: center; }
 .gap-2 { gap: 0.5rem; }
+
+@media (max-width: 767px) {
+  .page-container { padding: 16px; }
+  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .header .actions { width: 100%; justify-content: flex-end; }
+  .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table { min-width: 600px; }
+  .row { grid-template-columns: 1fr !important; }
+}
 </style>

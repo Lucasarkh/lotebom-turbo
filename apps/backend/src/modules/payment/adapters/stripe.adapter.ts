@@ -25,7 +25,7 @@ export class StripeAdapter implements IPaymentGateway {
     const stripe = this.getStripe(keys.secretKey);
     
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'], // or add more like 'pix' if brazilian stripe account
+      payment_method_types: ['card', 'boleto', 'pix'], // boleto + pix for Brazilian Stripe accounts
       line_items: [
         {
           price_data: {
@@ -85,6 +85,14 @@ export class StripeAdapter implements IPaymentGateway {
 
     switch (event.type) {
       case 'checkout.session.completed':
+        // session.payment_status === 'paid' → synchronous card payment confirmed
+        // session.payment_status === 'unpaid' → boleto/PIX pending, wait for async event
+        if ((event.data.object as Stripe.Checkout.Session).payment_status === 'paid') {
+          status = WebhookPaymentStatus.PAID;
+        }
+        // else remain PENDING — confirmation comes via async_payment_succeeded
+        break;
+      case 'checkout.session.async_payment_succeeded':
         status = WebhookPaymentStatus.PAID;
         break;
       case 'checkout.session.async_payment_failed':

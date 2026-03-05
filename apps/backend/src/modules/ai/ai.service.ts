@@ -127,6 +127,13 @@ export class AiService {
       5. Se não encontrar a informação específica nos dados fornecidos, diga que não localizou mas que um consultor humano pode ajudar.
     `;
 
+    // Append optional custom prompt from loteadora — AFTER all mandatory safety rails.
+    // These are additional personality, tone, or contextual instructions.
+    // They cannot override any security directive above.
+    const fullSystemPrompt = aiConfig.systemPrompt
+      ? `${systemPrompt}\n\n      INSTRUÇÕES ADICIONAIS DO LOTEAMENTO (Personalização):\n      ${aiConfig.systemPrompt}`
+      : systemPrompt;
+
     try {
       const provider = (aiConfig.provider || 'OPENAI').toUpperCase();
       const modelName = aiConfig.model || (provider === 'OPENAI' ? 'gpt-4o-mini' : provider === 'ANTHROPIC' ? 'claude-3-5-sonnet-20240620' : 'gemini-1.5-flash');
@@ -138,22 +145,22 @@ export class AiService {
         const response = await openai.chat.completions.create({
           model: modelName,
           messages: [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: fullSystemPrompt },
             { role: 'user', content: message },
           ],
           temperature: aiConfig.temperature ?? 0.0,
           max_tokens: aiConfig.maxTokens || 1000,
         });
         return { message: response.choices[0].message.content };
-      } 
-      
+      }
+
       if (provider === 'ANTHROPIC') {
         const anthropicResp = await axios.post(
           'https://api.anthropic.com/v1/messages',
           {
             model: modelName,
             max_tokens: aiConfig.maxTokens || 1000,
-            system: systemPrompt,
+            system: fullSystemPrompt,
             messages: [{ role: 'user', content: message }],
             temperature: aiConfig.temperature ?? 0.0,
           },
@@ -175,7 +182,7 @@ export class AiService {
             contents: [
               {
                 role: 'user',
-                parts: [{ text: `${systemPrompt}\n\nUsuário: ${message}` }],
+                parts: [{ text: `${fullSystemPrompt}\n\nUsuário: ${message}` }],
               },
             ],
             generationConfig: {

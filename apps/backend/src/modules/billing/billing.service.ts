@@ -349,8 +349,8 @@ export class BillingService {
       return;
     }
 
-    // Volume pricing: tier matching total project count  (or last tier for N > max)
-    const volumeTier = tiers.find((t) => t.projectNumber === N) || tiers[tiers.length - 1];
+    // Volume pricing: tier matching total project count (or nearest preceding tier for gaps)
+    const volumeTier = this.findVolumeTier(tiers, N);
     if (!volumeTier) {
       this.logger.warn(`No tiers found in pricing table for tenant ${tenantId}`);
       return;
@@ -385,9 +385,12 @@ export class BillingService {
         try { await this.stripe.subscriptions.cancel(localSub.stripeSubscriptionId); } catch (e) {
           this.logger.warn(`Failed to cancel subscription: ${e.message}`);
         }
-        await this.prisma.tenantSubscription.update({ where: { tenantId }, data: { status: 'canceled' } });
+        await this.prisma.tenantSubscription.update({
+          where: { tenantId },
+          data: { status: 'canceled', stripeSubscriptionId: null },
+        });
       }
-      await this.syncLocalSubscriptionItems(tenantId, itemsToBill);
+      await this.syncLocalSubscriptionItems(tenantId, itemsToBill, trialActive ? 'trialing' : 'active');
       return;
     }
 
@@ -522,6 +525,7 @@ export class BillingService {
   private async syncLocalSubscriptionItems(
     tenantId: string,
     items: { projectId: string; tierNumber: number; priceCents: number }[],
+    defaultStatus: string = 'active',
   ) {
     let localSub = await this.prisma.tenantSubscription.findUnique({
       where: { tenantId },
@@ -529,7 +533,7 @@ export class BillingService {
 
     if (!localSub) {
       localSub = await this.prisma.tenantSubscription.create({
-        data: { tenantId, status: 'active' },
+        data: { tenantId, status: defaultStatus },
       });
     }
 
@@ -593,12 +597,12 @@ export class BillingService {
     let nextProjectPriceCents: number | null = null;
     if (tiers.length > 0) {
       const nextN = N + 1;
-      const nextTier = tiers.find((t) => t.projectNumber === nextN) || tiers[tiers.length - 1];
+      const nextTier = this.findVolumeTier(tiers, nextN);
       let unitPrice = nextTier.priceCents;
       if (additionalDiscount > 0) {
         unitPrice = Math.round(unitPrice * (1 - additionalDiscount / 100));
       }
-      const currentTier = N > 0 ? (tiers.find((t) => t.projectNumber === N) || tiers[tiers.length - 1]) : null;
+      const currentTier = N > 0 ? this.findVolumeTier(tiers, N) : null;
       let currentUnitPrice = currentTier?.priceCents || 0;
       if (additionalDiscount > 0) {
         currentUnitPrice = Math.round(currentUnitPrice * (1 - additionalDiscount / 100));
@@ -706,7 +710,7 @@ export class BillingService {
    * VOLUME PRICING: each level N means all N projects share the tier-N unit price.
    * discountPercent is derived from (basePriceCents - tierN.priceCents) / basePriceCents.
    */
-  async getAvailablePlans(tenantId: string) {
+  async getAvailablePlans(tenantId: string, _attempt = 0) {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
       include: {
@@ -716,8 +720,12 @@ export class BillingService {
     });
 
     if (!tenant.pricingTable) {
+      if (_attempt > 0) {
+        // No default pricing table configured — return an empty plan list
+        return { pricingTable: null, basePriceCents: 0, activeProjectCount: tenant._count.projects, paidPlanLevel: 0, billingStatus: tenant.billingStatus, plans: [] };
+      }
       await this.autoAssignDefaultPricingTable(tenantId);
-      return this.getAvailablePlans(tenantId);
+      return this.getAvailablePlans(tenantId, _attempt + 1);
     }
 
     const tiers = tenant.pricingTable.tiers;
@@ -794,21 +802,34 @@ export class BillingService {
     });
 
     if (localSub?.stripeSubscriptionId) {
-      try {
-        const nextBillingDate = this.computeNextBillingDate(billingDay);
-        const nextBillingTimestamp = Math.floor(nextBillingDate.getTime() / 1000);
+      // Only shift the Stripe billing anchor for healthy tenants.
+      // Applying trial_end on a past_due/canceled subscription triggers a 'trialing'
+      // status update via webhook which inadvertently clears GRACE_PERIOD/INADIMPLENTE.
+      const tenantForAnchor = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+      const isHealthy = tenantForAnchor.billingStatus === BillingStatus.OK
+        || tenantForAnchor.billingStatus === BillingStatus.GRACE_PERIOD;
 
-        await this.stripe.subscriptions.update(localSub.stripeSubscriptionId, {
-          trial_end: nextBillingTimestamp,
-          proration_behavior: 'none',
-        });
+      if (isHealthy) {
+        try {
+          const nextBillingDate = this.computeNextBillingDate(billingDay);
+          const nextBillingTimestamp = Math.floor(nextBillingDate.getTime() / 1000);
 
-        this.logger.log(
-          `Updated billing anchor for tenant ${tenantId}: day ${billingDay}, next billing ${nextBillingDate.toISOString()}`,
-        );
-      } catch (err) {
-        this.logger.warn(
-          `Could not reschedule Stripe subscription for tenant ${tenantId}: ${err.message}`,
+          await this.stripe.subscriptions.update(localSub.stripeSubscriptionId, {
+            trial_end: nextBillingTimestamp,
+            proration_behavior: 'none',
+          });
+
+          this.logger.log(
+            `Updated billing anchor for tenant ${tenantId}: day ${billingDay}, next billing ${nextBillingDate.toISOString()}`,
+          );
+        } catch (err) {
+          this.logger.warn(
+            `Could not reschedule Stripe subscription for tenant ${tenantId}: ${err.message}`,
+          );
+        }
+      } else {
+        this.logger.debug(
+          `Skipped Stripe billing anchor update for tenant ${tenantId} due to billing status: ${tenantForAnchor.billingStatus}`,
         );
       }
     }
@@ -825,6 +846,17 @@ export class BillingService {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
+    // Try the target day in the current month first
+    const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const safeDayCurrentMonth = Math.min(billingDay, daysInCurrentMonth);
+    const thisMonthDate = new Date(currentYear, currentMonth, safeDayCurrentMonth, 12, 0, 0);
+
+    // If the billing day hasn't passed yet this month, use it
+    if (thisMonthDate > now) {
+      return thisMonthDate;
+    }
+
+    // Otherwise advance to next month
     let targetMonth = currentMonth + 1;
     let targetYear = currentYear;
 
@@ -837,6 +869,21 @@ export class BillingService {
     const safeDay = Math.min(billingDay, daysInMonth);
 
     return new Date(targetYear, targetMonth, safeDay, 12, 0, 0);
+  }
+
+  /**
+   * Find the applicable volume pricing tier for N projects.
+   * If no exact match exists (non-contiguous tier table), uses the nearest
+   * preceding tier — not the last/cheapest tier — to avoid unintended discounts.
+   */
+  private findVolumeTier<T extends { projectNumber: number }>(tiers: T[], n: number): T {
+    const exact = tiers.find((t) => t.projectNumber === n);
+    if (exact) return exact;
+    // Non-contiguous tables: use the nearest preceding tier
+    const preceding = [...tiers].reverse().find((t) => t.projectNumber < n);
+    if (preceding) return preceding;
+    // n < first tier or empty list: return last as safest fallback
+    return tiers[tiers.length - 1];
   }
 
   // ─── CHECKOUT SESSION ──────────────────────────────────
@@ -871,7 +918,12 @@ export class BillingService {
     projectCount: number,
     successUrl?: string,
     cancelUrl?: string,
+    _attempt = 0,
   ) {
+    if (!projectCount || projectCount < 1 || !Number.isInteger(projectCount)) {
+      throw new BadRequestException('projectCount deve ser um número inteiro positivo.');
+    }
+
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
       include: {
@@ -881,8 +933,11 @@ export class BillingService {
     });
 
     if (!tenant.pricingTable) {
+      if (_attempt > 0) {
+        throw new BadRequestException('Nenhuma tabela de preços configurada. Entre em contato com o suporte.');
+      }
       await this.autoAssignDefaultPricingTable(tenantId);
-      return this.createSubscriptionCheckout(tenantId, projectCount, successUrl, cancelUrl);
+      return this.createSubscriptionCheckout(tenantId, projectCount, successUrl, cancelUrl, _attempt + 1);
     }
 
     const tiers = tenant.pricingTable.tiers;
@@ -890,8 +945,8 @@ export class BillingService {
       throw new BadRequestException('Nenhuma faixa de preço configurada.');
     }
 
-    // Find the tier for the requested project count (or last tier for higher counts)
-    const tier = tiers.find((t) => t.projectNumber === projectCount) || tiers[tiers.length - 1];
+    // Find the tier for the requested project count (or nearest preceding tier for gaps)
+    const tier = this.findVolumeTier(tiers, projectCount);
     const additionalDiscount = tenant.discountPercent || 0;
     let unitPriceCents = tier.priceCents;
     if (additionalDiscount > 0) {
@@ -1065,6 +1120,21 @@ export class BillingService {
 
     // Extract maxProjects from subscription metadata (set during createSubscriptionCheckout)
     const maxProjects = parseInt(stripeSub.metadata?.projectCount || '0', 10);
+
+    // Cancel the previous subscription if the tenant is upgrading (new sub !== old sub)
+    const existingLocalSub = await this.prisma.tenantSubscription.findUnique({
+      where: { tenantId },
+    });
+    if (existingLocalSub?.stripeSubscriptionId && existingLocalSub.stripeSubscriptionId !== stripeSubId) {
+      try {
+        await this.stripe.subscriptions.cancel(existingLocalSub.stripeSubscriptionId);
+        this.logger.log(
+          `Cancelled old subscription ${existingLocalSub.stripeSubscriptionId} for tenant ${tenantId} (replaced by ${stripeSubId})`,
+        );
+      } catch (e) {
+        this.logger.warn(`Could not cancel old subscription ${existingLocalSub.stripeSubscriptionId}: ${e.message}`);
+      }
+    }
 
     const subData = {
       stripeSubscriptionId: stripeSubId,
@@ -1363,7 +1433,7 @@ export class BillingService {
     // Volume pricing: find the tier for current project count
     const basePriceCents = tiers[0]?.priceCents || 0;
     const volumeTier = activeProjectCount > 0
-      ? (tiers.find((t) => t.projectNumber === activeProjectCount) || tiers[tiers.length - 1])
+      ? this.findVolumeTier(tiers, activeProjectCount)
       : tiers[0];
     let currentUnitPrice = volumeTier?.priceCents || 0;
     if (additionalDiscount > 0) {
@@ -1403,7 +1473,7 @@ export class BillingService {
     let nextProjectPriceCents: number | null = null;
     if (tiers.length > 0) {
       const nextN = activeProjectCount + 1;
-      const nextTier = tiers.find((t) => t.projectNumber === nextN) || tiers[tiers.length - 1];
+      const nextTier = this.findVolumeTier(tiers, nextN);
       let nextUnit = nextTier?.priceCents || 0;
       if (additionalDiscount > 0) {
         nextUnit = Math.round(nextUnit * (1 - additionalDiscount / 100));

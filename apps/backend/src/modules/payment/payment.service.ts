@@ -87,9 +87,13 @@ export class PaymentService {
       );
     }
 
-    // For now, take the first active gateway. 
-    // In a more advanced version, we could let the user choose if multiple are enabled.
-    const activeGatewayConfig = gateways[0];
+    // PIX_DIRECT is a manual flow — skip it when looking for a gateway that creates a session automatically
+    const activeGatewayConfig = gateways.find((g: any) => g.provider !== 'PIX_DIRECT');
+    if (!activeGatewayConfig) {
+      throw new BadRequestException(
+        'Nenhum gateway de pagamento automático configurado. Configure Stripe, Asaas, Mercado Pago, Pagar.me ou PagSeguro.',
+      );
+    }
 
     const { provider, keysJson } = activeGatewayConfig;
     const gateway = this.getGateway(provider);

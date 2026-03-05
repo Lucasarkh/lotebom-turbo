@@ -22,7 +22,7 @@
             :class="{ active: editorMode === 'batch' }"
             @click="editorMode = 'batch'"
             :disabled="!plantMap"
-          >✨ Em lote</button>
+          >✨ Adicionar vários</button>
           <button
             class="pme__mode-btn"
             :class="{ active: editorMode === 'move' }"
@@ -206,7 +206,7 @@
           Clique na planta para adicionar um hotspot
         </div>
         <div v-if="editorMode === 'batch'" class="pme__canvas-hint">
-          Marque os pontos para criação em lote
+          Marque os pontos para criação em massa
         </div>
         <div v-if="editorMode === 'move'" class="pme__canvas-hint">
           Arraste um hotspot para reposicioná-lo
@@ -218,7 +218,7 @@
         <!-- Batch UI -->
         <div v-if="editorMode === 'batch'" class="pme__batch-sidebar">
           <div class="pme__sidebar-header">
-            <span>✨ Criação em Lote ({{ batchMarkers.length }})</span>
+            <span>✨ Criação em massa ({{ batchMarkers.length }})</span>
             <button class="pme__btn pme__btn--sm" @click="clearBatch" :disabled="!batchMarkers.length">Limpar</button>
           </div>
           

@@ -60,6 +60,11 @@
       </div>
     </div>
 
+    <div v-if="meta.totalItems > 0" class="leads-count-bar">
+      <span>{{ meta.totalItems }} lead{{ meta.totalItems !== 1 ? 's' : '' }} encontrado{{ meta.totalItems !== 1 ? 's' : '' }}</span>
+      <span v-if="meta.totalPages > 1" class="text-muted">— página {{ meta.currentPage }} de {{ meta.totalPages }}</span>
+    </div>
+
     <div v-if="loading" class="loading-state flex-center py-12">
       <div class="loading-spinner"></div>
     </div>
@@ -179,6 +184,13 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingLead = ref(null)
 const selectedLead = ref(null)
+
+// Debounced search
+let searchTimer = null
+watch(() => filters.value.search, (val) => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => loadLeads(filters.value), 400)
+})
 
 const resetFilters = () => {
   filters.value = { projectId: '', status: '', search: '' }
@@ -314,4 +326,18 @@ onMounted(async () => {
 .py-12 { padding-top: 48px; padding-bottom: 48px; }
 .p-4 { padding: 16px; }
 .border-top { border-top: 1px solid var(--glass-border-subtle); }
+
+.leads-count-bar { font-size: 0.8125rem; color: var(--color-surface-400); margin-bottom: 12px; display: flex; gap: 8px; align-items: center; }
+.text-muted { color: var(--color-surface-500); }
+.btn-icon { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); font-size: 1rem; transition: background 150ms; }
+.btn-icon:hover { background: var(--glass-bg-heavy); }
+
+@media (max-width: 767px) {
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .page-header > div { width: 100%; justify-content: space-between; }
+  .filter-group { min-width: 100%; flex: unset; }
+  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-modern { min-width: 600px; }
+  .view-toggle { align-self: flex-start; }
+}
 </style>

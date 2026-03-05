@@ -3,7 +3,7 @@ import { RabbitMqService } from '@infra/rabbitmq/rabbitmq.service';
 import { SendPulseService } from '@infra/sendpulse/sendpulse.service';
 
 export interface EmailJob {
-  type: 'welcome-tenant' | 'welcome-realtor' | 'password-reset' | 'invite' | 'two-factor';
+  type: 'welcome-tenant' | 'welcome-realtor' | 'password-reset' | 'invite' | 'two-factor' | 'system-notification';
   to: string;
   data: Record<string, any>;
   attempts: number;
@@ -58,6 +58,15 @@ export class EmailQueueService implements OnModuleInit {
     await this.queueEmail('two-factor', to, { userName, code });
   }
 
+  async queueSystemNotificationEmail(
+    to: string,
+    userName: string,
+    title: string,
+    message: string,
+  ): Promise<void> {
+    await this.queueEmail('system-notification', to, { userName, title, message });
+  }
+
   private async startEmailConsumer(): Promise<void> {
     await this.rabbitMqService.createConsumer({
       queue: EMAIL_QUEUE,
@@ -79,7 +88,7 @@ export class EmailQueueService implements OnModuleInit {
       payload &&
       typeof payload.to === 'string' &&
       typeof payload.type === 'string' &&
-      ['welcome-tenant', 'welcome-realtor', 'password-reset', 'invite', 'two-factor'].includes(payload.type) &&
+      ['welcome-tenant', 'welcome-realtor', 'password-reset', 'invite', 'two-factor', 'system-notification'].includes(payload.type) &&
       payload.data &&
       typeof payload.data === 'object' &&
       typeof payload.attempts === 'number'
@@ -149,6 +158,14 @@ export class EmailQueueService implements OnModuleInit {
           job.to,
           job.data.userName,
           job.data.code
+        );
+        break;
+      case 'system-notification':
+        await this.sendPulseService.sendSystemNotificationEmail(
+          job.to,
+          job.data.userName,
+          job.data.title,
+          job.data.message,
         );
         break;
       default:

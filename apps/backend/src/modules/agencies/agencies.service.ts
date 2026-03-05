@@ -3,6 +3,7 @@ import { PrismaService } from '@/infra/db/prisma.service';
 import { UserRole } from '@prisma/client';
 import { CreateAgencyDto, UpdateAgencyDto } from './dto/agency.dto';
 import { CreateInviteDto, AcceptInviteDto } from './dto/invite.dto';
+import { CreateInviteCodeDto, RegisterWithInviteCodeDto, UpdateInviteCodeDto } from './dto/invite-code.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import { EmailQueueService } from '@infra/email-queue/email-queue.service';
@@ -263,6 +264,185 @@ export class AgenciesService {
       role: invite.role,
       agencyName: invite.agency?.name
     };
+  }
+
+  // --- Invite Codes (open registration links) ---
+
+  async createInviteCode(tenantId: string, dto: CreateInviteCodeDto) {
+    const role = dto.role ?? UserRole.CORRETOR;
+    if (role !== UserRole.CORRETOR && role !== UserRole.IMOBILIARIA) {
+      throw new BadRequestException('Código de convite só pode ser criado para CORRETOR ou IMOBILIARIA.');
+    }
+
+    return this.prisma.tenantInviteCode.create({
+      data: {
+        tenantId,
+        description: dto.description,
+        role,
+        maxUses: dto.maxUses,
+        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+      },
+    });
+  }
+
+  async listInviteCodes(tenantId: string) {
+    return this.prisma.tenantInviteCode.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateInviteCode(id: string, tenantId: string, dto: UpdateInviteCodeDto) {
+    const code = await this.prisma.tenantInviteCode.findFirst({ where: { id, tenantId } });
+    if (!code) throw new NotFoundException('Código de convite não encontrado.');
+
+    return this.prisma.tenantInviteCode.update({
+      where: { id },
+      data: {
+        description: dto.description !== undefined ? dto.description : undefined,
+        isActive: dto.isActive !== undefined ? dto.isActive : undefined,
+        maxUses: dto.maxUses !== undefined ? dto.maxUses : undefined,
+        expiresAt: dto.expiresAt !== undefined ? (dto.expiresAt ? new Date(dto.expiresAt) : null) : undefined,
+      },
+    });
+  }
+
+  async deleteInviteCode(id: string, tenantId: string) {
+    const code = await this.prisma.tenantInviteCode.findFirst({ where: { id, tenantId } });
+    if (!code) throw new NotFoundException('Código de convite não encontrado.');
+    return this.prisma.tenantInviteCode.delete({ where: { id } });
+  }
+
+  async getInviteCodePublicDetails(code: string) {
+    const inviteCode = await this.prisma.tenantInviteCode.findFirst({
+      where: {
+        code,
+        isActive: true,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      include: {
+        tenant: { select: { name: true, slug: true } },
+      },
+    });
+
+    if (!inviteCode) throw new BadRequestException('Link de cadastro inválido, expirado ou desativado.');
+
+    if (inviteCode.maxUses !== null && inviteCode.usageCount >= inviteCode.maxUses) {
+      throw new BadRequestException('Este link de cadastro atingiu seu limite de usos.');
+    }
+
+    return {
+      code: inviteCode.code,
+      role: inviteCode.role,
+      description: inviteCode.description,
+      tenantName: inviteCode.tenant.name,
+      tenantSlug: inviteCode.tenant.slug,
+    };
+  }
+
+  async registerWithInviteCode(code: string, dto: RegisterWithInviteCodeDto) {
+    const inviteCode = await this.prisma.tenantInviteCode.findFirst({
+      where: {
+        code,
+        isActive: true,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      include: { tenant: true },
+    });
+
+    if (!inviteCode) throw new BadRequestException('Link de cadastro inválido, expirado ou desativado.');
+
+    if (inviteCode.maxUses !== null && inviteCode.usageCount >= inviteCode.maxUses) {
+      throw new BadRequestException('Este link de cadastro atingiu seu limite de usos.');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existingUser) throw new ConflictException('Este e-mail já está cadastrado no sistema.');
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    return this.prisma.$transaction(async (tx) => {
+      let agencyId: string | null = null;
+
+      // For IMOBILIARIA role, create the agency record first
+      if (inviteCode.role === UserRole.IMOBILIARIA) {
+        const agencyName = dto.agencyName || dto.name;
+        const existingAgency = await tx.agency.findUnique({ where: { email: dto.email } });
+        if (existingAgency) throw new ConflictException('Este e-mail de imobiliária já está cadastrado.');
+
+        const agency = await tx.agency.create({
+          data: {
+            tenantId: inviteCode.tenantId,
+            name: agencyName,
+            email: dto.email,
+            phone: dto.phone,
+            creci: dto.creci,
+            isPending: false,
+          },
+        });
+        agencyId = agency.id;
+      }
+
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          name: dto.name,
+          passwordHash,
+          role: inviteCode.role,
+          tenantId: inviteCode.tenantId,
+          agencyId,
+        },
+      });
+
+      if (inviteCode.role === UserRole.CORRETOR) {
+        await tx.realtor.create({
+          data: { userId: user.id, agencyId: null },
+        });
+
+        const baseCode = dto.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+
+        let finalCode = baseCode;
+        let counter = 1;
+        while (
+          await tx.realtorLink.findUnique({
+            where: { tenantId_code: { tenantId: inviteCode.tenantId, code: finalCode } },
+          })
+        ) {
+          finalCode = `${baseCode}-${counter}`;
+          counter++;
+        }
+
+        await tx.realtorLink.create({
+          data: {
+            tenantId: inviteCode.tenantId,
+            userId: user.id,
+            name: dto.name,
+            email: dto.email,
+            code: finalCode,
+            agencyId: null,
+          },
+        });
+      }
+
+      // Increment usage counter
+      await tx.tenantInviteCode.update({
+        where: { id: inviteCode.id },
+        data: { usageCount: { increment: 1 } },
+      });
+
+      return { success: true, role: inviteCode.role };
+    });
   }
 
   async getAgencyMetrics(agencyId: string) {

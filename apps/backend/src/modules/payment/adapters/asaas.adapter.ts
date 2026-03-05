@@ -72,13 +72,21 @@ export class AsaasAdapter implements IPaymentGateway {
     const event = payload.event;
     const payment = payload.payment;
 
+    if (!payment) {
+      return {
+        externalId: '',
+        status: WebhookPaymentStatus.PENDING,
+        rawPayload: payload,
+      };
+    }
+
     let status = WebhookPaymentStatus.PENDING;
 
-    if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') {
+    if (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED' || event === 'PAYMENT_ANTICIPATED') {
       status = WebhookPaymentStatus.PAID;
-    } else if (event === 'PAYMENT_OVERDUE' || event === 'PAYMENT_DELETED') {
+    } else if (event === 'PAYMENT_OVERDUE' || event === 'PAYMENT_DELETED' || event === 'PAYMENT_REPROVED_BY_RISK_ANALYSIS') {
         status = WebhookPaymentStatus.FAILED;
-    } else if (event === 'PAYMENT_REFUNDED') {
+    } else if (event === 'PAYMENT_REFUNDED' || event === 'PAYMENT_PARTIALLY_REFUNDED') {
         status = WebhookPaymentStatus.REFUNDED;
     }
 

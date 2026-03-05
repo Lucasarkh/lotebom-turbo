@@ -74,7 +74,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">{{ editingUser ? 'Nova Senha (deixe vazio para manter)' : 'Senha' }}</label>
-              <input v-model="form.password" class="form-input" type="password" :minlength="editingUser ? 0 : 6" :required="!editingUser" :placeholder="editingUser ? 'Deixe vazio para manter a atual' : 'Mín. 6 caracteres'" />
+              <AppPasswordInput v-model="form.password" :minlength="editingUser ? 0 : 6" :required="!editingUser" :placeholder="editingUser ? 'Deixe vazio para manter a atual' : 'Mín. 6 caracteres'" />
               <div v-if="form.password && form.password.length < 6 && form.password.length > 0" class="form-error">Senha deve ter no mínimo 6 caracteres</div>
             </div>
             <div class="form-group">

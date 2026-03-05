@@ -9,11 +9,15 @@ import { PrismaService } from '@infra/db/prisma.service';
 import { CreateSchedulingDto } from './dto/create-scheduling.dto';
 import { UpdateSchedulingConfigDto } from './dto/update-scheduling-config.dto';
 import { SchedulingStatus } from '@prisma/client';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 @Injectable()
 export class SchedulingService {
   private readonly logger = new Logger(SchedulingService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async getProjectConfig(projectId: string) {
     let config = await this.prisma.schedulingConfig.findUnique({
@@ -156,7 +160,7 @@ export class SchedulingService {
       finalLeadId = lead.id;
     }
 
-    return this.prisma.scheduling.create({
+    const scheduling = await this.prisma.scheduling.create({
       data: {
         tenantId,
         projectId,
@@ -176,6 +180,13 @@ export class SchedulingService {
         }
       }
     });
+
+    // Fire-and-forget: notify loteadora users about the new scheduling
+    this.notifications
+      .onNewScheduling(tenantId, projectId, scheduling.project.name, scheduling.id)
+      .catch((e) => this.logger.error('Notification onNewScheduling', e.message));
+
+    return scheduling;
   }
 
   async listSchedulings(tenantId: string, projectId: string | undefined, user: any) {

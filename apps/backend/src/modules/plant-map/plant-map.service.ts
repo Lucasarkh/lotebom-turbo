@@ -108,20 +108,26 @@ export class PlantMapService {
       return hotspots.map((h) => ({ ...h, tags: [] }));
     }
 
-    // Fetch all lot details for these IDs
+    // Fetch live status + tags from LotDetails so the map always reflects current lot status
     const lotDetails = await this.prisma.lotDetails.findMany({
       where: { mapElementId: { in: lotIds } },
-      select: { mapElementId: true, tags: true }
+      select: { mapElementId: true, tags: true, status: true }
     });
 
     const tagsMap = new Map<string, string[]>();
+    const statusMap = new Map<string, string>();
     lotDetails.forEach((ld) => {
       tagsMap.set(ld.mapElementId, ld.tags || []);
+      statusMap.set(ld.mapElementId, ld.status);
     });
 
     return hotspots.map((h) => {
       if (h.linkType === 'LOTE_PAGE' && h.linkId) {
-        return { ...h, tags: tagsMap.get(h.linkId) || [] };
+        return {
+          ...h,
+          tags: tagsMap.get(h.linkId) || [],
+          loteStatus: statusMap.get(h.linkId) ?? h.loteStatus,
+        };
       }
       return { ...h, tags: [] };
     });

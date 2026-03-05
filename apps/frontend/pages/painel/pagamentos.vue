@@ -311,18 +311,18 @@ onMounted(fetchData)
           <div v-if="form.provider === 'STRIPE'">
             <div class="form-group">
               <label class="form-label">Secret Key (sk_...)</label>
-              <input v-model="form.keysJson.secretKey" type="password" class="form-input" placeholder="Insira sua Secret Key do Stripe" required autocomplete="new-password" />
+              <AppPasswordInput v-model="form.keysJson.secretKey" placeholder="Insira sua Secret Key do Stripe" required autocomplete="new-password" />
             </div>
             <div class="form-group">
               <label class="form-label">Webhook Signing Secret (whsec_...)</label>
-              <input v-model="form.webhookSecret" type="password" class="form-input" placeholder="Opcional" autocomplete="new-password" />
+              <AppPasswordInput v-model="form.webhookSecret" placeholder="Opcional" autocomplete="new-password" />
             </div>
           </div>
 
           <div v-if="form.provider === 'ASAAS'">
             <div class="form-group">
               <label class="form-label">API Key ($...)</label>
-              <input v-model="form.keysJson.apiKey" type="password" class="form-input" placeholder="Access Token do Asaas" required autocomplete="new-password" />
+              <AppPasswordInput v-model="form.keysJson.apiKey" placeholder="Access Token do Asaas" required autocomplete="new-password" />
             </div>
             <div class="flex items-center gap-2 mt-2">
               <input type="checkbox" v-model="form.keysJson.isSandbox" id="chkAsaasSandbox" />
@@ -333,21 +333,21 @@ onMounted(fetchData)
           <div v-if="form.provider === 'MERCADO_PAGO'">
             <div class="form-group">
               <label class="form-label">Access Token (APP_USR-...)</label>
-              <input v-model="form.keysJson.accessToken" type="password" class="form-input" required autocomplete="new-password" />
+              <AppPasswordInput v-model="form.keysJson.accessToken" required autocomplete="new-password" />
             </div>
           </div>
 
           <div v-if="form.provider === 'PAGAR_ME'">
             <div class="form-group">
               <label class="form-label">Secret Key (ak_...)</label>
-              <input v-model="form.keysJson.secretKey" type="password" class="form-input" required autocomplete="new-password" />
+              <AppPasswordInput v-model="form.keysJson.secretKey" required autocomplete="new-password" />
             </div>
           </div>
 
           <div v-if="form.provider === 'PAGSEGURO'">
             <div class="form-group">
               <label class="form-label">Token de Acesso</label>
-              <input v-model="form.keysJson.token" type="password" class="form-input" required autocomplete="new-password" />
+              <AppPasswordInput v-model="form.keysJson.token" required autocomplete="new-password" />
             </div>
             <div class="flex items-center gap-2 mt-2">
               <input type="checkbox" v-model="form.keysJson.isSandbox" id="chkPagSeguroSandbox" />

@@ -603,6 +603,7 @@
                 <td v-if="authStore.canEdit">
                   <div class="flex gap-2">
                      <button class="btn btn-sm btn-dark" style="background: var(--glass-bg-heavy); color: #fff; border: none;" @click="openEditLot(l)">Editar Dados</button>
+                     <button v-if="l.status === 'RESERVED'" class="btn btn-sm btn-warning" @click="openReservationModal(l)">Ver Reserva</button>
                      <a v-if="publicUrl && l.mapElement" :href="`/${project.slug}/${l.mapElement.code}`" target="_blank" class="btn btn-sm btn-outline">Ver Página</a>
                   </div>
                 </td>
@@ -612,6 +613,57 @@
           <CommonPagination :meta="lotsMeta" @change="loadLotsPaginated" />
         </div>
       </section>
+
+      <!-- Reservation Details Modal -->
+      <div v-if="viewingReservation" class="modal-overlay" @click.self="viewingReservation = null">
+        <div class="modal" style="max-width: 520px;">
+          <div class="modal-header" style="margin-bottom: 16px;">
+            <h3>Reserva — {{ viewingReservation.mapElement?.code }}</h3>
+            <button class="modal-close" @click="viewingReservation = null">✕</button>
+          </div>
+          <div class="modal-body">
+            <div v-if="reservationLoading" class="text-center py-4">Carregando...</div>
+            <div v-else-if="reservationData">
+              <div class="reservation-section">
+                <p class="reservation-section-label">Lead</p>
+                <p><strong>Nome:</strong> {{ reservationData.name }}</p>
+                <p><strong>E-mail:</strong> {{ reservationData.email || '—' }}</p>
+                <p><strong>Telefone:</strong> {{ reservationData.phone || '—' }}</p>
+                <p><strong>CPF:</strong> {{ reservationData.cpf || '—' }}</p>
+              </div>
+              <div class="reservation-section">
+                <p class="reservation-section-label">Corretor</p>
+                <p><strong>Nome:</strong> {{ reservationData.realtorLink?.name || '—' }}</p>
+                <p><strong>Código:</strong> {{ reservationData.realtorLink?.code || '—' }}</p>
+                <p v-if="reservationData.realtorLink?.imobiliaria"><strong>Imobiliária:</strong> {{ reservationData.realtorLink.imobiliaria }}</p>
+              </div>
+              <div class="reservation-section">
+                <p class="reservation-section-label">Datas & Condições</p>
+                <p><strong>Reservado em:</strong> {{ reservationData.createdAt ? formatDateTimeToBrasilia(reservationData.createdAt) : '—' }}</p>
+                <p v-if="project?.reservationExpiryHours && reservationData.createdAt">
+                  <strong>Expira em:</strong> {{ reservationExpiry(reservationData.createdAt) }}
+                </p>
+                <p v-if="project?.reservationFeeValue">
+                  <strong>Taxa de Reserva:</strong>
+                  {{ project.reservationFeeType === 'PERCENTAGE'
+                    ? `${project.reservationFeeValue}%`
+                    : formatCurrencyToBrasilia(project.reservationFeeValue) }}
+                </p>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top: 1px solid var(--glass-border-subtle);">
+                <button class="btn btn-ghost btn-sm" @click="viewingReservation = null">Fechar</button>
+                <button class="btn btn-danger btn-sm" :disabled="reservationActing" @click="handleReservationAction('RELEASE')">
+                  {{ reservationActing ? '...' : 'Liberar Lote' }}
+                </button>
+                <button class="btn btn-success btn-sm" :disabled="reservationActing" @click="handleReservationAction('WON')">
+                  {{ reservationActing ? '...' : 'Confirmar Venda' }}
+                </button>
+              </div>
+            </div>
+            <div v-else class="text-center py-4 text-muted">Nenhum dado de reserva encontrado.</div>
+          </div>
+        </div>
+      </div>
 
       <!-- Lot Edit Modal -->
       <div v-if="editingLot" class="modal-overlay" @click.self="editingLot = null">
@@ -1220,6 +1272,65 @@ const settingsError = ref('')
 const settingsSaved = ref(false)
 
 const editingLot = ref<any>(null)
+
+// Reservation modal state
+const viewingReservation = ref<any>(null)
+const reservationData = ref<any>(null)
+const reservationLoading = ref(false)
+const reservationActing = ref(false)
+
+const openReservationModal = async (lot: any) => {
+  viewingReservation.value = lot
+  reservationData.value = null
+  reservationLoading.value = true
+  try {
+    const res = await fetchApi(`/leads?projectId=${projectId}&mapElementId=${lot.mapElementId}&status=RESERVATION&limit=1`)
+    reservationData.value = res?.data?.[0] ?? null
+  } catch {
+    reservationData.value = null
+  } finally {
+    reservationLoading.value = false
+  }
+}
+
+const reservationExpiry = (createdAt: string) => {
+  if (!project.value?.reservationExpiryHours) return '—'
+  const expiry = new Date(new Date(createdAt).getTime() + project.value.reservationExpiryHours * 3600000)
+  return formatDateTimeToBrasilia(expiry.toISOString())
+}
+
+const handleReservationAction = async (newStatus: 'WON' | 'CANCELLED' | 'RELEASE') => {
+  if (!reservationData.value) return
+  reservationActing.value = true
+  try {
+    if (newStatus === 'RELEASE') {
+      // Step 1: free the lot without touching the lead status
+      await fetchApi(`/projects/${projectId}/lots/${viewingReservation.value.mapElementId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'AVAILABLE' }),
+      })
+      // Step 2: keep lead alive by moving it back to NEGOTIATING
+      await fetchApi(`/leads/${reservationData.value.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'NEGOTIATING' }),
+      })
+    } else {
+      await fetchApi(`/leads/${reservationData.value.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      })
+    }
+    viewingReservation.value = null
+    reservationData.value = null
+    await loadLotsPaginated(lotsMeta.value.currentPage)
+    toastSuccess(newStatus === 'WON' ? 'Venda confirmada!' : 'Lote liberado com sucesso.')
+  } catch (e: any) {
+    toastFromError(e)
+  } finally {
+    reservationActing.value = false
+  }
+}
+
 const newTag = ref('')
 const lotForm = ref({
   status: 'AVAILABLE',
@@ -3015,4 +3126,8 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 }
+
+.reservation-section { margin-bottom: 16px; }
+.reservation-section p { font-size: 0.875rem; margin-bottom: 4px; }
+.reservation-section-label { font-size: 0.6875rem; text-transform: uppercase; color: var(--color-surface-400); font-weight: 600; margin-bottom: 8px !important; letter-spacing: 0.05em; }
 </style>

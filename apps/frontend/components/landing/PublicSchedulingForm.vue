@@ -58,7 +58,7 @@
                 <input v-model="form.leadEmail" type="email" placeholder="E-mail" class="v4-input" required>
              </div>
              <div class="form-group">
-                <input v-model="form.leadPhone" v-maska="'(##) #####-####'" type="text" placeholder="WhatsApp" class="v4-input" required>
+                <input :value="form.leadPhone" @input="form.leadPhone = applyPhoneMask($event.target.value)" type="text" placeholder="WhatsApp" class="v4-input" required>
              </div>
           </div>
        </div>

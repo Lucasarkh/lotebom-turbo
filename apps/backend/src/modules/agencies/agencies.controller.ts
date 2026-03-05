@@ -1,12 +1,14 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Patch, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { AgenciesService } from './agencies.service';
 import { CreateAgencyDto, UpdateAgencyDto } from './dto/agency.dto';
 import { CreateInviteDto, AcceptInviteDto } from './dto/invite.dto';
+import { CreateInviteCodeDto, RegisterWithInviteCodeDto, UpdateInviteCodeDto } from './dto/invite-code.dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { TenantGuard } from '@common/guards/tenant.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { Public } from '@common/decorators/public.decorator';
+import { SkipTermsCheck } from '@common/decorators/skip-terms-check.decorator';
 import { UserRole } from '@prisma/client';
 
 @Controller('agencies')
@@ -73,6 +75,46 @@ export class AgenciesController {
   @Public()
   getInvite(@Param('token') token: string) {
     return this.agenciesService.getInviteDetail(token);
+  }
+
+  // --- Invite Codes (open registration links) ---
+
+  @Post('invite-codes')
+  @Roles('LOTEADORA')
+  createInviteCode(@Req() req, @Body() dto: CreateInviteCodeDto) {
+    return this.agenciesService.createInviteCode(req.user.tenantId, dto);
+  }
+
+  @Get('invite-codes')
+  @Roles('LOTEADORA')
+  listInviteCodes(@Req() req) {
+    return this.agenciesService.listInviteCodes(req.user.tenantId);
+  }
+
+  @Patch('invite-codes/:id')
+  @Roles('LOTEADORA')
+  updateInviteCode(@Req() req, @Param('id') id: string, @Body() dto: UpdateInviteCodeDto) {
+    return this.agenciesService.updateInviteCode(id, req.user.tenantId, dto);
+  }
+
+  @Delete('invite-codes/:id')
+  @Roles('LOTEADORA')
+  deleteInviteCode(@Req() req, @Param('id') id: string) {
+    return this.agenciesService.deleteInviteCode(id, req.user.tenantId);
+  }
+
+  @Get('invite-codes/public/:code')
+  @Public()
+  @SkipTermsCheck()
+  getInviteCodePublicDetails(@Param('code') code: string) {
+    return this.agenciesService.getInviteCodePublicDetails(code);
+  }
+
+  @Post('invite-codes/public/:code/register')
+  @Public()
+  @SkipTermsCheck()
+  registerWithInviteCode(@Param('code') code: string, @Body() dto: RegisterWithInviteCodeDto) {
+    return this.agenciesService.registerWithInviteCode(code, dto);
   }
 
   // --- Metrics for Agency ---

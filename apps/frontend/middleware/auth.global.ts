@@ -24,6 +24,16 @@ export default defineNuxtRouteMiddleware((to) => {
     return navigateTo('/login');
   }
 
+  // Terms acceptance enforcement — redirect to lock-screen page before accessing any panel route
+  const isTermsPage = to.path === '/painel/aceitar-termos';
+  if (!authStore.hasAcceptedTerms && !isTermsPage) {
+    return navigateTo('/painel/aceitar-termos');
+  }
+  // Prevent accessing the terms page after already accepting
+  if (authStore.hasAcceptedTerms && isTermsPage) {
+    return navigateTo('/painel');
+  }
+
   // Role-based route protection
   if (to.path.startsWith('/painel/tenants') && !authStore.canManageTenants) {
     return navigateTo('/painel');
@@ -31,4 +41,11 @@ export default defineNuxtRouteMiddleware((to) => {
   if (to.path.startsWith('/painel/usuarios') && !authStore.canManageUsers) {
     return navigateTo('/painel');
   }
+  if (to.path.startsWith('/painel/assinatura') && !authStore.isLoteadora) {
+    return navigateTo('/painel');
+  }
+  if (to.path.startsWith('/painel/reservar') && !authStore.isCorretor && !authStore.isImobiliaria) {
+    return navigateTo('/painel');
+  }
 });
+

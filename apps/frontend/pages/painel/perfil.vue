@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-8">
+    <div class="profile-grid">
       <div class="card">
         <h2 style="margin-bottom: 16px;">Dados Pessoais</h2>
         
@@ -65,15 +65,15 @@
         <form @submit.prevent="handleChangePassword">
           <div class="form-group">
             <label class="form-label">Senha Atual</label>
-            <input v-model="passForm.currentPassword" type="password" class="form-input" required />
+            <AppPasswordInput v-model="passForm.currentPassword" required />
           </div>
           <div class="form-group">
             <label class="form-label">Nova Senha</label>
-            <input v-model="passForm.newPassword" type="password" class="form-input" required minlength="6" />
+            <AppPasswordInput v-model="passForm.newPassword" required minlength="6" />
           </div>
           <div class="form-group">
             <label class="form-label">Confirmar Nova Senha</label>
-            <input v-model="passForm.confirmPassword" type="password" class="form-input" required minlength="6" />
+            <AppPasswordInput v-model="passForm.confirmPassword" required minlength="6" />
             <div v-if="passForm.confirmPassword && passForm.confirmPassword !== passForm.newPassword" class="form-error">
               As senhas não coincidem
             </div>
@@ -281,5 +281,14 @@ async function handleToggle2FA() {
 }
 .toggle-switch input:checked + .toggle-slider::before {
   transform: translateX(22px);
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 767px) {
+  .profile-grid { grid-template-columns: 1fr; gap: 1rem; }
 }
 </style>

@@ -380,7 +380,7 @@ definePageMeta({
                 </div>
                 <div class="form-group">
                   <label class="form-label">Senha Inicial *</label>
-                  <input v-model="form.accountPassword" type="password" class="form-input" placeholder="Mín. 6 caracteres" required minlength="6" autocomplete="new-password">
+                  <AppPasswordInput v-model="form.accountPassword" placeholder="Mín. 6 caracteres" required minlength="6" autocomplete="new-password" />
                   <small class="help-text">O corretor poderá alterar depois no painel.</small>
                 </div>
               </div>

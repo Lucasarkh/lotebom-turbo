@@ -73,17 +73,36 @@
         <section>
           <h2>6. INTEGRAÇÕES COM SERVIÇOS DE INTELIGÊNCIA ARTIFICIAL</h2>
           <p>6.1. A Plataforma pode oferecer funcionalidades baseadas em inteligência artificial ("IA"), incluindo assistente virtual, geração de conteúdo e sugestões automatizadas para o atendimento de leads.</p>
-          <p>6.2. <strong>O Contratante é o único e exclusivo responsável</strong> por:</p>
+
+          <p>6.2. <strong>Travas e diretrizes de segurança obrigatórias da Plataforma.</strong> A Lotio implementa na Plataforma um conjunto de diretrizes de segurança (<em>safety rails</em>) que são incorporadas obrigatoriamente em todas as interações do assistente de IA, independentemente de qualquer configuração do Contratante. Essas diretrizes incluem, de forma não exaustiva:</p>
           <ul>
-            <li><strong>a)</strong> O fornecimento, custódia e configuração de suas próprias chaves de API de serviços de IA (ex.: OpenAI, Google AI, etc.);</li>
+            <li><strong>a)</strong> Restrição de escopo: o assistente deve responder apenas sobre lotes, disponibilidade, preços e características do loteamento configurado, recusando temas alheios ao contexto;</li>
+            <li><strong>b)</strong> Proibição de simulações financeiras: o assistente não realiza cálculos de parcelas, taxas de juros, financiamentos ou qualquer simulação financeira, encaminhando o usuário ao simulador interno do lote;</li>
+            <li><strong>c)</strong> Fidelidade aos dados: o assistente só pode recomendar características (como "sol da manhã", "esquina") presentes nas tags cadastradas para cada lote, sendo vedado supor ou inferir características não confirmadas;</li>
+            <li><strong>d)</strong> Prioridade de disponibilidade: lotes com status "Disponível" são priorizados; lotes vendidos não são ofertados ativamente;</li>
+            <li><strong>e)</strong> Honestidade sobre limitações: quando não encontrar a informação, o assistente informa a ausência e indica que um consultor humano pode ajudar.</li>
+          </ul>
+          <p>Essas diretrizes são técnicas, integradas no nível do <em>system prompt</em> gerenciado pela Lotio, e <strong>não podem ser desativadas, contornadas ou removidas pelo Contratante</strong>.</p>
+
+          <p>6.3. <strong>Prompt personalizado (customização pelo Contratante).</strong> A Plataforma permite ao Contratante adicionar instruções personalizadas ao assistente de IA ("prompt personalizado"), como ajustes de tom, personalidade, saudações, informações adicionais sobre o empreendimento ou nome dos atendentes. Essas instruções são sempre acrescentadas <em>após</em> as diretrizes obrigatórias descritas no item 6.2, de modo que:</p>
+          <ul>
+            <li><strong>a)</strong> O prompt personalizado pode <em>complementar</em>, mas nunca substituir ou neutralizar as travas de segurança da Plataforma;</li>
+            <li><strong>b)</strong> O Contratante é o único e exclusivo responsável pelo conteúdo das instruções personalizadas inseridas, incluindo sua legalidade, adequação e possíveis efeitos sobre as respostas geradas;</li>
+            <li><strong>c)</strong> A Lotio não monitora nem pré-aprova os prompts personalizados, que são de responsabilidade integral do Contratante.</li>
+          </ul>
+
+          <p>6.4. <strong>O Contratante é o único e exclusivo responsável</strong> por:</p>
+          <ul>
+            <li><strong>a)</strong> O fornecimento, custódia e configuração de suas próprias chaves de API de serviços de IA (ex.: OpenAI, Google AI, Anthropic, etc.);</li>
             <li><strong>b)</strong> Os custos de utilização dos serviços de IA contratados diretamente junto aos provedores;</li>
             <li><strong>c)</strong> A revisão, aprovação e validação de todo conteúdo gerado por IA antes de sua publicação ou envio a terceiros;</li>
             <li><strong>d)</strong> O cumprimento dos Termos de Serviço dos provedores de IA;</li>
-            <li><strong>e)</strong> As instruções, prompts e configurações personalizadas inseridas no módulo de IA;</li>
-            <li><strong>f)</strong> Eventuais danos causados a terceiros por respostas, conteúdos ou orientações geradas pela IA que o Contratante opte por utilizar ou transmitir.</li>
+            <li><strong>e)</strong> As instruções, prompts personalizados e configurações inseridas no módulo de IA;</li>
+            <li><strong>f)</strong> Eventuais danos causados a terceiros por respostas, conteúdos ou orientações geradas pela IA, especialmente quando decorrentes de prompts personalizados inseridos pelo Contratante.</li>
           </ul>
-          <p>6.3. A Lotio <strong>não garante a precisão, completude ou adequação</strong> das respostas geradas por serviços de IA, que são fornecidos por provedores terceirizados. Os conteúdos gerados por IA são oferecidos "no estado em que se encontram" (<em>as is</em>).</p>
-          <p>6.4. A utilização de módulos de IA está sujeita ao Marco Legal da Inteligência Artificial e eventuais regulamentações aplicáveis no Brasil.</p>
+
+          <p>6.5. A Lotio <strong>não garante a precisão, completude ou adequação</strong> das respostas geradas por serviços de IA, que são fornecidos por provedores terceirizados. Os conteúdos gerados por IA são oferecidos "no estado em que se encontram" (<em>as is</em>).</p>
+          <p>6.6. A utilização de módulos de IA está sujeita ao Marco Legal da Inteligência Artificial (Lei nº 21.604/2025, quando em vigor) e eventuais regulamentações aplicáveis no Brasil.</p>
         </section>
 
         <section>
@@ -131,8 +150,9 @@
         <section>
           <h2>11. GESTÃO DE USUÁRIOS E PAPÉIS</h2>
           <p>11.1. O Contratante, na qualidade de administrador do Tenant (papel LOTEADORA), é responsável pelo convite, ativação e desativação de usuários vinculados ao seu ambiente, incluindo imobiliárias, corretores e demais colaboradores.</p>
-          <p>11.2. A Lotio não se responsabiliza por ações realizadas por usuários convidados pelo Contratante, incluindo corretores e imobiliárias que ajam em desconformidade com estes Termos.</p>
-          <p>11.3. O papel SYSADMIN é reservado exclusivamente à equipe interna da Lotio para fins de gestão da Plataforma.</p>
+          <p>11.2. A Plataforma disponibiliza dois mecanismos de onboarding de usuários: (i) convite nominativo por e-mail; e (ii) links de cadastro aberto, por meio dos quais qualquer pessoa de posse do link pode se cadastrar e vincular-se ao Tenant do Contratante. O Contratante é o único responsável pela gestão, compartilhamento e desativação de tais links, bem como pelas consequências do cadastro de terceiros por meio deles.</p>
+          <p>11.3. A Lotio não se responsabiliza por ações realizadas por usuários convidados pelo Contratante, incluindo corretores e imobiliárias que ajam em desconformidade com estes Termos.</p>
+          <p>11.4. O papel SYSADMIN é reservado exclusivamente à equipe interna da Lotio para fins de gestão da Plataforma.</p>
         </section>
 
         <section>

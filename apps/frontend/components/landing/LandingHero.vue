@@ -42,7 +42,7 @@
           </div>
           <div class="form-group">
             <label>WhatsApp / Celular</label>
-            <input v-model="form.phone" type="tel" placeholder="(00) 00000-0000" v-maska="'(##) #####-####'" required>
+            <input :value="form.phone" @input="form.phone = applyPhoneMask($event.target.value)" type="tel" placeholder="(00) 00000-0000" required>
           </div>
           <div class="form-group">
             <label>Sua mensagem (Opcional)</label>

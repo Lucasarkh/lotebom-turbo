@@ -21,4 +21,9 @@ export class LeadsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by map element (lot) ID' })
+  @IsOptional()
+  @IsString()
+  mapElementId?: string;
 }

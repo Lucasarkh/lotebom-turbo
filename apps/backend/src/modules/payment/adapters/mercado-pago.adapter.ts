@@ -52,8 +52,11 @@ export class MercadoPagoAdapter implements IPaymentGateway {
 
     const response = await preference.create({ body });
 
+    // NOTE: We use data.orderId (external_reference) as externalId — not the preference ID —
+    // because MP webhooks deliver Payment objects whose IDs differ from Preference IDs.
+    // The external_reference is the only consistent identifier between create and webhook events.
     return {
-      externalId: response.id!,
+      externalId: data.orderId,  // = leadPayment.id, matches what external_reference points to
       paymentUrl: response.init_point!, // For production
     };
   }
@@ -69,7 +72,7 @@ export class MercadoPagoAdapter implements IPaymentGateway {
     // We fetch the payment details to ensure they are legitimate
     if (payload.type === 'payment') {
       const paymentData = await payment.get({ id: payload.data.id });
-      
+
       let status = WebhookPaymentStatus.PENDING;
       if (paymentData.status === 'approved') {
         status = WebhookPaymentStatus.PAID;
@@ -81,8 +84,10 @@ export class MercadoPagoAdapter implements IPaymentGateway {
         status = WebhookPaymentStatus.REFUNDED;
       }
 
+      // Use external_reference (= our leadPayment.id / orderId) as the lookup key.
+      // The Preference.id and Payment.id are different — only external_reference is consistent.
       return {
-        externalId: paymentData.id!.toString(),
+        externalId: paymentData.external_reference || paymentData.id!.toString(),
         status,
         rawPayload: paymentData,
       };

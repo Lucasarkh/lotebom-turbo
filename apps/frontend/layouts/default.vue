@@ -87,6 +87,11 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm0 18a8 8 0 118-8 8 8 0 01-8 8zm-1-11a1 1 0 112 0v2a1 1 0 01-2 0V9zm1 7a1 1 0 100-2 1 1 0 000 2z"/></svg>
             <span v-if="!sidebarCollapsed">Assistente IA</span>
           </NuxtLink>
+
+          <NuxtLink to="/painel/links-cadastro" class="nav-item" :title="sidebarCollapsed ? 'Links de Cadastro' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            <span v-if="!sidebarCollapsed">Links de Cadastro</span>
+          </NuxtLink>
         </template>
 
         <!-- CORRETOR Menu -->
@@ -94,6 +99,16 @@
            <NuxtLink to="/painel/leads" class="nav-item" :title="sidebarCollapsed ? 'Meus Leads' : undefined">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             <span v-if="!sidebarCollapsed">Meus Leads</span>
+          </NuxtLink>
+
+          <NuxtLink to="/painel/meus-links" class="nav-item" :title="sidebarCollapsed ? 'Meus Links' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            <span v-if="!sidebarCollapsed">Meus Links</span>
+          </NuxtLink>
+
+          <NuxtLink to="/painel/reservar" class="nav-item" :title="sidebarCollapsed ? 'Reservar Lote' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span v-if="!sidebarCollapsed">Reservar Lote</span>
           </NuxtLink>
 
           <NuxtLink to="/painel/agendamentos" class="nav-item" :title="sidebarCollapsed ? 'Agendamentos' : undefined">
@@ -117,6 +132,11 @@
           <NuxtLink to="/painel/corretores" class="nav-item" :title="sidebarCollapsed ? 'Minha Equipe' : undefined">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             <span v-if="!sidebarCollapsed">Minha Equipe</span>
+          </NuxtLink>
+
+          <NuxtLink to="/painel/reservar" class="nav-item" :title="sidebarCollapsed ? 'Reservar Lote' : undefined">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span v-if="!sidebarCollapsed">Reservar Lote</span>
           </NuxtLink>
 
           <NuxtLink to="/painel/agendamentos" class="nav-item" :title="sidebarCollapsed ? 'Agendamentos' : undefined">
@@ -144,9 +164,17 @@
             <span v-if="!sidebarCollapsed">Gerenciar Usuários</span>
           </NuxtLink>
         </template>
-        <NuxtLink to="/painel/assinatura" class="nav-item" :title="sidebarCollapsed ? 'Minha Assinatura' : undefined">
+        <NuxtLink v-if="authStore.isLoteadora" to="/painel/assinatura" class="nav-item" :title="sidebarCollapsed ? 'Minha Assinatura' : undefined">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           <span v-if="!sidebarCollapsed">Minha Assinatura</span>
+        </NuxtLink>
+        <NuxtLink to="/painel/suporte" class="nav-item" :title="sidebarCollapsed ? 'Suporte' : undefined">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span v-if="!sidebarCollapsed">Suporte</span>
+        </NuxtLink>
+        <NuxtLink to="/painel/notificacoes" class="nav-item" :title="sidebarCollapsed ? 'Notificações' : undefined">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span v-if="!sidebarCollapsed">Notificações</span>
         </NuxtLink>
         <NuxtLink to="/painel/perfil" class="nav-item" :title="sidebarCollapsed ? 'Perfil' : undefined">
            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -170,6 +198,10 @@
       <button v-if="authStore.isLoggedIn" class="mobile-hamburger" @click="mobileMenuOpen = !mobileMenuOpen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
+      <!-- Notification Bell (top right) -->
+      <div v-if="authStore.isLoggedIn" class="topbar-actions">
+        <PainelNotificationBell />
+      </div>
       <PainelBillingWarningBanner v-if="authStore.isLoteadora" />
       <slot />
     </main>
@@ -388,7 +420,18 @@ const handleLogout = async () => {
 }
 .mobile-hamburger:hover { background: rgba(10, 15, 13, 0.95); color: var(--color-surface-50); }
 
+.topbar-actions {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 98;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 @media (max-width: 768px) {
+  .topbar-actions { top: 10px; right: 12px; }
   .mobile-overlay {
     display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99;
     backdrop-filter: blur(4px);

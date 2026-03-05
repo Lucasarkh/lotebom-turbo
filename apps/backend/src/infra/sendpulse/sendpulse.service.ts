@@ -317,4 +317,26 @@ export class SendPulseService implements OnModuleInit {
 
     return this.sendEmail({ to, subject: 'Código de Verificação - Lotio', html });
   }
+
+  async sendSystemNotificationEmail(
+    to: string,
+    userName: string,
+    title: string,
+    message: string,
+  ): Promise<boolean> {
+    const safeUserName = this.escapeHtml(userName);
+    const safeTitle = this.escapeHtml(title);
+    const safeMessage = this.escapeHtml(message);
+
+    const html = this.getBaseTemplate(`
+      <h2>${safeTitle}</h2>
+      <p>Olá, <strong>${safeUserName}</strong>,</p>
+      <p>${safeMessage}</p>
+      <div class="info-box">
+        <p style="font-size: 14px; margin: 0;">Esta é uma mensagem official da equipe Lotio. Acesse o painel para mais detalhes.</p>
+      </div>
+    `);
+
+    return this.sendEmail({ to, subject: `${safeTitle} — Lotio`, html });
+  }
 }

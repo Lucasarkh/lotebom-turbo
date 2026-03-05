@@ -21,12 +21,12 @@
         <form v-else @submit.prevent="saveSettings">
           <div class="form-group">
             <label class="form-label">WhatsApp de Contato</label>
-            <input 
-              v-model="settings.contactWhatsapp" 
-              type="text" 
+            <input
+              :value="settings.contactWhatsapp"
+              @input="settings.contactWhatsapp = applyPhoneMask($event.target.value)"
+              type="text"
               class="form-input"
               placeholder="(00) 00000-0000"
-              v-maska="'(##) #####-####'"
             >
             <p class="text-xs text-gray-400 mt-1" style="color: var(--color-surface-400); font-size: 0.75rem; margin-top: 4px;">Se preenchido, o site mostrará o botão de WhatsApp.</p>
           </div>

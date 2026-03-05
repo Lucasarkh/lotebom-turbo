@@ -96,7 +96,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Senha Inicial</label>
-              <input v-model="form.password" type="password" class="form-input" placeholder="Min. 6 caracteres" required minlength="6" autocomplete="new-password" />
+              <AppPasswordInput v-model="form.password" placeholder="Min. 6 caracteres" required minlength="6" autocomplete="new-password" />
               <small style="color: var(--color-surface-400)">O cliente poderá alterar esta senha depois.</small>
             </div>
           </div>

@@ -132,22 +132,18 @@ onMounted(() => {
         
         <div class="form-group">
           <label class="form-label">Sua Senha</label>
-          <input 
-            v-model="form.password" 
-            type="password" 
-            class="form-input" 
-            required 
+          <AppPasswordInput
+            v-model="form.password"
+            required
             placeholder="••••••••"
           />
         </div>
         
         <div class="form-group">
           <label class="form-label">Confirmar Senha</label>
-          <input 
-            v-model="form.confirmPassword" 
-            type="password" 
-            class="form-input" 
-            required 
+          <AppPasswordInput
+            v-model="form.confirmPassword"
+            required
             placeholder="••••••••"
           />
         </div>

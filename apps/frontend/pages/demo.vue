@@ -389,7 +389,7 @@ const scrollToForm = () => {
             O digital ainda não.
           </h1>
           <p class="lp-hero-sub">
-            Loteadoras, incorporadoras e imobiliárias que adotam o Lotio reduzem o tempo de conversão em até 40% — com mapas interativos, captura automática de leads e reservas online em tempo real.
+            O Lotio é a ferramenta de vendas que conecta loteadoras, imobiliárias e corretores num único ecossistema. Mapas interativos, captura automática de leads com contexto e reservas online —tudo em tempo real.
           </p>
           <div class="lp-hero-stats">
             <div class="lp-stat">
@@ -440,7 +440,7 @@ const scrollToForm = () => {
               </div>
               <div class="lp-field">
                 <label>WhatsApp</label>
-                <input v-model="form.phone" type="tel" placeholder="(11) 99999-9999" v-maska="'(##) #####-####'" required />
+                <input :value="form.phone" @input="form.phone = applyPhoneMask($event.target.value)" type="tel" placeholder="(11) 99999-9999" required />
               </div>
             </div>
             <div class="lp-field-row">
@@ -479,7 +479,7 @@ const scrollToForm = () => {
     <!-- ═══════════════════════════════════════════════════ LOGOS / SOCIAL PROOF STRIP -->
     <div class="lp-trust-strip" ref="trustStripRef">
       <div class="lp-container">
-        <span class="lp-trust-label">Solução usada por equipes como:</span>
+        <span class="lp-trust-label">Desenvolvido para:</span>
         <div class="lp-trust-logos">
           <div class="lp-trust-badge">🏗️ Loteadoras</div>
           <div class="lp-trust-sep">·</div>
@@ -491,6 +491,54 @@ const scrollToForm = () => {
         </div>
       </div>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════ PERSONAS -->
+    <section class="lp-personas">
+      <div class="lp-container">
+        <div class="lp-section-header" style="margin-bottom:40px">
+          <div class="lp-badge-green">Uma plataforma, três vencedores</div>
+          <h2 class="lp-section-title">O Lotio foi projetado para <br><span class="lp-hl">cada elo da cadeia de vendas.</span></h2>
+        </div>
+        <div class="lp-personas-grid">
+          <div class="lp-persona-card lp-persona-card--primary">
+            <div class="lp-persona-icon">🏗️</div>
+            <h3>Loteadora</h3>
+            <p class="lp-persona-role">Dona do empreendimento</p>
+            <ul class="lp-persona-list">
+              <li>Mapa interativo publicado em minutos, sem TI</li>
+              <li>Controle total de estoque com atualização em tempo real</li>
+              <li>Painel unificado de leads, reservas e performance por corretor</li>
+              <li>Relatórios de conversão por canal e período</li>
+              <li>Stand de vendas digital disponível 24h por dia</li>
+            </ul>
+          </div>
+          <div class="lp-persona-card">
+            <div class="lp-persona-icon">🏢</div>
+            <h3>Imobiliária</h3>
+            <p class="lp-persona-role">Parceira comercial</p>
+            <ul class="lp-persona-list">
+              <li>Acesso ao painel do empreendimento vinculado à sua conta</li>
+              <li>Gerencie sua equipe de corretores com visibilidade total</li>
+              <li>Links exclusivos por corretor para rastrear origem dos leads</li>
+              <li>Histórico completo de cada negociação no painel</li>
+              <li>Distribua empreendimentos entre seus corretores facilmente</li>
+            </ul>
+          </div>
+          <div class="lp-persona-card">
+            <div class="lp-persona-icon">🤝</div>
+            <h3>Corretor</h3>
+            <p class="lp-persona-role">Força de vendas</p>
+            <ul class="lp-persona-list">
+              <li>Link rastreado exclusivo para cada empreendimento</li>
+              <li>Receba notificações no WhatsApp quando um lead chegar pelo seu link</li>
+              <li>Veja seu ranking de performance em tempo real</li>
+              <li>Compartilhe o mapa do loteamento via WhatsApp, Instagram ou e-mail</li>
+              <li>Leads chegam com o lote e a quadra de interesse já identificados</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ═══════════════════════════════════════════════════ DOR / PROBLEMA -->
     <section class="lp-pain" ref="painSectionRef">
@@ -654,15 +702,15 @@ const scrollToForm = () => {
         <div class="lp-feat-block lp-feat-block--rev">
           <div class="lp-feat-copy">
             <div class="lp-feat-tag">Para o financeiro</div>
-            <h3 class="lp-feat-title">Reserva online com pagamento instantâneo</h3>
+            <h3 class="lp-feat-title">Reserva online com cobrança via gateway</h3>
             <p class="lp-feat-desc">
-              Permita que o cliente reserve e pague o sinal do lote a qualquer hora via PIX ou Cartão de Crédito. Integração nativa com Stripe, Asaas, Mercado Pago, Pagar.me e PagSeguro — sem intermediários.
+              Conecte seu gateway de pagamento (Asaas, Mercado Pago, Pagar.me ou PagSeguro) e habilite a cobrança do sinal diretamente na plataforma, via PIX ou Cartão de Crédito — sem intermediários manuais.
             </p>
             <ul class="lp-feat-list">
-              <li><span class="lp-check">✓</span> Sinal via PIX gerado automaticamente</li>
-              <li><span class="lp-check">✓</span> Lote bloqueado imediatamente após pagamento</li>
-              <li><span class="lp-check">✓</span> Webhook automático para seu sistema</li>
-              <li><span class="lp-check">✓</span> Painel financeiro com status de cada reserva</li>
+              <li><span class="lp-check">✓</span> PIX e Cartão após configuração do gateway</li>
+              <li><span class="lp-check">✓</span> Lote bloqueado imediatamente após pagamento confirmado</li>
+              <li><span class="lp-check">✓</span> Webhook automático para seu sistema financeiro</li>
+              <li><span class="lp-check">✓</span> Painel com status de cada reserva em tempo real</li>
             </ul>
           </div>
           <div class="lp-feat-visual lp-feat-visual--pay">
@@ -955,11 +1003,17 @@ const scrollToForm = () => {
 }
 .lp-stat-l { font-size: 0.8rem; color: var(--gray-500); font-weight: 500; }
 .lp-stat-divider { width: 1px; height: 40px; background: var(--gray-200); display: none; }
-@media (min-width: 640px) { .lp-stat-divider { display: block; } }
+@media (min-width: 640px) {
+  .lp-stat-divider {
+    display: block;
+  }
+  .lp-form-card {
+    flex: 0 0 440px;
+  }
+}
 
 /* Form Card */
 .lp-form-card {
-  flex: 0 0 440px;
   max-width: 100%;
   background: #fff;
   border: 1px solid var(--gray-200);
@@ -1458,4 +1512,67 @@ const scrollToForm = () => {
   cursor: pointer;
 }
 .lp-cta-btn-wa:hover { background: rgba(255,255,255,0.14); }
+
+/* ──────────── PERSONAS ──────────── */
+.lp-personas {
+  padding: 80px 0;
+  background: white;
+}
+.lp-personas-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 768px) {
+  .lp-personas-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.lp-persona-card {
+  background: var(--gray-50);
+  border: 1.5px solid var(--gray-100);
+  border-radius: 20px;
+  padding: 32px 28px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.lp-persona-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.07);
+}
+.lp-persona-card--primary {
+  border-color: rgba(16,185,129,0.3);
+  background: linear-gradient(160deg, rgba(16,185,129,0.04) 0%, white 100%);
+}
+.lp-persona-icon { font-size: 2rem; margin-bottom: 12px; }
+.lp-persona-card h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin: 0 0 2px;
+}
+.lp-persona-role {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 20px;
+}
+.lp-persona-list {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.lp-persona-list li {
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  line-height: 1.4;
+  padding-left: 20px;
+  position: relative;
+}
+.lp-persona-list li::before {
+  content: '✓';
+  position: absolute; left: 0;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
 </style>

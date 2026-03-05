@@ -18,11 +18,15 @@ import {
   AddLeadDocumentDto,
   AddLeadPaymentDto
 } from './dto/manual-lead.dto';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 @Injectable()
 export class LeadsService {
   private readonly logger = new Logger(LeadsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async cleanupExpiredReservations() {
@@ -215,6 +219,11 @@ export class LeadsService {
       }
     });
 
+    // Fire-and-forget: notify panel users about the new lead
+    this.notifications
+      .onNewLead(tenantId, project.id, project.name, realtorLinkId ?? null)
+      .catch((e) => this.logger.error('Notification onNewLead (public)', e.message));
+
     return lead;
   }
 
@@ -247,7 +256,7 @@ export class LeadsService {
 
     const { realtorCode, mapElementId, sessionId, projectId, ...data } = dto;
 
-    return this.prisma.$transaction(async (tx) => {
+    const createdLead = await this.prisma.$transaction(async (tx) => {
       // Check lot availability if setting WON/RESERVATION status
       if (
         mapElementId &&
@@ -317,6 +326,13 @@ export class LeadsService {
 
       return lead;
     });
+
+    // Fire-and-forget: notify panel users about the new manual lead
+    this.notifications
+      .onNewLead(tenantId, project.id, project.name, realtorLinkId ?? null)
+      .catch((e) => this.logger.error('Notification onNewLead (manual)', e.message));
+
+    return createdLead;
   }
 
   /** Panel – list leads with optional filters */
@@ -325,7 +341,7 @@ export class LeadsService {
     query: LeadsQueryDto,
     user: { id: string; role: string; agencyId?: string }
   ): Promise<PaginatedResponse<any>> {
-    const { projectId, status, search, page = 1, limit = 10 } = query;
+    const { projectId, status, search, mapElementId, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
     // ... (rest of the realtor logic)
@@ -375,6 +391,7 @@ export class LeadsService {
       tenantId,
       ...(projectId && { projectId }),
       ...(status && { status }),
+      ...(mapElementId && { mapElementId }),
       ...(realtorLinkId && { realtorLinkId }),
       ...(user.role === 'IMOBILIARIA' && { realtorLink: { user: { agencyId: user.agencyId } } }),
       ...(search && {

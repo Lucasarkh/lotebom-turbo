@@ -71,16 +71,22 @@ export class PagSeguroAdapter implements IPaymentGateway {
     // PagSeguro sends status change notifications
     const statusMapping: Record<string, WebhookPaymentStatus> = {
       PAID: WebhookPaymentStatus.PAID,
+      COMPLETE: WebhookPaymentStatus.PAID,       // fully delivered payment
       AUTHORIZED: WebhookPaymentStatus.PENDING,
       IN_ANALYSIS: WebhookPaymentStatus.PENDING,
+      WAITING: WebhookPaymentStatus.PENDING,
       DECLINED: WebhookPaymentStatus.FAILED,
       CANCELED: WebhookPaymentStatus.FAILED,
+      REFUNDED: WebhookPaymentStatus.REFUNDED,
     };
 
-    const status = statusMapping[payload.status] || WebhookPaymentStatus.PENDING;
+    const rawStatus = payload.charges?.[0]?.status || payload.status;
+    const status = statusMapping[rawStatus] || WebhookPaymentStatus.PENDING;
+
+    const externalId = payload.id || payload.reference_id || '';
 
     return {
-      externalId: payload.id,
+      externalId,
       status,
       rawPayload: payload,
     };

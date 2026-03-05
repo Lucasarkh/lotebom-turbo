@@ -38,7 +38,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Senha</label>
-          <input v-model="password" type="password" class="form-input" placeholder="********" required />
+          <AppPasswordInput v-model="password" placeholder="********" required />
         </div>
         <div v-if="error" class="alert alert-error">{{ error }}</div>
         <div style="text-align: right; margin-bottom: var(--space-2);">

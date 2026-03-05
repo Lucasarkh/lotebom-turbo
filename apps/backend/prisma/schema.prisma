@@ -134,6 +134,41 @@ enum BillingStatus {
   CANCELLED
 }
 
+// ─── NOTIFICATION ENUMS ──────────────────────────────────
+
+enum NotificationType {
+  SYSTEM           // SYSADMIN broadcast (maintenance, announcements, etc.)
+  NEW_LEAD         // New lead arrived in a project
+  NEW_SCHEDULING   // New visit scheduling
+  LEAD_MILESTONE   // Lead count milestone (10, 25, 50, 100...)
+  ACCESS_MILESTONE // Access/session count milestone (100, 500, 1000...)
+}
+
+// ─── SUPPORT ENUMS ───────────────────────────────────────
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_USER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  GENERAL
+  TECHNICAL
+  BILLING
+  FEATURE_REQUEST
+  BUG
+}
+
 // ─── CORE MODELS ────────────────────────────────────────
 
 model Tenant {
@@ -180,6 +215,8 @@ model Tenant {
   // Billing relations
   subscription      TenantSubscription?
   billingInvoices   BillingInvoice[]
+  supportTickets    SupportTicket[]
+  inviteCodes       TenantInviteCode[]
 }
 
 model Agency {
@@ -260,6 +297,9 @@ model User {
   campaigns         Campaign[]
   schedulings       Scheduling[]
   termsAcceptances  TermsAcceptance[]
+  supportTickets    SupportTicket[]
+  supportMessages   SupportMessage[]
+  notifications     Notification[]
 
   @@index([tenantId])
   @@index([agencyId])
@@ -1032,6 +1072,66 @@ model TermsAcceptance {
   @@index([acceptedAt])
 }
 
+// ─── SUPPORT TICKETS ─────────────────────────────────────
+
+model SupportTicket {
+  id          String          @id @default(cuid())
+  tenantId    String?
+  tenant      Tenant?         @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String          @db.Text
+  status      TicketStatus    @default(OPEN)
+  priority    TicketPriority  @default(MEDIUM)
+  category    TicketCategory  @default(GENERAL)
+  resolvedAt  DateTime?
+  closedAt    DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  messages SupportMessage[]
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SupportMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message    String        @db.Text
+  isInternal Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+// ─── INVITE CODES ────────────────────────────────────────
+// Open registration links that loteadoras share with imobiliárias/corretores
+
+model TenantInviteCode {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  code        String    @unique @default(cuid())
+  description String?
+  role        UserRole  @default(CORRETOR)
+  isActive    Boolean   @default(true)
+  usageCount  Int       @default(0)
+  maxUses     Int?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([code])
+}
+
 // ─── SYSTEM METADATA ─────────────────────────────────────
 // Key-value store for system-level flags (e.g. seed tracking)
 model SystemMeta {
@@ -1039,4 +1139,22 @@ model SystemMeta {
   value     String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       NotificationType
+  title      String
+  message    String           @db.Text
+  isRead     Boolean          @default(false)
+  actionUrl  String?
+  metadata   Json?
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
 }
