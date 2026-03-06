@@ -9,6 +9,12 @@ export interface GeocodeResult {
   precision: string; // ROOFTOP | RANGE_INTERPOLATED | GEOMETRIC_CENTER | APPROXIMATE
 }
 
+export interface GeocodeResponse {
+  result: GeocodeResult | null;
+  status: string;
+  message?: string;
+}
+
 export interface NearbyPlace {
   placeId: string;
   name: string;
@@ -39,6 +45,20 @@ export class GoogleMapsService {
   // ─── Step 1: Geocode (legacy Geocoding API — still works) ───────────
 
   async geocode(address: string): Promise<GeocodeResult | null> {
+    const detailed = await this.geocodeDetailed(address);
+    return detailed.result;
+  }
+
+  async geocodeDetailed(address: string): Promise<GeocodeResponse> {
+    if (!this.apiKey) {
+      this.logger.error('GOOGLE_MAPS_API_KEY is not configured');
+      return {
+        result: null,
+        status: 'MISSING_API_KEY',
+        message: 'GOOGLE_MAPS_API_KEY não configurada no ambiente.',
+      };
+    }
+
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const resp = await this.http.get(
@@ -54,15 +74,22 @@ export class GoogleMapsService {
 
         if (resp.data.status !== 'OK' || !resp.data.results?.length) {
           this.logger.warn(`Geocode failed for "${address}": ${resp.data.status}`);
-          return null;
+          return {
+            result: null,
+            status: String(resp.data.status || 'UNKNOWN'),
+            message: resp.data.error_message || undefined,
+          };
         }
 
         const result = resp.data.results[0];
         return {
-          lat: result.geometry.location.lat,
-          lng: result.geometry.location.lng,
-          formattedAddress: result.formatted_address,
-          precision: result.geometry.location_type || 'APPROXIMATE',
+          result: {
+            lat: result.geometry.location.lat,
+            lng: result.geometry.location.lng,
+            formattedAddress: result.formatted_address,
+            precision: result.geometry.location_type || 'APPROXIMATE',
+          },
+          status: 'OK',
         };
       } catch (err: any) {
         if (attempt === 0 && (err.response?.status === 429 || err.response?.status >= 500)) {
@@ -71,10 +98,15 @@ export class GoogleMapsService {
           continue;
         }
         this.logger.error(`Geocode error: ${err.message}`);
-        return null;
+        const httpStatus = err.response?.status;
+        return {
+          result: null,
+          status: httpStatus ? `HTTP_${httpStatus}` : 'REQUEST_ERROR',
+          message: err.response?.data?.error_message || err.response?.data?.error?.message || err.message,
+        };
       }
     }
-    return null;
+    return { result: null, status: 'UNKNOWN' };
   }
 
   // ─── Step 2: Nearby Search — Places API (New) ──────────────────────

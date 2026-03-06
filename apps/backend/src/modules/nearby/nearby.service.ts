@@ -91,7 +91,7 @@ export class NearbyService {
   async generateNearby(projectId: string): Promise<void> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, address: true, latitude: true, longitude: true },
+      select: { id: true, address: true, latitude: true, longitude: true, googleMapsUrl: true },
     });
 
     if (!project) {
@@ -112,16 +112,54 @@ export class NearbyService {
     }
 
     try {
-      // Step 1: Geocode
-      this.logger.log(`Geocoding address for project ${projectId}`);
-      const geo = await this.googleMaps.geocode(project.address);
+      // Step 1: Resolve center coordinates (geocode with fallback)
+      this.logger.log(`Resolving coordinates for project ${projectId}`);
+
+      const geocodeResp = await this.googleMaps.geocodeDetailed(project.address);
+      let geo = geocodeResp.result;
+
+      if (!geo && project.latitude && project.longitude) {
+        this.logger.warn(
+          `Geocode failed (${geocodeResp.status}); falling back to stored project coordinates for ${projectId}`,
+        );
+        geo = {
+          lat: project.latitude,
+          lng: project.longitude,
+          formattedAddress: project.address,
+          precision: 'APPROXIMATE',
+        };
+      }
 
       if (!geo) {
+        const fromMapUrl = this.parseCoordinatesFromGoogleMapsUrl(project.googleMapsUrl || '');
+        if (fromMapUrl) {
+          this.logger.warn(
+            `Geocode failed (${geocodeResp.status}); using coordinates parsed from googleMapsUrl for ${projectId}`,
+          );
+          geo = {
+            lat: fromMapUrl.lat,
+            lng: fromMapUrl.lng,
+            formattedAddress: project.address,
+            precision: 'APPROXIMATE',
+          };
+        }
+      }
+
+      if (!geo) {
+        const diagnostic =
+          geocodeResp.status === 'MISSING_API_KEY'
+            ? 'Google Maps API key ausente no ambiente de produção'
+            : geocodeResp.status === 'REQUEST_DENIED'
+              ? 'REQUEST_DENIED no Geocoding (verifique restrições/chave no Google Cloud)'
+              : `Geocoding falhou com status ${geocodeResp.status}`;
+
         await this.prisma.project.update({
           where: { id: projectId },
           data: {
             nearbyStatus: 'error',
-            nearbyErrorMessage: 'Não foi possível geocodificar o endereço',
+            nearbyErrorMessage: geocodeResp.message
+              ? `${diagnostic}: ${geocodeResp.message}`.substring(0, 500)
+              : diagnostic,
             nearbyGeneratedAt: new Date(),
           },
         });
@@ -361,5 +399,40 @@ export class NearbyService {
       data: { visible },
       select: { id: true, visible: true },
     });
+  }
+
+  private parseCoordinatesFromGoogleMapsUrl(
+    url: string,
+  ): { lat: number; lng: number } | null {
+    if (!url) return null;
+
+    // Common embed format often contains !2d{lng}!3d{lat}
+    const embedMatch = url.match(/!2d(-?\d+(?:\.\d+)?)!3d(-?\d+(?:\.\d+)?)/);
+    if (embedMatch) {
+      return {
+        lng: parseFloat(embedMatch[1]),
+        lat: parseFloat(embedMatch[2]),
+      };
+    }
+
+    // Alternate format: !3d{lat}!4d{lng}
+    const altEmbedMatch = url.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+    if (altEmbedMatch) {
+      return {
+        lat: parseFloat(altEmbedMatch[1]),
+        lng: parseFloat(altEmbedMatch[2]),
+      };
+    }
+
+    // Fallback for direct maps links with @lat,lng,
+    const atMatch = url.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),/);
+    if (atMatch) {
+      return {
+        lat: parseFloat(atMatch[1]),
+        lng: parseFloat(atMatch[2]),
+      };
+    }
+
+    return null;
   }
 }
