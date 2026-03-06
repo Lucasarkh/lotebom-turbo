@@ -46,12 +46,6 @@
               </div>
             </div>
 
-            <!-- Description -->
-            <div class="pm-field">
-              <label class="pm-label">Descrição</label>
-              <textarea v-model="form.description" class="pm-input pm-textarea" rows="2" placeholder="Descrição opcional..."></textarea>
-            </div>
-
             <!-- Lot status (only for LOTE) -->
             <div v-if="form.type === 'LOTE'" class="pm-field">
               <label class="pm-label">Status do lote</label>
@@ -142,7 +136,6 @@ const isEdit = computed(() => !!props.hotspot)
 const defaultForm = (): CreateHotspotPayload => ({
   type: 'LOTE' as PlantHotspotType,
   title: '',
-  description: '',
   x: props.initialX ?? 0.5,
   y: props.initialY ?? 0.5,
   label: '',
@@ -166,7 +159,6 @@ watch(
       form.value = {
         type: props.hotspot.type,
         title: props.hotspot.title,
-        description: props.hotspot.description ?? '',
         x: props.hotspot.x,
         y: props.hotspot.y,
         label: props.hotspot.label ?? '',
@@ -192,7 +184,6 @@ const handleSubmit = () => {
   const payload: CreateHotspotPayload = {
     ...form.value,
     label: form.value.label || undefined,
-    description: form.value.description || undefined,
     linkId: form.value.linkId || undefined,
     linkUrl: form.value.linkUrl || undefined,
     loteStatus: (form.value.loteStatus as string) === '' ? undefined : form.value.loteStatus,

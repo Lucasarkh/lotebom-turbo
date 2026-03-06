@@ -101,12 +101,19 @@
       <div
         class="pme__canvas-wrap"
         ref="canvasWrapEl"
-        :class="{ 'mode-add': editorMode === 'add', 'mode-move': editorMode === 'move' }"
+        :class="{
+          'mode-add': editorMode === 'add',
+          'mode-move': editorMode === 'move',
+          'mode-pan': canPanMap || isPanning,
+        }"
+        tabindex="0"
         @click="handleCanvasClick"
         @wheel.prevent="onWheel"
         @mousedown="onMouseDown"
         @mousemove="onMouseMove"
         @mouseup="onMouseUp"
+        @keydown="onKeyDown"
+        @keyup="onKeyUp"
         @touchstart.prevent="onTouchStart"
         @touchmove.prevent="onTouchMove"
         @touchend="onTouchEnd"
@@ -203,13 +210,13 @@
 
         <!-- Toast hint -->
         <div v-if="editorMode === 'add'" class="pme__canvas-hint">
-          Clique na planta para adicionar um hotspot
+          Clique na planta para adicionar um hotspot. Segure Espaço para mover o mapa.
         </div>
         <div v-if="editorMode === 'batch'" class="pme__canvas-hint">
-          Marque os pontos para criação em massa
+          Marque os pontos para criacao em massa. Segure Espaco para mover o mapa.
         </div>
         <div v-if="editorMode === 'move'" class="pme__canvas-hint">
-          Arraste um hotspot para reposicioná-lo
+          Arraste um hotspot para reposiciona-lo. Segure Espaco para mover o mapa.
         </div>
       </div>
 
@@ -342,7 +349,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { PlantMap, PlantHotspot, CreateHotspotPayload } from '~/composables/plantMap/types'
 import { HOTSPOT_TYPE_ICONS, HOTSPOT_TYPE_LABELS } from '~/composables/plantMap/types'
 import { usePlantMapApi } from '~/composables/plantMap/usePlantMapApi'
@@ -472,8 +479,13 @@ const canvasContentStyle = computed(() => ({
 let isPanning = false
 let panStart = { x: 0, y: 0 }
 let panOffsetStart = { x: 0, y: 0 }
+let panMoved = false
 let isDraggingHotspot = false
 let draggingHotspotId: string | null = null
+const isSpacePressed = ref(false)
+let skipNextCanvasClick = false
+
+const canPanMap = computed(() => isSpacePressed.value || editorMode.value === 'view' || editorMode.value === 'move')
 
 const onImageLoad = (e: Event) => {
   const img = e.target as HTMLImageElement
@@ -544,7 +556,6 @@ const clampOffset = (newScale: number, newX: number, newY: number) => {
 
 // ── Wheel zoom ─────────────────────────────────────────────
 const onWheel = (e: WheelEvent) => {
-  if (editorMode.value !== 'view') return
   e.preventDefault()
   const rect = canvasWrapEl.value!.getBoundingClientRect()
   const ox = e.clientX - rect.left
@@ -566,16 +577,25 @@ const onWheel = (e: WheelEvent) => {
 
 // ── Mouse events ───────────────────────────────────────────
 const onMouseDown = (e: MouseEvent) => {
-  if (e.button !== 0) return
-  if (editorMode.value === 'view') {
+  if (e.button !== 0 && e.button !== 1) return
+
+  if (canPanMap.value) {
     isPanning = true
+    panMoved = false
     panStart = { x: e.clientX, y: e.clientY }
     panOffsetStart = { ...offset.value }
+    canvasWrapEl.value?.focus()
+    e.preventDefault()
   }
 }
 
 const onMouseMove = (e: MouseEvent) => {
   if (isPanning) {
+    const dx = e.clientX - panStart.x
+    const dy = e.clientY - panStart.y
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      panMoved = true
+    }
     const newX = panOffsetStart.x + e.clientX - panStart.x
     const newY = panOffsetStart.y + e.clientY - panStart.y
     offset.value = clampOffset(scale.value, newX, newY)
@@ -587,6 +607,9 @@ const onMouseMove = (e: MouseEvent) => {
 }
 
 const onMouseUp = () => {
+  if (isPanning && panMoved) {
+    skipNextCanvasClick = true
+  }
   if (isDraggingHotspot && draggingHotspotId) {
     commitHotspotPosition(draggingHotspotId)
   }
@@ -604,7 +627,7 @@ const onTouchStart = (e: TouchEvent) => {
       e.touches[1].clientX - e.touches[0].clientX,
       e.touches[1].clientY - e.touches[0].clientY,
     )
-  } else if (e.touches.length === 1 && editorMode.value === 'view') {
+  } else if (e.touches.length === 1 && (editorMode.value === 'view' || editorMode.value === 'move')) {
     isPanning = true
     panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     panOffsetStart = { ...offset.value }
@@ -642,7 +665,7 @@ const onTouchEnd = () => {
 
 // ── Drag hotspot ────────────────────────────────────────────
 const startDrag = (id: string, e: MouseEvent) => {
-  if (editorMode.value !== 'move') return
+  if (editorMode.value !== 'move' || isSpacePressed.value) return
   isDraggingHotspot = true
   draggingHotspotId = id
   selectedHotspotId.value = id
@@ -650,7 +673,7 @@ const startDrag = (id: string, e: MouseEvent) => {
 }
 
 const startDragTouch = (id: string, e: TouchEvent) => {
-  if (editorMode.value !== 'move') return
+  if (editorMode.value !== 'move' || isSpacePressed.value) return
   isDraggingHotspot = true
   draggingHotspotId = id
   selectedHotspotId.value = id
@@ -687,6 +710,11 @@ const commitHotspotPosition = async (id: string) => {
 
 // ── Canvas click (add/batch mode) ─────────────────────────
 const handleCanvasClick = (e: MouseEvent) => {
+  if (skipNextCanvasClick) {
+    skipNextCanvasClick = false
+    return
+  }
+  if (isSpacePressed.value) return
   if (editorMode.value === 'view' || editorMode.value === 'move') return
   if (isDraggingHotspot) return
   const { x, y } = clientToNormalized(e.clientX, e.clientY)
@@ -924,6 +952,41 @@ const showError = (msg: string) => {
   errorMsg.value = msg
   setTimeout(() => (errorMsg.value = null), 5000)
 }
+
+const onKeyDown = (e: KeyboardEvent) => {
+  const target = e.target as HTMLElement | null
+  const tag = target?.tagName
+  const isTypingField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!target?.isContentEditable
+  if (isTypingField) return
+
+  if (e.code === 'Space') {
+    isSpacePressed.value = true
+    e.preventDefault()
+  }
+}
+
+const onKeyUp = (e: KeyboardEvent) => {
+  if (e.code === 'Space') {
+    isSpacePressed.value = false
+    e.preventDefault()
+  }
+}
+
+const onWindowBlur = () => {
+  isSpacePressed.value = false
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('keyup', onKeyUp)
+  window.addEventListener('blur', onWindowBlur)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('keyup', onKeyUp)
+  window.removeEventListener('blur', onWindowBlur)
+})
 </script>
 
 <style scoped>
@@ -1052,6 +1115,8 @@ const showError = (msg: string) => {
 }
 .pme__canvas-wrap.mode-add { cursor: crosshair; }
 .pme__canvas-wrap.mode-move { cursor: default; }
+.pme__canvas-wrap.mode-pan { cursor: grab; }
+.pme__canvas-wrap.mode-pan:active { cursor: grabbing; }
 
 .pme__canvas-content {
   position: absolute;

@@ -93,7 +93,7 @@
       <div class="project-layout">
         <aside class="project-sidebar">
           <nav class="sidebar-nav">
-            <button v-for="s in sidebarSections" :key="s.id" class="sidebar-link" :class="{ active: activeSection === s.id }" @click="activeSection = s.id">
+            <button v-for="s in sidebarSections" :key="s.id" class="sidebar-link" :class="{ active: activeSection === s.id }" @click="setActiveSection(s.id)">
               <span class="sidebar-icon">{{ s.icon }}</span>
               <span class="sidebar-label">{{ s.label }}</span>
             </button>
@@ -2560,6 +2560,48 @@ const sidebarSections = computed(() => {
     sections.push({ id: 'assistente-ia', icon: '🤖', label: 'Assistente IA' })
   }
   return sections
+})
+
+const routeSection = computed(() => {
+  const sec = route.query.sec
+  return typeof sec === 'string' ? sec : ''
+})
+
+const setActiveSection = (sectionId: string) => {
+  activeSection.value = sectionId
+}
+
+watch(
+  [sidebarSections, routeSection],
+  ([sections, sec]) => {
+    if (!sec) return
+    const exists = sections.some(s => s.id === sec)
+    if (exists && activeSection.value !== sec) {
+      activeSection.value = sec
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  sidebarSections,
+  (sections) => {
+    const exists = sections.some(s => s.id === activeSection.value)
+    if (!exists) {
+      activeSection.value = 'configuracoes'
+    }
+  },
+  { immediate: true },
+)
+
+watch(activeSection, (sec) => {
+  if (route.query.sec === sec) return
+  router.replace({
+    query: {
+      ...route.query,
+      sec,
+    },
+  })
 })
 
 const lotBadge = (s: string) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[s] || 'badge-neutral')
