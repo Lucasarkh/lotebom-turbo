@@ -2,10 +2,45 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { BulkMapElementsDto, MapElementDto } from './dto/map-element.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { LotStatus, SlopeType } from '@prisma/client';
 
 @Injectable()
 export class MapElementsService {
   constructor(private prisma: PrismaService) {}
+
+  private parseNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private parseStatus(value: unknown): LotStatus | null {
+    const normalized = String(value ?? '').trim().toUpperCase();
+    if (normalized === 'AVAILABLE' || normalized === 'RESERVED' || normalized === 'SOLD') {
+      return normalized as LotStatus;
+    }
+    return null;
+  }
+
+  private parseSlope(value: unknown): SlopeType | null {
+    const normalized = String(value ?? '').trim().toUpperCase();
+    if (!normalized) return null;
+    if (normalized === 'FLAT' || normalized === 'PLANO') return SlopeType.FLAT;
+    if (
+      normalized === 'UPHILL' ||
+      normalized === 'UP' ||
+      normalized === 'ACLIVE' ||
+      normalized === 'GENTLE' ||
+      normalized === 'MODERATE' ||
+      normalized === 'STEEP'
+    ) {
+      return SlopeType.UPHILL;
+    }
+    if (normalized === 'DOWNHILL' || normalized === 'DOWN' || normalized === 'DECLIVE') {
+      return SlopeType.DOWNHILL;
+    }
+    return null;
+  }
 
   async findAllByProject(tenantId: string, projectId: string) {
     return this.prisma.mapElement.findMany({
@@ -104,23 +139,68 @@ export class MapElementsService {
       const lotPromises = lotsToSync.map(element => {
           const lotMeta = (element.metaJson as any) || {};
           const mapElementId = element.id!; // We are sure id exists as we update/create it above
+          const areaM2 = this.parseNumber(lotMeta.areaM2 ?? lotMeta.area);
+          const frontage = this.parseNumber(lotMeta.frontage);
+          const price = this.parseNumber(lotMeta.price);
+          const depth = this.parseNumber(lotMeta.depth ?? lotMeta.back ?? lotMeta.manualBack);
+          const sideLeft = this.parseNumber(lotMeta.sideLeft);
+          const sideRight = this.parseNumber(lotMeta.sideRight);
+          const status = this.parseStatus(lotMeta.status ?? lotMeta.lotStatus);
+          const slope = this.parseSlope(lotMeta.slope);
+          const notes = typeof lotMeta.notes === 'string'
+            ? lotMeta.notes
+            : (typeof lotMeta.description === 'string' ? lotMeta.description : null);
+          const tags = Array.isArray(lotMeta.tags)
+            ? lotMeta.tags.filter((t: unknown) => typeof t === 'string' && t.trim().length > 0)
+            : null;
+          const sideMetricsJson = Array.isArray(lotMeta.sideMetrics)
+            ? lotMeta.sideMetrics
+            : (Array.isArray(lotMeta.sideMetricsJson) ? lotMeta.sideMetricsJson : null);
+          const paymentConditions = lotMeta.paymentConditions ?? null;
+          const conditionsJson = lotMeta.conditionsJson ?? null;
+          const panoramaUrl = typeof lotMeta.panoramaUrl === 'string' ? lotMeta.panoramaUrl : null;
+
+          const updateData: any = {
+            ...(areaM2 !== null && { areaM2 }),
+            ...(frontage !== null && { frontage }),
+            ...(price !== null && { price }),
+            ...(depth !== null && { depth }),
+            ...(sideLeft !== null && { sideLeft }),
+            ...(sideRight !== null && { sideRight }),
+            ...(status && { status }),
+            ...(slope && { slope }),
+            ...(notes !== null && { notes }),
+            ...(tags !== null && { tags }),
+            ...(sideMetricsJson !== null && { sideMetricsJson }),
+            ...(paymentConditions !== null && { paymentConditions }),
+            ...(conditionsJson !== null && { conditionsJson }),
+            ...(panoramaUrl !== null && { panoramaUrl }),
+          };
+
+          const createData: any = {
+            tenantId,
+            projectId,
+            mapElementId,
+            status: status || 'AVAILABLE',
+            areaM2,
+            frontage,
+            price,
+            depth,
+            sideLeft,
+            sideRight,
+            slope: slope || 'FLAT',
+            notes: notes || null,
+            tags: tags || [],
+            sideMetricsJson: sideMetricsJson || null,
+            paymentConditions,
+            conditionsJson,
+            panoramaUrl,
+          };
           
           return tx.lotDetails.upsert({
             where: { mapElementId },
-            update: {
-              areaM2: lotMeta.areaM2 || lotMeta.area || undefined,
-              frontage: lotMeta.frontage || undefined,
-              price: lotMeta.price || undefined
-            },
-            create: {
-              tenantId,
-              projectId,
-              mapElementId,
-              status: 'AVAILABLE',
-              areaM2: lotMeta.areaM2 || lotMeta.area || null,
-              frontage: lotMeta.frontage || null,
-              price: lotMeta.price || null
-            }
+            update: updateData,
+            create: createData
           });
       });
 

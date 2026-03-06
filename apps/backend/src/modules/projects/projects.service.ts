@@ -220,8 +220,30 @@ export class ProjectsService {
           select: {
             id: true, name: true, code: true,
             lotDetails: {
-              select: { id: true, status: true, price: true, areaM2: true,
-                        frontage: true, tags: true, block: true, lotNumber: true }
+              select: {
+                id: true,
+                status: true,
+                price: true,
+                pricePerM2: true,
+                areaM2: true,
+                frontage: true,
+                depth: true,
+                sideLeft: true,
+                sideRight: true,
+                sideMetricsJson: true,
+                slope: true,
+                notes: true,
+                tags: true,
+                block: true,
+                lotNumber: true,
+                conditionsJson: true,
+                paymentConditions: true,
+                panoramaUrl: true,
+                medias: {
+                  select: { id: true, type: true, url: true, caption: true, createdAt: true },
+                  orderBy: { createdAt: 'desc' }
+                }
+              }
             }
           },
           take: 6,
@@ -308,11 +330,21 @@ export class ProjectsService {
         lotDetails: {
           areaM2:     Number(l.area) > 0 ? parseFloat((Number(l.area) / (PPM * PPM)).toFixed(2)) : 0,
           frontage:   Number(l.frontage) > 0 ? parseFloat((Number(l.frontage) / PPM).toFixed(2)) : 0,
+          depth:      l.manualBack ?? l.depth ?? null,
+          sideLeft:   l.sideLeft ?? null,
+          sideRight:  l.sideRight ?? null,
+          sideMetricsJson: l.sideMetrics ?? [],
+          slope:      (l.slope || 'FLAT').toString().toUpperCase(),
+          notes:      l.notes || '',
           price:      l.price,
           pricePerM2: l.pricePerM2,
           tags:       l.tags || [],
           block:      l.block,
           lotNumber:  l.lotNumber,
+          conditionsJson: l.conditionsJson || null,
+          paymentConditions: l.paymentConditions || null,
+          panoramaUrl: l.panoramaUrl || null,
+          medias:     [],
           status:     'AVAILABLE',
         },
       }));
@@ -351,8 +383,30 @@ export class ProjectsService {
         select: {
           id: true, name: true, code: true,
           lotDetails: {
-            select: { id: true, status: true, price: true, areaM2: true, frontage: true,
-                      tags: true, block: true, lotNumber: true, pricePerM2: true }
+            select: {
+              id: true,
+              status: true,
+              price: true,
+              pricePerM2: true,
+              areaM2: true,
+              frontage: true,
+              depth: true,
+              sideLeft: true,
+              sideRight: true,
+              sideMetricsJson: true,
+              slope: true,
+              notes: true,
+              tags: true,
+              block: true,
+              lotNumber: true,
+              conditionsJson: true,
+              paymentConditions: true,
+              panoramaUrl: true,
+              medias: {
+                select: { id: true, type: true, url: true, caption: true, createdAt: true },
+                orderBy: { createdAt: 'desc' }
+              }
+            }
           }
         },
         skip,
