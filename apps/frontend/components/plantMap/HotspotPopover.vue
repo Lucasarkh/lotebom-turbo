@@ -53,14 +53,14 @@
           </div>
 
           <!-- Meta Data Grid (like Area, Preis, etc.) -->
-          <div v-if="hotspot.metaJson && Object.keys(hotspot.metaJson).length" class="hs-popover__meta">
+          <div v-if="metaEntries.length" class="hs-popover__meta">
             <div
-              v-for="(val, key) in hotspot.metaJson"
-              :key="key"
+              v-for="item in metaEntries"
+              :key="item.key"
               class="hs-popover__meta-item"
             >
-              <span class="hs-popover__meta-key">{{ key }}</span>
-              <span class="hs-popover__meta-val">{{ val }}</span>
+              <span class="hs-popover__meta-key">{{ item.key }}</span>
+              <span class="hs-popover__meta-val">{{ item.value }}</span>
             </div>
           </div>
 
@@ -131,6 +131,55 @@ const statusColor = computed(() =>
 const statusLabel = computed(() =>
   props.hotspot?.loteStatus ? LOT_STATUS_LABELS[props.hotspot.loteStatus] : '',
 )
+
+type MetaEntry = { key: string; value: string }
+
+const toDisplayLabel = (key: string): string => {
+  const map: Record<string, string> = {
+    block: 'Quadra',
+    lotNumber: 'Lote',
+    area: 'Area',
+    price: 'Preco',
+    status: 'Status',
+  }
+
+  if (map[key]) return map[key]
+  return key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/^./, (ch) => ch.toUpperCase())
+}
+
+const metaEntries = computed<MetaEntry[]>(() => {
+  const meta = props.hotspot?.metaJson
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return []
+
+  const entries: MetaEntry[] = []
+  const normalizedTitle = (props.hotspot?.title ?? '').trim().toLowerCase()
+
+  for (const [key, val] of Object.entries(meta as Record<string, unknown>)) {
+    if (key === 'lotInfo' && val && typeof val === 'object' && !Array.isArray(val)) {
+      const lotInfo = val as Record<string, unknown>
+      const block = typeof lotInfo.block === 'string' ? lotInfo.block.trim() : ''
+      const lotNumber = typeof lotInfo.lotNumber === 'string' ? lotInfo.lotNumber.trim() : ''
+
+      if (block) entries.push({ key: 'Quadra', value: block })
+      if (lotNumber && lotNumber.toLowerCase() !== normalizedTitle) {
+        entries.push({ key: 'Lote', value: lotNumber })
+      }
+      continue
+    }
+
+    if (val === null || val === undefined) continue
+    if (typeof val === 'object') continue
+
+    const text = String(val).trim()
+    if (!text) continue
+    entries.push({ key: toDisplayLabel(key), value: text })
+  }
+
+  return entries
+})
 
 const ctaLink = computed(() => {
   if (!props.hotspot) return null
