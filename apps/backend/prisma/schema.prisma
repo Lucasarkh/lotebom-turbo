@@ -2,12 +2,19 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // binaryTargets ensures the correct engine is generated for Linux containers
+  // when developing on Windows/macOS. Adjust the second target to match your
+  // distro: "linux-musl-openssl-3.0.x" (Alpine) or "debian-openssl-3.0.x" (Debian/Ubuntu)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  // relationMode defaults to "foreignKeys" for PostgreSQL (native FK constraints).
+  // If using PlanetScale or a DB that doesn't support FK, switch to "prisma".
+  relationMode = "foreignKeys"
 }
 
 // ─── ENUMS ───────────────────────────────────────────────
@@ -309,6 +316,7 @@ model Invite {
 
   @@index([tenantId])
   @@index([token])
+  @@index([expiresAt]) // For cleanup job: DELETE FROM Invite WHERE expiresAt < NOW()
 }
 
 model User {
@@ -449,8 +457,9 @@ model MapElement {
   lotDetails LotDetails?
   leads      Lead[]
 
+  // Removed redundant @@index([tenantId, projectId]) — it is a left-prefix subset
+  // of the composite below and PostgreSQL will not use it independently.
   @@index([tenantId, projectId, code])
-  @@index([tenantId, projectId])
 }
 
 model LotDetails {
@@ -569,6 +578,8 @@ model Lead {
   schedulings   Scheduling[]
 
   @@index([tenantId, projectId])
+  @@index([tenantId, status])            // Pipeline dashboard: filter by tenant + status
+  @@index([tenantId, projectId, status]) // Project-level pipeline filter
   @@index([status, createdAt])
   @@index([email])
   @@index([phone])
@@ -680,7 +691,8 @@ model Panorama {
   snapshots PanoramaSnapshot[]
   beacons   PanoramaBeacon[]
 
-  @@index([tenantId])
+  // Removed redundant @@index([tenantId]) — it is a left-prefix subset of the
+  // composite @@index([tenantId, projectId]) and adds no independent query value.
   @@index([tenantId, projectId])
 }
 
@@ -826,8 +838,9 @@ model TrackingSession {
   @@index([tenantId, projectId])
   @@index([projectId, lastSeenAt])
   @@index([tenantId, createdAt])
-  @@index([createdAt])
-  @@index([lastSeenAt])
+  @@index([realtorLinkId]) // For realtor attribution queries
+  // Removed standalone @@index([createdAt]) — covered by @@index([tenantId, createdAt])
+  // Removed standalone @@index([lastSeenAt]) — rarely queried standalone
 }
 
 model TrackingEvent {
@@ -905,6 +918,9 @@ model SystemLead {
   status    LeadStatus @default(NEW)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([email])
 }
 
 
@@ -916,6 +932,7 @@ model PasswordReset {
   createdAt DateTime @default(now())
 
   @@index([email])
+  @@index([expiresAt]) // For cleanup job: DELETE FROM PasswordReset WHERE expiresAt < NOW()
 }
 
 model PaymentConfig {
@@ -925,7 +942,7 @@ model PaymentConfig {
   name             String          @default("Gateway Principal")
   provider         PaymentProvider @default(STRIPE)
   isActive         Boolean         @default(true)
-  keysJson         Json?           // Stores publicKey, secretKey, accessToken, etc.
+  keysJson         String?         // Encrypted blob (AES-256-GCM): iv:authTag:ciphertext. Use EncryptionService to read.
   webhookSecret    String?         // Common for most gateways
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -991,6 +1008,8 @@ model Scheduling {
 
   @@index([tenantId, projectId])
   @@index([scheduledAt])
+  @@index([leadId])  // For fetching all schedulings of a specific lead
+  @@index([userId])  // For fetching all schedulings assigned to a user/broker
 }
 
 // ─── NEARBY PLACES ──────────────────────────────────────
@@ -1113,6 +1132,7 @@ model BillingInvoice {
   updatedAt          DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([tenantId, status]) // Dashboard: invoices by status for a tenant
   @@index([status])
 }
 
@@ -1155,7 +1175,8 @@ model SupportTicket {
 
   @@index([userId])
   @@index([tenantId])
-  @@index([status])
+  // Replaced standalone @@index([status]) with composite for tenant-scoped queries
+  @@index([tenantId, status, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
 }
 

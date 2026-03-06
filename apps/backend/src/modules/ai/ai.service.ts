@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../infra/db/prisma.service';
+import { EncryptionService } from '@common/encryption/ecryption.service';
 import { ChatDto } from './dto/chat.dto';
 import OpenAI from 'openai';
 import axios from 'axios';
@@ -16,6 +17,7 @@ export class AiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly encryption: EncryptionService,
   ) {}
 
   async chat(dto: ChatDto, tenantId: string) {
@@ -92,6 +94,13 @@ export class AiService {
       throw new BadRequestException('AI API Key is not configured');
     }
 
+    // Decrypt the apiKey for in-memory use — never returned to the client.
+    const decryptedApiKey = this.encryption.decrypt(aiConfig.apiKey);
+    if (!decryptedApiKey) {
+      this.logger.error(`Failed to decrypt API Key for AI Config: ${aiConfig.name}`);
+      throw new BadRequestException('AI API Key could not be decrypted. Please re-configure it.');
+    }
+
     const contextBundle = await this.getProjectContext(project.id, tenantId, hints);
 
     const systemPrompt = `
@@ -160,7 +169,7 @@ export class AiService {
       this.logger.log(`Calling ${provider} (Model: ${modelName})`);
 
       if (provider === 'OPENAI') {
-        const openai = new OpenAI({ apiKey: aiConfig.apiKey });
+        const openai = new OpenAI({ apiKey: decryptedApiKey });
         const response = await openai.chat.completions.create({
           model: modelName,
           messages: [
@@ -185,7 +194,7 @@ export class AiService {
           },
           {
             headers: {
-              'x-api-key': aiConfig.apiKey,
+              'x-api-key': decryptedApiKey,
               'anthropic-version': '2023-06-01',
               'content-type': 'application/json',
             },
@@ -196,7 +205,7 @@ export class AiService {
 
       if (provider === 'GOOGLE') {
         const googleResp = await axios.post(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${aiConfig.apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${decryptedApiKey}`,
           {
             contents: [
               {
@@ -499,7 +508,8 @@ export class AiService {
     return (this.prisma as any).aiConfig.create({
       data: {
         ...dto,
-        apiKey: dto.apiKey?.trim() || null,
+        // Encrypt the apiKey before persisting — only the encrypted blob is stored.
+        apiKey: dto.apiKey?.trim() ? this.encryption.encrypt(dto.apiKey.trim()) : null,
         provider: dto.provider?.toLowerCase(),
         tenantId,
       }
@@ -515,7 +525,8 @@ export class AiService {
     if (dto.apiKey !== undefined) {
       const key = dto.apiKey?.trim();
       if (key && !/^\*+$/.test(key)) {
-        updateData.apiKey = key;
+        // Encrypt before persisting — never store the plaintext key.
+        updateData.apiKey = this.encryption.encrypt(key);
       } else {
         delete updateData.apiKey;
       }

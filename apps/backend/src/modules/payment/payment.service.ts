@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@infra/db/prisma.service';
+import { EncryptionService } from '@common/encryption/ecryption.service';
 import { StripeAdapter } from './adapters/stripe.adapter';
 import { MercadoPagoAdapter } from './adapters/mercado-pago.adapter';
 import { AsaasAdapter } from './adapters/asaas.adapter';
@@ -30,6 +31,7 @@ export class PaymentService {
     private readonly pagarMe: PagarMeAdapter,
     private readonly pagSeguro: PagSeguroAdapter,
     private readonly notifications: NotificationsService,
+    private readonly encryption: EncryptionService,
   ) {}
 
   private getGateway(provider: PaymentProvider): IPaymentGateway {
@@ -97,8 +99,17 @@ export class PaymentService {
       );
     }
 
-    const { provider, keysJson } = activeGatewayConfig;
+    const { provider, keysJson: rawKeysJson } = activeGatewayConfig;
     const gateway = this.getGateway(provider);
+
+    // Decrypt the gateway credentials for in-memory use only.
+    const keysJson = this.encryption.decryptJson(rawKeysJson as string | null);
+    if (!keysJson) {
+      throw new BadRequestException(
+        'Não foi possível decriptografar as credenciais do gateway. ' +
+        'Por favor, reconfigure o gateway de pagamento no painel.',
+      );
+    }
 
     // Create a record in our database
     const leadPayment = await this.prisma.leadPayment.create({
@@ -190,10 +201,17 @@ export class PaymentService {
     }
 
     const gateway = this.getGateway(provider);
-    
+
+    // Decrypt gateway credentials before passing to adapter.
+    const keysJson = this.encryption.decryptJson(config.keysJson as string | null);
+    if (!keysJson) {
+      this.logger.warn(`Failed to decrypt keysJson for project: ${projectId}`);
+      return { received: true }; // graceful — do not crash on bad config
+    }
+
     try {
       const result = await gateway.handleWebhook(
-        config.keysJson,
+        keysJson,
         payload,
         signature,
       );

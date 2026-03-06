@@ -12,6 +12,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@infra/db/prisma.service';
+import { EncryptionService } from '@common/encryption/ecryption.service';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentProvider } from '@prisma/client';
@@ -39,14 +40,23 @@ function validateKeysJson(provider: string, keysJson: any): void {
 @UseGuards(AuthGuard('jwt'))
 @Controller('admin/payment-config')
 export class PaymentConfigController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly encryption: EncryptionService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all payment gateways for the tenant' })
   async listConfigs(@Req() req: any) {
-    return this.prisma.paymentConfig.findMany({
+    const configs = await this.prisma.paymentConfig.findMany({
       where: { tenantId: req.user.tenantId },
     });
+
+    // Never expose the raw keys to the client — return masked placeholders.
+    return configs.map((cfg) => ({
+      ...cfg,
+      keysJson: cfg.keysJson ? { _masked: true } : null,
+    }));
   }
 
   @Post()
@@ -75,7 +85,9 @@ export class PaymentConfigController {
     });
 
     if (duplicate) {
-      throw new BadRequestException(`Já existe um gateway configurado para o provedor ${body.provider}. Remova o antigo primeiro.`);
+      throw new BadRequestException(
+        `Já existe um gateway configurado para o provedor ${body.provider}. Remova o antigo primeiro.`,
+      );
     }
 
     return this.prisma.paymentConfig.create({
@@ -84,7 +96,7 @@ export class PaymentConfigController {
         name: body.name,
         provider: body.provider,
         isActive: body.isActive,
-        keysJson: body.keysJson,
+        keysJson: this.encryption.encryptJson(body.keysJson) as any,
         webhookSecret: body.webhookSecret,
       },
     });
@@ -103,16 +115,15 @@ export class PaymentConfigController {
     },
     @Req() req: any
   ) {
-    // Check ownership
     const existing = await this.prisma.paymentConfig.findUnique({ where: { id } });
     if (!existing || existing.tenantId !== req.user.tenantId) {
       throw new NotFoundException('Gateway not found');
     }
 
-    // Validate keys if provider or keysJson is being updated
     const effectiveProvider = body.provider || existing.provider;
-    const effectiveKeys = body.keysJson ?? existing.keysJson;
     if (body.keysJson || body.provider) {
+      const storedKeys = this.encryption.decryptJson(existing.keysJson as string | null);
+      const effectiveKeys = body.keysJson ?? storedKeys;
       validateKeysJson(effectiveProvider, effectiveKeys);
     }
     if (body.name !== undefined && !body.name?.trim()) {
@@ -125,7 +136,9 @@ export class PaymentConfigController {
         name: body.name,
         provider: body.provider,
         isActive: body.isActive,
-        keysJson: body.keysJson,
+        ...(body.keysJson !== undefined && {
+          keysJson: this.encryption.encryptJson(body.keysJson) as any,
+        }),
         webhookSecret: body.webhookSecret,
       },
     });
@@ -137,25 +150,24 @@ export class PaymentConfigController {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: {
-        paymentGateways: {
-          select: { id: true }
-        }
-      }
+        paymentGateways: { select: { id: true } },
+      },
     });
 
     if (!project || (req.user.role !== 'SYSADMIN' && project.tenantId !== req.user.tenantId)) {
-        throw new NotFoundException('Project not found');
+      throw new NotFoundException('Project not found');
     }
 
     const allGateways = await this.prisma.paymentConfig.findMany({
-      where: { tenantId: req.user.tenantId }
+      where: { tenantId: req.user.tenantId },
     });
 
     const activeIds = project.paymentGateways.map(g => g.id);
 
     return allGateways.map(g => ({
       ...g,
-      isEnabledForProject: activeIds.includes(g.id)
+      keysJson: g.keysJson ? { _masked: true } : null,
+      isEnabledForProject: activeIds.includes(g.id),
     }));
   }
 
@@ -168,28 +180,17 @@ export class PaymentConfigController {
   ) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project || (req.user.role !== 'SYSADMIN' && project.tenantId !== req.user.tenantId)) {
-        throw new NotFoundException('Project not found');
+      throw new NotFoundException('Project not found');
     }
 
-    if (body.enabled) {
-      return this.prisma.project.update({
-        where: { id: projectId },
-        data: {
-          paymentGateways: {
-            connect: { id: body.gatewayId }
-          }
-        }
-      });
-    } else {
-      return this.prisma.project.update({
-        where: { id: projectId },
-        data: {
-          paymentGateways: {
-            disconnect: { id: body.gatewayId }
-          }
-        }
-      });
-    }
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: {
+        paymentGateways: body.enabled
+          ? { connect: { id: body.gatewayId } }
+          : { disconnect: { id: body.gatewayId } },
+      },
+    });
   }
 
   @Delete(':id')
@@ -200,8 +201,6 @@ export class PaymentConfigController {
       throw new NotFoundException('Gateway not found');
     }
 
-    return this.prisma.paymentConfig.delete({
-      where: { id },
-    });
+    return this.prisma.paymentConfig.delete({ where: { id } });
   }
 }
