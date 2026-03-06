@@ -1648,6 +1648,7 @@ onBeforeUnmount(() => {
   color: #f1f5f9 !important;
   font-size: 13px !important;
   transition: border-color 0.2s;
+  width: 100%;
 }
 .pme__input:focus {
   outline: none;
