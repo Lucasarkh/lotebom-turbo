@@ -1684,18 +1684,6 @@ watch(() => editForm.value.slug, (newSlug) => {
   }, 500)
 })
 
-watch(
-  [() => editForm.value.aiEnabled, () => aiConfigs.value.length],
-  ([enabled]) => {
-    if (enabled && !editForm.value.aiConfigId && aiConfigs.value.length > 0) {
-      const firstConfig = aiConfigs.value[0]
-      if (firstConfig) {
-        editForm.value.aiConfigId = firstConfig.id
-      }
-    }
-  }
-)
-
 // ── Live Preview Logic ──────────────────────────────────
 const previewDownPayment = ref(0)
 const previewMonths = ref(120)
@@ -2190,6 +2178,18 @@ const loadAiConfigs = async () => {
     console.error('Error loading AI configs', e)
   }
 }
+
+watch(
+  [() => editForm.value.aiEnabled, () => aiConfigs.value.length],
+  ([enabled]) => {
+    if (enabled && !editForm.value.aiConfigId && aiConfigs.value.length > 0) {
+      const firstConfig = aiConfigs.value[0]
+      if (firstConfig) {
+        editForm.value.aiConfigId = firstConfig.id
+      }
+    }
+  }
+)
 // ─────────────────────────────────────────────────────────
 
 // ── Tabs ─────────────────────────────────────────────────
