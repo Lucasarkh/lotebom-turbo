@@ -87,6 +87,11 @@ const getCards = (text: string) => {
   return parts.filter(p => p.type === 'card').map(p => p.content)
 }
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error && error.message?.trim()) return error.message
+  return 'Desculpe, tive um problema ao processar sua mensagem. Tente novamente em instantes.'
+}
+
 const parseMessage = (text: string) => {
   const parts: { type: 'text' | 'card', content: any }[] = []
   const regex = /:::LOT_CARD\n?([\s\S]*?)\n?:::/g
@@ -158,11 +163,15 @@ async function sendMessage() {
     const res = await post(`/p/${props.project.slug}/ai/chat`, {
       message: userMsg
     })
-    
+
+    if (!res?.message || typeof res.message !== 'string') {
+      throw new Error('Nao consegui montar uma resposta valida agora. Tente novamente em instantes.')
+    }
+
     chatStore.addMessage('ai', res.message)
 
   } catch (error) {
-    chatStore.addMessage('ai', 'Desculpe, tive um problema ao processar sua mensagem. Tente novamente em instantes.')
+    chatStore.addMessage('ai', getErrorMessage(error))
   } finally {
     loading.value = false
     loadingStatus.value = ''

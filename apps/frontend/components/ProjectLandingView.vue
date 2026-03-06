@@ -97,6 +97,11 @@
       <!-- Highlights & Info -->
       <section v-if="hasInfo" class="v4-section" id="info">
         <div class="v4-container">
+          <div v-if="hasLocationHeader" class="v4-section-header center v4-description-header">
+            <h2 v-if="locationTitle" class="v4-section-title">{{ locationTitle }}</h2>
+            <p v-if="locationSubtitle" class="v4-section-subtitle">{{ locationSubtitle }}</p>
+          </div>
+
           <!-- Text content if exists -->
           <div v-if="hasMeaningfulLocationText" class="v4-rich-content" v-html="formattedLocationText" style="margin-bottom: 80px;"></div>
 
@@ -906,14 +911,38 @@ const traditionalHighlights = computed(() => {
   return highlights.value.filter(h => h.type === 'highlight' || !h.type)
 })
 
+const extractLocationMeta = (raw: string) => {
+  const source = raw || ''
+  const titleMatch = source.match(/<[^>]*data-lotio-location-title=["']1["'][^>]*>([\s\S]*?)<\/[^>]+>/i)
+  const subtitleMatch = source.match(/<[^>]*data-lotio-location-subtitle=["']1["'][^>]*>([\s\S]*?)<\/[^>]+>/i)
+
+  const body = source
+    .replace(/<[^>]*data-lotio-location-title=["']1["'][^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+    .replace(/<[^>]*data-lotio-location-subtitle=["']1["'][^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+    .trim()
+
+  const stripHtml = (value: string) => value.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+
+  return {
+    title: stripHtml(titleMatch?.[1] || ''),
+    subtitle: stripHtml(subtitleMatch?.[1] || ''),
+    body,
+  }
+}
+
+const locationMeta = computed(() => extractLocationMeta(project.value?.locationText || ''))
+const locationTitle = computed(() => locationMeta.value.title)
+const locationSubtitle = computed(() => locationMeta.value.subtitle)
+const hasLocationHeader = computed(() => !!(locationTitle.value || locationSubtitle.value))
+
 const hasMeaningfulLocationText = computed(() => {
-  const text = project.value?.locationText || ''
+  const text = locationMeta.value.body || ''
   if (!text) return false
   return text.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, '').trim().length > 0
 })
 
 const hasInfo = computed(() => {
-  return !!(infrastructureCategories.value.length > 0 || hasMeaningfulLocationText.value)
+  return !!(infrastructureCategories.value.length > 0 || hasMeaningfulLocationText.value || hasLocationHeader.value)
 })
 
 const hasTraditionalInfo = computed(() => {
@@ -990,7 +1019,7 @@ const unifiedAvailableLots = computed(() => {
 })
 
 const formattedLocationText = computed(() => {
-  const text = project.value?.locationText || ''
+  const text = locationMeta.value.body || ''
   if (!text) return ''
   
   // Se parece conter HTML estrutural gerado pelo editor, retorna como está e deixa o CSS cuidar dos espaçamentos
@@ -1263,6 +1292,10 @@ function openLightbox(idx: number) {
   line-height: 1.38105;
   color: var(--v4-text-muted);
   font-weight: 400;
+}
+
+.v4-description-header {
+  margin-bottom: 24px;
 }
 
 .v4-rich-content {
@@ -2064,7 +2097,7 @@ function openLightbox(idx: number) {
 .v4-rich-content {
   font-size: 19px;
   line-height: 1.6;
-  color: var(--v4-text-muted);
+  color: var(--v4-text);
   max-width: 800px;
   margin: 0 auto 60px;
   text-align: left;

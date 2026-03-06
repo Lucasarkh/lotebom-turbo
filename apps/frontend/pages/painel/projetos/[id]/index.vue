@@ -1160,6 +1160,16 @@
         <!-- ── Texto Descritivo ── -->
         <div class="pub-card">
           <h4 class="pub-card__title">Texto Descritivo</h4>
+          <div class="pub-sub-section" style="margin-bottom: 12px;">
+            <span class="pub-sub-label">Título e subtítulo (opcionais)</span>
+            <div class="form-group" style="margin-bottom: 8px;">
+              <input v-model="pubInfoForm.locationTitle" class="form-input" placeholder="Ex: Sobre o empreendimento" />
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <input v-model="pubInfoForm.locationSubtitle" class="form-input" placeholder="Ex: Localização estratégica e excelente infraestrutura" />
+            </div>
+          </div>
+
           <div class="form-group" style="margin: 0;">
             <div v-if="authStore.canEdit" class="flex gap-2" style="margin-bottom: 8px;">
               <button class="btn btn-xs btn-outline" @click.prevent="execCommand('bold')"><b>B</b></button>
@@ -1809,12 +1819,61 @@ const updateFromEditor = () => {
   }
 };
 
+const stripHtml = (value: string) => value.replace(/<[^>]*>/g, '').trim()
+
+const extractLocationMeta = (raw: string) => {
+  const source = raw || ''
+  const titleMatch = source.match(/<[^>]*data-lotio-location-title=["']1["'][^>]*>([\s\S]*?)<\/[^>]+>/i)
+  const subtitleMatch = source.match(/<[^>]*data-lotio-location-subtitle=["']1["'][^>]*>([\s\S]*?)<\/[^>]+>/i)
+
+  const body = source
+    .replace(/<[^>]*data-lotio-location-title=["']1["'][^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+    .replace(/<[^>]*data-lotio-location-subtitle=["']1["'][^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+    .trim()
+
+  return {
+    title: stripHtml(titleMatch?.[1] || ''),
+    subtitle: stripHtml(subtitleMatch?.[1] || ''),
+    body,
+  }
+}
+
+const escapeHtml = (value: string) => value
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const buildLocationTextPayload = () => {
+  const title = (pubInfoForm.value.locationTitle || '').trim()
+  const subtitle = (pubInfoForm.value.locationSubtitle || '').trim()
+  const body = (pubInfoForm.value.locationText || '').trim()
+  const parts: string[] = []
+
+  if (title) {
+    parts.push(`<h2 data-lotio-location-title="1">${escapeHtml(title)}</h2>`)
+  }
+
+  if (subtitle) {
+    parts.push(`<p data-lotio-location-subtitle="1">${escapeHtml(subtitle)}</p>`)
+  }
+
+  if (body) {
+    parts.push(body)
+  }
+
+  return parts.join('\n')
+}
+
 const pubInfoForm = ref({
   highlightsJson: [] as Highlight[],
   highlightsTitle: '',
   highlightsSubtitle: '',
   traditionalHighlightsTitle: '',
   traditionalHighlightsSubtitle: '',
+  locationTitle: '',
+  locationSubtitle: '',
   locationText: '',
   startingPrice: null as number | null,
   maxInstallments: null as number | null,
@@ -2003,7 +2062,8 @@ const buildPublicInfoPayload = () => {
     highlightsSubtitle: pubInfoForm.value.highlightsSubtitle,
     traditionalHighlightsTitle: pubInfoForm.value.traditionalHighlightsTitle,
     traditionalHighlightsSubtitle: pubInfoForm.value.traditionalHighlightsSubtitle,
-    locationText: pubInfoForm.value.locationText,
+    // Keep title/subtitle serialized within locationText to avoid backend schema changes.
+    locationText: buildLocationTextPayload(),
     startingPrice: pubInfoForm.value.startingPrice ? Number(pubInfoForm.value.startingPrice) : null,
     maxInstallments: pubInfoForm.value.maxInstallments ? Number(pubInfoForm.value.maxInstallments) : null,
     paymentConditionsSummary: pubInfoForm.value.paymentConditionsSummary || null,
@@ -2430,7 +2490,9 @@ const loadProject = async () => {
       highlightsSubtitle: p.highlightsSubtitle || 'Qualidade de vida, segurança e infraestrutura completa em um só lugar.',
       traditionalHighlightsTitle: p.traditionalHighlightsTitle || 'Destaques',
       traditionalHighlightsSubtitle: p.traditionalHighlightsSubtitle || 'Diferenciais pensados para o seu bem-estar.',
-      locationText: p.locationText || '',
+      locationTitle: extractLocationMeta(p.locationText || '').title,
+      locationSubtitle: extractLocationMeta(p.locationText || '').subtitle,
+      locationText: extractLocationMeta(p.locationText || '').body,
       startingPrice: p.startingPrice,
       maxInstallments: p.maxInstallments,
       paymentConditionsSummary: p.paymentConditionsSummary || '',
@@ -2440,7 +2502,7 @@ const loadProject = async () => {
       constructionStatus: Array.isArray(p.constructionStatus) ? p.constructionStatus : [],
       legalNotice: p.legalNotice || ''
     }
-    initialEditorContent.value = p.locationText || '<p></p>'
+    initialEditorContent.value = extractLocationMeta(p.locationText || '').body || '<p></p>'
     // Load nearby status
     loadNearbyStatus()
   } catch (e) {

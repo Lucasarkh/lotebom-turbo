@@ -4,6 +4,8 @@ import { ChatDto } from './dto/chat.dto';
 import OpenAI from 'openai';
 import axios from 'axios';
 import { CreateAiConfigDto, UpdateAiConfigDto } from './dto/ai-config.dto';
+import { NotificationType } from '@prisma/client';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 @Injectable()
 export class AiService {
@@ -11,7 +13,10 @@ export class AiService {
   private readonly maxUserMessageLength = 500;
   private readonly maxContextLots = 180;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async chat(dto: ChatDto, tenantId: string) {
     if (!dto.projectId) {
@@ -65,17 +70,23 @@ export class AiService {
       throw new NotFoundException('Project not found');
     }
 
-    if (!project.aiEnabled) {
-      this.logger.warn(`AI is not enabled for project: ${project.name}`);
-      throw new BadRequestException('AI is disabled for this project');
+    let aiConfig = project.aiConfig;
+
+    // Auto-detect a tenant-level AI config when the project is not explicitly activated
+    // or linked in the panel, prioritizing configs with custom system prompt.
+    if (!project.aiEnabled || !aiConfig) {
+      const fallbackConfig = await this.findTenantAutoAiConfig(tenantId);
+      if (fallbackConfig) {
+        aiConfig = fallbackConfig;
+        this.logger.log(`AI auto-detected for project: ${project.name} using config: ${aiConfig.name}`);
+      }
     }
 
-    if (!project.aiConfig) {
-      this.logger.warn(`No AI Config linked to project: ${project.name}`);
-      throw new BadRequestException('AI configuration is missing for this project. Please select a config in project settings.');
+    if (!aiConfig) {
+      this.logger.warn(`No AI Config available for project: ${project.name}`);
+      throw new BadRequestException('AI configuration is missing for this project. Please configure a prompt in AI settings.');
     }
 
-    const aiConfig = project.aiConfig;
     if (!aiConfig.apiKey) {
       this.logger.warn(`API Key is missing in AI Config: ${aiConfig.name}`);
       throw new BadRequestException('AI API Key is not configured');
@@ -205,6 +216,12 @@ export class AiService {
       throw new BadRequestException('Provider não suportado.');
     } catch (error) {
       this.logger.error('Error while processing AI chat', error?.stack || error?.message);
+
+      if (this.isQuotaExceededError(error)) {
+        await this.handleAiQuotaExceeded(project.id, tenantId, project.name, aiConfig, error);
+        throw new BadRequestException('A IA foi desativada automaticamente por limite de cota da chave configurada. Nossa equipe da loteadora foi notificada no painel para ajustar a configuracao.');
+      }
+
       throw new BadRequestException('Houve um erro ao processar sua solicitacao com a IA. Tente novamente em instantes.');
     }
   }
@@ -372,6 +389,97 @@ export class AiService {
       return 'Nao consegui montar uma resposta valida agora. Tente novamente em instantes.';
     }
     return cleaned.slice(0, 5000);
+  }
+
+  private async findTenantAutoAiConfig(tenantId: string) {
+    const withPrompt = await (this.prisma as any).aiConfig.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        apiKey: { not: null },
+        systemPrompt: { not: null }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    if (withPrompt?.systemPrompt?.trim()) return withPrompt;
+
+    return (this.prisma as any).aiConfig.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        apiKey: { not: null }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+  }
+
+  private isQuotaExceededError(error: any): boolean {
+    const status = error?.status || error?.response?.status;
+    const text = String(
+      error?.message ||
+      error?.error?.message ||
+      error?.response?.data?.error?.message ||
+      error?.response?.data?.message ||
+      ''
+    ).toLowerCase();
+
+    const hasQuotaSignal =
+      text.includes('quota') ||
+      text.includes('insufficient_quota') ||
+      text.includes('billing') ||
+      text.includes('exceeded your current quota') ||
+      text.includes('resource has been exhausted') ||
+      text.includes('rate limit exceeded');
+
+    return status === 429 && hasQuotaSignal;
+  }
+
+  private async handleAiQuotaExceeded(
+    projectId: string,
+    tenantId: string,
+    projectName: string,
+    aiConfig: any,
+    error: any,
+  ) {
+    try {
+      const [disabledConfig, disabledProjects] = await Promise.all([
+        (this.prisma as any).aiConfig.updateMany({
+          where: { id: aiConfig.id, tenantId, isActive: true },
+          data: { isActive: false },
+        }),
+        (this.prisma as any).project.updateMany({
+          where: { tenantId, aiConfigId: aiConfig.id, aiEnabled: true },
+          data: { aiEnabled: false },
+        }),
+      ]);
+
+      // Avoid spamming panel notifications when the config is already disabled.
+      if (!disabledConfig?.count) return;
+
+      const provider = String(aiConfig.provider || 'openai').toUpperCase();
+      const details = String(
+        error?.message || error?.response?.data?.error?.message || 'Quota exceeded'
+      ).slice(0, 300);
+
+      await this.notifications.notifyTenantLoteadoras(
+        tenantId,
+        NotificationType.SYSTEM,
+        'IA desativada automaticamente por cota',
+        `A configuracao de IA "${aiConfig.name}" (${provider}) foi desativada automaticamente apos erro de cota/quota no projeto "${projectName}". Projetos afetados: ${disabledProjects?.count || 0}. Detalhe tecnico: ${details}`,
+        '/painel/ai',
+        {
+          reason: 'AI_QUOTA_EXCEEDED',
+          projectId,
+          projectName,
+          aiConfigId: aiConfig.id,
+          aiConfigName: aiConfig.name,
+          provider,
+        },
+      );
+    } catch (handlerError) {
+      this.logger.error('Failed to auto-disable AI after quota error', handlerError?.stack || handlerError?.message);
+    }
   }
 
   // Admin Config Management
