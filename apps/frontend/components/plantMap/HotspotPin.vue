@@ -8,6 +8,10 @@
     @click.stop="$emit('click', $event, hotspot)"
     @keydown.enter.stop="$emit('click', $event, hotspot)"
     @keydown.space.stop="$emit('click', $event, hotspot)"
+    @mouseenter.stop="$emit('hover-start', hotspot.id)"
+    @mouseleave.stop="$emit('hover-end', hotspot.id)"
+    @focus="$emit('hover-start', hotspot.id)"
+    @blur="$emit('hover-end', hotspot.id)"
   >
     <!-- Base Anchor Dot -->
     <circle
@@ -104,7 +108,11 @@ const props = withDefaults(defineProps<{
   pinRadius: 14,
 })
 
-defineEmits<{ (e: 'click', event: MouseEvent | KeyboardEvent, hotspot: PlantHotspot): void }>()
+defineEmits<{
+  (e: 'click', event: MouseEvent | KeyboardEvent, hotspot: PlantHotspot): void
+  (e: 'hover-start', hotspotId: string): void
+  (e: 'hover-end', hotspotId: string): void
+}>()
 
 const cx = computed(() => props.hotspot.x * props.containerWidth)
 const cy = computed(() => props.hotspot.y * props.containerHeight)

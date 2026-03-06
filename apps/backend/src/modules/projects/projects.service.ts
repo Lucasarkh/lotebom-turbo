@@ -175,6 +175,7 @@ export class ProjectsService {
       const PPM = Number(data.pixelsPerMeter) || 10;
 
       const available = allLots.filter((l: any) => l.status === 'available');
+      const lotDetailsOverrides = await this._loadLegacyLotDetailsOverrides(project.id);
       const prices = available.map((l: any) => Number(l.price)).filter((p: number) => p > 0);
       const areas  = available
         .map((l: any) => Number(l.area) > 0 ? Number(l.area) / (PPM * PPM) : 0)
@@ -189,20 +190,34 @@ export class ProjectsService {
         minArea:   areas.length  ? areas.reduce((a, b)  => Math.min(a, b), Infinity) : null,
       };
 
-      teaserLots = available.slice(0, 6).map((l: any) => ({
-        id:   l.id,
-        name: l.label,
-        code: l.code,
-        lotDetails: {
-          areaM2:    Number(l.area) > 0 ? parseFloat((Number(l.area) / (PPM * PPM)).toFixed(2)) : 0,
-          frontage:  Number(l.frontage) > 0 ? parseFloat((Number(l.frontage) / PPM).toFixed(2)) : 0,
-          price:     l.price,
-          tags:      l.tags || [],
-          block:     l.block,
-          lotNumber: l.lotNumber,
-          status:    'AVAILABLE',
-        },
-      }));
+      teaserLots = available.slice(0, 6).map((l: any) => {
+        const override = this._findLegacyLotOverride(lotDetailsOverrides, l);
+        return {
+          id:   l.id,
+          name: l.label,
+          code: l.code,
+          lotDetails: {
+            areaM2:    override?.areaM2 ?? (Number(l.area) > 0 ? parseFloat((Number(l.area) / (PPM * PPM)).toFixed(2)) : 0),
+            frontage:  override?.frontage ?? (Number(l.frontage) > 0 ? parseFloat((Number(l.frontage) / PPM).toFixed(2)) : 0),
+            depth:     override?.depth ?? (l.manualBack ?? l.depth ?? null),
+            sideLeft:  override?.sideLeft ?? (l.sideLeft ?? null),
+            sideRight: override?.sideRight ?? (l.sideRight ?? null),
+            sideMetricsJson: override?.sideMetricsJson ?? (l.sideMetrics ?? []),
+            slope:     override?.slope ?? ((l.slope || 'FLAT').toString().toUpperCase()),
+            notes:     override?.notes ?? (l.notes || ''),
+            price:     override?.price ?? l.price,
+            pricePerM2: override?.pricePerM2 ?? l.pricePerM2,
+            tags:      (override?.tags?.length ? override.tags : (l.tags || [])),
+            block:     override?.block ?? l.block,
+            lotNumber: override?.lotNumber ?? l.lotNumber,
+            conditionsJson: override?.conditionsJson ?? (l.conditionsJson || null),
+            paymentConditions: override?.paymentConditions ?? (l.paymentConditions || null),
+            panoramaUrl: override?.panoramaUrl ?? (l.panoramaUrl || null),
+            medias: override?.medias || [],
+            status:    override?.status ?? 'AVAILABLE',
+          },
+        }
+      });
     } else {
       // ── New mapElements path — 3 lightweight parallel queries instead of 1 huge join ──
       const [countsByStatus, minAgg, teaser] = await Promise.all([
@@ -325,29 +340,35 @@ export class ProjectsService {
 
       const total = lots.length;
       const availableTags = Array.from(new Set(lots.flatMap((l: any) => l.tags || []))).sort();
-      const paged = lots.slice(skip, skip + limit).map((l: any) => ({
-        id: l.id, name: l.label, code: l.code,
-        lotDetails: {
-          areaM2:     Number(l.area) > 0 ? parseFloat((Number(l.area) / (PPM * PPM)).toFixed(2)) : 0,
-          frontage:   Number(l.frontage) > 0 ? parseFloat((Number(l.frontage) / PPM).toFixed(2)) : 0,
-          depth:      l.manualBack ?? l.depth ?? null,
-          sideLeft:   l.sideLeft ?? null,
-          sideRight:  l.sideRight ?? null,
-          sideMetricsJson: l.sideMetrics ?? [],
-          slope:      (l.slope || 'FLAT').toString().toUpperCase(),
-          notes:      l.notes || '',
-          price:      l.price,
-          pricePerM2: l.pricePerM2,
-          tags:       l.tags || [],
-          block:      l.block,
-          lotNumber:  l.lotNumber,
-          conditionsJson: l.conditionsJson || null,
-          paymentConditions: l.paymentConditions || null,
-          panoramaUrl: l.panoramaUrl || null,
-          medias:     [],
-          status:     'AVAILABLE',
-        },
-      }));
+      const lotDetailsOverrides = await this._loadLegacyLotDetailsOverrides(project.id);
+      const paged = lots.slice(skip, skip + limit).map((l: any) => {
+        const override = this._findLegacyLotOverride(lotDetailsOverrides, l);
+        return {
+          id: l.id,
+          name: l.label,
+          code: l.code,
+          lotDetails: {
+            areaM2:     override?.areaM2 ?? (Number(l.area) > 0 ? parseFloat((Number(l.area) / (PPM * PPM)).toFixed(2)) : 0),
+            frontage:   override?.frontage ?? (Number(l.frontage) > 0 ? parseFloat((Number(l.frontage) / PPM).toFixed(2)) : 0),
+            depth:      override?.depth ?? (l.manualBack ?? l.depth ?? null),
+            sideLeft:   override?.sideLeft ?? (l.sideLeft ?? null),
+            sideRight:  override?.sideRight ?? (l.sideRight ?? null),
+            sideMetricsJson: override?.sideMetricsJson ?? (l.sideMetrics ?? []),
+            slope:      override?.slope ?? ((l.slope || 'FLAT').toString().toUpperCase()),
+            notes:      override?.notes ?? (l.notes || ''),
+            price:      override?.price ?? l.price,
+            pricePerM2: override?.pricePerM2 ?? l.pricePerM2,
+            tags:       (override?.tags?.length ? override.tags : (l.tags || [])),
+            block:      override?.block ?? l.block,
+            lotNumber:  override?.lotNumber ?? l.lotNumber,
+            conditionsJson: override?.conditionsJson ?? (l.conditionsJson || null),
+            paymentConditions: override?.paymentConditions ?? (l.paymentConditions || null),
+            panoramaUrl: override?.panoramaUrl ?? (l.panoramaUrl || null),
+            medias:     override?.medias || [],
+            status:     override?.status ?? 'AVAILABLE',
+          },
+        }
+      });
 
       return { data: paged, total, page, limit, totalPages: Math.ceil(total / limit), availableTags };
     }
@@ -667,5 +688,68 @@ export class ProjectsService {
     }
 
     return { message: 'Projeto removido com sucesso.' };
+  }
+
+  private _normalizeLegacyLotLookup(value?: string | null) {
+    return String(value ?? '')
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private _findLegacyLotOverride(overrides: Map<string, any>, lot: any) {
+    const byId = this._normalizeLegacyLotLookup(lot?.id);
+    const byCode = this._normalizeLegacyLotLookup(lot?.code || lot?.label);
+    return overrides.get(byId) || overrides.get(byCode) || null;
+  }
+
+  private async _loadLegacyLotDetailsOverrides(projectId: string) {
+    const rows = await this.prisma.lotDetails.findMany({
+      where: { projectId },
+      select: {
+        mapElementId: true,
+        status: true,
+        price: true,
+        pricePerM2: true,
+        areaM2: true,
+        frontage: true,
+        depth: true,
+        sideLeft: true,
+        sideRight: true,
+        sideMetricsJson: true,
+        slope: true,
+        notes: true,
+        tags: true,
+        block: true,
+        lotNumber: true,
+        conditionsJson: true,
+        paymentConditions: true,
+        panoramaUrl: true,
+        medias: {
+          select: { id: true, type: true, url: true, caption: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        mapElement: {
+          select: { id: true, code: true, name: true },
+        },
+      },
+    })
+
+    const lookup = new Map<string, any>()
+    for (const row of rows) {
+      const keys = [
+        this._normalizeLegacyLotLookup(row.mapElementId),
+        this._normalizeLegacyLotLookup(row.mapElement?.id),
+        this._normalizeLegacyLotLookup(row.mapElement?.code),
+        this._normalizeLegacyLotLookup(row.mapElement?.name),
+      ].filter(Boolean)
+
+      for (const key of keys) {
+        lookup.set(key, row)
+      }
+    }
+
+    return lookup
   }
 }

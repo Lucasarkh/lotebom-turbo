@@ -127,22 +127,41 @@ export class PlantMapService {
     // Fetch live status + tags from LotDetails so the map always reflects current lot status
     const lotDetails = await this.prisma.lotDetails.findMany({
       where: { mapElementId: { in: lotIds } },
-      select: { mapElementId: true, tags: true, status: true }
+      select: { mapElementId: true, tags: true, status: true, block: true, lotNumber: true }
     });
 
     const tagsMap = new Map<string, string[]>();
     const statusMap = new Map<string, string>();
+    const lotInfoMap = new Map<string, { block?: string; lotNumber?: string }>();
     lotDetails.forEach((ld) => {
       tagsMap.set(ld.mapElementId, ld.tags || []);
       statusMap.set(ld.mapElementId, ld.status);
+      lotInfoMap.set(ld.mapElementId, {
+        block: this._sanitizeLotField(ld.block),
+        lotNumber: this._sanitizeLotField(ld.lotNumber),
+      });
     });
 
     return hotspots.map((h) => {
       if (h.linkType === 'LOTE_PAGE' && h.linkId) {
+        const lotInfo = lotInfoMap.get(h.linkId);
+        const mergedMeta =
+          h.metaJson && typeof h.metaJson === 'object' && !Array.isArray(h.metaJson)
+            ? { ...h.metaJson }
+            : {};
+
+        if (lotInfo?.block || lotInfo?.lotNumber) {
+          mergedMeta.lotInfo = {
+            block: lotInfo.block,
+            lotNumber: lotInfo.lotNumber,
+          };
+        }
+
         return {
           ...h,
           tags: tagsMap.get(h.linkId) || [],
           loteStatus: statusMap.get(h.linkId) ?? h.loteStatus,
+          metaJson: Object.keys(mergedMeta).length ? mergedMeta : h.metaJson,
         };
       }
       return { ...h, tags: [] };
@@ -238,6 +257,7 @@ export class PlantMapService {
     return this.prisma.$transaction(async (tx) => {
       let linkId = dto.linkId;
       let linkType = dto.linkType || 'NONE';
+      const lotInfo = this._extractLotInfo(dto.metaJson);
 
       // Criar página (MapElement/LotDetails) automaticamente APENAS para hotspots do tipo LOTE
       if (dto.type === 'LOTE' && (!linkId || linkId === '')) {
@@ -259,7 +279,9 @@ export class PlantMapService {
             tenantId,
             projectId: plantMap.projectId,
             mapElementId: mapElement.id,
-            status: dto.loteStatus || 'AVAILABLE'
+            status: dto.loteStatus || 'AVAILABLE',
+            block: lotInfo?.block,
+            lotNumber: lotInfo?.lotNumber,
           }
         });
 
@@ -292,6 +314,7 @@ export class PlantMapService {
       for (const item of dto.hotspots) {
         let linkId = item.linkId;
         let linkType = item.linkType || 'NONE';
+        const lotInfo = this._extractLotInfo(item.metaJson);
 
         if (item.type === 'LOTE' && (!linkId || linkId === '')) {
           const mapElement = await tx.mapElement.create({
@@ -312,7 +335,9 @@ export class PlantMapService {
               tenantId,
               projectId: plantMap.projectId,
               mapElementId: mapElement.id,
-              status: item.loteStatus || 'AVAILABLE'
+              status: item.loteStatus || 'AVAILABLE',
+              block: lotInfo?.block,
+              lotNumber: lotInfo?.lotNumber,
             }
           });
 
@@ -364,16 +389,27 @@ export class PlantMapService {
           })
           .catch(() => null); // Ignore if already deleted or non-existent
 
-        // 2. Update LotDetails (Status)
+        // 2. Update LotDetails (Status + identificação do lote)
+        const lotInfo = this._extractLotInfo(updatedHotspot.metaJson);
+        const lotDetailsData: Record<string, any> = {};
+
         if (dto.loteStatus) {
+          lotDetailsData.status = dto.loteStatus;
+        }
+        if (lotInfo?.block) {
+          lotDetailsData.block = lotInfo.block;
+        }
+        if (lotInfo?.lotNumber) {
+          lotDetailsData.lotNumber = lotInfo.lotNumber;
+        }
+
+        if (Object.keys(lotDetailsData).length > 0) {
           await tx.lotDetails.updateMany({
             where: {
               mapElementId: updatedHotspot.linkId,
               tenantId
             },
-            data: {
-              status: dto.loteStatus
-            }
+            data: lotDetailsData
           });
         }
       }
@@ -418,6 +454,25 @@ export class PlantMapService {
   }
 
   // ── Helpers ────────────────────────────────────────────
+
+  private _sanitizeLotField(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim();
+    return normalized.length ? normalized : undefined;
+  }
+
+  private _extractLotInfo(metaJson: unknown): { block?: string; lotNumber?: string } | null {
+    if (!metaJson || typeof metaJson !== 'object' || Array.isArray(metaJson)) return null;
+
+    const lotInfo = (metaJson as Record<string, unknown>).lotInfo;
+    if (!lotInfo || typeof lotInfo !== 'object' || Array.isArray(lotInfo)) return null;
+
+    const block = this._sanitizeLotField((lotInfo as Record<string, unknown>).block);
+    const lotNumber = this._sanitizeLotField((lotInfo as Record<string, unknown>).lotNumber);
+
+    if (!block && !lotNumber) return null;
+    return { block, lotNumber };
+  }
 
   private async _findMap(tenantId: string, plantMapId: string) {
     const plantMap = await this.prisma.plantMap.findFirst({

@@ -53,7 +53,7 @@
         <!-- Hotspot pins -->
         <template v-if="showBeacons">
           <HotspotPin
-            v-for="hs in visibleHotspots"
+            v-for="hs in renderedVisibleHotspots"
             :key="hs.id"
             :hotspot="hs"
             :container-width="imgNaturalW"
@@ -62,6 +62,8 @@
             :show-label="showLabels"
             :pin-radius="pinRadiusForScale"
             @click="openPopover"
+            @hover-start="setHoveredHotspot"
+            @hover-end="clearHoveredHotspot"
           />
         </template>
       </svg>
@@ -351,17 +353,50 @@ const pinRadiusForScale = computed(() =>
 const selectedHotspot = ref<PlantHotspot | null>(null)
 const showBeacons = ref(true)
 const hydratedHotspotIds = ref<Set<string>>(new Set())
+const hoveredHotspotId = ref<string | null>(null)
+
+const renderedVisibleHotspots = computed(() => {
+  if (!hoveredHotspotId.value) return visibleHotspots.value
+  const idx = visibleHotspots.value.findIndex((hs) => hs.id === hoveredHotspotId.value)
+  if (idx === -1) return visibleHotspots.value
+  const ordered = visibleHotspots.value.slice()
+  const [hovered] = ordered.splice(idx, 1)
+  ordered.push(hovered)
+  return ordered
+})
+
+const setHoveredHotspot = (hotspotId: string) => {
+  hoveredHotspotId.value = hotspotId
+}
+
+const clearHoveredHotspot = (hotspotId: string) => {
+  if (hoveredHotspotId.value === hotspotId) {
+    hoveredHotspotId.value = null
+  }
+}
 
 const { getPublicHotspot } = usePublicPlantMap()
 
 watch(showBeacons, (val) => {
-  if (!val) selectedHotspot.value = null
+  if (!val) {
+    selectedHotspot.value = null
+    hoveredHotspotId.value = null
+  }
 })
 
 // Close popover when map is moved/zoomed
 watch(() => transform.value, () => {
   if (selectedHotspot.value) selectedHotspot.value = null
 }, { deep: true })
+
+watch(
+  () => visibleHotspots.value.map((hs) => hs.id),
+  (ids) => {
+    if (hoveredHotspotId.value && !ids.includes(hoveredHotspotId.value)) {
+      hoveredHotspotId.value = null
+    }
+  },
+)
 
 const popoverAnchor = ref({ x: 0, y: 0 })
 
@@ -416,6 +451,7 @@ const openPopover = (event: MouseEvent | KeyboardEvent | PlantHotspot, hotspot?:
 // ── Close popover on outside click ────────────────────────
 const handleContainerClick = () => {
   selectedHotspot.value = null
+  hoveredHotspotId.value = null
 }
 </script>
 

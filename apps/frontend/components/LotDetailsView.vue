@@ -39,7 +39,7 @@
               <span class="dot"></span>
               <span class="label">Início</span>
             </a>
-            <a v-if="details?.medias?.length" href="#galeria" class="nav-dot" :class="{ 'is-active': activeSection === 'galeria' }" title="Galeria">
+            <a v-if="galleryMedias.length" href="#galeria" class="nav-dot" :class="{ 'is-active': activeSection === 'galeria' }" title="Galeria">
               <span class="dot"></span>
               <span class="label">Galeria</span>
             </a>
@@ -116,22 +116,22 @@
               </section>
 
             <!-- Gallery -->
-            <section v-if="details?.medias?.length" id="galeria" class="section-v4">
+            <section v-if="galleryMedias.length" id="galeria" class="section-v4">
               <div class="section-title-v4">
                 <h2>Galeria de Imagens</h2>
                 <div class="title-line"></div>
               </div>
               
               <div class="gallery-v4">
-                <div v-for="(m, i) in details?.medias" :key="i" 
+                <div v-for="(m, i) in galleryMedias" :key="i" 
                   class="gallery-tile" 
                   :class="{ 'main': i === 0 }"
                   @click="() => { openLightbox(Number(i)); tracking.trackClick('Galeria: Abrir Foto', 'GALLERY'); }">
                   <img
                     v-if="m.type === 'PHOTO'"
                     :src="m.url"
-                    :loading="i < 4 ? 'eager' : 'lazy'"
-                    :fetchpriority="i < 2 ? 'high' : 'auto'"
+                    :loading="Number(i) < 4 ? 'eager' : 'lazy'"
+                    :fetchpriority="Number(i) < 2 ? 'high' : 'auto'"
                     decoding="async"
                   />
                   <div v-else class="video-preview-v4">
@@ -585,7 +585,7 @@
           <video v-else :src="lightboxMedia?.url" controls autoplay />
         </div>
 
-        <button v-if="lightboxIdx < (details?.medias?.length || 1) - 1" class="lightbox-nav lightbox-next" @click="lightboxIdx++">
+        <button v-if="lightboxIdx < (galleryMedias.length || 1) - 1" class="lightbox-nav lightbox-next" @click="lightboxIdx++">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       </div>
@@ -679,7 +679,7 @@ const lotPlantMap = computed(() => {
 })
 
 const lotPanorama = computed(() => {
-  if (!details.value?.panoramaUrl) return null
+  if (!panoramaImageUrl.value) return null
   return {
     id: 'lot-panorama',
     tenantId: project.value?.tenantId || '',
@@ -693,15 +693,15 @@ const lotPanorama = computed(() => {
     snapshots: [{
       id: 'lot-snap',
       panoramaId: 'lot-panorama',
-      imageUrl: details.value?.panoramaUrl,
+      imageUrl: panoramaImageUrl.value,
       label: 'Vista 360°',
       sortOrder: 0,
-      createdAt: getTodayInBrasilia().toISOString(),
-      updatedAt: getTodayInBrasilia().toISOString(),
+      createdAt: getTodayInBrasilia(),
+      updatedAt: getTodayInBrasilia(),
     }],
     beacons: [],
-    createdAt: getTodayInBrasilia().toISOString(),
-    updatedAt: getTodayInBrasilia().toISOString(),
+    createdAt: getTodayInBrasilia(),
+    updatedAt: getTodayInBrasilia(),
   } as Panorama
 })
 
@@ -814,6 +814,13 @@ const lot = computed(() => {
       )
       
       if (found) {
+        const publicCandidate = (publicLotCandidates.value || []).find((l: any) =>
+          isSameLotIdentifier(l.code, found.code)
+          || isSameLotIdentifier(l.name, found.label)
+          || isSameLotIdentifier(l.id, found.id)
+        )
+        const publicDetails = publicCandidate?.lotDetails || null
+
         // Area priority: Manual > Side metrics (contract) > Drawing (pixel)
         const contractArea = calcContractArea(found)
         let finalAreaM2 = (Number(found.area) > 0 ? (Number(found.area) / (PPM * PPM)) : 0)
@@ -835,23 +842,26 @@ const lot = computed(() => {
           code: found.code || found.label || found.id,
           name: found.label || found.code || 'Lote',
           lotDetails: {
-            status: (found.status || 'available').toUpperCase(),
-            price: found.price || null,
-            areaM2: parseFloat(finalAreaM2.toFixed(2)),
-            frontage: parseFloat(finalFrontage.toFixed(2)),
-            depth: found.manualBack || found.depth || null,
-            sideLeft: found.sideLeft ?? null,
-            sideRight: found.sideRight ?? null,
-            sideMetricsJson: found.sideMetrics ?? [],
-            slope: found.slope || 'FLAT',
-            notes: found.notes || '',
-            tags: found.tags || [],
-            block: found.block || null,
-            lotNumber: found.lotNumber || null,
-            pricePerM2: found.pricePerM2 || null,
-            conditionsJson: found.conditionsJson || [],
-            paymentConditions: (typeof found.paymentConditions === 'string' ? JSON.parse(found.paymentConditions) : found.paymentConditions) || null,
-            medias: []
+            status: (publicDetails?.status || found.status || 'available').toString().toUpperCase(),
+            price: publicDetails?.price ?? found.price ?? null,
+            areaM2: publicDetails?.areaM2 ?? parseFloat(finalAreaM2.toFixed(2)),
+            frontage: publicDetails?.frontage ?? parseFloat(finalFrontage.toFixed(2)),
+            depth: publicDetails?.depth ?? found.manualBack ?? found.depth ?? null,
+            sideLeft: publicDetails?.sideLeft ?? found.sideLeft ?? null,
+            sideRight: publicDetails?.sideRight ?? found.sideRight ?? null,
+            sideMetricsJson: publicDetails?.sideMetricsJson ?? found.sideMetrics ?? [],
+            slope: publicDetails?.slope ?? found.slope ?? 'FLAT',
+            notes: publicDetails?.notes ?? found.notes ?? '',
+            tags: publicDetails?.tags ?? found.tags ?? [],
+            block: publicDetails?.block ?? found.block ?? null,
+            lotNumber: publicDetails?.lotNumber ?? found.lotNumber ?? null,
+            pricePerM2: publicDetails?.pricePerM2 ?? found.pricePerM2 ?? null,
+            conditionsJson: publicDetails?.conditionsJson ?? found.conditionsJson ?? [],
+            paymentConditions:
+              publicDetails?.paymentConditions
+              ?? ((typeof found.paymentConditions === 'string' ? JSON.parse(found.paymentConditions) : found.paymentConditions) || null),
+            panoramaUrl: publicDetails?.panoramaUrl ?? found.panoramaUrl ?? null,
+            medias: Array.isArray(publicDetails?.medias) ? publicDetails.medias : []
           }
         }
       }
@@ -877,6 +887,34 @@ const lot = computed(() => {
 })
 
 const details = computed(() => lot.value?.lotDetails || null)
+
+const isPanoramaMedia = (media: any) => {
+  const caption = String(media?.caption || '').toLowerCase()
+  const url = String(media?.url || '').toLowerCase()
+  if (caption.includes('panorama_360') || caption.includes('panorama 360') || caption.includes('360')) return true
+  if (url.includes('panorama_360') || url.includes('panorama-360') || url.includes('/panorama/')) return true
+  return false
+}
+
+const panoramaImageUrl = computed(() => {
+  if (details.value?.panoramaUrl) return details.value.panoramaUrl
+
+  const medias = Array.isArray(details.value?.medias) ? details.value.medias : []
+  const taggedPanorama = medias.find((m: any) => isPanoramaMedia(m))
+  return taggedPanorama?.url || null
+})
+
+const galleryMedias = computed(() => {
+  const medias = Array.isArray(details.value?.medias) ? details.value.medias : []
+  const panoramaUrl = panoramaImageUrl.value
+
+  return medias.filter((m: any) => {
+    if (!m?.url) return false
+    if (panoramaUrl && m.url === panoramaUrl) return false
+    if (!panoramaUrl && isPanoramaMedia(m)) return false
+    return true
+  })
+})
 
 const reservationFeeValue = computed(() => {
   if (!project.value) return 500
@@ -1134,7 +1172,7 @@ watch(() => reservationForm.value.cpf, (v) => { if (v) reservationForm.value.cpf
 
 const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
-const lightboxMedia = computed(() => details.value?.medias?.[lightboxIdx.value] ?? null)
+const lightboxMedia = computed(() => galleryMedias.value?.[lightboxIdx.value] ?? null)
 
 const activeSection = ref('hero')
 
@@ -1554,7 +1592,7 @@ async function submitReservation() {
 .box-body { padding: 24px; font-size: 16px; line-height: 1.5; color: var(--v4-text); }
 
 /* Finance V4 */
-.finance-card-v4 { border: 1px solid var(--v4-border); border-radius: 20px; overflow: hidden; background: white; shadow: none; }
+.finance-card-v4 { border: 1px solid var(--v4-border); border-radius: 20px; overflow: hidden; background: white; box-shadow: none; }
 .h-item { padding: 40px; display: flex; flex-direction: column; }
 .h-item .l { font-size: 14px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; color: var(--v4-text-muted); }
 .h-item .v { font-size: 40px; font-weight: 600; color: var(--v4-text); }
@@ -1741,12 +1779,13 @@ async function submitReservation() {
   outline: none;
 }
 /* Hide arrows in number input */
-.ig-input::-webkit-outer-spin-button, .ig-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ig-input::-webkit-outer-spin-button, .ig-input::-webkit-inner-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
 
 .ig-hint { font-size: 13px; color: #64748b; margin-top: 4px; }
 
 .range-slider-v4 {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: 8px;
   border-radius: 4px;

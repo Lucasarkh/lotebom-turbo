@@ -56,6 +56,25 @@
               </select>
             </div>
 
+            <div v-if="form.type === 'LOTE'" class="pm-field">
+              <label class="pm-label">Identificação do lote no painel</label>
+              <div class="pm-lot-grid">
+                <input
+                  v-model="lotInfo.block"
+                  class="pm-input"
+                  placeholder="Quadra (ex: B)"
+                />
+                <input
+                  v-model="lotInfo.lotNumber"
+                  class="pm-input"
+                  placeholder="Lote nº (ex: 31)"
+                />
+              </div>
+              <p class="pm-hint" style="color: #2563eb; margin-top: 6px;">
+                Esses campos sao sincronizados automaticamente com a ficha do lote no painel.
+              </p>
+            </div>
+
             <!-- Hint about automatic creation -->
             <div v-if="!isEdit" class="pm-field">
               <p v-if="form.type === 'LOTE'" class="pm-hint">
@@ -150,12 +169,51 @@ const defaultForm = (): CreateHotspotPayload => ({
 })
 
 const form = ref<CreateHotspotPayload>(defaultForm())
+const lotInfo = ref({ block: '', lotNumber: '' })
+
+const extractLotInfoFromMeta = (meta: unknown) => {
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) {
+    return { block: '', lotNumber: '' }
+  }
+
+  const maybeLotInfo = (meta as Record<string, any>).lotInfo
+  if (!maybeLotInfo || typeof maybeLotInfo !== 'object' || Array.isArray(maybeLotInfo)) {
+    return { block: '', lotNumber: '' }
+  }
+
+  return {
+    block: typeof maybeLotInfo.block === 'string' ? maybeLotInfo.block : '',
+    lotNumber: typeof maybeLotInfo.lotNumber === 'string' ? maybeLotInfo.lotNumber : '',
+  }
+}
+
+const buildMetaJsonWithLotInfo = () => {
+  const baseMeta =
+    form.value.metaJson && typeof form.value.metaJson === 'object' && !Array.isArray(form.value.metaJson)
+      ? { ...form.value.metaJson }
+      : {}
+
+  const block = lotInfo.value.block.trim()
+  const lotNumber = lotInfo.value.lotNumber.trim()
+
+  if (form.value.type === 'LOTE' && (block || lotNumber)) {
+    baseMeta.lotInfo = {
+      block: block || undefined,
+      lotNumber: lotNumber || undefined,
+    }
+  } else {
+    delete baseMeta.lotInfo
+  }
+
+  return Object.keys(baseMeta).length ? baseMeta : undefined
+}
 
 watch(
   () => props.modelValue,
   (open) => {
     if (!open) return
     if (props.hotspot) {
+      const currentLotInfo = extractLotInfoFromMeta(props.hotspot.metaJson)
       form.value = {
         type: props.hotspot.type,
         title: props.hotspot.title,
@@ -171,10 +229,12 @@ watch(
         loteStatus: props.hotspot.loteStatus ?? undefined,
         metaJson: props.hotspot.metaJson ?? undefined,
       }
+      lotInfo.value = currentLotInfo
     } else {
       form.value = defaultForm()
       if (props.initialX !== undefined) form.value.x = props.initialX
       if (props.initialY !== undefined) form.value.y = props.initialY
+      lotInfo.value = { block: '', lotNumber: '' }
     }
   },
   { immediate: true },
@@ -187,6 +247,7 @@ const handleSubmit = () => {
     linkId: form.value.linkId || undefined,
     linkUrl: form.value.linkUrl || undefined,
     loteStatus: (form.value.loteStatus as string) === '' ? undefined : form.value.loteStatus,
+    metaJson: buildMetaJsonWithLotInfo(),
   }
   emit('save', payload)
 }
@@ -288,6 +349,12 @@ const HOTSPOT_TYPES = Object.entries(HOTSPOT_TYPE_LABELS).map(([value, label]) =
 .pm-input:focus { border-color: #3b82f6; }
 .pm-textarea { resize: vertical; min-height: 56px; }
 .pm-select { appearance: auto; background: white; }
+
+.pm-lot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 
 .pm-type-grid {
   display: grid;
