@@ -616,7 +616,7 @@
       <div v-if="allAvailableTags.length > 0" class="v4-floating-cta">
         <button class="v4-cta-btn-animated" @click="() => { tracking.trackClick('CTA: Busca de Lotes Animado'); toggleFilterModal(); }">
           <div class="v4-cta-inner">
-            <span class="v4-cta-icon-spark">✨</span>
+            <span class="v4-cta-icon-spark">🔍</span>
             <span class="v4-cta-label">Busque o lote ideal com base nas suas preferências</span>
             <span class="v4-cta-arrow-icon">→</span>
           </div>

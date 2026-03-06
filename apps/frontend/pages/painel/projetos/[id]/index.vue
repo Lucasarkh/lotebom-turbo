@@ -46,7 +46,7 @@
             v-if="project.status === 'PUBLISHED'"
             :href="`/${project.slug}`"
             target="_blank"
-            class="btn btn-sm btn-primary"
+            class="btn btn-sm btn-primary topbar-action-btn"
             style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
           >
             <span style="font-size: 1rem;">🌐</span>
@@ -57,20 +57,40 @@
             v-else
             :to="`/preview/${project.id}`"
             target="_blank"
-            class="btn btn-sm btn-secondary"
+            class="btn btn-sm btn-primary"
             style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
           >
             <span style="font-size: 1rem;">👀</span>
             <span>Link de Preview</span>
           </NuxtLink>
 
+          <a
+            v-if="plantMirrorPath"
+            :href="plantMirrorPath"
+            target="_blank"
+            class="btn btn-sm btn-primary"
+            style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
+          >
+            <span style="font-size: 1rem;">🪞</span>
+            <span>Espelho da Planta</span>
+          </a>
+
+          <button
+            v-if="plantMirrorAbsoluteUrl"
+            class="btn btn-sm btn-primary"
+            style="border-radius: 9999px; padding-left: 14px; padding-right: 14px; height: 38px;"
+            @click="copyLink(plantMirrorAbsoluteUrl)"
+            title="Copiar link do espelho da planta"
+          >
+            <span>📋</span>
+          </button>
+
           <div style="width: 1px; height: 24px; background: rgba(255, 255, 255, 0.06);"></div>
 
           <div class="flex items-center gap-2">
             <button 
               v-if="authStore.canEdit" 
-              class="btn btn-sm" 
-              :class="project.status === 'PUBLISHED' ? 'btn-secondary' : 'btn-success'" 
+              class="btn btn-sm btn-primary" 
               style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
               @click="togglePublish"
             >
@@ -104,6 +124,10 @@
               <span class="sidebar-icon">🗺️</span>
               <span class="sidebar-label">Planta Interativa</span>
             </NuxtLink>
+            <a v-if="plantMirrorPath" :href="plantMirrorPath" target="_blank" class="sidebar-tool-link">
+              <span class="sidebar-icon">🪞</span>
+              <span class="sidebar-label">Espelho da Planta</span>
+            </a>
             <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="sidebar-tool-link">
               <span class="sidebar-icon">🌄</span>
               <span class="sidebar-label">Panorama 360°</span>
@@ -1770,6 +1794,15 @@ const locationOrigin = computed(() => {
 })
 
 const publicUrl = computed(() => project.value ? `/${project.value.slug}` : null)
+const plantMirrorPath = computed(() => {
+  if (!project.value) return null
+  if (project.value.status === 'PUBLISHED') return `/${project.value.slug}/espelho-planta`
+  return `/preview/${project.value.id}/espelho-planta`
+})
+const plantMirrorAbsoluteUrl = computed(() => {
+  if (!plantMirrorPath.value || !locationOrigin.value) return ''
+  return `${locationOrigin.value}${plantMirrorPath.value}`
+})
 
 const schedulingForm = ref({
   enabled: false,

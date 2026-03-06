@@ -16,7 +16,7 @@
 
         <section>
           <h2>1. DEFINIÇÕES E ACEITAÇÃO</h2>
-          <p>1.1. Os presentes Termos de Uso ("Termos") regulam a relação contratual entre a <strong>LOTIO TECNOLOGIA LTDA.</strong> ("Lotio", "Plataforma", "nós"), inscrita no CNPJ sob o nº [CNPJ], com sede em [endereço], e o usuário que acessa ou utiliza a Plataforma ("Contratante", "Usuário", "você"), seja na qualidade de pessoa física ou jurídica.</p>
+          <p>1.1. Os presentes Termos de Uso ("Termos") regulam a relação contratual entre a <strong>LOTIO TECNOLOGIA LTDA.</strong> ("Lotio", "Plataforma", "nós"), inscrita no CNPJ sob o nº 50.384.936/0001-31, com sede em Rua Rosa Saron, 45 - Parque do Horto - Hortolândia - SP, e o usuário que acessa ou utiliza a Plataforma ("Contratante", "Usuário", "você"), seja na qualidade de pessoa física ou jurídica.</p>
           <p>1.2. Ao acessar, cadastrar-se ou utilizar a Plataforma Lotio de qualquer forma, o Usuário declara ter lido, compreendido e aceito integralmente estes Termos de Uso, bem como a <NuxtLink to="/politica-de-privacidade">Política de Privacidade</NuxtLink>, que constitui parte integrante deste instrumento.</p>
           <p>1.3. <strong>O aceite eletrônico destes Termos possui validade jurídica plena</strong>, nos termos dos artigos 107 e 219 do Código Civil Brasileiro (Lei nº 10.406/2002), do Marco Civil da Internet (Lei nº 12.965/2014), da Lei Geral de Proteção de Dados Pessoais — LGPD (Lei nº 13.709/2018) e da Medida Provisória nº 2.200-2/2001, que institui a Infraestrutura de Chaves Públicas Brasileira.</p>
           <p>1.4. Caso o Usuário não concorde com quaisquer disposições destes Termos, deverá cessar imediatamente o uso da Plataforma.</p>

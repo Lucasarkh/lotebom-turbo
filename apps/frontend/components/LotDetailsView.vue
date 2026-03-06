@@ -654,7 +654,7 @@
       <div v-if="idealLotAvailableTags.length > 0" class="v4-floating-cta">
         <button class="v4-cta-btn-animated" @click="() => { tracking.trackClick('CTA Flutuante Lote: Encontrar Lote Ideal'); toggleIdealLotModal() }">
           <div class="v4-cta-inner">
-            <span class="v4-cta-icon-spark">✨</span>
+            <span class="v4-cta-icon-spark">🔍</span>
             <span class="v4-cta-label">Encontrar lote ideal</span>
             <span class="v4-cta-arrow-icon">→</span>
           </div>

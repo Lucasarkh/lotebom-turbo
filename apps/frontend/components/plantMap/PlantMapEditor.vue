@@ -50,6 +50,7 @@
           {{ uploadingImage ? '⏳ Enviando...' : '🖼️ Trocar imagem' }}
         </button>
         <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden @change="handleImageUpload" />
+        <span class="pme__upload-tip">Dica: 2000 x 2000 px ou maior, com JPG/WebP otimizado.</span>
 
         <!-- Save button -->
         <button
@@ -92,6 +93,7 @@
         <button class="pme__btn pme__btn--primary" @click="triggerImageUpload" :disabled="uploadingImage">
           {{ uploadingImage ? '⏳ Enviando...' : '📤 Upload da planta' }}
         </button>
+        <p class="pme__upload-tip pme__upload-tip--empty">Para melhor nitidez com arquivo leve, recomendamos 2000 x 2000 px ou maior.</p>
       </div>
     </div>
 
@@ -1192,9 +1194,46 @@ const toggleSunPath = () => {
 // ── Image upload ───────────────────────────────────────────
 const triggerImageUpload = () => fileInput.value?.click()
 
+const MIN_RECOMMENDED_RESOLUTION = 2000
+const MAX_RECOMMENDED_SIZE_MB = 6
+
+const readImageDimensions = (file: File): Promise<{ width: number; height: number }> =>
+  new Promise((resolve, reject) => {
+    const tempUrl = URL.createObjectURL(file)
+    const img = new Image()
+
+    img.onload = () => {
+      const width = img.naturalWidth || 0
+      const height = img.naturalHeight || 0
+      URL.revokeObjectURL(tempUrl)
+      resolve({ width, height })
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(tempUrl)
+      reject(new Error('Nao foi possivel ler as dimensoes da imagem.'))
+    }
+
+    img.src = tempUrl
+  })
+
 const handleImageUpload = async (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
+
+  try {
+    const { width, height } = await readImageDimensions(file)
+    const fileSizeMb = file.size / (1024 * 1024)
+
+    if (width < MIN_RECOMMENDED_RESOLUTION || height < MIN_RECOMMENDED_RESOLUTION) {
+      showSuccess(`Dica: imagem com ${width}x${height}px. Recomendado: 2000x2000px ou maior.`)
+    } else if (fileSizeMb > MAX_RECOMMENDED_SIZE_MB) {
+      showSuccess(`Dica: arquivo com ${fileSizeMb.toFixed(1)}MB. Se possivel, comprima para upload mais rapido.`)
+    }
+  } catch {
+    // Se nao for possivel ler metadados da imagem, seguimos com o upload normalmente.
+  }
+
   uploadingImage.value = true
   try {
     const { imageUrl } = await api.uploadPlantImage(props.projectId, file)
@@ -1340,6 +1379,18 @@ onBeforeUnmount(() => {
   color: #94a3b8;
 }
 .pme__toggle-label input { cursor: pointer; }
+
+.pme__upload-tip {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.25;
+  max-width: 320px;
+}
+
+.pme__upload-tip--empty {
+  margin: 12px 0 0;
+  text-align: center;
+}
 
 /* ── Sun path controls ─────────────────────────────────── */
 .pme__sun-controls {
