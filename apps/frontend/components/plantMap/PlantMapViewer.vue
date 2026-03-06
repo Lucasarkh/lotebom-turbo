@@ -350,6 +350,7 @@ const pinRadiusForScale = computed(() =>
 // ── Popover ───────────────────────────────────────────────
 const selectedHotspot = ref<PlantHotspot | null>(null)
 const showBeacons = ref(true)
+const hydratedHotspotIds = ref<Set<string>>(new Set())
 
 const { getPublicHotspot } = usePublicPlantMap()
 
@@ -393,11 +394,16 @@ const openPopover = (event: MouseEvent | KeyboardEvent | PlantHotspot, hotspot?:
     selectedHotspot.value = event
   }
 
-  // Lazy-load description + metaJson for the popover if not already fetched.
-  // description === undefined means the field was omitted from the list response.
-  if (targetHotspot && targetHotspot.description === undefined && props.plantMap.projectId) {
+  // Lazy-load description + metaJson on first open.
+  // Public list responses may return undefined or null for description/metaJson.
+  if (
+    targetHotspot
+    && props.plantMap.projectId
+    && !hydratedHotspotIds.value.has(targetHotspot.id)
+  ) {
     getPublicHotspot(props.plantMap.projectId, targetHotspot.id)
       .then(detail => {
+        hydratedHotspotIds.value.add(targetHotspot.id)
         // Merge only if the same hotspot is still open
         if (detail && selectedHotspot.value?.id === targetHotspot.id) {
           selectedHotspot.value = { ...selectedHotspot.value, ...detail }

@@ -27,7 +27,7 @@
           :beacon="b"
           :container-width="imgW"
           :container-height="imgH"
-          @click="onBeaconClick"
+          @click="handleBeaconClick"
         />
       </div>
     </div>
@@ -65,6 +65,22 @@
         </button>
       </div>
 
+      <!-- Beacon details -->
+      <div
+        v-if="props.showBeaconInfo && selectedBeacon"
+        class="panorama-beacon-details"
+        role="dialog"
+        :aria-label="`Detalhes: ${selectedBeacon.title}`"
+      >
+        <button class="panorama-beacon-details__close" aria-label="Fechar" @click="selectedBeacon = null">
+          ✕
+        </button>
+        <div class="panorama-beacon-details__title">{{ selectedBeacon.title }}</div>
+        <p v-if="selectedBeacon.description" class="panorama-beacon-details__description">
+          {{ selectedBeacon.description }}
+        </p>
+      </div>
+
       <!-- Bottom center: timeline -->
       <div v-if="panorama.snapshots.length > 1" class="panorama-bottom-center">
         <PanoramaTimeline
@@ -88,11 +104,16 @@ import type { Panorama, PanoramaSnapshot, PanoramaBeacon } from '~/composables/p
 import PanoramaBeaconPin from './PanoramaBeaconPin.vue'
 import PanoramaTimeline from './PanoramaTimeline.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   panorama: Panorama
   editable?: boolean // can clicking create a beacon?
   activeSnapshotId?: string | null // externally control the active snapshot
-}>()
+  showBeaconInfo?: boolean
+}>(), {
+  editable: false,
+  activeSnapshotId: null,
+  showBeaconInfo: true,
+})
 
 const emit = defineEmits<{
   beaconClick: [beacon: PanoramaBeacon]
@@ -115,6 +136,7 @@ const imgH = ref(800)
 
 const showBeacons = ref(true)
 const isFullscreen = ref(false)
+const selectedBeacon = ref<PanoramaBeacon | null>(null)
 
 const activeSnapshot = ref<PanoramaSnapshot | null>(null)
 
@@ -198,7 +220,7 @@ function initPannellum() {
         hotSpotDiv.appendChild(stem);
         hotSpotDiv.appendChild(label);
       },
-      clickHandlerFunc: () => emit('beaconClick', b)
+      clickHandlerFunc: () => handleBeaconClick(b)
     }))
   })
 
@@ -467,7 +489,10 @@ function pinchDist(touches: TouchList) {
 
 // ── Beacon click ─────────────────────────────────────
 
-function onBeaconClick(beacon: PanoramaBeacon) {
+function handleBeaconClick(beacon: PanoramaBeacon) {
+  if (props.showBeaconInfo) {
+    selectedBeacon.value = beacon
+  }
   emit('beaconClick', beacon)
 }
 </script>
@@ -591,6 +616,52 @@ function onBeaconClick(beacon: PanoramaBeacon) {
   gap: 8px;
 }
 
+.panorama-beacon-details {
+  position: absolute;
+  left: 16px;
+  bottom: 72px;
+  max-width: min(380px, calc(100% - 32px));
+  background: rgba(10, 16, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #f8fafc;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.panorama-beacon-details__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.panorama-beacon-details__close:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.panorama-beacon-details__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-right: 24px;
+}
+
+.panorama-beacon-details__description {
+  margin: 8px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .panorama-bottom-left {
   position: absolute;
   bottom: 16px;
@@ -639,21 +710,22 @@ function onBeaconClick(beacon: PanoramaBeacon) {
 
 .panorama-ui-btn {
   padding: 8px 18px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 8px;
-  background: rgba(45, 65, 60, 0.85);
-  color: #fff;
+  background: rgba(8, 19, 38, 0.9);
+  color: #f8fafc;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
   transition: all 0.15s ease;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
 }
 
 .panorama-ui-btn:hover {
-  background: rgba(45, 65, 60, 1);
+  background: rgba(18, 39, 72, 0.95);
+  border-color: rgba(255, 255, 255, 0.55);
   transform: translateY(-1px);
 }
 

@@ -142,6 +142,7 @@
             :panorama="activePanorama"
             :active-snapshot-id="activeSnapshotId"
             :editable="mode === 'add-beacon'"
+            :show-beacon-info="false"
             @beaconClick="editBeacon"
             @viewClick="on360ViewClick"
           />
@@ -1085,7 +1086,8 @@ function clientToNormalized(clientX: number, clientY: number) {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1093,13 +1095,14 @@ function clientToNormalized(clientX: number, clientY: number) {
 }
 
 .modal-content {
-  background: var(--glass-bg);
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.3);
   border-radius: var(--radius-lg);
   padding: 24px;
   width: 90%;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
 }
 
 .modal-content h2 {
@@ -1130,9 +1133,21 @@ function clientToNormalized(clientX: number, clientY: number) {
 .form-input {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid var(--glass-border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+}
+
+.form-input::placeholder {
+  color: rgba(226, 232, 240, 0.62);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.95);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
 .form-range {
@@ -1180,5 +1195,31 @@ function clientToNormalized(clientX: number, clientY: number) {
   font-size: 0.78rem;
   color: var(--color-success);
   margin-top: 4px;
+}
+
+.modal-content .btn {
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.modal-content .btn-ghost {
+  background: rgba(148, 163, 184, 0.24);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.44);
+}
+
+.modal-content .btn-ghost:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.36);
+}
+
+.modal-content .btn-primary {
+  background: #2563eb;
+  color: #f8fafc;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.modal-content .btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 10px 22px rgba(29, 78, 216, 0.42);
 }
 </style>

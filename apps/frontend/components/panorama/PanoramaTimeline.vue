@@ -35,12 +35,12 @@ defineEmits<{
 
 .timeline-btn {
   padding: 6px 16px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 6px;
-  background: rgba(59, 92, 63, 0.65);
-  color: #fff;
+  background: rgba(7, 19, 40, 0.86);
+  color: #f8fafc;
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   backdrop-filter: blur(6px);
@@ -48,12 +48,14 @@ defineEmits<{
 }
 
 .timeline-btn:hover {
-  background: rgba(59, 92, 63, 0.85);
+  background: rgba(21, 43, 78, 0.95);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .timeline-btn--active {
-  background: rgba(59, 92, 63, 0.95);
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+  background: #2563eb;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(147, 197, 253, 0.4);
   font-weight: 700;
 }
 </style>

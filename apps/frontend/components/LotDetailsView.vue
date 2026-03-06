@@ -647,7 +647,18 @@ const error = ref('')
 const project = ref<any>(null)
 const corretor = ref<any>(null)
 const plantMap = ref<PlantMap | null>(null)
+const publicLotCandidates = ref<any[]>([])
 const { getPublicPlantMap } = usePublicPlantMap()
+
+const normalizeLotIdentifier = (value?: string | null) =>
+  String(value ?? '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+const isSameLotIdentifier = (a?: string | null, b?: string | null) =>
+  !!normalizeLotIdentifier(a) && normalizeLotIdentifier(a) === normalizeLotIdentifier(b)
 
 const lotPlantMap = computed(() => {
   if (!plantMap.value || !lot.value) return null
@@ -758,8 +769,18 @@ const allProjectLots = computed(() => {
   const fromMapData = mapData ? (Array.isArray(mapData.lots)
     ? mapData.lots.map(([, l]: [any, any]) => ({ id: l.id, code: l.code || l.label || l.id }))
     : (mapData.lots ? Object.values(mapData.lots).map((l: any) => ({ id: l.id, code: l.code || l.label || l.id })) : [])) : []
+
+  const fromTeaser = ((project.value as any).teaserLots || []).map((l: any) => ({
+    id: l.id,
+    code: l.code || l.name || l.id,
+  }))
+
+  const fromPublicLots = (publicLotCandidates.value || []).map((l: any) => ({
+    id: l.id,
+    code: l.code || l.name || l.id,
+  }))
     
-  return [...fromElements, ...fromMapData]
+  return [...fromElements, ...fromMapData, ...fromTeaser, ...fromPublicLots]
 })
 
 const lot = computed(() => {
@@ -772,7 +793,11 @@ const lot = computed(() => {
 
   // 1. Try relational mapElements (standard way)
   // Match by code or ID, and allow any type that has pages (standardized for Hotspots)
-  const fromElements = (project.value as any).mapElements?.find((e: any) => (e.code === lotCode.value || e.id === lotCode.value))
+  const fromElements = (project.value as any).mapElements?.find((e: any) => (
+    isSameLotIdentifier(e.code, lotCode.value)
+    || isSameLotIdentifier(e.name, lotCode.value)
+    || isSameLotIdentifier(e.id, lotCode.value)
+  ))
   if (fromElements) return fromElements
 
   // 2. Try JSON mapData (flexible way)
@@ -782,7 +807,11 @@ const lot = computed(() => {
       const lotsArr: any[] = Array.isArray(data.lots)
         ? data.lots.map(([, l]: [string, any]) => l)
         : (data.lots ? Object.values(data.lots) : [])
-      const found = lotsArr.find((l: any) => l.code === lotCode.value || l.id === lotCode.value || l.label === lotCode.value)
+      const found = lotsArr.find((l: any) =>
+        isSameLotIdentifier(l.code, lotCode.value)
+        || isSameLotIdentifier(l.id, lotCode.value)
+        || isSameLotIdentifier(l.label, lotCode.value)
+      )
       
       if (found) {
         // Area priority: Manual > Side metrics (contract) > Drawing (pixel)
@@ -828,6 +857,22 @@ const lot = computed(() => {
       }
     } catch (e) { console.error('Error parsing mapData in lot page', e) }
   }
+
+  // 3. Public lots endpoint fallback (new lightweight public payloads)
+  const fromPublicLots = (publicLotCandidates.value || []).find((l: any) =>
+    isSameLotIdentifier(l.code, lotCode.value)
+    || isSameLotIdentifier(l.name, lotCode.value)
+    || isSameLotIdentifier(l.id, lotCode.value)
+  )
+  if (fromPublicLots) {
+    return {
+      id: fromPublicLots.id,
+      code: fromPublicLots.code || fromPublicLots.name || fromPublicLots.id,
+      name: fromPublicLots.name || fromPublicLots.code || 'Lote',
+      lotDetails: fromPublicLots.lotDetails || null,
+    }
+  }
+
   return null
 })
 
@@ -1025,10 +1070,20 @@ onMounted(async () => {
   
   try {
     const baseUrl = isPreview.value ? `/p/preview/${previewId.value}` : `/p/${projectSlug.value}`
+    const searchParam = encodeURIComponent(lotCode.value || '')
     const [p, c] = await Promise.allSettled([
       fetchPublic(baseUrl),
       corretorCode && !isPreview.value ? fetchPublic(`/p/${projectSlug.value}/corretores/${corretorCode}`) : Promise.resolve(null),
     ])
+
+    if (!isPreview.value && lotCode.value) {
+      try {
+        const lotsResponse = await fetchPublic(`/p/${projectSlug.value}/lots?search=${searchParam}&limit=50&page=1`)
+        publicLotCandidates.value = Array.isArray(lotsResponse?.data) ? lotsResponse.data : []
+      } catch {
+        publicLotCandidates.value = []
+      }
+    }
     
     if (p.status === 'fulfilled') {
       project.value = p.value
