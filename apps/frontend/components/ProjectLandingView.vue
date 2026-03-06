@@ -136,15 +136,22 @@
             <p class="v4-section-subtitle">Explore a implantação do loteamento. Clique nos pontos para mais informações.</p>
           </div>
           <ClientOnly>
-            <div style="height: 540px; border-radius: 16px; overflow: hidden; box-shadow: var(--v4-shadow-elevated);">
+            <div class="v4-plant-map-shell" :class="{ 'is-interaction-disabled': !isPlantMapInteractive }" style="height: 540px; border-radius: 16px; overflow: hidden; box-shadow: var(--v4-shadow-elevated); position: relative;">
               <PlantMapViewer
                 v-if="plantMap"
                 :plant-map="plantMap"
                 :show-controls="true"
                 :show-legend="true"
+                :interactive="isPlantMapInteractive"
               />
               <div v-else style="height:100%; background:#1a1a2e; display:flex; align-items:center; justify-content:center; color:#64748b;">
                 <div class="loading-spinner"></div>
+              </div>
+              <div v-if="showPlantMapTouchCta && plantMap" class="v4-interaction-gate">
+                <button type="button" class="v4-interaction-gate__btn" @click.stop.prevent="enablePlantMapInteraction">
+                  Ver mapa interativo
+                </button>
+                <p class="v4-interaction-gate__hint">Ative para arrastar e dar zoom. Desative para voltar a rolar a pagina.</p>
               </div>
             </div>
             <template #fallback>
@@ -153,6 +160,13 @@
               </div>
             </template>
           </ClientOnly>
+          <button
+            v-if="showPlantMapDisableButton"
+            class="v4-interaction-toggle"
+            @click="disablePlantMapInteraction"
+          >
+            Desativar interacao do mapa
+          </button>
         </div>
       </section>
 
@@ -168,8 +182,15 @@
               v-for="pano in panoramas"
               :key="pano.id"
               class="v4-panorama-card"
+              :class="{ 'is-interaction-disabled': !isPanoramaInteractive }"
             >
               <PanoramaViewer :panorama="pano" />
+              <div v-if="showPanoramaTouchCta" class="v4-interaction-gate">
+                <button type="button" class="v4-interaction-gate__btn" @click.stop.prevent="enablePanoramaInteraction">
+                  Ver 360 interativo
+                </button>
+                <p class="v4-interaction-gate__hint">Ative para girar a vista 360. Desative para continuar rolando a pagina.</p>
+              </div>
             </div>
             <template #fallback>
               <div class="v4-panorama-card v4-panorama-card--fallback">
@@ -177,6 +198,13 @@
               </div>
             </template>
           </ClientOnly>
+          <button
+            v-if="showPanoramaDisableButton"
+            class="v4-interaction-toggle"
+            @click="disablePanoramaInteraction"
+          >
+            Desativar interacao do 360
+          </button>
         </div>
       </section>
 
@@ -868,6 +896,42 @@ const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
 const lightboxMedia = computed(() => project.value?.projectMedias?.[lightboxIdx.value] ?? null)
 
+const isTouchMobile = ref(false)
+const plantMapInteractionEnabled = ref(false)
+const panoramaInteractionEnabled = ref(false)
+
+const isPlantMapInteractive = computed(() => !isTouchMobile.value || plantMapInteractionEnabled.value)
+const isPanoramaInteractive = computed(() => !isTouchMobile.value || panoramaInteractionEnabled.value)
+const showPlantMapTouchCta = computed(() => isTouchMobile.value && !plantMapInteractionEnabled.value)
+const showPanoramaTouchCta = computed(() => isTouchMobile.value && !panoramaInteractionEnabled.value)
+const showPlantMapDisableButton = computed(() => isTouchMobile.value && plantMapInteractionEnabled.value)
+const showPanoramaDisableButton = computed(() => isTouchMobile.value && panoramaInteractionEnabled.value)
+
+function detectTouchMobile() {
+  if (!process.client) return
+  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const isNarrowViewport = window.matchMedia('(max-width: 1024px)').matches
+  isTouchMobile.value = isCoarsePointer && isNarrowViewport
+}
+
+function enablePlantMapInteraction() {
+  plantMapInteractionEnabled.value = true
+  tracking.trackClick('Mapa: Ativar interacao mobile', 'MAP_INTERACTION')
+}
+
+function disablePlantMapInteraction() {
+  plantMapInteractionEnabled.value = false
+}
+
+function enablePanoramaInteraction() {
+  panoramaInteractionEnabled.value = true
+  tracking.trackClick('Panorama: Ativar interacao mobile', 'VIEW_360')
+}
+
+function disablePanoramaInteraction() {
+  panoramaInteractionEnabled.value = false
+}
+
 /**
  * Standard Brazilian real estate area: (average width) * (average depth)
  * or weighted scale average for polygons.
@@ -1145,6 +1209,9 @@ const lotPageUrl = (lot: any) => {
 }
 
 onMounted(async () => {
+  detectTouchMobile()
+  window.addEventListener('resize', detectTouchMobile)
+
   try {
     const baseUrl = isPreview.value ? `/p/preview/${previewId.value}` : `/p/${projectSlug.value}`
 
@@ -1208,6 +1275,10 @@ onMounted(async () => {
     error.value = e.message || 'Projeto não encontrado'
   }
   loading.value = false
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', detectTouchMobile)
 })
 
 async function submitLead() {
@@ -2148,12 +2219,62 @@ function openLightbox(idx: number) {
 }
 .v4-video-placeholder:hover { background: #222; }
 
+.v4-interaction-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.v4-interaction-gate__btn {
+  border: none;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.v4-interaction-gate__hint {
+  margin: 0;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 280px;
+}
+
+.v4-interaction-toggle {
+  margin-top: 12px;
+  border: 1px solid var(--v4-border);
+  background: #fff;
+  color: var(--v4-text-muted);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .v4-panorama-card {
+  position: relative;
   height: clamp(260px, 56.25vw, 540px);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--v4-shadow-elevated);
   margin-bottom: 24px;
+}
+
+.v4-panorama-card.is-interaction-disabled :deep(.panorama-viewer) {
+  pointer-events: none;
 }
 
 .v4-panorama-card--fallback {

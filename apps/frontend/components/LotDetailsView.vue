@@ -648,6 +648,24 @@
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       </div>
+
+      <nav class="v4-sticky-nav">
+        <a v-if="lotPlantMap" href="#localizacao" class="v4-nav-item">Planta</a>
+        <a v-if="lotPanorama" href="#vista-360" class="v4-nav-item">Panorama</a>
+        <NuxtLink :to="unitsUrl" class="v4-nav-item">Unidades</NuxtLink>
+        <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>
+      </nav>
+
+      <div class="v4-floating-cta">
+        <a href="#contato" class="v4-cta-btn-animated" @click="tracking.trackClick('CTA Flutuante Lote: Tenho Interesse')">
+          <div class="v4-cta-inner">
+            <span class="v4-cta-icon-spark">✨</span>
+            <span class="v4-cta-label">Tenho interesse neste lote</span>
+            <span class="v4-cta-arrow-icon">→</span>
+          </div>
+          <div class="v4-cta-glow"></div>
+        </a>
+      </div>
     </template>
   </div>
 </template>
@@ -766,6 +784,11 @@ const lotPanorama = computed(() => {
 
 const projectUrl = computed(() => {
   const base = pathPrefix.value || '/'
+  return corretorCode ? `${base}${base.includes('?') ? '&' : '?'}c=${corretorCode}` : base
+})
+
+const unitsUrl = computed(() => {
+  const base = `${pathPrefix.value}/unidades`
   return corretorCode ? `${base}${base.includes('?') ? '&' : '?'}c=${corretorCode}` : base
 })
 
@@ -2110,7 +2133,98 @@ async function submitReservation() {
   pointer-events: none;
 }
 
+.v4-sticky-nav {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(29, 29, 31, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  padding: 4px;
+  border-radius: 100px;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  width: auto;
+  min-width: 280px;
+  max-width: 92vw;
+  z-index: 1000;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.v4-nav-item {
+  color: white;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-radius: 100px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.v4-nav-cta {
+  background: var(--v4-primary);
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.v4-floating-cta {
+  position: fixed;
+  bottom: 98px;
+  right: 16px;
+  z-index: 1000;
+}
+
+.v4-cta-btn-animated {
+  display: block;
+  text-decoration: none;
+  background: white;
+  padding: 2px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.v4-cta-btn-animated::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(transparent, var(--v4-primary), #00c3ff, var(--v4-primary), transparent 30%);
+  animation: rotate-border 4s linear infinite;
+  z-index: 1;
+}
+
+.v4-cta-inner {
+  position: relative;
+  z-index: 2;
+  background: white;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v4-cta-icon-spark { font-size: 24px; }
+.v4-cta-label, .v4-cta-arrow-icon, .v4-cta-glow { display: none; }
+
+@keyframes rotate-border {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 768px) {
+  .v4-sticky-nav { display: flex; }
+
   .other-assets-v4 { margin-bottom: 32px; padding-bottom: 0; } 
   .hero-v4, .section-v4 { padding: 20px; border-radius: 20px; }
   .hero-header-row { flex-direction: column; align-items: flex-start; gap: 24px; margin-bottom: 32px; }
@@ -2183,6 +2297,10 @@ async function submitReservation() {
   .a-code { font-size: 13px; }
   .a-area { font-size: 11px; }
   .a-price { font-size: 14px; margin-top: 2px; }
+}
+
+@media (min-width: 769px) {
+  .v4-floating-cta { display: none; }
 }
 
 /* Booking & Reservation Styles */
