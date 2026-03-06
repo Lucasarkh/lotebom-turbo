@@ -115,25 +115,6 @@
         Essas informações aparecem no rodapé das páginas de loteamento.
       </p>
 
-      <!-- Logos section -->
-      <div class="form-group" style="margin-bottom: 24px;">
-        <label class="form-label">Logos / Realização e Propriedade</label>
-        <p class="form-help" style="margin-bottom: 10px;">Envie os logos que aparecerão na seção de realização no rodapé. Pode ser mais de um.</p>
-        <div class="logos-grid">
-          <div v-for="logo in empresaLogos" :key="logo.id" class="logo-card">
-            <img :src="logo.url" :alt="logo.label || 'Logo'" class="logo-thumb" />
-            <button type="button" class="logo-delete-btn" @click="deleteLogo(logo.id)" :disabled="deletingLogoId === logo.id">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-          <label class="logo-upload-btn" :class="{ uploading: uploadingLogo }">
-            <svg v-if="!uploadingLogo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <div v-else class="logo-spin"></div>
-            <input type="file" accept="image/*" style="display:none" @change="uploadLogo" :disabled="uploadingLogo" />
-          </label>
-        </div>
-      </div>
-
       <form @submit.prevent="handleUpdateEmpresa">
         <div class="empresa-grid">
           <div class="form-group">
@@ -181,7 +162,7 @@ import {
 } from '~/utils/passwordPolicy'
 
 const authStore = useAuthStore()
-const { fetchApi, uploadApi } = useApi()
+const { fetchApi } = useApi()
 const toast = useToast()
 const { maskPhone, unmask } = useMasks()
 
@@ -212,9 +193,6 @@ const twoFactorLoading = ref(false)
 // Empresa (loteadora) profile state
 const empresaLoading = ref(false)
 const empresaError = ref('')
-const empresaLogos = ref([])
-const uploadingLogo = ref(false)
-const deletingLogoId = ref(null)
 const empresaForm = ref({
   creci: '',
   phone: '',
@@ -342,7 +320,6 @@ async function handleToggle2FA() {
 async function fetchEmpresaData() {
   try {
     const data = await fetchApi('/tenants/me')
-    empresaLogos.value = data.logos || []
     empresaForm.value = {
       creci: data.creci || '',
       phone: data.phone ? maskPhone(data.phone) : '',
@@ -370,35 +347,6 @@ async function handleUpdateEmpresa() {
     empresaError.value = err?.data?.message || err?.message || 'Erro ao salvar dados da empresa.'
   } finally {
     empresaLoading.value = false
-  }
-}
-
-async function uploadLogo(e) {
-  const file = e.target.files?.[0]
-  if (!file) return
-  uploadingLogo.value = true
-  try {
-    const fd = new FormData()
-    fd.append('file', file)
-    const logo = await uploadApi('/tenants/me/logos', fd)
-    empresaLogos.value.push(logo)
-    e.target.value = ''
-  } catch (err) {
-    toast.error(err?.message || 'Erro ao enviar logo.')
-  } finally {
-    uploadingLogo.value = false
-  }
-}
-
-async function deleteLogo(logoId) {
-  deletingLogoId.value = logoId
-  try {
-    await fetchApi(`/tenants/me/logos/${logoId}`, { method: 'DELETE' })
-    empresaLogos.value = empresaLogos.value.filter(l => l.id !== logoId)
-  } catch (err) {
-    toast.error(err?.message || 'Erro ao remover logo.')
-  } finally {
-    deletingLogoId.value = null
   }
 }
 </script>
@@ -461,73 +409,4 @@ async function deleteLogo(logoId) {
   .empresa-grid { grid-template-columns: 1fr; }
 }
 
-.logos-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.logo-card {
-  position: relative;
-  width: 90px;
-  height: 60px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.logo-thumb {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  padding: 6px;
-}
-.logo-delete-btn {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.6);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  opacity: 0;
-  transition: opacity 150ms;
-}
-.logo-card:hover .logo-delete-btn { opacity: 1; }
-.logo-delete-btn:hover { background: rgba(239,68,68,0.8); }
-
-.logo-upload-btn {
-  width: 90px;
-  height: 60px;
-  border-radius: 8px;
-  border: 2px dashed rgba(255,255,255,0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--color-surface-400);
-  transition: all 150ms;
-}
-.logo-upload-btn:hover { border-color: var(--color-primary-500); color: var(--color-primary-400); }
-.logo-upload-btn.uploading { opacity: 0.5; cursor: not-allowed; }
-
-.logo-spin {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255,255,255,0.2);
-  border-top-color: var(--color-primary-400);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
 </style>

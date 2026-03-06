@@ -68,6 +68,61 @@ export class UploadService {
     });
   }
 
+  // ── Project footer logos (Realizacao e Propriedade) ───
+
+  async listFooterLogos(tenantId: string, projectId: string) {
+    await this.ensureProjectExists(tenantId, projectId);
+
+    return this.prisma.projectLogo.findMany({
+      where: { tenantId, projectId },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, url: true, label: true, sortOrder: true },
+    });
+  }
+
+  async uploadFooterLogo(
+    tenantId: string,
+    projectId: string,
+    file: Express.Multer.File,
+    label?: string,
+  ) {
+    this.validateFile(file, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE);
+    await this.ensureProjectExists(tenantId, projectId);
+
+    const key = this.s3.buildKey(
+      tenantId,
+      `projects/${projectId}/footer-logos`,
+      file.originalname,
+    );
+    const url = await this.s3.upload(file.buffer, key, file.mimetype);
+
+    const count = await this.prisma.projectLogo.count({ where: { tenantId, projectId } });
+
+    return this.prisma.projectLogo.create({
+      data: {
+        tenantId,
+        projectId,
+        url,
+        label: label?.trim() || null,
+        sortOrder: count,
+      },
+      select: { id: true, url: true, label: true, sortOrder: true },
+    });
+  }
+
+  async removeFooterLogo(tenantId: string, projectId: string, logoId: string) {
+    const logo = await this.prisma.projectLogo.findFirst({
+      where: { id: logoId, tenantId, projectId },
+    });
+    if (!logo) throw new NotFoundException('Logo não encontrado.');
+
+    const key = this.s3.keyFromUrl(logo.url);
+    if (key) await this.s3.delete(key).catch(() => {});
+
+    await this.prisma.projectLogo.delete({ where: { id: logoId } });
+    return { ok: true };
+  }
+
   // ── Project media (gallery) ─────────────────────────────
 
   async uploadMedia(
@@ -140,7 +195,7 @@ export class UploadService {
     if (!project) throw new NotFoundException('Projeto não encontrado.');
 
     // Restrict folders to known areas
-    const allowedFolders = ['banner', 'media', 'plant-map', 'panorama', 'lots'];
+    const allowedFolders = ['banner', 'media', 'plant-map', 'panorama', 'lots', 'footer-logos'];
     const baseFolder = folder.split('/')[0];
     if (!allowedFolders.includes(baseFolder)) {
       throw new BadRequestException('Pasta de destino não permitida.');
@@ -171,5 +226,13 @@ export class UploadService {
       throw new BadRequestException(
         `Arquivo muito grande. Máximo: ${(maxSize / 1024 / 1024).toFixed(0)} MB`
       );
+  }
+
+  private async ensureProjectExists(tenantId: string, projectId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, tenantId }
+    });
+    if (!project) throw new NotFoundException('Projeto não encontrado.');
+    return project;
   }
 }

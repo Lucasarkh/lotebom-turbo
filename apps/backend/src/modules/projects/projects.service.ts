@@ -108,6 +108,7 @@ export class ProjectsService {
       where: { id, tenantId },
       include: {
         tenant: { select: { slug: true, name: true } },
+        logos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, label: true, sortOrder: true } },
         aiConfig: true,
         _count: {
           select: { mapElements: true, leads: true, projectMedias: true }
@@ -137,7 +138,8 @@ export class ProjectsService {
     const project = await this.prisma.project.findFirst({
       where: { slug: projectSlug, status: ProjectStatus.PUBLISHED },
       include: {
-        tenant: { select: { id: true, name: true, slug: true, creci: true, phone: true, publicEmail: true, website: true, logos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, label: true } } } },
+        tenant: { select: { id: true, name: true, slug: true, creci: true, phone: true, publicEmail: true, website: true } },
+        logos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, label: true, sortOrder: true } },
         // mapElements deliberately excluded — replaced by lotSummary + teaserLots
         projectMedias: {
           where: { lotDetailsId: null },
@@ -376,7 +378,8 @@ export class ProjectsService {
         id: projectId
       },
       include: {
-        tenant: { select: { id: true, name: true, slug: true, creci: true, phone: true, publicEmail: true, website: true, logos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, label: true } } } },
+        tenant: { select: { id: true, name: true, slug: true, creci: true, phone: true, publicEmail: true, website: true } },
+        logos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, label: true, sortOrder: true } },
         mapElements: {
           select: {
             id: true,
@@ -543,6 +546,7 @@ export class ProjectsService {
       },
       include: {
         tenant: { select: { slug: true, name: true } },
+        logos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, label: true, sortOrder: true } },
         aiConfig: true,
         _count: {
           select: { mapElements: true, leads: true, projectMedias: true }

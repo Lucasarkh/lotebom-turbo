@@ -937,6 +937,49 @@
           </div>
         </div>
 
+        <!-- ── Logos de Rodapé ── -->
+        <div class="pub-card pub-card--compact">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <h4 class="pub-card__title" style="margin: 0;">Logos de Rodapé</h4>
+              <p style="margin: 4px 0 0 0; color: var(--color-surface-500); font-size: 0.75rem;">Realização e Propriedade exibidos neste projeto.</p>
+            </div>
+
+            <label v-if="authStore.canEdit" class="btn btn-primary btn-sm" style="cursor: pointer;">
+              {{ uploadingFooterLogo ? 'Enviando...' : '+ Adicionar Logo' }}
+              <input
+                type="file"
+                accept="image/*"
+                style="display:none"
+                @change="uploadFooterLogo"
+                :disabled="uploadingFooterLogo"
+              />
+            </label>
+          </div>
+
+          <div v-if="projectFooterLogos.length" style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <div
+              v-for="logo in projectFooterLogos"
+              :key="logo.id"
+              style="position: relative; width: 110px; height: 74px; border-radius: 8px; border: 1px solid var(--glass-border-subtle); background: var(--glass-bg-heavy); overflow: hidden; display: flex; align-items: center; justify-content: center;"
+            >
+              <img :src="logo.url" :alt="logo.label || project?.name || 'Logo'" style="max-width: 100%; max-height: 100%; object-fit: contain; padding: 8px;" />
+              <button
+                v-if="authStore.canEdit"
+                type="button"
+                class="pub-remove-btn"
+                style="position: absolute; top: 6px; right: 6px;"
+                :disabled="deletingFooterLogoId === logo.id"
+                @click="deleteFooterLogo(logo.id)"
+              >
+                {{ deletingFooterLogoId === logo.id ? '...' : '✕' }}
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="pub-empty">Nenhum logo de rodapé cadastrado para este projeto.</div>
+        </div>
+
         <!-- ── Preços & Condições ── -->
         <div class="pub-card pub-card--compact">
           <h4 class="pub-card__title">Preços e Condições</h4>
@@ -1882,10 +1925,30 @@ const escapeHtml = (value: string) => value
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;')
 
+const sanitizeLocationBody = (html: string) => {
+  if (!html) return ''
+
+  const withoutFontTags = html
+    .replace(/<font\b[^>]*>/gi, '')
+    .replace(/<\/font>/gi, '')
+    .replace(/\scolor=(['"]).*?\1/gi, '')
+
+  return withoutFontTags.replace(/\sstyle=(['"])(.*?)\1/gi, (_match, quote: string, css: string) => {
+    const filtered = css
+      .split(';')
+      .map((rule: string) => rule.trim())
+      .filter(Boolean)
+      .filter((rule: string) => !/^color\s*:/i.test(rule) && !/^background(?:-color)?\s*:/i.test(rule))
+
+    if (!filtered.length) return ''
+    return ` style=${quote}${filtered.join('; ')}${quote}`
+  })
+}
+
 const buildLocationTextPayload = () => {
   const title = (pubInfoForm.value.locationTitle || '').trim()
   const subtitle = (pubInfoForm.value.locationSubtitle || '').trim()
-  const body = (pubInfoForm.value.locationText || '').trim()
+  const body = sanitizeLocationBody((pubInfoForm.value.locationText || '').trim())
   const parts: string[] = []
 
   if (title) {
@@ -1921,6 +1984,9 @@ const pubInfoForm = ref({
   constructionStatus: [] as { label: string, percentage: number }[],
   legalNotice: ''
 })
+const projectFooterLogos = ref<Array<{ id: string; url: string; label?: string | null; sortOrder?: number }>>([])
+const uploadingFooterLogo = ref(false)
+const deletingFooterLogoId = ref<string | null>(null)
 const savingPublicVideo = ref(false)
 const savingPublicPricing = ref(false)
 const savingPublicConstruction = ref(false)
@@ -2212,6 +2278,39 @@ const savePublicLegalBlock = async () => {
     'Informações legais salvas!',
     'Erro ao salvar informações legais',
   )
+}
+
+const uploadFooterLogo = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  uploadingFooterLogo.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    const logo = await uploadApi(`/projects/${projectId}/footer-logos`, fd)
+    projectFooterLogos.value.push(logo)
+    projectFooterLogos.value.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    toastSuccess('Logo de rodapé enviado!')
+  } catch (err) {
+    toastFromError(err, 'Erro ao enviar logo de rodapé')
+  } finally {
+    ;(e.target as HTMLInputElement).value = ''
+    uploadingFooterLogo.value = false
+  }
+}
+
+const deleteFooterLogo = async (logoId: string) => {
+  deletingFooterLogoId.value = logoId
+  try {
+    await fetchApi(`/projects/${projectId}/footer-logos/${logoId}`, { method: 'DELETE' })
+    projectFooterLogos.value = projectFooterLogos.value.filter(logo => logo.id !== logoId)
+    toastSuccess('Logo removido!')
+  } catch (err) {
+    toastFromError(err, 'Erro ao remover logo de rodapé')
+  } finally {
+    deletingFooterLogoId.value = null
+  }
 }
 
 // ── Corretores ────────────────────────────────────────────
@@ -2539,6 +2638,7 @@ const loadProject = async () => {
       constructionStatus: Array.isArray(p.constructionStatus) ? p.constructionStatus : [],
       legalNotice: p.legalNotice || ''
     }
+    projectFooterLogos.value = Array.isArray(p.logos) ? p.logos : []
     initialEditorContent.value = extractLocationMeta(p.locationText || '').body || '<p></p>'
     // Load nearby status
     loadNearbyStatus()

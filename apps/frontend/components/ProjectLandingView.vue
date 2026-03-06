@@ -505,11 +505,11 @@
         <div class="v4-container">
           <div class="v4-footer-inner">
             <!-- Logos: Realização e Propriedade -->
-            <div v-if="project.tenant?.logos?.length" class="v4-footer-realizacao">
+            <div v-if="project.logos?.length" class="v4-footer-realizacao">
               <span class="v4-footer-realizacao-label">Realização e Propriedade:</span>
               <div class="v4-footer-logos">
                 <img
-                  v-for="logo in project.tenant.logos"
+                  v-for="logo in project.logos"
                   :key="logo.id"
                   :src="logo.url"
                   :alt="logo.label || project.tenant.name"
@@ -1025,8 +1025,30 @@ const unifiedAvailableLots = computed(() => {
   return list
 })
 
+const sanitizeRichTextTheme = (html: string) => {
+  if (!html) return ''
+
+  // Remove legacy <font> wrappers and color attributes that break the landing visual pattern.
+  const withoutFontTags = html
+    .replace(/<font\b[^>]*>/gi, '')
+    .replace(/<\/font>/gi, '')
+    .replace(/\scolor=(['"]).*?\1/gi, '')
+
+  // Remove inline color/background declarations while preserving other style rules.
+  return withoutFontTags.replace(/\sstyle=(['"])(.*?)\1/gi, (_match, quote: string, css: string) => {
+    const filtered = css
+      .split(';')
+      .map((rule: string) => rule.trim())
+      .filter(Boolean)
+      .filter((rule: string) => !/^color\s*:/i.test(rule) && !/^background(?:-color)?\s*:/i.test(rule))
+
+    if (!filtered.length) return ''
+    return ` style=${quote}${filtered.join('; ')}${quote}`
+  })
+}
+
 const formattedLocationText = computed(() => {
-  const text = locationMeta.value.body || ''
+  const text = sanitizeRichTextTheme(locationMeta.value.body || '')
   if (!text) return ''
   
   // Se parece conter HTML estrutural gerado pelo editor, retorna como está e deixa o CSS cuidar dos espaçamentos
