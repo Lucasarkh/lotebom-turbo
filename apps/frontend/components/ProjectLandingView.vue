@@ -1644,7 +1644,7 @@ function openLightbox(idx: number) {
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
-  z-index: 2000;
+  z-index: 9000;
   display: flex;
   align-items: flex-end;
   justify-content: center;
