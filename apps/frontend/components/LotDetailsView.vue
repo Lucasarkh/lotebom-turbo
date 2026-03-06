@@ -888,10 +888,13 @@ const lot = computed(() => {
 
 const details = computed(() => lot.value?.lotDetails || null)
 
+const PANORAMA_MEDIA_TAGS = ['lot_panorama_360', 'panorama_360', 'panorama-360', 'panorama 360']
+
 const isPanoramaMedia = (media: any) => {
   const caption = String(media?.caption || '').toLowerCase()
   const url = String(media?.url || '').toLowerCase()
-  if (caption.includes('panorama_360') || caption.includes('panorama 360') || caption.includes('360')) return true
+
+  if (PANORAMA_MEDIA_TAGS.some(tag => caption.includes(tag))) return true
   if (url.includes('panorama_360') || url.includes('panorama-360') || url.includes('/panorama/')) return true
   return false
 }
@@ -906,12 +909,14 @@ const panoramaImageUrl = computed(() => {
 
 const galleryMedias = computed(() => {
   const medias = Array.isArray(details.value?.medias) ? details.value.medias : []
+  const explicitPanoramaUrl = details.value?.panoramaUrl || null
   const panoramaUrl = panoramaImageUrl.value
 
   return medias.filter((m: any) => {
     if (!m?.url) return false
+    if (explicitPanoramaUrl && m.url === explicitPanoramaUrl) return false
     if (panoramaUrl && m.url === panoramaUrl) return false
-    if (!panoramaUrl && isPanoramaMedia(m)) return false
+    if (isPanoramaMedia(m)) return false
     return true
   })
 })

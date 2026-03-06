@@ -1542,7 +1542,15 @@ const lotContractArea = computed(() => {
 
 const lotMedias = computed(() => {
   if (!editingLot.value) return []
-  return editingLot.value.medias || []
+  const medias = Array.isArray(editingLot.value.medias) ? editingLot.value.medias : []
+  const panoramaUrl = lotForm.value.panoramaUrl
+
+  return medias.filter((m: any) => {
+    const caption = String(m?.caption || '').toLowerCase()
+    if (panoramaUrl && m?.url === panoramaUrl) return false
+    if (caption.includes('lot_panorama_360') || caption.includes('panorama_360') || caption.includes('panorama 360')) return false
+    return true
+  })
 })
 
 const calculatePriceFromM2 = () => {
@@ -1704,9 +1712,20 @@ const uploadLotPanoramaFile = async (e: Event) => {
   if (!file || !editingLot.value) return
   uploadingPanorama.value = true
   try {
+    const previousPanoramaUrl = lotForm.value.panoramaUrl
     const fd = new FormData(); fd.append('file', file)
-    // Upload it as media for this lot
-    const m = await uploadApi(`/projects/${projectId}/media?lotDetailsId=${editingLot.value.id}`, fd)
+    // Tag panorama uploads so they can be reliably filtered from static galleries.
+    const m = await uploadApi(`/projects/${projectId}/media?lotDetailsId=${editingLot.value.id}&caption=lot_panorama_360`, fd)
+
+    // If a previous panorama was already selected, remove its media record to avoid stale gallery mixing.
+    if (previousPanoramaUrl && Array.isArray(editingLot.value.medias)) {
+      const previousMedia = editingLot.value.medias.find((item: any) => item?.url === previousPanoramaUrl)
+      if (previousMedia?.id) {
+        await fetchApi(`/projects/${projectId}/media/${previousMedia.id}`, { method: 'DELETE' }).catch(() => null)
+        editingLot.value.medias = editingLot.value.medias.filter((item: any) => item?.id !== previousMedia.id)
+      }
+    }
+
     // Set the panoramaUrl to this media's URL
     lotForm.value.panoramaUrl = m.url
     toastSuccess('Imagem 360° enviada! Salve para concluir.')
