@@ -498,6 +498,8 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .v4-back-btn {
@@ -509,6 +511,7 @@ onMounted(async () => {
   font-weight: 500;
   font-size: 14px;
   transition: color 0.2s;
+  flex-shrink: 0;
 }
 .v4-back-btn:hover { color: var(--v4-primary); }
 
@@ -517,6 +520,15 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   font-size: 15px;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+}
+.v4-header-title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .v4-dot { width: 4px; height: 4px; background: var(--v4-border); border-radius: 50%; }
 
@@ -818,6 +830,10 @@ onMounted(async () => {
 .v4-footer-badge { background: #000; color: #fff; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 10px; letter-spacing: 0.05em; }
 
 @media (max-width: 768px) {
+  .v4-header-inner { gap: 8px; }
+  .v4-back-btn { font-size: 13px; }
+  .v4-header-title { gap: 8px; font-size: 13px; }
+  .v4-header-title strong { max-width: 56vw; }
   .v4-search-hero h1 { font-size: 28px; }
   .v4-tags-scroll { padding: 0 16px; gap: 8px; }
   .v4-search-hero p { font-size: 16px; margin-bottom: 24px; }

@@ -35,6 +35,10 @@ const isOpen = computed({
 const messages = computed(() => chatStore.messages)
 const showConsentBlock = computed(() => !lgpdConsentAccepted.value || consentClosing.value)
 
+function closeChat() {
+  isOpen.value = false
+}
+
 onMounted(() => {
   if (props.project?.name) {
     chatStore.init(props.project.name)
@@ -215,15 +219,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="project?.aiEnabled" class="ai-widget">
+  <div v-if="project?.aiEnabled" class="ai-widget" :class="{ 'is-active': isOpen }">
     <!-- Bubble Button -->
-    <button class="ai-bubble" @click="toggleChat" :class="{ 'is-open': isOpen }">
-      <span v-if="!isOpen" class="ai-icon">
+    <button v-if="!isOpen" class="ai-bubble" @click="toggleChat">
+      <span class="ai-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
       </span>
-      <span v-else>&times;</span>
-      <div v-if="!isOpen" class="ai-tooltip">Dúvidas? Fale comigo!</div>
+      <div class="ai-tooltip">Dúvidas? Fale comigo!</div>
     </button>
+
+    <div v-if="isOpen" class="ai-modal-backdrop" @click="closeChat"></div>
 
     <!-- Chat Window -->
     <div v-if="isOpen" class="ai-window">
@@ -235,7 +240,7 @@ onMounted(() => {
           <div class="ai-name">Assistente {{ project?.name }}</div>
           <div class="ai-status">Online agora</div>
         </div>
-        <button class="ai-close" @click="isOpen = false">&times;</button>
+        <button class="ai-close" @click="closeChat">&times;</button>
       </div>
 
       <div class="ai-messages" ref="scrollContainer">
@@ -335,7 +340,7 @@ onMounted(() => {
   position: fixed;
   bottom: 24px;
   left: 24px;
-  z-index: 2147483647;
+  z-index: 3200;
   font-family: var(--font-sans, sans-serif);
   --chat-bg: #0f1d21;
   --chat-surface: #142a30;
@@ -348,9 +353,28 @@ onMounted(() => {
   --chat-user-bubble: #0ca678;
 }
 
+.ai-widget.is-active {
+  left: 0;
+  bottom: 0;
+}
+
+.ai-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+  z-index: 1;
+  animation: aiFadeIn 0.2s ease;
+}
+
+@keyframes aiFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @media (max-width: 768px) {
   .ai-widget {
-    bottom: 100px;
+    bottom: 96px;
     left: 16px;
     right: auto;
   }
@@ -418,9 +442,9 @@ onMounted(() => {
 }
 
 .ai-window {
-  position: absolute;
-  bottom: 70px;
-  left: 0;
+  position: fixed;
+  bottom: 110px;
+  left: 24px;
   width: 350px;
   max-width: calc(100vw - 40px);
   height: 500px;
@@ -433,10 +457,30 @@ onMounted(() => {
   flex-direction: column;
   overflow: hidden;
   animation: slideUp 0.3s ease-out;
+  z-index: 2;
 }
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .ai-window {
+    left: 12px;
+    right: 12px;
+    bottom: 0;
+    width: auto;
+    max-width: none;
+    height: min(80dvh, 640px);
+    max-height: 80dvh;
+    border-radius: 24px 24px 0 0;
+    animation: aiSheetUp 0.28s ease-out;
+  }
+}
+
+@keyframes aiSheetUp {
+  from { opacity: 0; transform: translateY(100%); }
   to { opacity: 1; transform: translateY(0); }
 }
 

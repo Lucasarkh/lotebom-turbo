@@ -148,7 +148,7 @@
                 <h2>Localização no Loteamento</h2>
                 <div class="title-line"></div>
               </div>
-              <div style="height: 500px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border); position: relative;">
+              <div class="lot-plant-map-frame">
                 <ClientOnly>
                   <PlantMapViewer
                     :plant-map="lotPlantMap"
@@ -630,23 +630,18 @@
     </div>
 
       <!-- Lightbox (Keep original logic) -->
-      <div v-if="lightboxOpen" class="lightbox" @click.self="lightboxOpen = false">
-        <button class="lightbox-close" @click="lightboxOpen = false">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-        
-        <button v-if="lightboxIdx > 0" class="lightbox-nav lightbox-prev" @click="lightboxIdx--">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
+      <div v-if="lightboxOpen" class="v4-lightbox" @click.self="lightboxOpen = false">
+        <button class="v4-lightbox-close" @click="lightboxOpen = false">&times;</button>
 
-        <div class="lightbox-content">
+        <button v-if="lightboxIdx > 0" class="v4-lightbox-btn v4-prev" @click="lightboxIdx--">&#10094;</button>
+
+        <div class="v4-lightbox-content">
           <img v-if="lightboxMedia?.type === 'PHOTO'" :src="lightboxMedia.url" :alt="lightboxMedia.caption" />
           <video v-else :src="lightboxMedia?.url" controls autoplay />
+          <div v-if="lightboxMedia?.caption" class="v4-lightbox-caption">{{ lightboxMedia.caption }}</div>
         </div>
 
-        <button v-if="lightboxIdx < (galleryMedias.length || 1) - 1" class="lightbox-nav lightbox-next" @click="lightboxIdx++">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        </button>
+        <button v-if="lightboxIdx < (galleryMedias.length || 1) - 1" class="v4-lightbox-btn v4-next" @click="lightboxIdx++">&#10095;</button>
       </div>
 
       <nav class="v4-sticky-nav">
@@ -656,7 +651,7 @@
         <a href="#contato" class="v4-nav-item v4-nav-cta">TENHO INTERESSE</a>
       </nav>
 
-      <div v-if="otherLotsAvailableTags.length > 0" class="v4-floating-cta">
+      <div v-if="idealLotAvailableTags.length > 0" class="v4-floating-cta">
         <button class="v4-cta-btn-animated" @click="() => { tracking.trackClick('CTA Flutuante Lote: Encontrar Lote Ideal'); toggleIdealLotModal() }">
           <div class="v4-cta-inner">
             <span class="v4-cta-icon-spark">✨</span>
@@ -680,7 +675,7 @@
               <span class="v4-modal-label">Características</span>
               <div class="v4-modal-tags">
                 <button
-                  v-for="tag in otherLotsAvailableTags"
+                  v-for="tag in idealLotAvailableTags"
                   :key="tag"
                   class="v4-modal-tag"
                   :class="{ active: idealLotSelectedTags.includes(tag) }"
@@ -1194,6 +1189,26 @@ const otherLots = computed(() => {
 const otherLotsSearchQuery = ref('')
 const selectedOtherLotsTags = ref<string[]>([])
 
+const allProjectAvailableLots = computed(() => {
+  return allProjectLots.value.filter((item: any) => {
+    return String(item?.lotDetails?.status || 'AVAILABLE').toUpperCase() === 'AVAILABLE'
+  })
+})
+
+const idealLotAvailableTags = computed(() => {
+  const tagSet = new Set<string>()
+
+  for (const item of allProjectAvailableLots.value) {
+    const tags = Array.isArray(item?.lotDetails?.tags) ? item.lotDetails.tags : []
+    for (const rawTag of tags) {
+      const tag = String(rawTag || '').trim()
+      if (tag) tagSet.add(tag)
+    }
+  }
+
+  return Array.from(tagSet).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+})
+
 const otherLotsAvailableTags = computed(() => {
   const tagSet = new Set<string>()
 
@@ -1249,8 +1264,8 @@ const idealLotSelectedTags = ref<string[]>([])
 const idealLotExactMatch = ref(false)
 
 const idealLotFilteredCount = computed(() => {
-  if (idealLotSelectedTags.value.length === 0) return otherLots.value.length
-  return otherLots.value.filter((l: any) => {
+  if (idealLotSelectedTags.value.length === 0) return allProjectAvailableLots.value.length
+  return allProjectAvailableLots.value.filter((l: any) => {
     const lotTags: string[] = l.lotDetails?.tags || []
     if (idealLotExactMatch.value) {
       return idealLotSelectedTags.value.every(t => lotTags.includes(t))
@@ -1736,6 +1751,8 @@ async function submitReservation() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 .back-link-v4 {
   display: flex;
@@ -1746,12 +1763,38 @@ async function submitReservation() {
   font-weight: 500;
   font-size: 14px;
   transition: color 0.2s;
+  flex-shrink: 0;
 }
 .back-link-v4:hover { color: var(--v4-primary); }
 
-.project-tags { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; }
-.tag-tenant { color: var(--v4-text-muted); }
-.tag-pname { color: var(--v4-text); padding: 4px 10px; background: rgba(0,0,0,0.05); border-radius: 6px; }
+.project-tags {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+.tag-tenant {
+  color: var(--v4-text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tag-pname {
+  color: var(--v4-text);
+  padding: 4px 10px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 6px;
+  min-width: 0;
+  max-width: 58%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Main Layout V4 */
 .layout-v4-main {
@@ -2169,8 +2212,23 @@ async function submitReservation() {
 }
 
 /* Lightbox V4 */
-.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-.lightbox-close { position: absolute; top: 20px; right: 20px; color: white; background: none; border: none; font-size: 32px; cursor: pointer; }
+.v4-lightbox { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; }
+.v4-lightbox-btn { position: absolute; background: none; border: none; color: white; font-size: 40px; cursor: pointer; padding: 20px; opacity: 0.5; transition: 0.2s; }
+.v4-lightbox-btn:hover { opacity: 1; }
+.v4-prev { left: 20px; }
+.v4-next { right: 20px; }
+.v4-lightbox-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 32px; cursor: pointer; z-index: 2100; }
+.v4-lightbox-content { max-width: 90%; max-height: 80%; }
+.v4-lightbox-content img, .v4-lightbox-content video { max-width: 100%; max-height: 100%; border-radius: 12px; }
+.v4-lightbox-caption { margin-top: 10px; color: rgba(255,255,255,0.92); font-size: 14px; text-align: center; }
+
+.lot-plant-map-frame {
+  height: 500px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--v4-border);
+  position: relative;
+}
 
 .interaction-gate-v4 {
   position: absolute;
@@ -2360,17 +2418,23 @@ async function submitReservation() {
     top: 0;
     z-index: 100;
   }
+  .header-inner { padding: 0 14px; gap: 8px; }
   .back-link-v4 span { display: none; }
   .back-link-v4::after { content: "Ver Todos"; margin-left: 4px; }
   
   .project-tags { gap: 4px; font-size: 10px; }
-  .tag-pname { padding: 3px 8px; }
+  .tag-tenant { display: none; }
+  .tag-pname { padding: 3px 8px; max-width: 100%; }
 
   .section-title-v4 { margin-bottom: 24px; gap: 12px; }
   .section-title-v4 h2 { font-size: 20px; }
 
   .panorama-container-v4 {
     height: clamp(220px, 56vw, 320px);
+  }
+
+  .lot-plant-map-frame {
+    height: 420px;
   }
   
   .gallery-v4 { grid-template-columns: 1fr 1fr; grid-auto-rows: 140px; }
@@ -2501,7 +2565,7 @@ async function submitReservation() {
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
-  z-index: 2000;
+  z-index: 9000;
   display: flex;
   align-items: flex-end;
   justify-content: center;
