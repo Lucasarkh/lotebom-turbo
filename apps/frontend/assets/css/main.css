@@ -190,13 +190,13 @@ a {
 }
 
 .btn-primary {
-  background: var(--color-primary-500);
+  background: var(--color-primary-600);
   color: #fff;
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-400);
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+  background: var(--color-primary-700);
   transform: translateY(-1px);
+  color: #fff;
 }
 
 .btn-secondary {

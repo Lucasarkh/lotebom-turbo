@@ -768,6 +768,9 @@ function handleBeaconClick(beacon: PanoramaBeacon) {
   transition: all 0.15s ease;
   white-space: nowrap;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .panorama-ui-btn:hover {
