@@ -263,9 +263,9 @@ function renderLot(w: number, h: number, sel: boolean, label?: string, status?: 
 
   // Status icon in corner
   if (status === 'SOLD') {
-    shapes.push({ type: 'text', config: { x: 5, y: 4, text: '🔴', fontSize: 10, listening: false } })
+    shapes.push({ type: 'text', config: { x: 5, y: 4, text: '●', fontSize: 10, listening: false } })
   } else if (status === 'RESERVED') {
-    shapes.push({ type: 'text', config: { x: 5, y: 4, text: '🟡', fontSize: 10, listening: false } })
+    shapes.push({ type: 'text', config: { x: 5, y: 4, text: '●', fontSize: 10, listening: false } })
   }
 
   // Lot label

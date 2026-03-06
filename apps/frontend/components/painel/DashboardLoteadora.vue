@@ -40,7 +40,7 @@
       <div style="margin-top: 32px;">
         <h2 style="margin-bottom: 20px;">Projetos Recentes</h2>
         <div v-if="projects.length === 0" class="empty-state">
-          <div class="empty-state-icon">📂</div>
+          <div class="empty-state-icon"><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
           <h3>Nenhum projeto ainda</h3>
           <p>Crie seu primeiro projeto para começar</p>
           <NuxtLink to="/painel/projetos" class="btn btn-primary" style="margin-top: 16px;">

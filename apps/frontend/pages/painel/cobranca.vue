@@ -346,12 +346,12 @@ onMounted(fetchData)
           <div v-for="table in pricingTables" :key="table.id" class="card pricing-table-card">
             <div class="flex justify-between items-start mb-3">
               <div>
-                <h4 class="fw-bold mb-1">📋 {{ table.name }}</h4>
+                <h4 class="fw-bold mb-1"><i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ table.name }}</h4>
                 <span v-if="table.isDefault" class="badge badge-accent">Padrão</span>
               </div>
               <div class="flex gap-2">
-                <button class="btn btn-sm btn-outline" @click="openPricingTableModal(table)">✏️</button>
-                <button class="btn btn-sm btn-ghost" style="color: #ef4444;" @click="deletePricingTable(table.id)">🗑</button>
+                <button class="btn btn-sm btn-outline" @click="openPricingTableModal(table)"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                <button class="btn btn-sm btn-ghost" style="color: #ef4444;" @click="deletePricingTable(table.id)"><i class="bi bi-trash3-fill" aria-hidden="true"></i></button>
               </div>
             </div>
             <p v-if="table.description" class="text-sm mb-3" style="color: var(--color-surface-400);">{{ table.description }}</p>
@@ -438,19 +438,19 @@ onMounted(fetchData)
                 <td>
                   <div class="flex gap-2 flex-wrap">
                     <button class="btn btn-sm btn-primary" @click="openAssignModal(t)" title="Atribuir tabela de preço">
-                      📋 Tabela
+                      <i class="bi bi-clipboard-check" aria-hidden="true"></i> Tabela
                     </button>
                     <button class="btn btn-sm btn-outline" @click="openLimitsModal(t)" title="Ver limites de projeto">
-                      📊 Limites
+                      <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i> Limites
                     </button>
                     <button class="btn btn-sm btn-outline" @click="openAnchorModal(t)" title="Definir vencimento">
-                      📅 Vencimento
+                      <i class="bi bi-calendar-event-fill" aria-hidden="true"></i> Vencimento
                     </button>
                     <button class="btn btn-sm btn-accent" @click="syncSubscription(t)" title="Sincronizar assinatura no Stripe">
-                      🔄 Sync
+                      <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Sync
                     </button>
                     <button class="btn btn-sm btn-ghost" @click="fixPaymentMethods(t)" title="Habilitar boleto na assinatura existente">
-                      🔧 Boleto
+                      <i class="bi bi-wrench-adjustable-circle-fill" aria-hidden="true"></i> Boleto
                     </button>
                   </div>
                 </td>

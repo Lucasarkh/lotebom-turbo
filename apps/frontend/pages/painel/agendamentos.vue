@@ -123,7 +123,7 @@
 
           <div class="sidebar-body">
              <div v-if="getDayEvents(selectedDay).length === 0" class="empty-schedule">
-                <div class="empty-artwork">📅</div>
+                <div class="empty-artwork"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></div>
                 <h4>Agenda Livre</h4>
                 <p>Nenhum compromisso marcado para este dia.</p>
                 <button class="btn btn-lotio-primary mt-4 w-full" @click="openCreateModal(selectedDay)">

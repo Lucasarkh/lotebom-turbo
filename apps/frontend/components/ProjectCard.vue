@@ -9,7 +9,7 @@
         decoding="async"
       />
       <div v-else class="project-card__placeholder">
-        <span style="font-size: 2rem;">🏗️</span>
+        <span style="font-size: 2rem;"><i class="bi bi-building-gear" aria-hidden="true"></i></span>
       </div>
       <div v-if="project.status === 'PUBLISHED'" class="project-card__badge project-card__badge--published">
         Publicado
@@ -21,8 +21,8 @@
       <div class="project-card__footer">
         <span class="project-card__date" v-if="showDate">{{ formatDate(project.createdAt) }}</span>
         <div class="project-card__stats">
-          <span title="Leads">👥 {{ project._count?.leads || 0 }}</span>
-          <span title="Elementos">📍 {{ project._count?.mapElements || 0 }}</span>
+          <span title="Leads"><i class="bi bi-people-fill" aria-hidden="true"></i> {{ project._count?.leads || 0 }}</span>
+          <span title="Elementos"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> {{ project._count?.mapElements || 0 }}</span>
         </div>
       </div>
     </div>

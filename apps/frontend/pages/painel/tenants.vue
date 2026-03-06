@@ -33,7 +33,7 @@
             <td>
               <div style="font-weight: 600;">{{ t.name }}</div>
               <div style="font-size: 0.8rem; color: var(--color-surface-400);">{{ t.slug }}</div>
-              <div v-if="t.customDomain" style="font-size: 0.75rem; color: var(--color-primary-500);">🌐 {{ t.customDomain }}</div>
+              <div v-if="t.customDomain" style="font-size: 0.75rem; color: var(--color-primary-500);"><i class="bi bi-globe2" aria-hidden="true"></i> {{ t.customDomain }}</div>
             </td>
             <td>{{ t.metrics.projects }}</td>
             <td>{{ t.metrics.brokers }}</td>
@@ -47,10 +47,10 @@
             <td>
               <div class="flex gap-2">
                 <button class="btn btn-sm btn-ghost" @click="openProjectList(t)" title="Ver Empreendimentos">
-                  📂 Ver Projetos
+                  <i class="bi bi-folder2-open" aria-hidden="true"></i> Ver Projetos
                 </button>
                 <button class="btn btn-sm btn-ghost" @click="openEditModal(t)" title="Editar Loteadora">
-                  ✏️
+                  <i class="bi bi-pencil-fill" aria-hidden="true"></i>
                 </button>
                 <button class="btn btn-sm btn-outline" @click="toggleStatus(t)">
                   {{ t.isActive ? 'Desativar' : 'Ativar' }}
@@ -240,11 +240,11 @@
                 <td>
                   <div v-if="editingProjectId === p.id" style="display: flex; gap: 8px;">
                     <input v-model="projectForm.customDomain" class="form-input btn-sm" placeholder="vendas.site.com" @keyup.enter="saveProjectDomain(p)" />
-                    <button class="btn btn-sm btn-primary" @click="saveProjectDomain(p)">💾</button>
+                    <button class="btn btn-sm btn-primary" @click="saveProjectDomain(p)"><i class="bi bi-floppy-fill" aria-hidden="true"></i></button>
                     <button class="btn btn-sm btn-ghost" @click="editingProjectId = null">✕</button>
                   </div>
                   <div v-else @dblclick="editProjectDomain(p)" style="cursor: pointer; min-height: 20px;">
-                    {{ p.customDomain || '—' }} <span style="opacity: 0.5; font-size: 0.75rem;">✏️</span>
+                    {{ p.customDomain || '—' }} <span style="opacity: 0.5; font-size: 0.75rem;"><i class="bi bi-pencil-fill" aria-hidden="true"></i></span>
                   </div>
                 </td>
                 <td>

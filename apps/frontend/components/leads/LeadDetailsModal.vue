@@ -19,10 +19,10 @@
             <div class="sidebar-section">
               <label class="form-label text-xs uppercase text-gray-400 font-bold mb-2">Contato</label>
               <div class="info-row">
-                <span class="icon">✉️</span> <span>{{ lead.email || '—' }}</span>
+                <span class="icon"><i class="bi bi-envelope-fill" aria-hidden="true"></i></span> <span>{{ lead.email || '—' }}</span>
               </div>
               <div class="info-row">
-                <span class="icon">📞</span> <span>{{ lead.phone || '—' }}</span>
+                <span class="icon"><i class="bi bi-telephone-fill" aria-hidden="true"></i></span> <span>{{ lead.phone || '—' }}</span>
               </div>
             </div>
 
@@ -67,10 +67,10 @@
                 <!-- Reserve lot button for CORRETOR / IMOBILIARIA -->
                 <template v-if="(authStore.isCorretor || authStore.isImobiliaria) && canReserve">
                   <button v-if="lead.mapElementId" class="btn btn-reserve-cta btn-sm w-100" @click="showReserveConfirm = true">
-                    🔒 Reservar para este Lead
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i> Reservar para este Lead
                   </button>
                   <NuxtLink v-else to="/painel/reservar" class="btn btn-reserve-cta btn-sm w-100 text-center">
-                    🔒 Iniciar Reserva de Lote
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i> Iniciar Reserva de Lote
                   </NuxtLink>
                 </template>
               </div>
@@ -123,7 +123,7 @@
                 </div>
                 <div v-if="lead.documents?.length" class="doc-grid">
                   <div v-for="doc in lead.documents" :key="doc.id" class="doc-card">
-                    <div class="doc-icon">📄</div>
+                    <div class="doc-icon"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i></div>
                     <div class="doc-info">
                       <strong>{{ doc.name }}</strong>
                       <span>{{ formatDateToBrasilia(doc.createdAt) }}</span>
@@ -234,7 +234,11 @@
           <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
             <button class="btn btn-ghost btn-sm" @click="showReserveConfirm = false">Cancelar</button>
             <button class="btn btn-primary btn-sm" :disabled="reserving" @click="confirmReserveLot">
-              {{ reserving ? 'Reservando...' : '🔒 Confirmar Reserva' }}
+              <span v-if="reserving">Reservando...</span>
+              <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                <span>Confirmar Reserva</span>
+              </span>
             </button>
           </div>
         </div>

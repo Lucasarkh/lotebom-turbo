@@ -7,7 +7,7 @@
             ← {{ projectName || 'Projeto' }}
           </NuxtLink>
         </div>
-        <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">🌄 Panorama 360°</h1>
+        <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;"><i class="bi bi-image-fill" aria-hidden="true"></i> Panorama 360°</h1>
         <p style="margin: 0; color: var(--color-surface-400); font-weight: 500;">Gerencie vistas panorâmicas com beacons de texto e linha do tempo.</p>
       </div>
 
@@ -19,7 +19,7 @@
           class="btn btn-sm btn-primary"
           style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
         >
-          <span style="font-size: 1rem;">🌐</span>
+          <span style="font-size: 1rem;"><i class="bi bi-globe2" aria-hidden="true"></i></span>
           <span>Ver página pública</span>
         </a>
       </div>

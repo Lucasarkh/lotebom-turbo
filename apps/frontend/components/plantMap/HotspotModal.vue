@@ -78,16 +78,16 @@
             <!-- Hint about automatic creation -->
             <div v-if="!isEdit" class="pm-field">
               <p v-if="form.type === 'LOTE'" class="pm-hint">
-                ✨ Hotspots do tipo Lote ganham automaticamente uma página pública e ficha técnica para edição de fotos, preços e detalhes.
+                <i class="bi bi-stars" aria-hidden="true"></i> Hotspots do tipo Lote ganham automaticamente uma página pública e ficha técnica para edição de fotos, preços e detalhes.
               </p>
               <p v-else class="pm-hint" style="color: #6b7280;">
-                ℹ️ Hotspots informativos (portarias, áreas comuns, etc) não possuem página individual própria.
+                <i class="bi bi-info-circle-fill" aria-hidden="true"></i> Hotspots informativos (portarias, áreas comuns, etc) não possuem página individual própria.
               </p>
             </div>
 
             <!-- Label offsets -->
             <details class="pm-advanced" style="margin-top: 4px;">
-              <summary class="pm-label" style="cursor: pointer;">⚙️ Avançado — offset do rótulo</summary>
+              <summary class="pm-label" style="cursor: pointer;"><i class="bi bi-gear-fill" aria-hidden="true"></i> Avançado - offset do rótulo</summary>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
                 <div>
                   <label class="pm-label">Offset X (px)</label>

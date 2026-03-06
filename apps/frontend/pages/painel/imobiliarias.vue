@@ -186,7 +186,7 @@ onMounted(fetchAgencies)
 
       <div v-else-if="agencies.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
         <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-          <div class="icon-blob mx-auto mb-4">🏢</div>
+          <div class="icon-blob mx-auto mb-4"><i class="bi bi-building" aria-hidden="true"></i></div>
           <h3 class="fw-bold mb-3" style="color: var(--color-surface-50);">Expanda sua rede de vendas</h3>
           <p class="mb-4 px-4" style="color: var(--color-surface-200);">Conecte-se com imobiliárias parceiras para multiplicar o alcance dos seus empreendimentos.</p>
           <button class="btn btn-primary btn-lg rounded-pill px-5" @click="showModal = true">Começar Agora</button>
@@ -329,7 +329,7 @@ onMounted(fetchAgencies)
             <!-- Invite Form -->
             <form v-if="showInviteModal" @submit.prevent="sendInvite">
               <div class="info-box">
-                <span>💡</span>
+                <span><i class="bi bi-lightbulb-fill" aria-hidden="true"></i></span>
                 <p>Este link permitirá que o administrador defina sua credencial de acesso exclusiva para esta imobiliária.</p>
               </div>
               <div class="form-group">

@@ -19,12 +19,6 @@
       <!-- Sunset point (Opposite to angle) -->
       <g :transform="`translate(${x1}, ${y1})`">
         <text
-          y="-15"
-          text-anchor="middle"
-          font-size="18"
-          style="pointer-events: none; user-select: none;"
-        >🌅</text>
-        <text
           text-anchor="middle"
           dominant-baseline="central"
           font-size="12"
@@ -35,12 +29,6 @@
       </g>
       <!-- Sunrise point (At angle) -->
       <g :transform="`translate(${x2}, ${y2})`">
-        <text
-          y="-15"
-          text-anchor="middle"
-          font-size="18"
-          style="pointer-events: none; user-select: none;"
-        >☀️</text>
         <text
           text-anchor="middle"
           dominant-baseline="central"

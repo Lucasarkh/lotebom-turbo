@@ -31,8 +31,8 @@
           <h2>2. CONTROLADOR E ENCARREGADO DE DADOS</h2>
           <p>2.1. Para fins da LGPD:</p>
           <ul>
-            <li><strong>Controlador:</strong> LOTIO TECNOLOGIA LTDA., CNPJ [CNPJ], com sede em [endereço].</li>
-            <li><strong>Encarregado de Dados (DPO):</strong> [Nome do DPO], acessível pelo e-mail dpo@lotio.com.br.</li>
+            <li><strong>Controlador:</strong> LOTIO TECNOLOGIA LTDA., CNPJ 50.384.936/0001-31, com sede em Rua Rosa Saron, 45 - Parque do Horto - Hortolândia - SP.</li>
+            <li><strong>Encarregado de Dados (DPO):</strong> Lucas Archanjo Lago, acessível pelo e-mail dpo@lotio.com.br.</li>
           </ul>
           <p>2.2. Em relação aos dados de leads, visitantes e clientes inseridos pelo Contratante na Plataforma, a Lotio atua como <strong>Operadora de Dados</strong>, cabendo ao Contratante a qualidade de <strong>Controlador</strong> perante seus próprios titulares.</p>
           <p>2.3. A analise de credito de leads e clientes para fins de reserva, proposta ou venda de lotes e de responsabilidade exclusiva da loteadora/Contratante, que define os criterios e decide sobre aprovacao ou reprovacao. Nessa etapa, a Lotio atua apenas como fornecedora de infraestrutura tecnologica.</p>

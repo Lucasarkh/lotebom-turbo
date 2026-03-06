@@ -12,7 +12,7 @@
     </div>
 
     <div v-else-if="!realtorLink" class="empty-state">
-      <div class="empty-state-icon">📄</div>
+      <div class="empty-state-icon"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i></div>
       <h3>Link não configurado</h3>
       <p>Você ainda não possui um link de divulgação associado à sua conta. Entre em contato com o administrador da sua loteadora.</p>
     </div>

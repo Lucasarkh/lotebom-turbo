@@ -126,7 +126,7 @@ const pinColor = computed(() => {
 
 const headText = computed(() => {
   if (props.hotspot.labelEnabled && props.hotspot.label) return props.hotspot.label
-  return (HOTSPOT_TYPE_ICONS[props.hotspot.type] || '📍') + ' ' + props.hotspot.title
+  return (HOTSPOT_TYPE_ICONS[props.hotspot.type] || 'Ponto') + ' ' + props.hotspot.title
 })
 
 const poleHeight = computed(() => props.pinRadius * 1.8)

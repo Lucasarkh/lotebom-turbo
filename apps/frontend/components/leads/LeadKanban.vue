@@ -18,7 +18,7 @@
             <span class="date">{{ formatDateToBrasilia(lead.createdAt) }}</span>
           </div>
           <div v-if="lead.realtorLink" class="card-footer">
-            👤 {{ lead.realtorLink.name }}
+            <i class="bi bi-person-fill" aria-hidden="true"></i> {{ lead.realtorLink.name }}
           </div>
           <div v-if="lead.isRecurrent" class="badge-recurrent">Recorrente</div>
           <div v-if="lead.aiChatTranscript" class="badge-ai">IA</div>

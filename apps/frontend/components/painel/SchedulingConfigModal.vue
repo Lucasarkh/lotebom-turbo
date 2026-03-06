@@ -100,7 +100,7 @@
             <!-- Custom Breaks -->
             <div class="custom-breaks-list" style="margin-top: 16px;">
               <header class="flex justify-between items-center mb-3">
-                <span style="font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.55);">☕ Outras Pausas</span>
+                <span style="font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.55);"><i class="bi bi-cup-hot-fill" aria-hidden="true"></i> Outras Pausas</span>
                 <button class="btn-text-sm" @click="addBreak">+ Adicionar</button>
               </header>
 

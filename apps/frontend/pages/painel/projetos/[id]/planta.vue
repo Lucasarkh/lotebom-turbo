@@ -8,7 +8,7 @@
             ← {{ projectName || 'Projeto' }}
           </NuxtLink>
         </div>
-        <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">🗺️ Planta Interativa</h1>
+        <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;"><i class="bi bi-map" aria-hidden="true"></i> Planta Interativa</h1>
         <p style="margin: 0; color: var(--color-surface-400); font-weight: 500;">Gerencie a planta do loteamento com hotspots interativos.</p>
       </div>
     </div>

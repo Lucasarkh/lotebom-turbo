@@ -71,7 +71,7 @@
 
     <div v-else-if="leads.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
       <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4">📭</div>
+        <div class="icon-blob mx-auto mb-4"><i class="bi bi-inbox-fill" aria-hidden="true"></i></div>
         <h3 class="fw-bold mb-3">Nenhum lead encontrado</h3>
         <p class="mb-4 px-4">Ajuste os filtros ou cadastre um novo lead manual.</p>
       </div>
@@ -120,8 +120,8 @@
               <td>{{ formatDateToBrasilia(lead.createdAt) }}</td>
               <td @click.stop>
                 <div class="d-flex gap-1">
-                  <button class="btn-icon btn-sm" title="Editar" @click="editLead(lead)">✏️</button>
-                  <button v-if="authStore.isAdmin || authStore.isLoteadora" class="btn-icon btn-sm" title="Excluir" @click="onDeleteLead(lead)">🗑️</button>
+                  <button class="btn-icon btn-sm" title="Editar" @click="editLead(lead)"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                  <button v-if="authStore.isAdmin || authStore.isLoteadora" class="btn-icon btn-sm" title="Excluir" @click="onDeleteLead(lead)"><i class="bi bi-trash3-fill" aria-hidden="true"></i></button>
                 </div>
               </td>
             </tr>

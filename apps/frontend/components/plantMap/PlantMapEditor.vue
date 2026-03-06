@@ -3,14 +3,14 @@
     <!-- Toolbar -->
     <div class="pme__toolbar">
       <div class="pme__toolbar-left">
-        <span class="pme__toolbar-title">🗺️ Planta Interativa</span>
+        <span class="pme__toolbar-title"><i class="bi bi-map" aria-hidden="true"></i> Planta Interativa</span>
 
         <div class="pme__mode-toggle">
           <button
             class="pme__mode-btn"
             :class="{ active: editorMode === 'view' }"
             @click="editorMode = 'view'"
-          >👁 Visualizar</button>
+          ><i class="bi bi-eye-fill" aria-hidden="true"></i> Visualizar</button>
           <button
             class="pme__mode-btn"
             :class="{ active: editorMode === 'add' }"
@@ -22,13 +22,13 @@
             :class="{ active: editorMode === 'batch' }"
             @click="editorMode = 'batch'"
             :disabled="!plantMap"
-          >✨ Adicionar vários</button>
+          ><i class="bi bi-stars" aria-hidden="true"></i> Adicionar vários</button>
           <button
             class="pme__mode-btn"
             :class="{ active: editorMode === 'move' }"
             @click="editorMode = 'move'"
             :disabled="!plantMap"
-          >✥ Mover</button>
+          ><i class="bi bi-arrows-move" aria-hidden="true"></i> Mover</button>
         </div>
       </div>
 
@@ -36,18 +36,19 @@
         <!-- Beacons toggle -->
         <label v-if="plantMap" class="pme__toggle-label">
           <input type="checkbox" v-model="showBeacons" />
-          📍 Exibir pontos
+          <i class="bi bi-geo-alt-fill" aria-hidden="true"></i> Exibir pontos
         </label>
 
         <!-- Sun path toggle -->
         <label v-if="plantMap" class="pme__toggle-label">
           <input type="checkbox" :checked="localSunPath.enabled" @change="toggleSunPath" />
-          ☀️ Trajetória solar
+          <i class="bi bi-sun-fill" aria-hidden="true"></i> Trajetória solar
         </label>
 
         <!-- Upload image button -->
         <button class="pme__btn pme__btn--outline" @click="triggerImageUpload" :disabled="uploadingImage">
-          {{ uploadingImage ? '⏳ Enviando...' : '🖼️ Trocar imagem' }}
+          <span v-if="uploadingImage"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Enviando...</span>
+          <span v-else><i class="bi bi-image-fill" aria-hidden="true"></i> Trocar imagem</span>
         </button>
         <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden @change="handleImageUpload" />
         <span class="pme__upload-tip">Dica: 2000 x 2000 px ou maior, com JPG/WebP otimizado.</span>
@@ -59,7 +60,8 @@
           :disabled="saving"
           @click="saveAll"
         >
-          {{ saving ? '⏳ Salvando...' : '💾 Salvar' }}
+          <span v-if="saving"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Salvando...</span>
+          <span v-else><i class="bi bi-floppy-fill" aria-hidden="true"></i> Salvar</span>
         </button>
       </div>
     </div>
@@ -87,11 +89,12 @@
     <!-- No image state -->
     <div v-if="!plantMap" class="pme__empty">
       <div class="pme__empty-card">
-        <div style="font-size:48px; margin-bottom:12px;">🗺️</div>
+        <div style="font-size:48px; margin-bottom:12px;"><i class="bi bi-map" aria-hidden="true"></i></div>
         <h3>Nenhuma planta cadastrada</h3>
         <p>Faça upload de uma imagem da planta para começar a adicionar hotspots.</p>
         <button class="pme__btn pme__btn--primary" @click="triggerImageUpload" :disabled="uploadingImage">
-          {{ uploadingImage ? '⏳ Enviando...' : '📤 Upload da planta' }}
+          <span v-if="uploadingImage"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Enviando...</span>
+          <span v-else><i class="bi bi-upload" aria-hidden="true"></i> Upload da planta</span>
         </button>
         <p class="pme__upload-tip pme__upload-tip--empty">Para melhor nitidez com arquivo leve, recomendamos 2000 x 2000 px ou maior.</p>
       </div>
@@ -229,7 +232,7 @@
         <!-- Batch UI -->
         <div v-if="editorMode === 'batch'" class="pme__batch-sidebar">
           <div class="pme__sidebar-header">
-            <span>✨ Criação em massa ({{ batchMarkers.length }})</span>
+            <span><i class="bi bi-stars" aria-hidden="true"></i> Criação em massa ({{ batchMarkers.length }})</span>
             <button class="pme__btn pme__btn--sm" @click="clearBatch" :disabled="!batchMarkers.length">Limpar</button>
           </div>
           
@@ -268,7 +271,8 @@
               :disabled="!batchMarkers.length || savingBatch"
               @click="generateBatch"
             >
-              {{ savingBatch ? '⏳ Gerando...' : `📦 Gerar ${batchMarkers.length} Hotspots` }}
+              <span v-if="savingBatch"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Gerando...</span>
+              <span v-else><i class="bi bi-box-seam-fill" aria-hidden="true"></i> Gerar {{ batchMarkers.length }} Hotspots</span>
             </button>
           </div>
 
@@ -295,7 +299,7 @@
             <input 
               v-model="hotspotSearch" 
               class="pme__input pme__input--sm" 
-              placeholder="🔍 Buscar hotspot..."
+              placeholder="Buscar hotspot..."
               style="margin-bottom: 12px; font-size: 13px;"
             />
           </div>
@@ -379,12 +383,12 @@
                     class="pme__hs-action-btn"
                     @click.stop="duplicateHotspot(hs)"
                     title="Duplicar"
-                  >👯</button>
+                  ><i class="bi bi-people-fill" aria-hidden="true"></i></button>
                   <button
                     class="pme__hs-action-btn"
                     @click.stop="editHotspot(hs)"
                     title="Editar"
-                  >✏️</button>
+                  ><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
                 </div>
               </div>
             </template>

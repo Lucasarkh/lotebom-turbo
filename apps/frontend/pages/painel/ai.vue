@@ -169,7 +169,7 @@ onMounted(() => {
 
     <div v-else-if="configs.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
       <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4">🤖</div>
+        <div class="icon-blob mx-auto mb-4"><i class="bi bi-robot" aria-hidden="true"></i></div>
         <h3 class="fw-bold mb-3">Nenhuma configuração de IA</h3>
         <p class="mb-4 px-4">Crie sua primeira configuração para habilitar o assistente nos seus projetos.</p>
         <button class="btn btn-primary btn-lg rounded-pill px-5" @click="openCreate">Começar agora</button>

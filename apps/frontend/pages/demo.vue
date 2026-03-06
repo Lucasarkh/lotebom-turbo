@@ -469,7 +469,7 @@ const scrollToForm = () => {
             <button type="submit" class="lp-btn-submit" :disabled="submitting">
               {{ submitting ? 'Enviando...' : 'Quero minha demonstração →' }}
             </button>
-            <p class="lp-form-trust">🔒 Seus dados estão seguros. Sem spam.</p>
+            <p class="lp-form-trust"><i class="bi bi-lock-fill" aria-hidden="true"></i> Seus dados estão seguros. Sem spam.</p>
           </form>
         </div>
 
@@ -481,13 +481,13 @@ const scrollToForm = () => {
       <div class="lp-container">
         <span class="lp-trust-label">Desenvolvido para:</span>
         <div class="lp-trust-logos">
-          <div class="lp-trust-badge">🏗️ Loteadoras</div>
+          <div class="lp-trust-badge"><i class="bi bi-building-gear" aria-hidden="true"></i> Loteadoras</div>
           <div class="lp-trust-sep">·</div>
-          <div class="lp-trust-badge">🏢 Incorporadoras</div>
+          <div class="lp-trust-badge"><i class="bi bi-building" aria-hidden="true"></i> Incorporadoras</div>
           <div class="lp-trust-sep">·</div>
-          <div class="lp-trust-badge">🏠 Imobiliárias</div>
+          <div class="lp-trust-badge"><i class="bi bi-house-door-fill" aria-hidden="true"></i> Imobiliárias</div>
           <div class="lp-trust-sep">·</div>
-          <div class="lp-trust-badge">🤝 Corretores Autônomos</div>
+          <div class="lp-trust-badge"><i class="bi bi-people-fill" aria-hidden="true"></i> Corretores Autônomos</div>
         </div>
       </div>
     </div>
@@ -501,7 +501,7 @@ const scrollToForm = () => {
         </div>
         <div class="lp-personas-grid">
           <div class="lp-persona-card lp-persona-card--primary">
-            <div class="lp-persona-icon">🏗️</div>
+            <div class="lp-persona-icon"><i class="bi bi-building-gear" aria-hidden="true"></i></div>
             <h3>Loteadora</h3>
             <p class="lp-persona-role">Dona do empreendimento</p>
             <ul class="lp-persona-list">
@@ -513,7 +513,7 @@ const scrollToForm = () => {
             </ul>
           </div>
           <div class="lp-persona-card">
-            <div class="lp-persona-icon">🏢</div>
+            <div class="lp-persona-icon"><i class="bi bi-building" aria-hidden="true"></i></div>
             <h3>Imobiliária</h3>
             <p class="lp-persona-role">Parceira comercial</p>
             <ul class="lp-persona-list">
@@ -525,7 +525,7 @@ const scrollToForm = () => {
             </ul>
           </div>
           <div class="lp-persona-card">
-            <div class="lp-persona-icon">🤝</div>
+            <div class="lp-persona-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></div>
             <h3>Corretor</h3>
             <p class="lp-persona-role">Força de vendas</p>
             <ul class="lp-persona-list">
@@ -553,32 +553,32 @@ const scrollToForm = () => {
 
         <div class="lp-pain-grid">
           <div class="lp-pain-card">
-            <div class="lp-pain-icon">📄</div>
+            <div class="lp-pain-icon"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i></div>
             <h3>PDF estático na landing page</h3>
             <p>O cliente não sabe quais lotes estão disponíveis. Liga pro corretor. Não é atendido. <strong>Desiste.</strong></p>
           </div>
           <div class="lp-pain-card">
-            <div class="lp-pain-icon">📲</div>
+            <div class="lp-pain-icon"><i class="bi bi-phone" aria-hidden="true"></i></div>
             <h3>Lead sem contexto no WhatsApp</h3>
             <p>O interessado manda mensagem genérica. O corretor não sabe qual lote, qual quadra, qual projeto. <strong>Follow-up fraco.</strong></p>
           </div>
           <div class="lp-pain-card">
-            <div class="lp-pain-icon">📊</div>
+            <div class="lp-pain-icon"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></div>
             <h3>Planilha de estoque desatualizada</h3>
             <p>Dois corretores reservam o mesmo lote. Cliente constrangido. Empresa sem credibilidade. <strong>Venda perdida.</strong></p>
           </div>
           <div class="lp-pain-card">
-            <div class="lp-pain-icon">🕐</div>
+            <div class="lp-pain-icon"><i class="bi bi-clock-fill" aria-hidden="true"></i></div>
             <h3>Depende de terceiros para atualizar</h3>
             <p>Mudou um preço ou status? Aguarda o designer, TI ou a agência. <strong>3 dias para uma linha no mapa.</strong></p>
           </div>
           <div class="lp-pain-card">
-            <div class="lp-pain-icon">🤷</div>
+            <div class="lp-pain-icon"><i class="bi bi-question-circle-fill" aria-hidden="true"></i></div>
             <h3>Nenhum rastreamento de performance</h3>
             <p>Qual corretor está gerando mais? Qual canal aqueceu mais leads? <strong>Zero visibilidade.</strong></p>
           </div>
           <div class="lp-pain-card">
-            <div class="lp-pain-icon">🌙</div>
+            <div class="lp-pain-icon"><i class="bi bi-moon-stars-fill" aria-hidden="true"></i></div>
             <h3>Stand de vendas fecha às 18h</h3>
             <p>O cliente pesquisa à noite. Seu stand está fechado. <strong>A concorrência está disponível 24h.</strong></p>
           </div>
@@ -650,7 +650,7 @@ const scrollToForm = () => {
           <div class="lp-feat-visual lp-feat-visual--lead">
             <div class="lp-mock-notification">
               <div class="lp-notif-header">
-                <div class="lp-notif-icon">📲</div>
+                <div class="lp-notif-icon"><i class="bi bi-phone" aria-hidden="true"></i></div>
                 <div>
                   <div class="lp-notif-from">Lotio — Novo Lead</div>
                   <div class="lp-notif-time">agora</div>
@@ -659,7 +659,7 @@ const scrollToForm = () => {
               <div class="lp-notif-body">
                 <strong>Ana Souza</strong> demonstrou interesse no<br>
                 <span class="lp-notif-hl">Lote 07 · Quadra C · 250m²</span><br>
-                <span class="lp-notif-phone">📞 (11) 98765-4321</span>
+                <span class="lp-notif-phone"><i class="bi bi-telephone-fill" aria-hidden="true"></i> (11) 98765-4321</span>
               </div>
               <div class="lp-notif-actions">
                 <span class="lp-notif-btn">Ver no painel →</span>
@@ -746,37 +746,37 @@ const scrollToForm = () => {
         </div>
         <div class="lp-more-grid">
           <div class="lp-more-card">
-            <div class="lp-more-icon">🖋️</div>
+            <div class="lp-more-icon"><i class="bi bi-pen-fill" aria-hidden="true"></i></div>
             <h4>Editor Canvas próprio</h4>
             <p>Publique alterações de preço, status e layout do mapa sem depender de designer ou TI.</p>
           </div>
           <div class="lp-more-card">
-            <div class="lp-more-icon">📸</div>
+            <div class="lp-more-icon"><i class="bi bi-camera-fill" aria-hidden="true"></i></div>
             <h4>Galeria de fotos e vídeos</h4>
             <p>Incorpore fotos do empreendimento, render 3D e vídeo diretamente na página do projeto.</p>
           </div>
           <div class="lp-more-card">
-            <div class="lp-more-icon">🗺️</div>
+            <div class="lp-more-icon"><i class="bi bi-map" aria-hidden="true"></i></div>
             <h4>Panorama 360°</h4>
             <p>Permita que o cliente visite o empreendimento virtualmente antes de colocar o pé lá.</p>
           </div>
           <div class="lp-more-card">
-            <div class="lp-more-icon">🖥️</div>
+            <div class="lp-more-icon"><i class="bi bi-display-fill" aria-hidden="true"></i></div>
             <h4>Totem para stand</h4>
             <p>URL otimizada para totens touch-screen no estande de vendas, sem instalar nada.</p>
           </div>
           <div class="lp-more-card">
-            <div class="lp-more-icon">📦</div>
+            <div class="lp-more-icon"><i class="bi bi-box-seam-fill" aria-hidden="true"></i></div>
             <h4>Multi-empreendimentos</h4>
             <p>Gerencie todo o seu portfólio em uma conta única, com controle total de acesso por projeto.</p>
           </div>
           <div class="lp-more-card">
-            <div class="lp-more-icon">📈</div>
+            <div class="lp-more-icon"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></div>
             <h4>Analytics em tempo real</h4>
             <p>Visualize acessos, cliques e taxas de conversão diretamente no painel, sem plugins externos.</p>
           </div>
           <div class="lp-more-card">
-            <div class="lp-more-icon">🤖</div>
+            <div class="lp-more-icon"><i class="bi bi-robot" aria-hidden="true"></i></div>
             <h4>Assistente IA integrado</h4>
             <p>Um chatbot imobiliário responde dúvidas do cliente de forma automática, 24h por dia.</p>
           </div>

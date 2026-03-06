@@ -11,7 +11,7 @@
       <div class="nearby-grid">
         <div v-for="group in groupedItems" :key="group.category" class="nearby-category">
           <div class="nearby-category-header">
-            <span class="nearby-category-icon">{{ categoryIcon(group.category) }}</span>
+            <span class="nearby-category-icon"><i :class="['bi', categoryIcon(group.category)]" aria-hidden="true"></i></span>
             <h3 class="nearby-category-title">{{ group.categoryLabel }}</h3>
           </div>
 
@@ -21,8 +21,8 @@
                 <span class="nearby-item-name">{{ item.name }}</span>
                 <span class="nearby-item-meta">
                   <span class="nearby-meta-distance">{{ item.distanceLabel }}</span>
-                  <span v-if="item.drivingLabel" class="nearby-meta-chip"><span class="nearby-meta-emoji">🚗</span> {{ item.drivingLabel }}</span>
-                  <span v-if="item.walkingLabel" class="nearby-meta-chip"><span class="nearby-meta-emoji">🚶</span> {{ item.walkingLabel }}</span>
+                  <span v-if="item.drivingLabel" class="nearby-meta-chip"><span class="nearby-meta-emoji"><i class="bi bi-car-front-fill" aria-hidden="true"></i></span> {{ item.drivingLabel }}</span>
+                  <span v-if="item.walkingLabel" class="nearby-meta-chip"><span class="nearby-meta-emoji"><i class="bi bi-person-walking" aria-hidden="true"></i></span> {{ item.walkingLabel }}</span>
                 </span>
               </div>
               <a
@@ -105,24 +105,24 @@ const groupedItems = computed(() => {
         items: [],
       }
     }
-    groups[item.category].items.push(item)
+    groups[item.category]!.items.push(item)
   }
 
   return Object.values(groups)
 })
 
 const ICONS: Record<string, string> = {
-  school: '🎓',
-  supermarket: '🛒',
-  pharmacy: '💊',
-  hospital: '🏥',
-  park: '🌳',
-  restaurant: '🍽️',
-  gym: '🏋️',
-  shopping_mall: '🛍️',
+  school: 'bi-mortarboard-fill',
+  supermarket: 'bi-cart-fill',
+  pharmacy: 'bi-capsule',
+  hospital: 'bi-hospital-fill',
+  park: 'bi-tree-fill',
+  restaurant: 'bi-fork-knife',
+  gym: 'bi-activity',
+  shopping_mall: 'bi-bag-fill',
 }
 
-const categoryIcon = (category: string) => ICONS[category] || '📍'
+const categoryIcon = (category: string) => ICONS[category] || 'bi-geo-alt-fill'
 
 async function loadNearby() {
   if (!props.projectSlug) return

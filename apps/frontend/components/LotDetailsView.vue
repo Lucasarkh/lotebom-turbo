@@ -335,7 +335,7 @@
                   </div>
 
                   <div class="sim-disclaimer-v4">
-                    📢 <strong>Importante:</strong> Este é um simulador informativo. As parcelas serão reajustadas mensalmente pelo <strong>{{ project.indexer || 'IGP-M' }}</strong>. 
+                    <i class="bi bi-megaphone-fill" aria-hidden="true"></i> <strong>Importante:</strong> Este é um simulador informativo. As parcelas serão reajustadas mensalmente pelo <strong>{{ project.indexer || 'IGP-M' }}</strong>. 
                     {{ project?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
                   </div>
                 </div>
@@ -654,7 +654,7 @@
       <div v-if="idealLotAvailableTags.length > 0" class="v4-floating-cta">
         <button class="v4-cta-btn-animated" @click="() => { tracking.trackClick('CTA Flutuante Lote: Encontrar Lote Ideal'); toggleIdealLotModal() }">
           <div class="v4-cta-inner">
-            <span class="v4-cta-icon-spark">🔍</span>
+            <span class="v4-cta-icon-spark"><i class="bi bi-search" aria-hidden="true"></i></span>
             <span class="v4-cta-label">Encontrar lote ideal</span>
             <span class="v4-cta-arrow-icon">→</span>
           </div>

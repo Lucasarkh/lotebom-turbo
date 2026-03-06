@@ -224,7 +224,7 @@ onMounted(fetchData)
 
     <div v-else-if="configs.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
       <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4">💳</div>
+        <div class="icon-blob mx-auto mb-4"><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i></div>
         <h3 class="fw-bold mb-3">Nenhum gateway configurado</h3>
         <p class="mb-4 px-4">Configure um gateway (Stripe, Asaas, etc) para permitir reservas online nos seus projetos.</p>
         <button class="btn btn-primary btn-lg rounded-pill px-5" @click="openCreate">Configurar Primeiro Gateway</button>
@@ -278,7 +278,7 @@ onMounted(fetchData)
         <form @submit.prevent="saveConfig" class="modal-body">
           <!-- Validation errors -->
           <div v-if="formErrors.length > 0" class="form-errors mb-4">
-            <p v-for="err in formErrors" :key="err" class="form-error-msg">⚠ {{ err }}</p>
+            <p v-for="err in formErrors" :key="err" class="form-error-msg"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ err }}</p>
           </div>
 
           <div class="form-group">

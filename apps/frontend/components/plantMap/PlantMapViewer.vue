@@ -77,7 +77,7 @@
         :title="showBeacons ? 'Esconder pontos' : 'Mostrar pontos'"
         @click="showBeacons = !showBeacons"
       >
-        📍
+        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
       </button>
       <button class="plant-map-viewer__btn" aria-label="Zoom in" @click="zoomIn">＋</button>
       <button class="plant-map-viewer__btn" aria-label="Zoom out" @click="zoomOut">－</button>
@@ -88,7 +88,7 @@
         :title="isFullscreen ? 'Sair tela cheia' : 'Tela cheia'"
         @click="toggleFullscreen"
       >
-        {{ isFullscreen ? '✖' : '⛶' }}
+        <i :class="isFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'" aria-hidden="true"></i>
       </button>
     </div>
 

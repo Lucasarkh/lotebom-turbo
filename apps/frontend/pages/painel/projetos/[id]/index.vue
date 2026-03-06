@@ -49,7 +49,7 @@
             class="btn btn-sm btn-primary topbar-action-btn"
             style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
           >
-            <span style="font-size: 1rem;">🌐</span>
+            <span style="font-size: 1rem;"><i class="bi bi-globe2" aria-hidden="true"></i></span>
             <span>Ver Página Pública</span>
           </a>
 
@@ -60,7 +60,7 @@
             class="btn btn-sm btn-primary"
             style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
           >
-            <span style="font-size: 1rem;">👀</span>
+            <span style="font-size: 1rem;"><i class="bi bi-eye-fill" aria-hidden="true"></i></span>
             <span>Link de Preview</span>
           </NuxtLink>
 
@@ -71,7 +71,7 @@
             class="btn btn-sm btn-primary"
             style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
           >
-            <span style="font-size: 1rem;">🪞</span>
+            <span style="font-size: 1rem;"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i></span>
             <span>Espelho da Planta</span>
           </a>
 
@@ -82,7 +82,7 @@
             @click="copyLink(plantMirrorAbsoluteUrl)"
             title="Copiar link do espelho da planta"
           >
-            <span>📋</span>
+            <span><i class="bi bi-clipboard-check" aria-hidden="true"></i></span>
           </button>
 
           <div style="width: 1px; height: 24px; background: rgba(255, 255, 255, 0.06);"></div>
@@ -94,7 +94,10 @@
               style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
               @click="togglePublish"
             >
-              <span>{{ project.status === 'PUBLISHED' ? '⏸️ Parar Publicação' : '📡 Publicar Agora' }}</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <i :class="project.status === 'PUBLISHED' ? 'bi bi-pause-circle-fill' : 'bi bi-broadcast-pin'" aria-hidden="true"></i>
+                <span>{{ project.status === 'PUBLISHED' ? 'Parar Publicação' : 'Publicar Agora' }}</span>
+              </span>
             </button>
             
             <button 
@@ -103,7 +106,7 @@
               style="border-radius: 9999px; padding-left: 16px; padding-right: 16px; height: 38px;"
               @click="confirmDelete"
             >
-              <span>🗑️ Excluir</span>
+              <span><i class="bi bi-trash3-fill" aria-hidden="true"></i> Excluir</span>
             </button>
           </div>
         </div>
@@ -114,22 +117,22 @@
         <aside class="project-sidebar">
           <nav class="sidebar-nav">
             <button v-for="s in sidebarSections" :key="s.id" class="sidebar-link" :class="{ active: activeSection === s.id }" @click="setActiveSection(s.id)">
-              <span class="sidebar-icon">{{ s.icon }}</span>
+              <span class="sidebar-icon"><i :class="s.icon" aria-hidden="true"></i></span>
               <span class="sidebar-label">{{ s.label }}</span>
             </button>
           </nav>
           <div class="sidebar-divider"></div>
           <div class="sidebar-tools">
             <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="sidebar-tool-link">
-              <span class="sidebar-icon">🗺️</span>
+              <span class="sidebar-icon"><i class="bi bi-map" aria-hidden="true"></i></span>
               <span class="sidebar-label">Planta Interativa</span>
             </NuxtLink>
             <a v-if="plantMirrorPath" :href="plantMirrorPath" target="_blank" class="sidebar-tool-link">
-              <span class="sidebar-icon">🪞</span>
+              <span class="sidebar-icon"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i></span>
               <span class="sidebar-label">Espelho da Planta</span>
             </a>
             <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="sidebar-tool-link">
-              <span class="sidebar-icon">🌄</span>
+              <span class="sidebar-icon"><i class="bi bi-image-fill" aria-hidden="true"></i></span>
               <span class="sidebar-label">Panorama 360°</span>
             </NuxtLink>
           </div>
@@ -170,7 +173,7 @@
       <!-- Pagamentos & Taxas -->
       <section v-if="activeSection === 'pagamentos'" id="pagamentos" class="content-section">
         <div class="card" style="max-width: 800px;">
-          <h3>💳 Ativar Gateways de Pagamento</h3>
+          <h3><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i> Ativar Gateways de Pagamento</h3>
           <p class="text-muted">Selecione abaixo quais perfis de pagamento globais você deseja habilitar para este projeto.</p>
           
           <div v-if="loadingPaymentOptions" class="flex justify-center p-8">
@@ -178,7 +181,7 @@
           </div>
 
           <div v-else-if="allConfigs.length === 0" class="empty-state" style="padding: 24px;">
-            <div class="icon-blob mx-auto mb-4">💳</div>
+            <div class="icon-blob mx-auto mb-4"><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i></div>
             <p>Nenhum perfil de pagamento configurado globalmente.</p>
             <NuxtLink to="/painel/pagamentos" class="btn btn-primary btn-sm rounded-pill px-4">Criar Primeiro Perfil</NuxtLink>
           </div>
@@ -218,13 +221,13 @@
           <!-- Reservation Fee Config -->
           <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--glass-border-subtle);">
             <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span>🎟️</span> Taxa de Reserva Online
+              <span><i class="bi bi-ticket-perforated-fill" aria-hidden="true"></i></span> Taxa de Reserva Online
             </h3>
             <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure o valor que o cliente deve pagar para reservar um lote online via cartão ou PIX.</p>
 
             <!-- Guard: no gateways active -->
             <div v-if="activeConfigs.length === 0 && allConfigs.length > 0" style="padding: 12px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 10px; margin-bottom: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;">
-              <span>⚠️</span>
+              <span><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></span>
               <span style="color: #d97706;">Nenhum gateway de pagamento habilitado para este projeto. Ative um acima para que a reserva online funcione.</span>
             </div>
             
@@ -258,7 +261,11 @@
             
             <div class="flex justify-end" style="margin-top: 20px;">
               <button class="btn btn-primary" @click="saveSettings" :disabled="savingSettings" style="min-width: 200px;">
-                {{ savingSettings ? 'Salvando...' : '💾 Salvar Configuração de Taxa' }}
+                <span v-if="savingSettings">Salvando...</span>
+                <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-floppy-fill" aria-hidden="true"></i>
+                  <span>Salvar Configuração de Taxa</span>
+                </span>
               </button>
             </div>
           </div>
@@ -269,7 +276,7 @@
       <section v-if="activeSection === 'assistente-ia'" id="assistente-ia" class="content-section">
         <div class="card" style="max-width: 600px;">
           <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-            <span>🤖</span> Assistente de IA
+            <span><i class="bi bi-robot" aria-hidden="true"></i></span> Assistente de IA
           </h3>
           <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">
             Habilite um assistente virtual para ajudar clientes interessados. A IA responderá perguntas sobre lotes, disponibilidade e preços de acordo com os dados deste projeto.
@@ -290,7 +297,7 @@
             </div>
             
             <div v-if="aiConfigs.length === 0" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-top: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
-              ⚠️ Você ainda não tem nenhuma configuração de IA cadastrada. <NuxtLink to="/painel/ai" style="color: #ef4444; font-weight: 700;">Clique aqui para criar</NuxtLink>.
+              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Você ainda não tem nenhuma configuração de IA cadastrada. <NuxtLink to="/painel/ai" style="color: #ef4444; font-weight: 700;">Clique aqui para criar</NuxtLink>.
             </div>
 
             <div v-else style="background: rgba(59, 130, 246, 0.08); color: #60a5fa; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-top: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
@@ -300,7 +307,11 @@
 
           <div class="flex justify-end" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--glass-border-subtle);">
             <button class="btn btn-primary" @click="saveSettings" :disabled="savingSettings">
-              {{ savingSettings ? 'Salvando...' : '💾 Salvar Configurações de IA' }}
+              <span v-if="savingSettings">Salvando...</span>
+              <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="bi bi-floppy-fill" aria-hidden="true"></i>
+                <span>Salvar Configurações de IA</span>
+              </span>
             </button>
           </div>
         </div>
@@ -312,7 +323,7 @@
           <div class="flex justify-between items-center" style="margin-bottom: 24px;">
             <div>
               <h3 style="margin:0; display: flex; align-items: center; gap: 8px;">
-                <span>📅</span> Configurações de Agendamento de Visitas
+                <span><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></span> Configurações de Agendamento de Visitas
               </h3>
               <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">Defina os horários e regras para que clientes agendem visitas ao empreendimento.</p>
             </div>
@@ -389,7 +400,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Almoço -->
                 <div style="padding: 20px; border: 1px dashed var(--color-surface-600); border-radius: 12px;">
-                  <h5 style="margin-bottom: 12px; font-weight: 600;">🍽️ Intervalo de Almoço</h5>
+                  <h5 style="margin-bottom: 12px; font-weight: 600;"><i class="bi bi-fork-knife" aria-hidden="true"></i> Intervalo de Almoço</h5>
                   <div class="grid grid-cols-2 gap-4">
                     <div class="form-group">
                       <label class="form-label" style="font-size: 0.75rem;">Início</label>
@@ -406,7 +417,7 @@
                 <!-- Custom Breaks -->
                 <div style="padding: 20px; border: 1px dashed var(--color-surface-600); border-radius: 12px;">
                   <div class="flex justify-between items-center" style="margin-bottom: 12px;">
-                    <h5 style="margin:0; font-weight: 600;">☕ Outras Pausas Curtas</h5>
+                    <h5 style="margin:0; font-weight: 600;"><i class="bi bi-cup-hot-fill" aria-hidden="true"></i> Outras Pausas Curtas</h5>
                     <button @click="addBreak" class="btn btn-xs btn-ghost">+ Adicionar</button>
                   </div>
                   
@@ -420,7 +431,7 @@
                     <input v-model="b.start" type="time" class="form-input btn-xs" style="flex: 1" />
                     <span style="font-size: 10px; color: var(--color-surface-500);">até</span>
                     <input v-model="b.end" type="time" class="form-input btn-xs" style="flex: 1" />
-                    <button @click="removeBreak(idx)" class="btn btn-xs btn-ghost btn-danger" style="padding: 0 4px;">✕</button>
+                    <button @click="removeBreak(idx)" class="btn btn-xs btn-ghost btn-danger" style="padding: 0 4px;"><i class="bi bi-x" aria-hidden="true"></i></button>
                   </div>
                 </div>
               </div>
@@ -429,11 +440,15 @@
             <div class="flex justify-end pt-8" style="border-top: 1px solid var(--glass-border-subtle); margin-top: 32px;">
               <!-- Guard: enabled but no days selected -->
               <div v-if="schedulingForm.enabled && schedulingForm.availableDays.length === 0" style="padding: 10px 14px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 8px; margin-right: auto; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
-                <span>❌</span>
+                <span><i class="bi bi-x-circle-fill" aria-hidden="true"></i></span>
                 <span style="color: #f87171;">Selecione ao menos um dia da semana para habilitar o agendamento.</span>
               </div>
               <button class="btn btn-primary" @click="saveSchedulingSettings" :disabled="savingScheduling || (schedulingForm.enabled && schedulingForm.availableDays.length === 0)" style="min-width: 200px; height: 48px; border-radius: 12px;">
-                {{ savingScheduling ? 'Salvando...' : '💾 Salvar Configuração de Agenda' }}
+                <span v-if="savingScheduling">Salvando...</span>
+                <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-floppy-fill" aria-hidden="true"></i>
+                  <span>Salvar Configuração de Agenda</span>
+                </span>
               </button>
             </div>
           </template>
@@ -445,13 +460,13 @@
       <div class="financing-layout-v4">
         <div class="card" style="flex: 1; max-width: 800px;">
           <h3 style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-            <span>🧮</span> Regras de Simulação Financeira
+            <span><i class="bi bi-calculator-fill" aria-hidden="true"></i></span> Regras de Simulação Financeira
           </h3>
           <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure as regras padrão para o simulador que aparece na página dos lotes.</p>
 
           <div class="form-group" style="display:flex; align-items:center; gap: 8px; margin-bottom: 32px; background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3);">
             <input type="checkbox" v-model="editForm.showPaymentConditions" id="chkShowSimOnFinancing" style="width:20px; height:20px; cursor:pointer;" />
-            <label for="chkShowSimOnFinancing" style="font-weight: 700; cursor:pointer; color: #fbbf24;">✅ Habilitar Simulador nas Páginas Públicas</label>
+            <label for="chkShowSimOnFinancing" style="font-weight: 700; cursor:pointer; color: #fbbf24;"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Habilitar Simulador nas Páginas Públicas</label>
           </div>
 
           <div class="grid grid-cols-2 gap-6">
@@ -493,7 +508,11 @@
 
           <div class="flex justify-end" style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--glass-border-subtle);">
             <button class="btn btn-primary" @click="saveSettings" :disabled="savingSettings" style="min-width: 200px;">
-              {{ savingSettings ? 'Salvando...' : '💾 Salvar Regras Financeiras' }}
+              <span v-if="savingSettings">Salvando...</span>
+              <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="bi bi-floppy-fill" aria-hidden="true"></i>
+                <span>Salvar Regras Financeiras</span>
+              </span>
             </button>
           </div>
         </div>
@@ -501,7 +520,7 @@
         <!-- LIVE PREVIEW SIDEBAR -->
         <div class="financing-preview-sidebar">
           <div class="preview-header">
-            <h4>👀 Preview em Tempo Real</h4>
+            <h4><i class="bi bi-eye-fill" aria-hidden="true"></i> Preview em Tempo Real</h4>
             <p>Assim é como o simulador aparece na página pública</p>
           </div>
 
@@ -578,7 +597,7 @@
               </div>
 
               <div class="sim-disclaimer-v4">
-                ⚠️ {{ editForm?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ editForm?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
               </div>
             </div>
           </div>
@@ -590,7 +609,7 @@
       <section v-if="activeSection === 'lotes'" id="lotes" class="content-section">
         <div v-if="lots.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
           <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-            <div class="icon-blob mx-auto mb-4">🗺️</div>
+            <div class="icon-blob mx-auto mb-4"><i class="bi bi-map" aria-hidden="true"></i></div>
             <h3 class="fw-bold mb-3">Nenhum elemento criado na planta</h3>
             <p class="mb-4 px-4">Adicione pontos (hotspots) na Planta Interativa para que apareçam aqui para edição detalhada.</p>
             <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="btn btn-primary btn-lg rounded-pill px-5">Ir para a Planta</NuxtLink>
@@ -884,7 +903,7 @@
 
           <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--glass-border-subtle);" />
 
-          <h4 style="margin-bottom: 12px;">🌄 Panorama 360° do Lote</h4>
+          <h4 style="margin-bottom: 12px;"><i class="bi bi-image-fill" aria-hidden="true"></i> Panorama 360° do Lote</h4>
           <div v-if="lotForm.panoramaUrl" class="media-card-v4" style="max-width: 240px; margin-bottom: 16px;">
             <div class="relative group">
               <img
@@ -1168,7 +1187,7 @@
                 <div v-if="nearbyListExpanded" class="pub-nearby-list">
                   <div v-for="group in nearbyGrouped" :key="group.category" style="margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 4px 0;">
-                      <span style="font-size: 0.85rem;">{{ nearbyCategoryIcon(group.category) }}</span>
+                      <span style="font-size: 0.85rem;"><i :class="['bi', nearbyCategoryIcon(group.category)]" aria-hidden="true"></i></span>
                       <span style="font-size: 0.72rem; font-weight: 700; color: var(--color-surface-200);">{{ group.categoryLabel }}</span>
                       <span style="font-size: 0.6rem; color: var(--color-surface-500);">({{ group.items.length }})</span>
                     </div>
@@ -1253,7 +1272,7 @@
 
             <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'highlight' || !h.type).length" style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
               <div v-for="(h, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="h.type === 'highlight' || !h.type" class="pub-highlight-item">
-                <span style="color: #059669; font-size: 0.9rem;">{{ h.icon || '✅' }}</span>
+                <span style="color: #059669; font-size: 0.9rem;"><i :class="resolveHighlightIcon(h.icon)" aria-hidden="true"></i></span>
                 <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                   <strong style="font-size: 0.8rem;">{{ h.label }}</strong>
                   <span style="font-size: 0.72rem; color: var(--color-surface-400); margin-left: 4px;">{{ h.value }}</span>
@@ -2100,10 +2119,10 @@ const nearbyStatus = ref<any>(null)
 const nearbyRegenerating = ref(false)
 
 const NEARBY_ICONS: Record<string, string> = {
-  school: '🎓', supermarket: '🛒', pharmacy: '💊', hospital: '🏥',
-  park: '🌳', restaurant: '🍽️', gym: '🏋️', shopping_mall: '🛍️',
+  school: 'bi-mortarboard-fill', supermarket: 'bi-cart-fill', pharmacy: 'bi-capsule', hospital: 'bi-hospital-fill',
+  park: 'bi-tree-fill', restaurant: 'bi-fork-knife', gym: 'bi-activity', shopping_mall: 'bi-bag-fill',
 }
-const nearbyCategoryIcon = (cat: string) => NEARBY_ICONS[cat] || '📍'
+const nearbyCategoryIcon = (cat: string) => NEARBY_ICONS[cat] || 'bi-geo-alt-fill'
 
 const nearbyGrouped = computed(() => {
   const items = nearbyStatus.value?.items || []
@@ -2208,8 +2227,13 @@ const removeInfraItem = (catIdx: number, itemIdx: number) => {
 
 const addHighlight = () => {
   if (!newHighlight.value.label) return
-  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { type: 'highlight' as const, icon: '✅', ...newHighlight.value }]
+  pubInfoForm.value.highlightsJson = [...pubInfoForm.value.highlightsJson, { type: 'highlight' as const, icon: 'bi-check-circle-fill', ...newHighlight.value }]
   newHighlight.value = { label: '', value: '' }
+}
+
+const resolveHighlightIcon = (icon?: string) => {
+  if (icon && icon.startsWith('bi-')) return `bi ${icon}`
+  return 'bi bi-check-circle-fill'
 }
 const removeHighlight = (i: number) => {
   pubInfoForm.value.highlightsJson = pubInfoForm.value.highlightsJson.filter((_, idx) => idx !== i)
@@ -2640,19 +2664,19 @@ watch(
 // ── Tabs ─────────────────────────────────────────────────
 const sidebarSections = computed(() => {
   const sections = [
-    { id: 'configuracoes', icon: '⚙️', label: 'Configurações' },
-    { id: 'lotes', icon: '📍', label: 'Lotes' },
-    { id: 'pagina-publica', icon: '📄', label: 'Página Pública' },
-    { id: 'financeiro', icon: '🧮', label: 'Simulação Financeira' },
-    { id: 'agendamento', icon: '📅', label: 'Agendamento' },
+    { id: 'configuracoes', icon: 'bi bi-gear-fill', label: 'Configurações' },
+    { id: 'lotes', icon: 'bi bi-geo-alt-fill', label: 'Lotes' },
+    { id: 'pagina-publica', icon: 'bi bi-file-earmark-text-fill', label: 'Página Pública' },
+    { id: 'financeiro', icon: 'bi bi-calculator-fill', label: 'Simulação Financeira' },
+    { id: 'agendamento', icon: 'bi bi-calendar-event-fill', label: 'Agendamento' },
   ]
   // Only show Pagamentos if there are global payment configs available
   if (allConfigs.value.length > 0) {
-    sections.push({ id: 'pagamentos', icon: '💳', label: 'Pagamentos & Taxas' })
+    sections.push({ id: 'pagamentos', icon: 'bi bi-credit-card-2-front-fill', label: 'Pagamentos & Taxas' })
   }
   // Only show Assistente IA if there are AI configs available
   if (aiConfigs.value.length > 0) {
-    sections.push({ id: 'assistente-ia', icon: '🤖', label: 'Assistente IA' })
+    sections.push({ id: 'assistente-ia', icon: 'bi bi-robot', label: 'Assistente IA' })
   }
   return sections
 })

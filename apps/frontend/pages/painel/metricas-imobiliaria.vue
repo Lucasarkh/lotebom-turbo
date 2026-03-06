@@ -38,7 +38,7 @@
 
       <div v-else-if="team.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
         <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-          <div class="icon-blob mx-auto mb-4">📊</div>
+          <div class="icon-blob mx-auto mb-4"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></div>
           <h3 class="fw-bold mb-3">Nenhum corretor na equipe</h3>
           <p class="mb-4 px-4">Convide corretores para começar a acompanhar métricas.</p>
           <button class="btn btn-primary btn-lg rounded-pill px-5" @click="openInviteModal">Convidar Corretor</button>

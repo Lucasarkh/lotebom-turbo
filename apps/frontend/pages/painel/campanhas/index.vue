@@ -142,7 +142,7 @@ definePageMeta({
     <div v-else class="card">
       <div v-if="campaigns.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
         <div class="text-center p-5 max-w-500">
-          <div class="icon-blob mx-auto mb-4">📢</div>
+          <div class="icon-blob mx-auto mb-4"><i class="bi bi-megaphone-fill" aria-hidden="true"></i></div>
           <h3 class="fw-bold mb-3">Nenhuma campanha cadastrada</h3>
           <p class="mb-4 px-4">Crie campanhas UTM para rastrear a origem dos seus leads.</p>
         </div>

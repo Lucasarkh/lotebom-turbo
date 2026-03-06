@@ -61,7 +61,8 @@
           title="Alternar Tela Cheia"
           @click="toggleFullscreen"
         >
-          {{ isFullscreen ? '🗗 Sair Fullscreen' : '🗖 Tela Cheia' }}
+          <i class="bi bi-fullscreen" aria-hidden="true"></i>
+          <span>{{ isFullscreen ? 'Sair Fullscreen' : 'Tela Cheia' }}</span>
         </button>
       </div>
 

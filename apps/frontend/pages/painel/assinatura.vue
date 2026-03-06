@@ -70,10 +70,10 @@ function formatDate(d: string | null) {
 }
 
 const billingStatusMap: Record<string, { label: string; cls: string; icon: string }> = {
-  OK: { label: 'Em dia', cls: 'status-ok', icon: '✅' },
-  GRACE_PERIOD: { label: 'Pagamento pendente', cls: 'status-warning', icon: '⚠️' },
-  INADIMPLENTE: { label: 'Inadimplente', cls: 'status-danger', icon: '🚫' },
-  CANCELLED: { label: 'Cancelado', cls: 'status-danger', icon: '❌' },
+  OK: { label: 'Em dia', cls: 'status-ok', icon: 'bi bi-check-circle-fill' },
+  GRACE_PERIOD: { label: 'Pagamento pendente', cls: 'status-warning', icon: 'bi bi-exclamation-triangle-fill' },
+  INADIMPLENTE: { label: 'Inadimplente', cls: 'status-danger', icon: 'bi bi-slash-circle-fill' },
+  CANCELLED: { label: 'Cancelado', cls: 'status-danger', icon: 'bi bi-x-circle-fill' },
 }
 
 const statusInfo = computed(() => {
@@ -168,7 +168,7 @@ onMounted(async () => {
         <p class="page-subtitle">Escolha o plano ideal e gerencie sua assinatura.</p>
       </div>
       <button class="btn btn-primary" @click="openPortal">
-        💳 Gerenciar Pagamento
+        <i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i> Gerenciar Pagamento
       </button>
     </div>
 
@@ -179,7 +179,7 @@ onMounted(async () => {
     <template v-else-if="status">
       <!-- Free trial banner (active) -->
       <div v-if="status.isOnFreeTier" class="alert alert-free mb-6">
-        <span>🎉</span>
+        <span><i class="bi bi-stars" aria-hidden="true"></i></span>
         <div>
           <strong>Seu primeiro mês é gratuito!</strong>
           <p class="mb-0">
@@ -191,7 +191,7 @@ onMounted(async () => {
 
       <!-- Trial expired banner -->
       <div v-else-if="status.trialExpired && status.requiresSubscription" class="alert alert-expired mb-6">
-        <span>⏰</span>
+        <span><i class="bi bi-alarm-fill" aria-hidden="true"></i></span>
         <div>
           <strong>Seu período de teste expirou</strong>
           <p class="mb-0">Assine um plano para continuar usando a plataforma e gerenciar seus projetos.</p>
@@ -200,7 +200,7 @@ onMounted(async () => {
 
       <!-- Warning Banners -->
       <div v-if="status.billingStatus === 'GRACE_PERIOD'" class="alert alert-warning mb-6">
-        <span>⚠️</span>
+        <span><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></span>
         <div>
           <strong>Pagamento pendente</strong>
           <p class="mb-0">Regularize até <strong>{{ formatDate(status.gracePeriodEnd) }}</strong> para evitar o bloqueio.</p>
@@ -209,7 +209,7 @@ onMounted(async () => {
       </div>
 
       <div v-if="status.billingStatus === 'INADIMPLENTE'" class="alert alert-danger mb-6">
-        <span>🚫</span>
+        <span><i class="bi bi-slash-circle-fill" aria-hidden="true"></i></span>
         <div>
           <strong>Acesso bloqueado por inadimplência</strong>
           <p class="mb-0">Entre em contato com o suporte ou regularize o pagamento.</p>
@@ -256,7 +256,10 @@ onMounted(async () => {
         <div class="summary-card">
           <div class="summary-label">Status</div>
           <div class="summary-value">
-            <span :class="['status-badge', statusInfo?.cls]">{{ statusInfo?.icon }} {{ statusInfo?.label }}</span>
+            <span :class="['status-badge', statusInfo?.cls]">
+              <i :class="statusInfo?.icon" aria-hidden="true"></i>
+              <span>{{ statusInfo?.label }}</span>
+            </span>
           </div>
         </div>
       </div>
@@ -369,7 +372,7 @@ onMounted(async () => {
               <!-- Action -->
               <div class="plan-action">
                 <template v-if="plan.isCurrent && status.isOnFreeTier && plan.projectCount <= Math.max(status?.freeProjects || 0, 1)">
-                  <span class="plan-hint-free">🎉 Grátis por {{ trialDaysLeft }}d</span>
+                  <span class="plan-hint-free"><i class="bi bi-stars" aria-hidden="true"></i> Grátis por {{ trialDaysLeft }}d</span>
                 </template>
                 <template v-else-if="plan.isCurrent">
                   <span class="plan-hint-current">&#10003; Seu plano atual</span>
@@ -464,8 +467,8 @@ onMounted(async () => {
         <div class="payment-methods-grid" v-if="paymentMethods.length > 0">
           <div v-for="pm in paymentMethods" :key="pm.id" class="pm-card">
             <div class="pm-brand">
-              <template v-if="pm.type === 'boleto'">📄 BOLETO</template>
-              <template v-else>💳 {{ pm.brand?.toUpperCase() || 'CARTÃO' }}</template>
+              <template v-if="pm.type === 'boleto'"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i> BOLETO</template>
+              <template v-else><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i> {{ pm.brand?.toUpperCase() || 'CARTÃO' }}</template>
             </div>
             <div class="pm-number" v-if="pm.type === 'card'">•••• •••• •••• {{ pm.last4 }}</div>
             <div class="pm-number" v-else-if="pm.type === 'boleto'">CPF/CNPJ •••{{ pm.last4 }}</div>
@@ -485,7 +488,7 @@ onMounted(async () => {
     <!-- No subscription -->
     <div v-else class="empty-state-container d-flex align-items-center justify-content-center py-5">
       <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4">💳</div>
+        <div class="icon-blob mx-auto mb-4"><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i></div>
         <h3 class="fw-bold mb-3">Assinatura não configurada</h3>
         <p class="mb-4 px-4">Sua assinatura ainda não foi configurada. Entre em contato com o suporte.</p>
       </div>

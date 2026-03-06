@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="page-header">
       <div>
-        <h1>Olá, {{ auth.user?.name?.split(' ')[0] }} 👋</h1>
+        <h1>Olá, {{ auth.user?.name?.split(' ')[0] }} <i class="bi bi-hand-index-thumb-fill" aria-hidden="true"></i></h1>
         <p>Resumo da performance da sua equipe.</p>
       </div>
       <NuxtLink to="/painel/corretores" class="btn btn-primary">
@@ -93,7 +93,7 @@
                   <tr v-if="!recentLeads.length">
                     <td colspan="5">
                       <div class="empty-state" style="padding: 32px;">
-                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-icon"><i class="bi bi-inbox-fill" aria-hidden="true"></i></div>
                         <h3>Nenhum lead registrado</h3>
                         <p>Os leads aparecerão aqui quando seus corretores começarem a indicar.</p>
                       </div>
@@ -123,7 +123,7 @@
               </div>
             </div>
             <div v-else class="empty-state" style="padding: 32px; background: var(--glass-bg); border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
-              <div class="empty-state-icon">📊</div>
+              <div class="empty-state-icon"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></div>
               <h3>Aguardando dados</h3>
               <p>A performance aparecerá quando seus corretores tiverem atividade.</p>
             </div>
@@ -156,7 +156,7 @@
           <h4 class="sidebar-section-title" style="margin-top: 32px;">Próximos Agendamentos</h4>
           <div class="card" style="padding: 20px;">
             <div v-if="upcomingSchedulings.length === 0" class="empty-state" style="padding: 24px;">
-              <div class="empty-state-icon">📅</div>
+              <div class="empty-state-icon"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></div>
               <p>Nenhum agendamento próximo.</p>
             </div>
             <div v-for="(s, idx) in upcomingSchedulings" :key="s.id" class="schedule-preview-item" :style="idx > 0 ? 'margin-top: 12px' : ''">

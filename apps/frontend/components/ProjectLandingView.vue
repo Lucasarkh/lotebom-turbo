@@ -284,8 +284,8 @@
               
               <div class="v4-lot-card-body">
                 <div class="v4-lot-info-row">
-                  <span class="v4-info-item">📐 {{ lot.lotDetails?.areaM2 || '---' }} m²</span>
-                  <span v-if="lot.lotDetails?.pricePerM2" class="v4-info-item">💰 {{ formatCurrencyToBrasilia(lot.lotDetails.pricePerM2) }} / m²</span>
+                  <span class="v4-info-item"><i class="bi bi-bounding-box" aria-hidden="true"></i> {{ lot.lotDetails?.areaM2 || '---' }} m²</span>
+                  <span v-if="lot.lotDetails?.pricePerM2" class="v4-info-item"><i class="bi bi-cash-stack" aria-hidden="true"></i> {{ formatCurrencyToBrasilia(lot.lotDetails.pricePerM2) }} / m²</span>
                   <span v-else-if="lot.lotDetails?.frontage" class="v4-info-item">↔ {{ lot.lotDetails.frontage }}m frente</span>
                 </div>
                 <div v-if="lot.lotDetails?.price" class="v4-lot-price">
@@ -421,7 +421,7 @@
             
             <div class="v4-schedule-cta" style="flex: 0 0 auto; text-align: center;">
               <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 50px; border-radius: 40px; backdrop-filter: blur(20px);">
-                <div style="font-size: 40px; margin-bottom: 24px;">📅</div>
+                <div style="font-size: 40px; margin-bottom: 24px;"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></div>
                 <h3>Agendar agora</h3>
                 <p style="color: #86868b; margin-bottom: 32px; font-size: 15px;">Escolha o dia e horário de sua preferência.</p>
                 <button @click="showSchedulingModal = true" class="v4-btn-primary" style="padding: 16px 40px; font-size: 17px; background: white; color: black;">
@@ -455,7 +455,7 @@
                 <p class="v4-subtitle-clean">Restam poucas unidades disponíveis. Preencha o formulário e nossa equipe entrará em contato para tirar suas dúvidas.</p>
                 
                 <div v-if="(project?.lotSummary?.total ?? 0) > 0" class="v4-lot-badge-minimal">
-                  <span class="v4-sparkle">✨</span> <strong>{{ availableLots }}</strong> lotes disponíveis no momento
+                  <span class="v4-sparkle"><i class="bi bi-stars" aria-hidden="true"></i></span> <strong>{{ availableLots }}</strong> lotes disponíveis no momento
                 </div>
               </div>
 
@@ -522,7 +522,7 @@
       <section v-if="project.legalNotice" class="v4-legal-notice">
         <div class="v4-container">
           <div class="v4-legal-inner">
-            <div class="v4-legal-icon">📋</div>
+            <div class="v4-legal-icon"><i class="bi bi-clipboard-check" aria-hidden="true"></i></div>
             <p class="v4-legal-text">{{ project.legalNotice }}</p>
           </div>
         </div>
@@ -616,7 +616,7 @@
       <div v-if="allAvailableTags.length > 0" class="v4-floating-cta">
         <button class="v4-cta-btn-animated" @click="() => { tracking.trackClick('CTA: Busca de Lotes Animado'); toggleFilterModal(); }">
           <div class="v4-cta-inner">
-            <span class="v4-cta-icon-spark">🔍</span>
+            <span class="v4-cta-icon-spark"><i class="bi bi-search" aria-hidden="true"></i></span>
             <span class="v4-cta-label">Busque o lote ideal com base nas suas preferências</span>
             <span class="v4-cta-arrow-icon">→</span>
           </div>

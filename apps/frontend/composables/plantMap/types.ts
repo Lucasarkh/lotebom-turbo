@@ -117,9 +117,9 @@ export const HOTSPOT_TYPE_COLORS: Record<PlantHotspotType, string> = {
 }
 
 export const HOTSPOT_TYPE_ICONS: Record<PlantHotspotType, string> = {
-  LOTE: '🏡',
-  PORTARIA: '🏢',
-  QUADRA: '⛳',
-  AREA_COMUM: '🌳',
-  OUTRO: '📍',
+  LOTE: 'L',
+  PORTARIA: 'P',
+  QUADRA: 'Q',
+  AREA_COMUM: 'A',
+  OUTRO: 'O',
 }

@@ -38,24 +38,24 @@
             :class="mode === 'view' ? 'btn-primary' : 'btn-ghost'"
             @click="mode = 'view'"
           >
-            👁️ Visualizar
+            <i class="bi bi-eye-fill" aria-hidden="true"></i> Visualizar
           </button>
           <button
             class="btn btn-sm"
             :class="mode === 'add-beacon' ? 'btn-primary' : 'btn-ghost'"
             @click="mode = 'add-beacon'"
           >
-            📍 Adicionar Beacon
+            <i class="bi bi-geo-alt-fill" aria-hidden="true"></i> Adicionar Beacon
           </button>
           <button
             class="btn btn-sm"
             :class="mode === 'move' ? 'btn-primary' : 'btn-ghost'"
             @click="mode = 'move'"
           >
-            ✋ Mover
+            <i class="bi bi-hand-index-thumb-fill" aria-hidden="true"></i> Mover
           </button>
           <button class="btn btn-sm btn-outline" @click="showSettings = true">
-            ⚙️ Configurações
+            <i class="bi bi-gear-fill" aria-hidden="true"></i> Configurações
           </button>
         </template>
       </div>
@@ -68,7 +68,7 @@
         <!-- Snapshots section -->
         <div v-if="activePanorama" class="pe-section">
           <div class="pe-section-header">
-            <h3>📷 Snapshots ({{ activePanorama.snapshots.length }})</h3>
+            <h3><i class="bi bi-camera-fill" aria-hidden="true"></i> Snapshots ({{ activePanorama.snapshots.length }})</h3>
             <button class="btn btn-xs btn-outline" @click="showAddSnapshot = true">+ Adicionar</button>
           </div>
           <div class="pe-list">
@@ -85,7 +85,7 @@
                 <span class="pe-list-item-meta">#{{ snap.sortOrder }}</span>
               </div>
               <button class="btn btn-xs btn-ghost pe-list-item-del" @click.stop="removeSnapshot(snap.id)">
-                🗑️
+                <i class="bi bi-trash3-fill" aria-hidden="true"></i>
               </button>
             </div>
             <p v-if="!activePanorama.snapshots.length" class="pe-empty">Nenhum snapshot ainda. Adicione imagens de cada período.</p>
@@ -95,7 +95,7 @@
         <!-- Beacons section -->
         <div v-if="activePanorama" class="pe-section">
           <div class="pe-section-header">
-            <h3>📌 Beacons ({{ activePanorama.beacons.length }})</h3>
+            <h3><i class="bi bi-pin-angle-fill" aria-hidden="true"></i> Beacons ({{ activePanorama.beacons.length }})</h3>
           </div>
           <div class="pe-list">
             <div
@@ -111,12 +111,12 @@
               <div class="pe-list-item-info">
                 <span class="pe-list-item-label">{{ beacon.title }}</span>
                 <span class="pe-list-item-meta">
-                  {{ beacon.visible ? '👁️' : '🚫' }}
+                  <i :class="beacon.visible ? 'bi bi-eye-fill' : 'bi bi-slash-circle-fill'" aria-hidden="true"></i>
                   x={{ beacon.x.toFixed(2) }} y={{ beacon.y.toFixed(2) }}
                 </span>
               </div>
               <button class="btn btn-xs btn-ghost pe-list-item-del" @click.stop="removeBeacon(beacon.id)">
-                🗑️
+                <i class="bi bi-trash3-fill" aria-hidden="true"></i>
               </button>
             </div>
             <p v-if="!activePanorama.beacons.length" class="pe-empty">
@@ -309,7 +309,7 @@
             </select>
           </div>
           <div class="modal-actions" style="justify-content: space-between;">
-            <button class="btn btn-danger btn-sm" @click="doDeletePanorama">🗑️ Excluir Panorama</button>
+            <button class="btn btn-danger btn-sm" @click="doDeletePanorama"><i class="bi bi-trash3-fill" aria-hidden="true"></i> Excluir Panorama</button>
             <div class="flex gap-2">
               <button class="btn btn-ghost" @click="showSettings = false">Cancelar</button>
               <button class="btn btn-primary" :disabled="savingSettings" @click="doSaveSettings">
