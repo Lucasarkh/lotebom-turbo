@@ -680,6 +680,14 @@ onMounted(async () => {
 }
 
 .v4-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+
+@media (max-width: 768px) {
+  .v4-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
 .v4-card-id .v4-label { font-size: 10px; font-weight: 700; color: #86868b; letter-spacing: 0.1em; }
 
 @media (max-width: 768px) {
@@ -698,9 +706,8 @@ onMounted(async () => {
   .v4-card-status { 
     font-size: 8px; 
     padding: 2px 8px;
-    position: absolute;
-    top: 12px;
-    right: 12px;
+    position: static;
+    align-self: flex-start;
   }
 }
 

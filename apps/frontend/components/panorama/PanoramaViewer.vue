@@ -126,6 +126,8 @@ const containerRef = ref<HTMLElement | null>(null)
 const contentRef = ref<HTMLElement | null>(null)
 const panorama360Ref = ref<HTMLElement | null>(null)
 let pviewer: any = null
+let resizeObserver: ResizeObserver | null = null
+let resizeRaf: number | null = null
 
 const scale = ref(1)
 
@@ -190,9 +192,16 @@ function initPannellum() {
   const el = document.getElementById(elementId)
   if (!el) return
 
+  const rect = containerRef.value?.getBoundingClientRect()
+  const aspectRatio = rect?.height ? rect.width / rect.height : 16 / 9
+  const initialHfov = aspectRatio < 1 ? 112 : aspectRatio < 1.4 ? 104 : 98
+
   pviewer = (window as any).pannellum.viewer(elementId, {
     type: 'equirectangular',
     panorama: activeSnapshot.value.imageUrl + (activeSnapshot.value.imageUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now(),
+    hfov: initialHfov,
+    minHfov: 50,
+    maxHfov: 120,
     autoLoad: true,
     showControls: false,
     compass: false,
@@ -247,6 +256,17 @@ function initPannellum() {
       }
     }
     viewerContainer.addEventListener('mouseup', onUp)
+  })
+}
+
+function requestViewerResize() {
+  if (!pviewer) return
+  if (resizeRaf !== null) {
+    window.cancelAnimationFrame(resizeRaf)
+  }
+  resizeRaf = window.requestAnimationFrame(() => {
+    pviewer?.resize?.()
+    resizeRaf = null
   })
 }
 
@@ -345,6 +365,13 @@ onMounted(() => {
   window.addEventListener('touchend', onTouchEnd)
 
   document.addEventListener('fullscreenchange', onFullscreenChange)
+  window.addEventListener('resize', requestViewerResize)
+  window.addEventListener('orientationchange', requestViewerResize)
+
+  if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
+    resizeObserver = new ResizeObserver(() => requestViewerResize())
+    resizeObserver.observe(containerRef.value)
+  }
 
   if (props.panorama.projection === 'EQUIRECTANGULAR') {
     setTimeout(initPannellum, 1000)
@@ -361,6 +388,16 @@ onBeforeUnmount(() => {
   window.removeEventListener('touchend', onTouchEnd)
   
   document.removeEventListener('fullscreenchange', onFullscreenChange)
+  window.removeEventListener('resize', requestViewerResize)
+  window.removeEventListener('orientationchange', requestViewerResize)
+
+  resizeObserver?.disconnect()
+  resizeObserver = null
+
+  if (resizeRaf !== null) {
+    window.cancelAnimationFrame(resizeRaf)
+    resizeRaf = null
+  }
   
   if (pviewer) {
     pviewer.destroy()
@@ -369,10 +406,8 @@ onBeforeUnmount(() => {
 
 function onFullscreenChange() {
   isFullscreen.value = !!document.fullscreenElement
-  if (pviewer) {
-    // Delay slightly to let the browser adjust the container size
-    setTimeout(() => pviewer.resize(), 100)
-  }
+  // Delay slightly to let the browser adjust the container size
+  setTimeout(requestViewerResize, 100)
 }
 
 // ── Image load ───────────────────────────────────────

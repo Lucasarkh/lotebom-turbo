@@ -167,12 +167,12 @@
             <div
               v-for="pano in panoramas"
               :key="pano.id"
-              style="height: 540px; border-radius: 16px; overflow: hidden; box-shadow: var(--v4-shadow-elevated); margin-bottom: 24px;"
+              class="v4-panorama-card"
             >
               <PanoramaViewer :panorama="pano" />
             </div>
             <template #fallback>
-              <div style="height: 540px; border-radius:16px; background:#111; display:flex; align-items:center; justify-content:center; color:#64748b;">
+              <div class="v4-panorama-card v4-panorama-card--fallback">
                 <div class="loading-spinner"></div>
               </div>
             </template>
@@ -2140,6 +2140,29 @@ function openLightbox(idx: number) {
 }
 .v4-video-placeholder:hover { background: #222; }
 
+.v4-panorama-card {
+  height: clamp(260px, 56.25vw, 540px);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--v4-shadow-elevated);
+  margin-bottom: 24px;
+}
+
+.v4-panorama-card--fallback {
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .v4-panorama-card {
+    height: clamp(220px, 56vw, 320px);
+    margin-bottom: 16px;
+  }
+}
+
 /* Construction Progress */
 .v4-construction-grid {
   display: grid;
@@ -2280,7 +2303,12 @@ function openLightbox(idx: number) {
 }
 
 @media (max-width: 768px) {
-  .v4-lot-card-header { margin-bottom: 12px; }
+  .v4-lot-card-header {
+    margin-bottom: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }
 
 .v4-lot-id {
@@ -2325,11 +2353,10 @@ function openLightbox(idx: number) {
 
 @media (max-width: 768px) {
   .v4-lot-status { 
-    font-size: 8px; 
-    padding: 4px 8px; 
-    position: absolute;
-    top: 12px;
-    right: 12px;
+    font-size: 8px;
+    padding: 4px 8px;
+    position: static;
+    align-self: flex-start;
   }
 }
 

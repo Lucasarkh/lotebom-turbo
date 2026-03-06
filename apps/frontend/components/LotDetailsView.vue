@@ -154,14 +154,27 @@
                     :plant-map="lotPlantMap"
                     :show-controls="true"
                     :show-legend="false"
-                    :interactive="true"
+                    :interactive="isPlantMapInteractive"
                     :focus-lot-code="lot?.code"
                   />
                   <template #fallback>
                     <div class="loading-state-pm">Carregando planta...</div>
                   </template>
                 </ClientOnly>
+                <div v-if="showPlantMapTouchCta" class="interaction-gate-v4">
+                  <button class="interaction-gate-v4__btn" @click="enablePlantMapInteraction">
+                    Ver mapa interativo
+                  </button>
+                  <p class="interaction-gate-v4__hint">Ative para arrastar e dar zoom. Desative para voltar a rolar a pagina.</p>
+                </div>
               </div>
+              <button
+                v-if="showPlantMapDisableButton"
+                class="interaction-toggle-v4"
+                @click="disablePlantMapInteraction"
+              >
+                Desativar interacao do mapa
+              </button>
               <p style="margin-top: 16px; color: var(--v4-text-muted); font-size: 14px; text-align: center;">
                 Localização exata do lote dentro do empreendimento.
               </p>
@@ -174,10 +187,23 @@
                 <div class="title-line"></div>
               </div>
               <div class="panorama-container-v4" 
-                   style="height: 600px; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border);"
+                   :class="{ 'is-interaction-disabled': !isPanoramaInteractive }"
                    @click="tracking.trackClick('Panorama: Interação 360', 'VIEW_360')">
                 <PanoramaViewer :panorama="lotPanorama" />
+                <div v-if="showPanoramaTouchCta" class="interaction-gate-v4">
+                  <button class="interaction-gate-v4__btn" @click="enablePanoramaInteraction">
+                    Ver 360 interativo
+                  </button>
+                  <p class="interaction-gate-v4__hint">Ative para girar a vista 360. Desative para continuar rolando a pagina.</p>
+                </div>
               </div>
+              <button
+                v-if="showPanoramaDisableButton"
+                class="interaction-toggle-v4"
+                @click="disablePanoramaInteraction"
+              >
+                Desativar interacao do 360
+              </button>
             </section>
 
             <!-- Specification -->
@@ -547,13 +573,46 @@
                 <h3>Outras Oportunidades</h3>
                 <NuxtLink :to="projectUrl">Ver todos no mapa</NuxtLink>
               </div>
+
+              <div class="other-lots-filters-v4">
+                <input
+                  v-model="otherLotsSearchQuery"
+                  type="text"
+                  class="other-lots-search-v4"
+                  placeholder="Buscar por codigo, quadra ou lote"
+                />
+                <div v-if="otherLotsAvailableTags.length" class="other-lots-tags-v4">
+                  <button
+                    v-for="tag in otherLotsAvailableTags"
+                    :key="tag"
+                    type="button"
+                    class="other-lots-tag-v4"
+                    :class="{ 'is-active': selectedOtherLotsTags.includes(tag) }"
+                    @click="toggleOtherLotsTag(tag)"
+                  >
+                    {{ tag }}
+                  </button>
+                  <button
+                    v-if="selectedOtherLotsTags.length || otherLotsSearchQuery"
+                    type="button"
+                    class="other-lots-clear-v4"
+                    @click="clearOtherLotsFilters"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+
               <div class="assets-grid-v4">
-                <NuxtLink v-for="l in otherLots.slice(0, 8)" :key="l.id" :to="otherLotUrl(l)" class="asset-card-v4">
+                <NuxtLink v-for="l in filteredOtherLots.slice(0, 8)" :key="l.id" :to="otherLotUrl(l)" class="asset-card-v4">
                   <div class="a-code">{{ (l.code || l.name || l.id).toString().toLowerCase().includes('lote') ? '' : 'Lote ' }}{{ l.code || l.name || l.id }}</div>
                   <div class="a-area">{{ l.lotDetails?.areaM2 ? `${l.lotDetails.areaM2} m²` : '—' }}</div>
                   <div class="a-price" v-if="l.lotDetails?.price">{{ formatCurrencyToBrasilia(l.lotDetails.price) }}</div>
                 </NuxtLink>
               </div>
+              <p v-if="!filteredOtherLots.length" class="other-lots-empty-v4">
+                Nenhum lote encontrado com os filtros atuais.
+              </p>
             </div>
 
             <div v-if="project" class="v4-footer-inner">
@@ -1065,6 +1124,58 @@ const otherLots = computed(() => {
     })
 })
 
+const otherLotsSearchQuery = ref('')
+const selectedOtherLotsTags = ref<string[]>([])
+
+const otherLotsAvailableTags = computed(() => {
+  const tagSet = new Set<string>()
+
+  for (const item of otherLots.value) {
+    const tags = Array.isArray(item?.lotDetails?.tags) ? item.lotDetails.tags : []
+    for (const rawTag of tags) {
+      const tag = String(rawTag || '').trim()
+      if (tag) tagSet.add(tag)
+    }
+  }
+
+  return Array.from(tagSet).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+})
+
+const filteredOtherLots = computed(() => {
+  const term = otherLotsSearchQuery.value.trim().toLowerCase()
+
+  return otherLots.value.filter((item: any) => {
+    const code = String(item?.code || item?.name || item?.id || '').toLowerCase()
+    const block = String(item?.lotDetails?.block || '').toLowerCase()
+    const lotNumber = String(item?.lotDetails?.lotNumber || '').toLowerCase()
+    const tags = Array.isArray(item?.lotDetails?.tags) ? item.lotDetails.tags.map((t: any) => String(t)) : []
+
+    const textMatch = !term
+      || code.includes(term)
+      || block.includes(term)
+      || lotNumber.includes(term)
+      || tags.some((tag: string) => tag.toLowerCase().includes(term))
+
+    const tagsMatch = selectedOtherLotsTags.value.length === 0
+      || selectedOtherLotsTags.value.some(selected => tags.includes(selected))
+
+    return textMatch && tagsMatch
+  })
+})
+
+function toggleOtherLotsTag(tag: string) {
+  if (selectedOtherLotsTags.value.includes(tag)) {
+    selectedOtherLotsTags.value = selectedOtherLotsTags.value.filter(t => t !== tag)
+    return
+  }
+  selectedOtherLotsTags.value = [...selectedOtherLotsTags.value, tag]
+}
+
+function clearOtherLotsFilters() {
+  otherLotsSearchQuery.value = ''
+  selectedOtherLotsTags.value = []
+}
+
 const otherLotUrl = (l: any) => {
   const code = l.code || l.name || l.id
   const base = pathPrefix.value === '' 
@@ -1179,6 +1290,42 @@ const lightboxOpen = ref(false)
 const lightboxIdx = ref(0)
 const lightboxMedia = computed(() => galleryMedias.value?.[lightboxIdx.value] ?? null)
 
+const isTouchMobile = ref(false)
+const plantMapInteractionEnabled = ref(false)
+const panoramaInteractionEnabled = ref(false)
+
+const isPlantMapInteractive = computed(() => !isTouchMobile.value || plantMapInteractionEnabled.value)
+const isPanoramaInteractive = computed(() => !isTouchMobile.value || panoramaInteractionEnabled.value)
+const showPlantMapTouchCta = computed(() => isTouchMobile.value && !plantMapInteractionEnabled.value)
+const showPanoramaTouchCta = computed(() => isTouchMobile.value && !panoramaInteractionEnabled.value)
+const showPlantMapDisableButton = computed(() => isTouchMobile.value && plantMapInteractionEnabled.value)
+const showPanoramaDisableButton = computed(() => isTouchMobile.value && panoramaInteractionEnabled.value)
+
+function detectTouchMobile() {
+  if (!process.client) return
+  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const isNarrowViewport = window.matchMedia('(max-width: 1024px)').matches
+  isTouchMobile.value = isCoarsePointer && isNarrowViewport
+}
+
+function enablePlantMapInteraction() {
+  plantMapInteractionEnabled.value = true
+  tracking.trackClick('Mapa: Ativar interacao mobile', 'MAP_INTERACTION')
+}
+
+function disablePlantMapInteraction() {
+  plantMapInteractionEnabled.value = false
+}
+
+function enablePanoramaInteraction() {
+  panoramaInteractionEnabled.value = true
+  tracking.trackClick('Panorama: Ativar interacao mobile', 'VIEW_360')
+}
+
+function disablePanoramaInteraction() {
+  panoramaInteractionEnabled.value = false
+}
+
 const activeSection = ref('hero')
 
 const handleScroll = () => {
@@ -1201,6 +1348,8 @@ function openLightbox(idx: number) {
 }
 
 onMounted(async () => {
+  detectTouchMobile()
+  window.addEventListener('resize', detectTouchMobile)
   window.addEventListener('scroll', handleScroll)
   handleScroll()
   
@@ -1281,6 +1430,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', detectTouchMobile)
   window.removeEventListener('scroll', handleScroll)
 })
 
@@ -1512,7 +1662,7 @@ async function submitReservation() {
   z-index: 150; 
   box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
-@media (max-width: 1400px) { .side-navigation-guide { display: none; } }
+@media (max-width: 1100px) { .side-navigation-guide { display: none; } }
 
 .nav-stack { display: flex; flex-direction: column; position: relative; width: 100%; align-items: center; }
 .nav-dot { display: flex; flex-direction: column; align-items: center; text-decoration: none; width: 100%; padding: 12px 0; transition: all 0.3s; }
@@ -1707,6 +1857,61 @@ async function submitReservation() {
 .assets-header-v4 h3 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
 .assets-header-v4 a { font-size: 14px; font-weight: 600; color: var(--v4-primary); text-decoration: none; }
 
+.other-lots-filters-v4 {
+  margin-bottom: 18px;
+}
+
+.other-lots-search-v4 {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid var(--v4-border);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--v4-text);
+  background: #fff;
+}
+
+.other-lots-search-v4:focus {
+  outline: none;
+  border-color: var(--v4-primary);
+}
+
+.other-lots-tags-v4 {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.other-lots-tag-v4,
+.other-lots-clear-v4 {
+  border: 1px solid var(--v4-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--v4-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.other-lots-tag-v4.is-active {
+  border-color: var(--v4-primary);
+  color: var(--v4-primary);
+  background: #eef6ff;
+}
+
+.other-lots-clear-v4 {
+  border-style: dashed;
+}
+
+.other-lots-empty-v4 {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--v4-text-muted);
+}
+
 .assets-grid-v4 { 
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -1847,6 +2052,63 @@ async function submitReservation() {
 .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; }
 .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; background: none; border: none; font-size: 32px; cursor: pointer; }
 
+.interaction-gate-v4 {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.interaction-gate-v4__btn {
+  border: none;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.interaction-gate-v4__hint {
+  margin: 0;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 280px;
+}
+
+.interaction-toggle-v4 {
+  margin-top: 12px;
+  border: 1px solid var(--v4-border);
+  background: #fff;
+  color: var(--v4-text-muted);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.panorama-container-v4 {
+  width: 100%;
+  height: clamp(280px, 56.25vw, 600px);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--v4-border);
+}
+
+.panorama-container-v4.is-interaction-disabled :deep(.panorama-viewer) {
+  pointer-events: none;
+}
+
 @media (max-width: 768px) {
   .other-assets-v4 { margin-bottom: 32px; padding-bottom: 0; } 
   .hero-v4, .section-v4 { padding: 20px; border-radius: 20px; }
@@ -1894,6 +2156,10 @@ async function submitReservation() {
 
   .section-title-v4 { margin-bottom: 24px; gap: 12px; }
   .section-title-v4 h2 { font-size: 20px; }
+
+  .panorama-container-v4 {
+    height: clamp(220px, 56vw, 320px);
+  }
   
   .gallery-v4 { grid-template-columns: 1fr 1fr; grid-auto-rows: 140px; }
   
