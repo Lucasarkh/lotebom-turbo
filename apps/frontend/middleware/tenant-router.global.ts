@@ -31,6 +31,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
         { replace: true },
       );
     }
+
+    // Legacy custom-domain lot URLs like /A12 become /:projectSlug/A12.
+    const parts = to.path.split('/').filter(Boolean);
+    if (parts.length === 1 && parts[0] !== slug) {
+      return navigateTo(
+        { path: `/${slug}/${parts[0]}`, query: to.query },
+        { replace: true },
+      );
+    }
   }
 
   // If a tenant domain is used but no specific project (e.g. vendas.loteadora.com.br)

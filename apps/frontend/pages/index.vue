@@ -3,12 +3,7 @@
     <div class="spinner"></div>
   </div>
 
-  <!-- If a project was resolved (custom domain), show the project home here on root -->
-  <template v-else-if="tenantStore.config?.projectId">
-    <ProjectLandingView />
-  </template>
-
-  <!-- Otherwise show standard platform landing -->
+  <!-- Standard platform landing — custom domain projects are redirected to /:slug by tenant-router middleware -->
   <div v-else class="landing-page">
     <LandingHeader />
     <main>
@@ -28,7 +23,6 @@ import LandingAudience from '@/components/landing/LandingAudience.vue'
 import LandingFeatures from '@/components/landing/LandingFeatures.vue'
 import LandingCTA from '@/components/landing/LandingCTA.vue'
 import LandingFooter from '@/components/landing/LandingFooter.vue'
-import ProjectLandingView from '@/components/ProjectLandingView.vue'
 import { useTenantStore } from '~/stores/tenant'
 
 const tenantStore = useTenantStore()
