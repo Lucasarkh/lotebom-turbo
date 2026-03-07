@@ -55,6 +55,7 @@ const loading = ref(false)
 const error = ref('')
 const success = ref(false)
 const config = useRuntimeConfig()
+const apiBase = (config.public.apiBase || '').replace(/\/+$/, '')
 const route = useRoute()
 
 const token = computed(() => route.query.token as string || '')
@@ -77,7 +78,7 @@ const handleSubmit = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await fetch(`${config.public.apiBase}/api/auth/reset-password`, {
+    const res = await fetch(`${apiBase}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: token.value, password: password.value }),

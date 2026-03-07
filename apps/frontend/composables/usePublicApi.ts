@@ -3,7 +3,8 @@
  */
 export const usePublicApi = () => {
   const config = useRuntimeConfig()
-  const baseUrl = `${config.public.apiBase}/api`
+  const apiBase = (config.public.apiBase || '').replace(/\/+$/, '')
+  const baseUrl = `${apiBase}/api`
 
   const fetchPublic = async (url: string, options: any = {}) => {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', ...options.headers }

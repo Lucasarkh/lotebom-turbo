@@ -39,6 +39,7 @@ const loading = ref(false)
 const error = ref('')
 const sent = ref(false)
 const config = useRuntimeConfig()
+const apiBase = (config.public.apiBase || '').replace(/\/+$/, '')
 
 definePageMeta({
   layout: 'public'
@@ -48,7 +49,7 @@ const handleSubmit = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await fetch(`${config.public.apiBase}/api/auth/forgot-password`, {
+    const res = await fetch(`${apiBase}/api/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value }),

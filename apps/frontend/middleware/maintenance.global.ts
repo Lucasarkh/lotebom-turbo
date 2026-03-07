@@ -23,7 +23,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   try {
     const config = useRuntimeConfig()
-    const baseUrl = `${config.public.apiBase}/api`
+    const apiBase = (config.public.apiBase || '').replace(/\/+$/, '')
+    const baseUrl = `${apiBase}/api`
     const res = await fetch(`${baseUrl}/p/settings/maintenance`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }

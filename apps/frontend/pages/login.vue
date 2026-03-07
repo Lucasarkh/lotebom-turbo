@@ -70,6 +70,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const config = useRuntimeConfig()
+const apiBase = (config.public.apiBase || '').replace(/\/+$/, '')
 const { success: toastSuccess, fromError: toastFromError } = useToast()
 
 definePageMeta({
@@ -84,7 +85,7 @@ const handleLogin = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await fetch(`${config.public.apiBase}/api/auth/login`, {
+    const res = await fetch(`${apiBase}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value, password: password.value }),
@@ -119,7 +120,7 @@ const handleVerify2FA = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await fetch(`${config.public.apiBase}/api/auth/verify-2fa`, {
+    const res = await fetch(`${apiBase}/api/auth/verify-2fa`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: twoFactorUserId.value, code: twoFactorCode.value }),

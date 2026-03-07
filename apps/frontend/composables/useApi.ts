@@ -5,7 +5,8 @@ export const useApi = () => {
   const authStore = useAuthStore();
   const router = useRouter();
 
-  const baseUrl = `${config.public.apiBase}/api`;
+  const apiBase = (config.public.apiBase || '').replace(/\/+$/, '');
+  const baseUrl = `${apiBase}/api`;
 
   const buildHeaders = (extra: Record<string, string> = {}, json = true) => {
     const h: Record<string, string> = { ...extra };

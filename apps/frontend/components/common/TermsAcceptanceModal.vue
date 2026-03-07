@@ -108,6 +108,7 @@ const accepted = ref(false)
 const loading = ref(false)
 const error = ref('')
 const config = useRuntimeConfig()
+const apiBase = (config.public.apiBase || '').replace(/\/+$/, '')
 const authStore = useAuthStore()
 
 const handleAccept = async () => {
@@ -117,7 +118,7 @@ const handleAccept = async () => {
   error.value = ''
 
   try {
-    const res = await fetch(`${config.public.apiBase}/api/auth/accept-terms`, {
+    const res = await fetch(`${apiBase}/api/auth/accept-terms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

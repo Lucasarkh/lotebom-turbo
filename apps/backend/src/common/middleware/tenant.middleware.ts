@@ -48,7 +48,14 @@ export class TenantMiddleware implements NestMiddleware {
     }
 
     // Ignorar logs para caminhos de infraestrutura/documentação para reduzir ruído
-    const ignoredPaths = ['/favicon.ico', '/docs', '/api/metrics', '/api/health', '/'];
+    const ignoredPaths = [
+      '/favicon.ico',
+      '/docs',
+      '/api/metrics',
+      '/api/health',
+      '/api/internal/tls/allow-host',
+      '/',
+    ];
     if (ignoredPaths.some(p => req.path === p) || req.path.startsWith('/docs')) {
         return next();
     }
