@@ -2,8 +2,7 @@ import {
   Injectable,
   NestMiddleware,
   NotFoundException,
-  Inject,
-  forwardRef
+  Inject
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '@/infra/db/prisma.service';
@@ -60,9 +59,23 @@ export class TenantMiddleware implements NestMiddleware {
         return next();
     }
     
-    // Main domain can be configured via Env, default to 'lotio.com.br'
-    const mainDomain = process.env.MAIN_DOMAIN || 'lotio.com.br';
-    const isMainDomain = host === mainDomain || host === 'localhost' || host === '127.0.0.1';
+    // Main domain can be configured via Env. Treat apex/www as equivalent.
+    const configuredMainDomain = (process.env.MAIN_DOMAIN || 'lotio.com.br')
+      .toLowerCase()
+      .replace(/\.$/, '');
+    const configuredApex = configuredMainDomain.startsWith('www.')
+      ? configuredMainDomain.slice(4)
+      : configuredMainDomain;
+    const hostNormalized = host.toLowerCase();
+    const hostApex = hostNormalized.startsWith('www.')
+      ? hostNormalized.slice(4)
+      : hostNormalized;
+
+    const isLocalHost = hostNormalized === 'localhost' || hostNormalized === '127.0.0.1';
+    const isMainDomain =
+      isLocalHost ||
+      hostApex === configuredApex ||
+      hostApex === 'lotio.com.br';
 
     // 1. Resolve from custom domain (highest priority)
     if (!isMainDomain && host) {
