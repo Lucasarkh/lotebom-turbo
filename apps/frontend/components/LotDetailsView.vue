@@ -742,18 +742,12 @@ const pathPrefix = computed(() => {
   if (isPreview.value) {
     return `/preview/${previewId.value}`
   }
-  const host = process.client ? window.location.host : ''
-  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
-  return isMainDomain ? `/${projectSlug.value}` : ''
+  return projectSlug.value ? `/${projectSlug.value}` : ''
 })
 const lotCode = computed(() => {
   if (props.lotCode) return props.lotCode;
   if (route.params.code) return decodeURIComponent(route.params.code as string);
-  
-  const host = process.client ? window.location.host : '';
-  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000');
-  if (!isMainDomain && route.params.slug) return route.params.slug as string;
-  
+
   return '';
 })
 const corretorCode = (route.query.c as string) || ''

@@ -186,20 +186,15 @@ const ctaLink = computed(() => {
   const { linkType, linkId, linkUrl } = props.hotspot
   const slug = (route.params.slug || tenantStore.config?.project?.slug) as string
   const realtorCode = (route.query.c || '') as string
-  
-  // Custom Domain logic: if on main domain, add slug prefix. 
-  // If on custom domain, keep root.
-  const host = process.client ? window.location.host : ''
-  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
-  const pathPrefix = isMainDomain ? `/${slug}` : ''
+  const pathPrefix = slug ? `/${slug}` : ''
 
   let base = null
   if (linkType === 'LOTE_PAGE' && linkId) {
     const code = (props.hotspot as any).code || props.hotspot.label || (props.hotspot as any).name || linkId || props.hotspot.id
-    base = isMainDomain ? `${pathPrefix}/${encodeURIComponent(code)}` : `/${encodeURIComponent(code)}`
+    base = pathPrefix ? `${pathPrefix}/${encodeURIComponent(code)}` : `/${encodeURIComponent(code)}`
   }
   else if (linkType === 'PROJECT_PAGE' && linkId) {
-    base = isMainDomain ? `/${linkId}` : '/'
+    base = `/${linkId}`
   }
   else if (linkType === 'CUSTOM_URL' && linkUrl) return linkUrl
 

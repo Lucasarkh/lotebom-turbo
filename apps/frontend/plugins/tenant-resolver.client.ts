@@ -28,15 +28,10 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     if (config) {
       tenantStore.setTenantConfig(config);
       
-      // Handle initial redirect if we match a project domain at the root
+      // Canonicalize to slug-based route for both main and custom domains.
       if (window.location.pathname === '/' && config.projectId && config.project?.slug) {
-          const hostname = window.location.hostname;
-          const isMainDomain = hostname === 'lotio.com.br' || hostname === 'localhost';
-
-          if (isMainDomain) {
-            const slug = config.project.slug;
-            navigateTo(`/${slug}`, { replace: true });
-          }
+          const slug = config.project.slug;
+          navigateTo(`/${slug}`, { replace: true });
       }
     } else {
         // Non-recognized domain or main domain without project context

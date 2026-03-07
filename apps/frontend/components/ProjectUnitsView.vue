@@ -221,9 +221,7 @@ const pathPrefix = computed(() => {
   if (isPreview.value) {
     return `/preview/${previewId.value}`
   }
-  const host = process.client ? window.location.host : ''
-  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000')
-  return isMainDomain ? `/${projectSlug.value}` : ''
+  return projectSlug.value ? `/${projectSlug.value}` : ''
 })
 
 const loading = ref(true)

@@ -64,9 +64,7 @@ watch(() => props.project?.slug, () => {
 }, { immediate: true })
 
 const getPathPrefix = () => {
-  const host = process.client ? window.location.host : ''
-  const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000') || host.includes('lot.framer.ai')
-  return isMainDomain ? `/${props.project.slug}` : ''
+  return props.project?.slug ? `/${props.project.slug}` : ''
 }
 
 const navigateToLot = (code: string) => {

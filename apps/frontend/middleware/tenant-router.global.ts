@@ -14,17 +14,22 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  // If we are at the root '/' and a project was resolved via Domain
-  if (to.path === '/' && tenantStore.config?.projectId && tenantStore.config.project?.slug) {
+  // Canonicalize project routes so main and custom domains use the same page files.
+  if (tenantStore.config?.projectId && tenantStore.config.project?.slug) {
     const slug = tenantStore.config.project.slug;
-    
-    // Only redirect to /[slug] if we are on the main domain (lotio.com.br or localhost)
-    // On a custom domain, we want to keep the URL as '/'
-    const host = process.client ? window.location.host : '';
-    const isMainDomain = host.includes('lotio.com.br') || host.includes('localhost:3000');
+    const canonicalMap: Record<string, string> = {
+      '/': '',
+      '/unidades': '/unidades',
+      '/galeria': '/galeria',
+      '/espelho-planta': '/espelho-planta',
+    };
 
-    if (isMainDomain) {
-      return navigateTo(`/${slug}`, { replace: true });
+    const suffix = canonicalMap[to.path];
+    if (suffix !== undefined) {
+      return navigateTo(
+        { path: `/${slug}${suffix}`, query: to.query },
+        { replace: true },
+      );
     }
   }
 
