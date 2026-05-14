@@ -1,0 +1,5 @@
+- name: Provision Lotio on shared server
+  hosts: production
+  become: true
+  roles:
+    - server

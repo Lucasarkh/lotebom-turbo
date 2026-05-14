@@ -99,8 +99,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner_lc }}/lotio-backend:latest
             ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner_lc }}/lotio-backend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
   # ============================================
   # Backend: Deploy
@@ -114,48 +114,180 @@ jobs:
       (needs.detect-changes.outputs.backend == 'true' || github.event.inputs.force_backend == 'true') &&
       needs.backend-build.result == 'success'
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deployment files to server
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BACKEND_IMAGE: ghcr.io/${{ needs.backend-build.outputs.owner_lc }}/lotio-backend:${{ github.sha }}
+          FRONTEND_IMAGE: ghcr.io/${{ needs.backend-build.outputs.owner_lc }}/lotio-frontend:latest
+          BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
+          FRONTEND_PORT: ${{ secrets.FRONTEND_PORT }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          REDIS_COMMANDER_PASS: ${{ secrets.REDIS_COMMANDER_PASS }}
+          RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+          RABBITMQ_PASS: ${{ secrets.RABBITMQ_PASS }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          MAIN_DOMAIN: ${{ secrets.MAIN_DOMAIN }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          FRONTEND_API_URL: ${{ secrets.FRONTEND_API_URL }}
+          FRONTEND_SITE_URL: ${{ secrets.FRONTEND_SITE_URL }}
+          NUXT_PUBLIC_ASSET_BASE: ${{ secrets.NUXT_PUBLIC_ASSET_BASE }}
+          NUXT_PUBLIC_FB_APP_ID: ${{ secrets.NUXT_PUBLIC_FB_APP_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          ASSET_CDN_BASE_URL: ${{ secrets.ASSET_CDN_BASE_URL }}
+          SENDPULSE_CLIENT_ID: ${{ secrets.SENDPULSE_CLIENT_ID }}
+          SENDPULSE_CLIENT_SECRET: ${{ secrets.SENDPULSE_CLIENT_SECRET }}
+          SENDPULSE_FROM_EMAIL: ${{ secrets.SENDPULSE_FROM_EMAIL }}
+          SENDPULSE_FROM_NAME: ${{ secrets.SENDPULSE_FROM_NAME }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          WHAPI_TOKEN: ${{ secrets.WHAPI_TOKEN }}
+          WHAPI_DEFAULT_COUNTRY_CODE: ${{ secrets.WHAPI_DEFAULT_COUNTRY_CODE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_IMAGE,FRONTEND_IMAGE,BACKEND_PORT,FRONTEND_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
           script: |
             set -e
-            cd ${{ secrets.DEPLOY_PATH }}
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
 
-            docker compose pull backend
-            docker compose up -d backend
-            
-            echo "Waiting for backend to stabilize..."
-            for i in $(seq 1 20); do
-              STATUS=$(docker inspect --format='{{.State.Status}}' lotio_backend 2>/dev/null || echo "missing")
-              if [ "$STATUS" = "running" ]; then
-                echo "✓ Backend is running (attempt $i)"
+            # --- Generate .env from secrets ---
+            umask 077
+            : > .env
+            chmod 600 .env
+
+            write_env() {
+              local key="$1" value="$2"
+              local escaped
+              escaped=$(printf '%s' "$value" | sed "s/'/'\\\\''/g")
+              printf "%s='%s'\n" "$key" "$escaped" >> .env
+            }
+
+            escape_uri_component() {
+              printf '%s' "$1" | sed \
+                -e 's/%/%25/g' \
+                -e 's/@/%40/g' \
+                -e 's/:/%3A/g' \
+                -e 's#/#%2F#g' \
+                -e 's/+/%2B/g' \
+                -e 's/=/%3D/g' \
+                -e 's/?/%3F/g' \
+                -e 's/#/%23/g' \
+                -e 's/&/%26/g'
+            }
+
+            DB_USER_ENCODED=$(escape_uri_component "$POSTGRES_USER")
+            DB_PASSWORD_ENCODED=$(escape_uri_component "$POSTGRES_PASSWORD")
+            RABBITMQ_USER_ENCODED=$(escape_uri_component "$RABBITMQ_USER")
+            RABBITMQ_PASS_ENCODED=$(escape_uri_component "$RABBITMQ_PASS")
+            DATABASE_URL="postgresql://${DB_USER_ENCODED}:${DB_PASSWORD_ENCODED}@db:5432/${POSTGRES_DB:-lotio}?schema=public"
+            RABBITMQ_URL="amqp://${RABBITMQ_USER_ENCODED}:${RABBITMQ_PASS_ENCODED}@rabbitmq:5672"
+
+            GHCR_OWNER=$(echo "$GHCR_USERNAME" | tr '[:upper:]' '[:lower:]')
+
+            write_env GHCR_OWNER           "$GHCR_OWNER"
+            write_env BACKEND_TAG          "latest"
+            write_env FRONTEND_TAG         "latest"
+            write_env BACKEND_PORT         "${BACKEND_PORT:-127.0.0.1:8180}"
+            write_env FRONTEND_PORT        "${FRONTEND_PORT:-127.0.0.1:3100}"
+            write_env POSTGRES_DB          "${POSTGRES_DB:-lotio}"
+            write_env POSTGRES_USER        "$POSTGRES_USER"
+            write_env POSTGRES_PASSWORD    "$POSTGRES_PASSWORD"
+            write_env REDIS_PASSWORD       "$REDIS_PASSWORD"
+            write_env REDIS_COMMANDER_PASS "${REDIS_COMMANDER_PASS:-admin}"
+            write_env RABBITMQ_USER        "$RABBITMQ_USER"
+            write_env RABBITMQ_PASS        "$RABBITMQ_PASS"
+            write_env RABBITMQ_URL         "$RABBITMQ_URL"
+            write_env JWT_SECRET           "$JWT_SECRET"
+            write_env ENCRYPTION_KEY       "$ENCRYPTION_KEY"
+            write_env MAIN_DOMAIN          "${MAIN_DOMAIN:-lotio.com.br}"
+            write_env FRONTEND_URL         "${FRONTEND_URL:-https://lotio.com.br}"
+            write_env FRONTEND_API_URL     "${FRONTEND_API_URL:-https://lotio.com.br}"
+            write_env FRONTEND_SITE_URL    "${FRONTEND_SITE_URL:-https://lotio.com.br}"
+            write_env NUXT_PUBLIC_ASSET_BASE "${NUXT_PUBLIC_ASSET_BASE:-https://img.lotio.com.br}"
+            write_env NUXT_PUBLIC_FB_APP_ID "${NUXT_PUBLIC_FB_APP_ID:-}"
+            write_env AWS_REGION           "${AWS_REGION:-us-east-1}"
+            write_env AWS_ACCESS_KEY_ID    "$AWS_ACCESS_KEY_ID"
+            write_env AWS_SECRET_ACCESS_KEY "$AWS_SECRET_ACCESS_KEY"
+            write_env AWS_S3_BUCKET        "${AWS_S3_BUCKET:-lot-uploads}"
+            write_env ASSET_CDN_BASE_URL   "${ASSET_CDN_BASE_URL:-https://img.lotio.com.br}"
+            write_env SENDPULSE_CLIENT_ID  "${SENDPULSE_CLIENT_ID:-}"
+            write_env SENDPULSE_CLIENT_SECRET "${SENDPULSE_CLIENT_SECRET:-}"
+            write_env SENDPULSE_FROM_EMAIL "${SENDPULSE_FROM_EMAIL:-}"
+            write_env SENDPULSE_FROM_NAME  "${SENDPULSE_FROM_NAME:-Lotio}"
+            write_env STRIPE_SECRET_KEY    "${STRIPE_SECRET_KEY:-}"
+            write_env STRIPE_PUBLISHABLE_KEY "${STRIPE_PUBLISHABLE_KEY:-}"
+            write_env STRIPE_WEBHOOK_SECRET "${STRIPE_WEBHOOK_SECRET:-}"
+            write_env MERCADOPAGO_ACCESS_TOKEN "${MERCADOPAGO_ACCESS_TOKEN:-}"
+            write_env GOOGLE_MAPS_API_KEY  "${GOOGLE_MAPS_API_KEY:-}"
+            write_env WHAPI_TOKEN          "${WHAPI_TOKEN:-}"
+            write_env WHAPI_DEFAULT_COUNTRY_CODE "${WHAPI_DEFAULT_COUNTRY_CODE:-}"
+            write_env OPENAI_API_KEY       "${OPENAI_API_KEY:-}"
+
+            # --- Login to GHCR ---
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+            # --- Pull backend image ---
+            docker compose -f docker-compose.prod.yml --env-file .env pull backend
+
+            # --- Start infra ---
+            docker compose -f docker-compose.prod.yml --env-file .env up -d db redis rabbitmq
+
+            # --- Run migrations ---
+            docker compose -f docker-compose.prod.yml --env-file .env run --rm backend npx prisma migrate deploy
+
+            # --- Start backend ---
+            docker compose -f docker-compose.prod.yml --env-file .env up -d backend
+
+            # --- Wait for backend health ---
+            backend_ready=0
+            for attempt in $(seq 1 30); do
+              if wget -qO- "http://127.0.0.1:${BACKEND_PORT##*:}/api/health" >/dev/null 2>&1; then
+                backend_ready=1
                 break
               fi
-              if [ "$i" -eq 20 ]; then
-                echo "❌ Backend failed to start. Logs:"
-                docker logs --tail=100 lotio_backend 2>&1 || true
-                exit 1
-              fi
-              echo "  Status: $STATUS — waiting 5s... ($i/20)"
+              echo "Waiting for backend (${attempt}/30)..."
               sleep 5
             done
+            if [ "$backend_ready" -ne 1 ]; then
+              echo "=== Backend failed to start ==="
+              docker compose -f docker-compose.prod.yml --env-file .env logs --tail=100 backend
+              exit 1
+            fi
 
-            # Extra wait for app to initialize
-            sleep 10
+            # --- Start auxiliary services ---
+            docker compose -f docker-compose.prod.yml --env-file .env up -d redis-commander
 
-            echo "Running database migrations..."
-            docker compose exec -T backend npx prisma migrate deploy
+            docker image prune -af --filter "until=24h" || true
 
-            echo "Latest logs from backend:"
-            docker logs --tail=50 lotio_backend
-
-            echo "Removing dangling Docker images from previous deploys..."
-            docker image prune -f
-            
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -n 20
+            echo "Backend deploy completed successfully."
 
   # ============================================
   # Frontend: Build & Push Docker Image (Nuxt SSR)
@@ -197,8 +329,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner_lc }}/lotio-frontend:latest
             ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner_lc }}/lotio-frontend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
   # ============================================
   # Frontend: Deploy (aguarda backend se ambos mudaram)
@@ -216,44 +348,167 @@ jobs:
         needs.backend-deploy.result == 'success'
       )
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deployment files to server
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
+          FRONTEND_PORT: ${{ secrets.FRONTEND_PORT }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          REDIS_COMMANDER_PASS: ${{ secrets.REDIS_COMMANDER_PASS }}
+          RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+          RABBITMQ_PASS: ${{ secrets.RABBITMQ_PASS }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          MAIN_DOMAIN: ${{ secrets.MAIN_DOMAIN }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          FRONTEND_API_URL: ${{ secrets.FRONTEND_API_URL }}
+          FRONTEND_SITE_URL: ${{ secrets.FRONTEND_SITE_URL }}
+          NUXT_PUBLIC_ASSET_BASE: ${{ secrets.NUXT_PUBLIC_ASSET_BASE }}
+          NUXT_PUBLIC_FB_APP_ID: ${{ secrets.NUXT_PUBLIC_FB_APP_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          ASSET_CDN_BASE_URL: ${{ secrets.ASSET_CDN_BASE_URL }}
+          SENDPULSE_CLIENT_ID: ${{ secrets.SENDPULSE_CLIENT_ID }}
+          SENDPULSE_CLIENT_SECRET: ${{ secrets.SENDPULSE_CLIENT_SECRET }}
+          SENDPULSE_FROM_EMAIL: ${{ secrets.SENDPULSE_FROM_EMAIL }}
+          SENDPULSE_FROM_NAME: ${{ secrets.SENDPULSE_FROM_NAME }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          MERCADOPAGO_ACCESS_TOKEN: ${{ secrets.MERCADOPAGO_ACCESS_TOKEN }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          WHAPI_TOKEN: ${{ secrets.WHAPI_TOKEN }}
+          WHAPI_DEFAULT_COUNTRY_CODE: ${{ secrets.WHAPI_DEFAULT_COUNTRY_CODE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_PORT,FRONTEND_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
           script: |
             set -e
-            cd ${{ secrets.DEPLOY_PATH }}
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
 
-            docker compose pull frontend
-            docker compose up -d frontend
+            # --- Regenerate .env (ensure latest secrets) ---
+            umask 077
+            : > .env
+            chmod 600 .env
 
-            echo "Waiting for frontend to stabilize..."
-            for i in $(seq 1 20); do
-              STATUS=$(docker inspect --format='{{.State.Status}}' lotio_frontend 2>/dev/null || echo "missing")
-              if [ "$STATUS" = "running" ]; then
-                echo "✓ Frontend is running (attempt $i)"
+            write_env() {
+              local key="$1" value="$2"
+              local escaped
+              escaped=$(printf '%s' "$value" | sed "s/'/'\\\\''/g")
+              printf "%s='%s'\n" "$key" "$escaped" >> .env
+            }
+
+            escape_uri_component() {
+              printf '%s' "$1" | sed \
+                -e 's/%/%25/g' \
+                -e 's/@/%40/g' \
+                -e 's/:/%3A/g' \
+                -e 's#/#%2F#g' \
+                -e 's/+/%2B/g' \
+                -e 's/=/%3D/g' \
+                -e 's/?/%3F/g' \
+                -e 's/#/%23/g' \
+                -e 's/&/%26/g'
+            }
+
+            DB_USER_ENCODED=$(escape_uri_component "$POSTGRES_USER")
+            DB_PASSWORD_ENCODED=$(escape_uri_component "$POSTGRES_PASSWORD")
+            RABBITMQ_USER_ENCODED=$(escape_uri_component "$RABBITMQ_USER")
+            RABBITMQ_PASS_ENCODED=$(escape_uri_component "$RABBITMQ_PASS")
+            DATABASE_URL="postgresql://${DB_USER_ENCODED}:${DB_PASSWORD_ENCODED}@db:5432/${POSTGRES_DB:-lotio}?schema=public"
+            RABBITMQ_URL="amqp://${RABBITMQ_USER_ENCODED}:${RABBITMQ_PASS_ENCODED}@rabbitmq:5672"
+
+            GHCR_OWNER=$(echo "$GHCR_USERNAME" | tr '[:upper:]' '[:lower:]')
+
+            write_env GHCR_OWNER           "$GHCR_OWNER"
+            write_env BACKEND_TAG          "latest"
+            write_env FRONTEND_TAG         "latest"
+            write_env BACKEND_PORT         "${BACKEND_PORT:-127.0.0.1:8180}"
+            write_env FRONTEND_PORT        "${FRONTEND_PORT:-127.0.0.1:3100}"
+            write_env POSTGRES_DB          "${POSTGRES_DB:-lotio}"
+            write_env POSTGRES_USER        "$POSTGRES_USER"
+            write_env POSTGRES_PASSWORD    "$POSTGRES_PASSWORD"
+            write_env REDIS_PASSWORD       "$REDIS_PASSWORD"
+            write_env REDIS_COMMANDER_PASS "${REDIS_COMMANDER_PASS:-admin}"
+            write_env RABBITMQ_USER        "$RABBITMQ_USER"
+            write_env RABBITMQ_PASS        "$RABBITMQ_PASS"
+            write_env RABBITMQ_URL         "$RABBITMQ_URL"
+            write_env JWT_SECRET           "$JWT_SECRET"
+            write_env ENCRYPTION_KEY       "$ENCRYPTION_KEY"
+            write_env MAIN_DOMAIN          "${MAIN_DOMAIN:-lotio.com.br}"
+            write_env FRONTEND_URL         "${FRONTEND_URL:-https://lotio.com.br}"
+            write_env FRONTEND_API_URL     "${FRONTEND_API_URL:-https://lotio.com.br}"
+            write_env FRONTEND_SITE_URL    "${FRONTEND_SITE_URL:-https://lotio.com.br}"
+            write_env NUXT_PUBLIC_ASSET_BASE "${NUXT_PUBLIC_ASSET_BASE:-https://img.lotio.com.br}"
+            write_env NUXT_PUBLIC_FB_APP_ID "${NUXT_PUBLIC_FB_APP_ID:-}"
+            write_env AWS_REGION           "${AWS_REGION:-us-east-1}"
+            write_env AWS_ACCESS_KEY_ID    "$AWS_ACCESS_KEY_ID"
+            write_env AWS_SECRET_ACCESS_KEY "$AWS_SECRET_ACCESS_KEY"
+            write_env AWS_S3_BUCKET        "${AWS_S3_BUCKET:-lot-uploads}"
+            write_env ASSET_CDN_BASE_URL   "${ASSET_CDN_BASE_URL:-https://img.lotio.com.br}"
+            write_env SENDPULSE_CLIENT_ID  "${SENDPULSE_CLIENT_ID:-}"
+            write_env SENDPULSE_CLIENT_SECRET "${SENDPULSE_CLIENT_SECRET:-}"
+            write_env SENDPULSE_FROM_EMAIL "${SENDPULSE_FROM_EMAIL:-}"
+            write_env SENDPULSE_FROM_NAME  "${SENDPULSE_FROM_NAME:-Lotio}"
+            write_env STRIPE_SECRET_KEY    "${STRIPE_SECRET_KEY:-}"
+            write_env STRIPE_PUBLISHABLE_KEY "${STRIPE_PUBLISHABLE_KEY:-}"
+            write_env STRIPE_WEBHOOK_SECRET "${STRIPE_WEBHOOK_SECRET:-}"
+            write_env MERCADOPAGO_ACCESS_TOKEN "${MERCADOPAGO_ACCESS_TOKEN:-}"
+            write_env GOOGLE_MAPS_API_KEY  "${GOOGLE_MAPS_API_KEY:-}"
+            write_env WHAPI_TOKEN          "${WHAPI_TOKEN:-}"
+            write_env WHAPI_DEFAULT_COUNTRY_CODE "${WHAPI_DEFAULT_COUNTRY_CODE:-}"
+            write_env OPENAI_API_KEY       "${OPENAI_API_KEY:-}"
+
+            # --- Login to GHCR ---
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+            # --- Pull & deploy frontend ---
+            docker compose -f docker-compose.prod.yml --env-file .env pull frontend
+            docker compose -f docker-compose.prod.yml --env-file .env up -d frontend
+
+            # --- Wait for frontend health ---
+            frontend_ready=0
+            for attempt in $(seq 1 20); do
+              if wget -qO- "http://127.0.0.1:${FRONTEND_PORT##*:}/" >/dev/null 2>&1; then
+                frontend_ready=1
                 break
               fi
-              if [ "$i" -eq 20 ]; then
-                echo "❌ Frontend failed to start. Logs:"
-                docker logs --tail=100 lotio_frontend 2>&1 || true
-                exit 1
-              fi
-              echo "  Status: $STATUS — waiting 5s... ($i/20)"
+              echo "Waiting for frontend (${attempt}/20)..."
               sleep 5
             done
+            if [ "$frontend_ready" -ne 1 ]; then
+              echo "=== Frontend failed to start ==="
+              docker compose -f docker-compose.prod.yml --env-file .env logs --tail=100 frontend
+              exit 1
+            fi
 
-            echo "Latest logs from frontend:"
-            docker logs --tail=20 lotio_frontend
+            docker image prune -af --filter "until=24h" || true
 
-            echo "Removing dangling Docker images from previous deploys..."
-            docker image prune -f
-
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -n 20
-
-            echo "✅ Frontend SSR container rodando em ${{ secrets.DEPLOY_PATH }}"
+            echo "Frontend deploy completed successfully."
 
   # ============================================
   # Summary
@@ -274,3 +529,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy path:** \`/opt/lotio\`" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,7 @@
+{
+{% if caddy_admin_email %}
+	email {{ caddy_admin_email }}
+{% endif %}
+}
+
+import /etc/caddy/conf.d/*

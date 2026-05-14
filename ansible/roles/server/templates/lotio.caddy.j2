@@ -1,0 +1,42 @@
+{{ caddy_lotio_www_domain }} {
+	redir https://{{ caddy_lotio_primary_domain }}{uri} 308
+}
+
+{{ caddy_lotio_primary_domain }} {
+	encode zstd gzip
+
+	request_body {
+		max_size 10MB
+	}
+
+	@api path /api /api/*
+	handle @api {
+		reverse_proxy {{ caddy_lotio_api_upstream }} {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	@socket path /socket.io /socket.io/*
+	handle @socket {
+		reverse_proxy {{ caddy_lotio_api_upstream }} {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	handle {
+		reverse_proxy {{ caddy_lotio_web_upstream }} {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}
+
+rabbit.{{ caddy_lotio_primary_domain }} {
+	reverse_proxy {{ caddy_lotio_rabbitmq_upstream }}
+}
+
+redis.{{ caddy_lotio_primary_domain }} {
+	reverse_proxy {{ caddy_lotio_redis_commander_upstream }}
+}

@@ -1,0 +1,5 @@
+deploy_path: /opt/lotio
+
+caddy_admin_email: contato@lotio.com.br
+caddy_lotio_primary_domain: lotio.com.br
+caddy_lotio_www_domain: www.lotio.com.br

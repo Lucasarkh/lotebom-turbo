@@ -1,49 +1,10 @@
-{
-  email contato@lotio.com.br
-
-  on_demand_tls {
-    ask http://127.0.0.1:8080/api/internal/tls/allow-host
-  }
-
-  servers {
-    trusted_proxies static private_ranges
-  }
-}
-
-(proxy_backend) {
-  reverse_proxy 127.0.0.1:8080 {
-    header_up Host {host}
-    header_up X-Real-IP {remote_host}
-    header_up X-Forwarded-For {remote_host}
-    header_up X-Forwarded-Proto {scheme}
-    header_up X-Forwarded-Host {host}
-    transport http {
-      dial_timeout 10s
-      response_header_timeout 30s
-    }
-  }
-}
-
-(proxy_frontend) {
-  reverse_proxy 127.0.0.1:3000 {
-    header_up Host {host}
-    header_up X-Real-IP {remote_host}
-    header_up X-Forwarded-For {remote_host}
-    header_up X-Forwarded-Proto {scheme}
-    header_up X-Forwarded-Host {host}
-    transport http {
-      dial_timeout 10s
-      response_header_timeout 30s
-    }
-  }
-}
+# =============================================
+# Lotio — Caddy Reverse Proxy (Exemplo)
+# Portas: Frontend=3100, Backend=8180
+# =============================================
 
 www.lotio.com.br {
   redir https://lotio.com.br{uri} 308
-}
-
-http:// {
-  redir https://{host}{uri} 308
 }
 
 lotio.com.br {
@@ -55,31 +16,45 @@ lotio.com.br {
 
   @api path /api /api/*
   handle @api {
-    import proxy_backend
+    reverse_proxy 127.0.0.1:8180 {
+      header_up Host {host}
+      header_up X-Real-IP {remote_host}
+      header_up X-Forwarded-For {remote_host}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      transport http {
+        dial_timeout 10s
+        response_header_timeout 30s
+      }
+    }
   }
 
   @socket path /socket.io /socket.io/*
   handle @socket {
-    import proxy_backend
+    reverse_proxy 127.0.0.1:8180 {
+      header_up Host {host}
+      header_up X-Real-IP {remote_host}
+      header_up X-Forwarded-For {remote_host}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      transport http {
+        dial_timeout 10s
+        response_header_timeout 30s
+      }
+    }
   }
 
   handle {
-    import proxy_frontend
-  }
-}
-
-grafana.lotio.com.br {
-  encode zstd gzip
-
-  reverse_proxy 127.0.0.1:4000 {
-    header_up Host {host}
-    header_up X-Real-IP {remote_host}
-    header_up X-Forwarded-For {remote_host}
-    header_up X-Forwarded-Proto {scheme}
-    header_up X-Forwarded-Host {host}
-    transport http {
-      dial_timeout 10s
-      response_header_timeout 30s
+    reverse_proxy 127.0.0.1:3100 {
+      header_up Host {host}
+      header_up X-Real-IP {remote_host}
+      header_up X-Forwarded-For {remote_host}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      transport http {
+        dial_timeout 10s
+        response_header_timeout 30s
+      }
     }
   }
 }
@@ -87,7 +62,7 @@ grafana.lotio.com.br {
 rabbit.lotio.com.br {
   encode zstd gzip
 
-  reverse_proxy 127.0.0.1:15672 {
+  reverse_proxy 127.0.0.1:15673 {
     header_up Host {host}
     header_up X-Real-IP {remote_host}
     header_up X-Forwarded-For {remote_host}
@@ -103,7 +78,7 @@ rabbit.lotio.com.br {
 redis.lotio.com.br {
   encode zstd gzip
 
-  reverse_proxy 127.0.0.1:8081 {
+  reverse_proxy 127.0.0.1:8181 {
     header_up Host {host}
     header_up X-Real-IP {remote_host}
     header_up X-Forwarded-For {remote_host}
@@ -113,31 +88,5 @@ redis.lotio.com.br {
       dial_timeout 10s
       response_header_timeout 30s
     }
-  }
-}
-
-https:// {
-  tls {
-    on_demand
-  }
-
-  encode zstd gzip
-
-  request_body {
-    max_size 10MB
-  }
-
-  @api path /api /api/*
-  handle @api {
-    import proxy_backend
-  }
-
-  @socket path /socket.io /socket.io/*
-  handle @socket {
-    import proxy_backend
-  }
-
-  handle {
-    import proxy_frontend
   }
 }

@@ -1,0 +1,77 @@
+- name: Ensure deployment directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_group }}"
+    mode: '0755'
+  loop:
+    - "{{ deploy_path }}"
+
+- name: Ensure Caddy conf.d directory exists
+  ansible.builtin.file:
+    path: /etc/caddy/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Check if Caddyfile already has modular import
+  ansible.builtin.command: grep -q 'import /etc/caddy/conf.d/\*' /etc/caddy/Caddyfile
+  register: caddyfile_has_import
+  changed_when: false
+  failed_when: false
+
+- name: Backup existing Caddyfile before migration
+  ansible.builtin.copy:
+    src: /etc/caddy/Caddyfile
+    dest: /etc/caddy/Caddyfile.backup
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0644'
+  when: caddyfile_has_import.rc != 0
+
+- name: Read existing Caddyfile
+  ansible.builtin.slurp:
+    src: /etc/caddy/Caddyfile
+  register: caddyfile_content
+  when: caddyfile_has_import.rc != 0
+
+- name: Strip global config block and save as pescadoramador.caddy
+  ansible.builtin.copy:
+    content: "{{ caddyfile_content.content | b64decode | regex_replace('(?s)^\\s*\\{[^}]*\\}\\s*', '') }}"
+    dest: /etc/caddy/conf.d/pescadoramador.caddy
+    owner: root
+    group: root
+    mode: '0644'
+  when: caddyfile_has_import.rc != 0
+
+- name: Deploy modular Caddyfile (main)
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: root
+    group: root
+    mode: '0644'
+  when: caddyfile_has_import.rc != 0
+  notify: Reload caddy
+
+- name: Deploy Lotio Caddy config
+  ansible.builtin.template:
+    src: lotio.caddy.j2
+    dest: /etc/caddy/conf.d/lotio.caddy
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload caddy
+
+- name: Validate full Caddy configuration
+  ansible.builtin.command: /usr/bin/caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+  changed_when: false
+
+- name: Ensure Caddy is running
+  ansible.builtin.service:
+    name: caddy
+    state: started
+    enabled: true
