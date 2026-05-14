@@ -722,14 +722,9 @@ export class BillingService {
     const subMaxProjects = tenant.subscription?.maxProjects || 0;
     const maxProjects = Math.max(effectiveFreeProjects, subMaxProjects);
 
-    // User can create if: not blocked AND under the paid limit
-    const canCreateProject =
-      tenant.billingStatus !== BillingStatus.INADIMPLENTE &&
-      tenant.billingStatus !== BillingStatus.CANCELLED &&
-      N < maxProjects;
+    const canCreateProject = true;
 
-    // requiresSubscription = they're at the free limit and don't have a paid plan covering more
-    const requiresSubscription = N >= maxProjects;
+    const requiresSubscription = false;
 
     let nextProjectPriceCents: number | null = null;
     if (tiers.length > 0) {
@@ -763,59 +758,7 @@ export class BillingService {
   }
 
   async validateProjectCreation(tenantId: string): Promise<void> {
-    const [tenant, activeProjects] = await Promise.all([
-      this.prisma.tenant.findUniqueOrThrow({
-      where: { id: tenantId },
-      include: {
-        subscription: true
-      }
-      }),
-      this.prisma.project.count({
-        where: this.activeProjectWhere(tenantId)
-      })
-    ]);
-
-    if (tenant.billingStatus === BillingStatus.INADIMPLENTE) {
-      throw new ForbiddenException(
-        'Não é possível criar projetos com pagamento inadimplente. Regularize sua assinatura.'
-      );
-    }
-
-    if (tenant.billingStatus === BillingStatus.CANCELLED) {
-      throw new ForbiddenException(
-        'Assinatura cancelada. Reative sua assinatura para criar projetos.'
-      );
-    }
-
-    // Ensure pricing table is assigned
-    if (!tenant.pricingTableId) {
-      await this.autoAssignDefaultPricingTable(tenantId);
-    }
-
-    const freeProjects = tenant.freeProjects || 0;
-    const trial = this.getTrialState(tenant);
-    const trialActive = trial.trialActive;
-    const effectiveFreeProjects = trialActive ? Math.max(freeProjects, 1) : 0;
-
-    // Hard limit: max(effectiveFreeProjects, subscription.maxProjects)
-    // User can only create projects up to the plan they PAID for.
-    const subMaxProjects = tenant.subscription?.maxProjects || 0;
-    const maxAllowed = Math.max(effectiveFreeProjects, subMaxProjects);
-
-    if (activeProjects >= maxAllowed) {
-      throw new ForbiddenException(
-        JSON.stringify({
-          code: 'SUBSCRIPTION_REQUIRED',
-          message:
-            maxAllowed === 0
-              ? trialActive
-                ? 'Para criar mais projetos, é necessário assinar um plano.'
-                : 'Seu período de teste expirou. Assine um plano para continuar.'
-              : `Seu plano atual permite até ${maxAllowed} projeto(s). Faça upgrade para criar mais.`,
-          redirectTo: '/painel/assinatura'
-        })
-      );
-    }
+    return;
   }
 
   // ─── BILLING CYCLE ANCHOR ──────────────────────────────

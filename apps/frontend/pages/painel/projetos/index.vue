@@ -85,22 +85,9 @@ const checkingSlug = ref(false)
 
 const form = ref({ name: '', slug: '', description: '' })
 
-const showContractRequiredMessage = () => {
-  toastError('A criação de novos projetos depende do seu contrato. Fale com a equipe da Lotio para ajustar o acesso.')
-}
-
-/** Validate contract-related project access before opening the create modal */
+/** Open the create modal */
 const handleNewProject = async () => {
   if (!authStore.canEdit) return
-  try {
-    const limits = await fetchApi('/billing/project-limits')
-    if (!limits?.canCreateProject || limits?.requiresSubscription) {
-      showContractRequiredMessage()
-      return
-    }
-  } catch {
-    // If billing check fails, let server-side validation handle it
-  }
   showCreate.value = true
 }
 
@@ -161,14 +148,6 @@ const handleCreate = async () => {
     slugManuallyEdited.value = false
     toastSuccess('Projeto criado com sucesso!')
   } catch (e) {
-    // Check if the error is a subscription-required block
-    let parsed = null
-    try { parsed = JSON.parse(e.message || '') } catch {}
-    if (parsed?.code === 'SUBSCRIPTION_REQUIRED') {
-      showCreate.value = false
-      showContractRequiredMessage()
-      return
-    }
     createError.value = e.message
     toastFromError(e, 'Erro ao criar projeto')
   } finally {
