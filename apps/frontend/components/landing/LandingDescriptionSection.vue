@@ -25,7 +25,6 @@ defineProps<{
 .v4-description-header {
   margin-bottom: 24px;
 }
-
 .v4-rich-content {
   font-size: 19px;
   line-height: 1.6;
@@ -33,9 +32,12 @@ defineProps<{
   max-width: 800px;
   margin: 0 auto 32px;
 }
-
+.v4-rich-content :deep(p) {
+  text-align: center;
+}
 .v4-rich-content :deep(p), .v4-rich-content :deep(div) {
   margin-bottom: 20px;
+
 }
 
 .v4-rich-content :deep(ul) {
