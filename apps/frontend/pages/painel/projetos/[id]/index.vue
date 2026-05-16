@@ -4475,7 +4475,7 @@ const handleLotCsvSelected = async (event: Event) => {
 const downloadLotCsvTemplate = () => {
   const lines = [
     'codigo;status;quadra;lote;area_m2;valor_total;valor_m2;frente;fundo;lateral_esquerda;lateral_direita;topografia;tags;observacoes',
-    'Q1-L01;DISPONIVEL;Q1;01;300;120000;400;12;25;25;25;PLANO;"esquina;sol da manha";"Lote de esquina"',
+    'Q1-L01;DISPONIVEL;Q1;01;300;120000;400;12;25;25;25;PLANO;"esquina;sol da manhã";"Lote de esquina"',
     'Q1-L02;RESERVADO;Q1;02;280;98000;350;10;28;28;28;ACLIVE;"vista livre";""',
   ]
 

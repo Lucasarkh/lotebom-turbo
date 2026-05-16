@@ -360,12 +360,12 @@
             </div>
 
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-              <input v-model="newTag" @keyup.enter="addTag" type="text" class="form-input btn-sm" style="flex: 1; height: 32px; font-size: 0.85rem;" placeholder="Novo selo (ex: sol da manha)..." />
+              <input v-model="newTag" @keyup.enter="addTag" type="text" class="form-input btn-sm" style="flex: 1; height: 32px; font-size: 0.85rem;" placeholder="Novo selo (ex: sol da manhã)..." />
               <button @click="addTag" class="btn btn-sm btn-secondary" style="height: 32px; padding: 0 12px; font-size: 0.85rem;">Adicionar</button>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <button
-                v-for="suggestion in ['sol da manha', 'esquina', 'vista livre', 'proximo a portaria', 'fundo para area verde']"
+                v-for="suggestion in ['sol da manhã', 'esquina', 'vista livre', 'próximo à portaria', 'fundo para área verde']"
                 :key="suggestion"
                 @click="addSuggestedTag(suggestion)"
                 class="btn btn-xs btn-outline"
@@ -377,8 +377,8 @@
           </div>
 
           <div class="form-group" style="margin-top: 24px;">
-            <label class="form-label">Notas / Descricao</label>
-            <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informacoes adicionais do lote..."></textarea>
+            <label class="form-label">Notas / Descrição</label>
+            <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informações adicionais do lote..."></textarea>
           </div>
 
           <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--glass-border-subtle);" />
@@ -387,12 +387,12 @@
             <div class="lot-edit-section__head">
               <div>
                 <h4 style="margin-bottom: 12px;">Fotos do Lote</h4>
-                <p class="lot-edit-section__hint">Envie uma ou varias imagens da galeria deste lote de uma vez.</p>
+                <p class="lot-edit-section__hint">Envie uma ou várias imagens da galeria deste lote de uma vez.</p>
               </div>
               <span class="lot-edit-section__badge">{{ lotMedias.length }} {{ lotMedias.length === 1 ? 'imagem' : 'imagens' }}</span>
             </div>
             <div v-if="lotMedias.length === 0" class="empty-state lot-edit-empty" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px; margin-bottom: 16px;">
-              <p>Nenhuma foto especifica deste lote.</p>
+              <p>Nenhuma foto específica deste lote.</p>
             </div>
             <div v-else class="grid grid-cols-4 lot-edit-gallery-grid" style="gap: 12px; margin-bottom: 16px;">
               <div v-for="m in lotMedias" :key="m.id" class="media-card-v4">
@@ -413,7 +413,7 @@
             <div class="lot-edit-section__head">
               <div>
                 <h4 style="margin-bottom: 12px;"><i class="bi bi-image-fill" aria-hidden="true"></i> Panorama 360° do Lote</h4>
-                <p class="lot-edit-section__hint">A imagem 360 fica isolada da galeria comum para nao misturar fotos estaticas com a vista panoramica.</p>
+                <p class="lot-edit-section__hint">A imagem 360 fica isolada da galeria comum para não misturar fotos estáticas com a vista panorâmica.</p>
               </div>
               <span class="lot-edit-section__badge">{{ lotForm.panoramaUrl ? '360 ativo' : 'sem 360' }}</span>
             </div>
@@ -438,7 +438,7 @@
 
           <div class="modal-actions lot-edit-modal__actions">
             <button class="btn btn-secondary lot-edit-btn-secondary" style="background: var(--glass-bg-heavy); color: var(--color-surface-200); border: 1px solid var(--glass-border-subtle);" @click="closeEditingLot">Cancelar</button>
-            <button class="btn btn-primary lot-edit-btn-primary" style="background: var(--color-primary-600); color: #fff; border: none; font-weight: 600;" :disabled="!authStore.canEdit || savingLot" :title="!authStore.canEdit ? 'Disponivel apenas para usuarios com permissao de edicao' : undefined" @click="saveLotDetails">
+            <button class="btn btn-primary lot-edit-btn-primary" style="background: var(--color-primary-600); color: #fff; border: none; font-weight: 600;" :disabled="!authStore.canEdit || savingLot" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="saveLotDetails">
               {{ savingLot ? 'Salvando...' : 'Salvar Detalhes' }}
             </button>
           </div>
@@ -653,7 +653,7 @@ const reservationExpiry = (createdAt: string) => {
 }
 
 const lotBadge = (status: string) => ({ AVAILABLE: 'badge-success', RESERVED: 'badge-warning', SOLD: 'badge-danger' }[status] || 'badge-neutral')
-const lotLabel = (status: string) => ({ AVAILABLE: 'Disponivel', RESERVED: 'Reservado', SOLD: 'Vendido' }[status] || status)
+const lotLabel = (status: string) => ({ AVAILABLE: 'Disponível', RESERVED: 'Reservado', SOLD: 'Vendido' }[status] || status)
 const isFeaturedLot = (lot: any) => {
   const code = String(lot?.mapElement?.code || '').trim()
   return code ? featuredLotsCarouselConfig.value.lotCodes.includes(code) : false
@@ -814,12 +814,12 @@ const convertExcelToCsvFile = async (file: File) => {
   const workbook = XLSX.read(buffer, { type: 'array' })
   const firstSheetName = workbook.SheetNames[0]
   if (!firstSheetName) {
-    throw new Error('Nao foi possivel ler a planilha. Verifique se ha uma aba com dados.')
+    throw new Error('Não foi possível ler a planilha. Verifique se há uma aba com dados.')
   }
 
   const worksheet = workbook.Sheets[firstSheetName]
   if (!worksheet) {
-    throw new Error('Nao foi possivel ler a aba principal da planilha.')
+    throw new Error('Não foi possível ler a aba principal da planilha.')
   }
 
   const csv = XLSX.utils.sheet_to_csv(worksheet, {
@@ -861,7 +861,7 @@ const handleLotCsvSelected = async (event: Event) => {
 const downloadLotCsvTemplate = () => {
   const lines = [
     'codigo;status;quadra;lote;area_m2;valor_total;valor_m2;frente;fundo;lateral_esquerda;lateral_direita;topografia;tags;observacoes',
-    'Q1-L01;DISPONIVEL;Q1;01;300;120000;400;12;25;25;25;PLANO;"esquina;sol da manha";"Lote de esquina"',
+    'Q1-L01;DISPONIVEL;Q1;01;300;120000;400;12;25;25;25;PLANO;"esquina;sol da manhã";"Lote de esquina"',
     'Q1-L02;RESERVADO;Q1;02;280;98000;350;10;28;28;28;ACLIVE;"vista livre";""',
   ]
 
