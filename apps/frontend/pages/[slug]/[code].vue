@@ -119,14 +119,14 @@ const seoTitle = computed(() => {
 const seoDescription = computed(
   () => {
     if (isPreLaunchMode.value && isPreLaunchReservationMode.value) {
-      return `Saiba como reservar antecipadamente o lote ${seoLotLabel.value} no ${seoProjectName.value}. Se a unidade ja estiver comprometida, o cliente pode entrar na fila de preferencia do pre-lancamento.`
+      return `Saiba como reservar antecipadamente o lote ${seoLotLabel.value} no ${seoProjectName.value}. Se a unidade já estiver comprometida, o cliente pode entrar na fila de preferência do pré-lançamento.`
     }
 
     if (isPreLaunchMode.value) {
-      return `Entre na fila de preferencia do lote ${seoLotLabel.value} no ${seoProjectName.value} e receba atendimento prioritario, acesso antecipado e condicoes exclusivas antes da abertura oficial do lancamento.`
+      return `Entre na fila de preferência do lote ${seoLotLabel.value} no ${seoProjectName.value} e receba atendimento prioritário, acesso antecipado e condições exclusivas antes da abertura oficial do lançamento.`
     }
 
-    return `Saiba mais sobre o lote ${seoLotLabel.value} do ${seoProjectName.value}. Veja detalhes, valor e condicoes de pagamento.`
+    return `Saiba mais sobre o lote ${seoLotLabel.value} do ${seoProjectName.value}. Veja detalhes, valor e condições de pagamento.`
   },
 )
 const seoImage = computed(() => {

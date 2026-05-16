@@ -52,7 +52,7 @@
             <li><strong>h)</strong> O backup independente de seus dados críticos, quando julgar pertinente.</li>
             <li><strong>i)</strong> A analise de credito de leads e clientes, bem como os criterios de aprovacao ou reprovacao para reserva, proposta e venda dos lotes.</li>
           </ul>
-          <p>4.2. A Lotio nao valida, audita ou garante a veracidade de imagens, textos, videos, plantas, memorial descritivo, condicoes comerciais e demais materiais publicados pela loteadora, que responde integralmente por esse conteudo perante terceiros e orgaos reguladores.</p>
+          <p>4.2. A Lotio nao valida, audita ou garante a veracidade de imagens, textos, videos, plantas, memorial descritivo, condições comerciais e demais materiais publicados pela loteadora, que responde integralmente por esse conteudo perante terceiros e orgaos reguladores.</p>
         </section>
 
         <section>

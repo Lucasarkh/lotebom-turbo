@@ -68,22 +68,22 @@ const seoDescription = computed(
   () => {
     if (isPreLaunchReservationMode.value) {
       if (projectData.value?.name) {
-        return `Conheca o pre-lancamento ${projectData.value.name} com reserva antecipada para lotes disponiveis e fila de preferencia para unidades ja disputadas.`
+        return `Conheça o pré-lançamento ${projectData.value.name} com reserva antecipada para lotes disponíveis e fila de preferência para unidades já disputadas.`
       }
-      return 'Conheca o pre-lancamento com reserva antecipada para lotes disponiveis e fila de preferencia para unidades ja disputadas.'
+      return 'Conheça o pré-lançamento com reserva antecipada para lotes disponíveis e fila de preferência para unidades já disputadas.'
     }
 
     if (projectData.value?.preLaunchEnabled) {
       if (projectData.value?.name) {
-        return `Entre na fila de preferencia do ${projectData.value.name} e garanta atendimento prioritario, acesso antecipado e condicoes exclusivas antes da abertura oficial do lancamento.`
+        return `Entre na fila de preferência do ${projectData.value.name} e garanta atendimento prioritário, acesso antecipado e condições exclusivas antes da abertura oficial do lançamento.`
       }
-      return 'Entre na fila de preferencia e garanta acesso antecipado exclusivo antes da abertura oficial do lancamento.'
+      return 'Entre na fila de preferência e garanta acesso antecipado exclusivo antes da abertura oficial do lançamento.'
     }
 
     return projectData.value?.description
       || (projectData.value?.name
-        ? `Conheca o empreendimento ${projectData.value.name} e veja os lotes disponiveis.`
-        : 'Conheca os empreendimentos disponiveis na Lotio.')
+        ? `Conheça o empreendimento ${projectData.value.name} e veja os lotes disponíveis.`
+        : 'Conheça os empreendimentos disponíveis na Lotio.')
   },
 )
 const seoImage = computed(

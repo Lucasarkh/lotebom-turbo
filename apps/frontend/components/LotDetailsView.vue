@@ -1514,7 +1514,7 @@ const lotSeoTitle = computed(() => {
 const lotSeoDescription = computed(() => {
   const lotLabel = details.value?.lotNumber || lot.value?.code || lot.value?.name || lotCode.value || 'selecionado'
   const projectName = project.value?.name || 'empreendimento'
-  return `Saiba mais sobre o lote ${lotLabel} do ${projectName}. Veja detalhes, valor e condicoes de pagamento.`
+  return `Saiba mais sobre o lote ${lotLabel} do ${projectName}. Veja detalhes, valor e condições de pagamento.`
 })
 
 const lotShareMessage = computed(() => {
