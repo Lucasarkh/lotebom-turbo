@@ -17,18 +17,18 @@
 
         <!-- Modal -->
         <div
-          class="relative w-full rounded-xl border border-p-border bg-p-elevated shadow-2xl overflow-hidden"
+          class="relative w-full max-h-[calc(100vh-2rem)] flex flex-col rounded-xl border border-p-border bg-p-elevated shadow-2xl overflow-hidden"
           :class="sizeClass"
         >
           <!-- Header -->
-          <div v-if="title || $slots.header" class="flex items-center justify-between border-b border-p-border px-5 py-4">
+          <div v-if="title || $slots.header" class="shrink-0 flex items-center justify-between border-b border-p-border px-5 py-4">
             <slot name="header">
               <h2 class="text-lg font-semibold text-p-text">{{ title }}</h2>
             </slot>
             <button
               v-if="dismissible"
               type="button"
-              class="rounded-lg p-1.5 text-p-text-muted hover:bg-p-overlay hover:text-p-text transition-colors"
+              class="shrink-0 rounded-lg p-1.5 text-p-text-muted hover:bg-p-overlay hover:text-p-text transition-colors"
               @click="$emit('update:modelValue', false)"
             >
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,12 +38,12 @@
           </div>
 
           <!-- Body -->
-          <div class="overflow-y-auto max-h-[calc(100vh-12rem)] px-5 py-5">
+          <div class="flex-1 min-h-0 overflow-y-auto px-5 py-5">
             <slot />
           </div>
 
           <!-- Footer -->
-          <div v-if="$slots.footer" class="border-t border-p-border px-5 py-4">
+          <div v-if="$slots.footer" class="shrink-0 border-t border-p-border px-5 py-4">
             <slot name="footer" />
           </div>
         </div>
@@ -83,3 +83,4 @@ const sizeClass = computed(() => {
   return map[props.size]
 })
 </script>
+

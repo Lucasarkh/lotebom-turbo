@@ -94,7 +94,7 @@
         <div class="plm__toolbar-search">
           <input
             v-model="lotSearch"
-            class="form-input"
+            class="w-full rounded-lg border border-p-border bg-p-elevated px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none transition-colors"
             placeholder="Buscar por quadra, lote, codigo ou status"
           />
         </div>
@@ -126,8 +126,8 @@
             </tr>
             <tr v-for="l in group.items" :key="l.id">
               <td>
-                <div style="font-weight: 700; color: var(--color-surface-100);">{{ l.block || '' }} {{ l.lotNumber || (l.mapElement?.code || '—') }}</div>
-                <div style="font-size: 0.7rem; color: var(--color-surface-500); display: flex; align-items: center; gap: 4px;">
+                <div class="font-bold text-p-text">{{ l.block || '' }} {{ l.lotNumber || (l.mapElement?.code || '—') }}</div>
+                <div class="text-[11px] text-p-text-muted flex items-center gap-1">
                   <span class="badge badge-neutral" style="font-size: 8px; padding: 1px 4px; border-radius: 4px;">{{ l.mapElement?.type === 'LOT' ? 'Lote' : 'Ponto' }}</span>
                   <span>{{ l.mapElement?.code }}</span>
                   <span v-if="isFeaturedLot(l)" class="badge badge-success" style="font-size: 8px; padding: 1px 4px; border-radius: 4px;">Destaque</span>
@@ -148,15 +148,15 @@
                 </button>
                 <span v-else>{{ isFeaturedLot(l) ? 'Em destaque' : '—' }}</span>
               </td>
-              <td style="font-weight: 500;">{{ l.pricePerM2 ? formatCurrencyToBrasilia(l.pricePerM2) : '—' }}</td>
-              <td style="font-weight: 700;">{{ l.price ? formatCurrencyToBrasilia(l.price) : '—' }}</td>
-              <td style="font-weight: 600; color: var(--color-success);">
+              <td class="font-medium">{{ l.pricePerM2 ? formatCurrencyToBrasilia(l.pricePerM2) : '—' }}</td>
+              <td class="font-bold">{{ l.price ? formatCurrencyToBrasilia(l.price) : '—' }}</td>
+              <td class="font-semibold text-p-success">
                 {{ l.price ? formatCurrencyToBrasilia(Number(l.price) * downPaymentFactor) : '—' }}
               </td>
-              <td style="font-weight: 500;">{{ l.areaM2 ? `${l.areaM2.toFixed(2)} m²` : '—' }}</td>
+              <td class="font-medium">{{ l.areaM2 ? `${l.areaM2.toFixed(2)} m²` : '—' }}</td>
               <td v-if="authStore.canEdit">
                 <div class="flex gap-2 plm__actions">
-                  <button class="btn btn-sm btn-dark" style="background: var(--glass-bg-heavy); color: #fff; border: none;" @click="openEditLot(l)">Editar Dados</button>
+                  <button class="btn btn-sm btn-neutral" @click="openEditLot(l)">Editar Dados</button>
                   <button class="btn btn-sm btn-outline" :disabled="duplicatingLotId === l.id" @click="duplicateLot(l)">{{ duplicatingLotId === l.id ? 'Duplicando...' : 'Duplicar' }}</button>
                   <button class="btn btn-sm btn-outline" @click="shareLot(l)">Compartilhar</button>
                   <button class="btn btn-sm btn-outline" @click="openLotQrModal(l)">QR Code</button>
@@ -171,280 +171,260 @@
       </div>
     </template>
 
-    <div v-if="viewingReservation" class="modal-overlay">
-      <div class="modal" style="max-width: 520px;">
-        <div class="modal-header" style="margin-bottom: 16px;">
-          <h3>Reserva — {{ viewingReservation.mapElement?.code }}</h3>
-          <button class="modal-close" @click="viewingReservation = null">✕</button>
+    <UiModal v-model="showReservationModal" :title="`Reserva — ${viewingReservation?.mapElement?.code || ''}`" size="sm">
+      <div v-if="reservationLoading" class="text-center py-4 text-p-text-muted">Carregando...</div>
+      <div v-else-if="reservationData" class="space-y-4">
+        <div class="space-y-1.5">
+          <p class="text-xs font-bold uppercase tracking-wider text-p-text-muted">Lead</p>
+          <p class="text-sm text-p-text"><strong>Nome:</strong> {{ reservationData.name }}</p>
+          <p class="text-sm text-p-text"><strong>E-mail:</strong> {{ reservationData.email || '—' }}</p>
+          <p class="text-sm text-p-text"><strong>Telefone:</strong> {{ reservationData.phone || '—' }}</p>
+          <p class="text-sm text-p-text"><strong>CPF:</strong> {{ reservationData.cpf || '—' }}</p>
         </div>
-        <div class="modal-body">
-          <div v-if="reservationLoading" class="text-center py-4">Carregando...</div>
-          <div v-else-if="reservationData">
-            <div class="reservation-section">
-              <p class="reservation-section-label">Lead</p>
-              <p><strong>Nome:</strong> {{ reservationData.name }}</p>
-              <p><strong>E-mail:</strong> {{ reservationData.email || '—' }}</p>
-              <p><strong>Telefone:</strong> {{ reservationData.phone || '—' }}</p>
-              <p><strong>CPF:</strong> {{ reservationData.cpf || '—' }}</p>
-            </div>
-            <div class="reservation-section">
-              <p class="reservation-section-label">Corretor</p>
-              <p><strong>Nome:</strong> {{ reservationData.realtorLink?.name || '—' }}</p>
-              <p><strong>Codigo:</strong> {{ reservationData.realtorLink?.code || '—' }}</p>
-              <p v-if="reservationData.realtorLink?.imobiliaria"><strong>Imobiliaria:</strong> {{ reservationData.realtorLink.imobiliaria }}</p>
-            </div>
-            <div class="reservation-section">
-              <p class="reservation-section-label">Datas & Condicoes</p>
-              <p><strong>Reservado em:</strong> {{ reservationData.createdAt ? formatDateTimeToBrasilia(reservationData.createdAt) : '—' }}</p>
-              <p v-if="projectValue?.reservationExpiryHours && reservationData.createdAt">
-                <strong>Expira em:</strong> {{ reservationExpiry(reservationData.createdAt) }}
-              </p>
-              <p v-if="projectValue?.reservationFeeValue">
-                <strong>Taxa de Reserva:</strong>
-                {{ projectValue.reservationFeeType === 'PERCENTAGE'
-                  ? `${projectValue.reservationFeeValue}%`
-                  : formatCurrencyToBrasilia(projectValue.reservationFeeValue) }}
-              </p>
-            </div>
-            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top: 1px solid var(--glass-border-subtle);">
-              <button class="btn btn-ghost btn-sm" @click="viewingReservation = null">Fechar</button>
-              <NuxtLink class="btn btn-primary btn-sm" :to="`/painel/projetos/${projectId}/pos-reserva`">
-                Ir para Reservas
-              </NuxtLink>
-            </div>
-          </div>
-          <div v-else class="text-center py-4 text-muted">Nenhum dado de reserva encontrado.</div>
+        <div class="space-y-1.5">
+          <p class="text-xs font-bold uppercase tracking-wider text-p-text-muted">Corretor</p>
+          <p class="text-sm text-p-text"><strong>Nome:</strong> {{ reservationData.realtorLink?.name || '—' }}</p>
+          <p class="text-sm text-p-text"><strong>Codigo:</strong> {{ reservationData.realtorLink?.code || '—' }}</p>
+          <p v-if="reservationData.realtorLink?.imobiliaria" class="text-sm text-p-text"><strong>Imobiliaria:</strong> {{ reservationData.realtorLink.imobiliaria }}</p>
+        </div>
+        <div class="space-y-1.5">
+          <p class="text-xs font-bold uppercase tracking-wider text-p-text-muted">Datas & Condicoes</p>
+          <p class="text-sm text-p-text"><strong>Reservado em:</strong> {{ reservationData.createdAt ? formatDateTimeToBrasilia(reservationData.createdAt) : '—' }}</p>
+          <p v-if="projectValue?.reservationExpiryHours && reservationData.createdAt" class="text-sm text-p-text">
+            <strong>Expira em:</strong> {{ reservationExpiry(reservationData.createdAt) }}
+          </p>
+          <p v-if="projectValue?.reservationFeeValue" class="text-sm text-p-text">
+            <strong>Taxa de Reserva:</strong>
+            {{ projectValue.reservationFeeType === 'PERCENTAGE'
+              ? `${projectValue.reservationFeeValue}%`
+              : formatCurrencyToBrasilia(projectValue.reservationFeeValue) }}
+          </p>
         </div>
       </div>
-    </div>
-
-    <div v-if="lotQrModal" class="modal-overlay">
-      <div class="modal" style="max-width: 480px;">
-        <div class="modal-header" style="margin-bottom: 12px;">
-          <h3>QR Code do Lote {{ lotQrModal.code }}</h3>
-          <button class="modal-close" @click="lotQrModal = null">✕</button>
+      <div v-else class="text-center py-4 text-p-text-muted">Nenhum dado de reserva encontrado.</div>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="viewingReservation = null">Fechar</UiButton>
+          <UiButton variant="primary" :to="`/painel/projetos/${projectId}/pos-reserva`">Ir para Reservas</UiButton>
         </div>
-        <div class="modal-body" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-          <img :src="lotQrModal.qrCodeUrl" alt="QR Code do lote" style="width: min(320px, 85vw); border-radius: 10px; border: 1px solid var(--glass-border-subtle); background: #fff;" />
-          <div style="font-size: 0.82rem; color: var(--color-surface-400); text-align: center;">
-            {{ lotQrModal.shareText }}
-          </div>
-          <a :href="lotQrModal.publicPageUrl" target="_blank" style="font-size: 0.82rem; color: var(--color-primary-400); word-break: break-all; text-align: center;">
-            {{ lotQrModal.publicPageUrl }}
-          </a>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px;">
-            <button class="btn btn-sm btn-outline" @click="copyLink(lotQrModal.publicPageUrl)">Copiar Link</button>
-            <button class="btn btn-sm btn-outline" @click="downloadLotQr(lotQrModal)">Baixar QR</button>
-            <button class="btn btn-sm btn-outline" @click="printLotQr(lotQrModal)">Imprimir QR</button>
-            <a class="btn btn-sm btn-primary" :href="lotQrModal.publicPageUrl" target="_blank">Abrir Pagina</a>
-          </div>
+      </template>
+    </UiModal>
+
+    <UiModal v-model="showQrModal" :title="`QR Code do Lote ${lotQrModal?.code || ''}`" size="sm">
+      <div class="flex flex-col items-center gap-3">
+        <img v-if="lotQrModal" :src="lotQrModal.qrCodeUrl" alt="QR Code do lote" class="w-full max-w-[320px] rounded-lg border border-p-border bg-white" />
+        <p v-if="lotQrModal" class="text-sm text-p-text-muted text-center">{{ lotQrModal.shareText }}</p>
+        <a v-if="lotQrModal" :href="lotQrModal.publicPageUrl" target="_blank" class="text-sm text-p-accent break-all text-center hover:underline">
+          {{ lotQrModal.publicPageUrl }}
+        </a>
+        <div class="flex gap-2 flex-wrap justify-center mt-2">
+          <UiButton variant="ghost" size="sm" @click="copyLink(lotQrModal!.publicPageUrl)">Copiar Link</UiButton>
+          <UiButton variant="ghost" size="sm" @click="downloadLotQr(lotQrModal!)">Baixar QR</UiButton>
+          <UiButton variant="ghost" size="sm" @click="printLotQr(lotQrModal!)">Imprimir QR</UiButton>
+          <a v-if="lotQrModal" :href="lotQrModal.publicPageUrl" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors">Abrir Pagina</a>
         </div>
       </div>
-    </div>
+    </UiModal>
 
-    <div v-if="editingLot" class="modal-overlay lot-edit-overlay">
-      <div class="modal lot-edit-modal" style="max-width: 960px;">
-        <div class="modal-header lot-edit-modal__header">
-          <div>
-            <span class="lot-edit-modal__eyebrow">Editor de lote</span>
-            <h3>Editar Lote: {{ editingLot.mapElement?.code || editingLot.id }}</h3>
-            <p class="lot-edit-modal__subtitle">Ajuste dados comerciais, galeria e panorama 360 com visual mais limpo e leitura mais forte.</p>
-            <div class="lot-edit-modal__code-row">
-              <span class="lot-edit-modal__code-label">Codigo do lote</span>
-              <span class="lot-edit-modal__code-value">{{ editingLot.mapElement?.code || '—' }}</span>
-            </div>
+    <UiModal v-model="showEditLotModal" size="xl">
+      <template #header>
+        <div>
+          <span class="inline-flex mb-2 px-2.5 py-1 rounded-full bg-p-accent-subtle border border-p-accent/20 text-xs font-bold uppercase tracking-wider text-p-accent">Editor de lote</span>
+          <h2 class="text-lg font-semibold text-p-text">Editar Lote: {{ editingLot?.mapElement?.code || editingLot?.id }}</h2>
+          <p class="text-sm text-p-text-muted mt-1">Ajuste dados comerciais, galeria e panorama 360.</p>
+          <div class="flex items-center gap-2.5 mt-3">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-p-text-secondary">Codigo do lote</span>
+            <span class="inline-flex px-2.5 py-1 rounded-full bg-p-overlay border border-p-border text-xs font-bold text-p-text">{{ editingLot?.mapElement?.code || '—' }}</span>
           </div>
-          <button class="modal-close lot-edit-modal__close" @click="closeEditingLot">✕</button>
         </div>
-        <fieldset class="lot-edit-modal__fieldset" :disabled="!authStore.canEdit || isArchivedProject">
-          <div class="grid grid-cols-2" style="gap: 16px; margin-top: 16px;">
-            <div class="form-group">
-              <label class="form-label">Codigo do lote</label>
-              <input :value="editingLot.mapElement?.code || '—'" class="form-input" readonly />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Quadra</label>
-              <input v-model="lotForm.block" class="form-input" placeholder="Ex: Quadra B" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Lote nº</label>
-              <input v-model="lotForm.lotNumber" class="form-input" placeholder="Ex: 31" />
-            </div>
-          </div>
+      </template>
 
-          <div class="grid grid-cols-3" style="gap: 16px; margin-top: 16px;">
-            <div class="form-group">
-              <label class="form-label">Status</label>
-              <select v-model="lotForm.status" class="form-input">
-                <option value="AVAILABLE">Disponivel</option>
-                <option value="RESERVED">Reservado</option>
-                <option value="SOLD">Vendido</option>
+      <fieldset :disabled="!authStore.canEdit || isArchivedProject" class="space-y-5">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Codigo do lote</label>
+            <input :value="editingLot?.mapElement?.code || '—'" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" readonly />
+          </div>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Quadra</label>
+            <input v-model="lotForm.block" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: Quadra B" />
+          </div>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Lote nº</label>
+            <input v-model="lotForm.lotNumber" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 31" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Status</label>
+            <select v-model="lotForm.status" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none appearance-none">
+              <option value="AVAILABLE">Disponivel</option>
+              <option value="RESERVED">Reservado</option>
+              <option value="SOLD">Vendido</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Categoria</label>
+            <select v-model="lotForm.categoryId" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none appearance-none">
+              <option :value="null">Sem categoria</option>
+              <option v-for="category in lotCategories" :key="category.id" :value="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Valor do M² (R$)</label>
+            <input v-model.number="lotForm.pricePerM2" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="0.00" @input="calculatePriceFromM2" />
+          </div>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Preco Total (R$)</label>
+            <input v-model.number="lotForm.price" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="0.00" @input="calculateM2FromPrice" />
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="text-sm font-semibold text-p-text">Medidas para Contrato</h4>
+          <div v-if="lotContractArea !== null" class="flex items-center justify-between rounded-lg bg-p-info-subtle border border-p-info/30 px-3.5 py-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-p-info">Area Calculada</span>
+            <span class="text-sm font-bold text-p-info">{{ lotContractArea.toFixed(2) }} m²</span>
+          </div>
+          <div v-if="editingLotSideMetrics.length > 0">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted mb-1.5">Lados do Lote (do editor)</div>
+            <div class="flex flex-wrap gap-1.5">
+              <div v-for="(s, i) in editingLotSideMetrics" :key="i" class="flex items-center gap-2 rounded-lg bg-p-overlay border border-p-border px-2.5 py-1">
+                <span class="text-xs text-p-text-muted">{{ s.label }}</span>
+                <span v-if="s.meters != null" class="text-sm font-semibold text-p-text">{{ Number(s.meters).toFixed(2) }} m</span>
+                <span v-else class="text-xs text-p-text-muted italic">—</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-p-text-muted mt-2">A frente do lote agora e definida no editor da planta, arrastando a seta no hotspot.</p>
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Frente (m)</label>
+              <input v-model.number="lotForm.frontage" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 10.00" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Lado Esquerdo (m)</label>
+              <input v-model.number="lotForm.sideLeft" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 25.00" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Fundo (m)</label>
+              <input v-model.number="lotForm.depth" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="= Frente" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Lado Direito (m)</label>
+              <input v-model.number="lotForm.sideRight" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="= Lado Esq." />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Inclinacao</label>
+              <select v-model="lotForm.slope" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none appearance-none">
+                <option value="FLAT">Plano</option>
+                <option value="UPHILL">Aclive</option>
+                <option value="DOWNHILL">Declive</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Categoria</label>
-              <select v-model="lotForm.categoryId" class="form-input">
-                <option :value="null">Sem categoria</option>
-                <option v-for="category in lotCategories" :key="category.id" :value="category.id">
-                  {{ category.name }}
-                </option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Valor do M² (R$)</label>
-              <input v-model.number="lotForm.pricePerM2" type="number" step="0.01" class="form-input" placeholder="0.00" @input="calculatePriceFromM2" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Preco Total (R$)</label>
-              <input v-model.number="lotForm.price" type="number" step="0.01" class="form-input" placeholder="0.00" @input="calculateM2FromPrice" />
-            </div>
           </div>
+        </div>
 
-          <div style="margin-top: 16px;">
-            <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px;">Medidas para Contrato</h4>
-            <div v-if="lotContractArea !== null" style="background: rgba(59, 130, 246, 0.1); border:1px solid rgba(59, 130, 246, 0.3); border-radius:6px; padding:8px 14px; margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.75rem; font-weight:700; color:#3b82f6; text-transform:uppercase; letter-spacing:0.3px;">Area Calculada</span>
-              <span style="font-size:0.95rem; font-weight:700; color: #60a5fa;">{{ lotContractArea.toFixed(2) }} m²</span>
+        <div class="space-y-3">
+          <h4 class="text-sm font-semibold text-p-text">Selos Customizados</h4>
+          <div class="flex flex-wrap gap-2">
+            <div
+              v-for="(tag, idx) in (lotForm.tags || [])"
+              :key="idx"
+              class="flex items-center gap-1.5 rounded-full bg-p-info-subtle px-2.5 py-0.5 text-xs font-semibold text-p-info"
+            >
+              {{ tag }}
+              <span @click="lotForm.tags.splice(idx, 1)" class="cursor-pointer opacity-60 text-sm">✕</span>
             </div>
-            <div v-if="editingLotSideMetrics.length > 0" style="margin-bottom: 12px;">
-              <div style="font-size:0.7rem; font-weight:700; color:var(--color-surface-400); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Lados do Lote (do editor)</div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                <div v-for="(s, i) in editingLotSideMetrics" :key="i" style="background: var(--glass-bg-heavy); border:1px solid var(--glass-border-subtle); border-radius:6px; padding:4px 10px; display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:0.75rem; color:var(--color-surface-400);">{{ s.label }}</span>
-                  <span v-if="s.meters != null" style="font-size:0.875rem; font-weight:600; color:var(--color-surface-100);">{{ Number(s.meters).toFixed(2) }} m</span>
-                  <span v-else style="font-size:0.75rem; color:var(--color-surface-500); font-style:italic;">—</span>
-                </div>
-              </div>
-              <p style="font-size:0.7rem; color:var(--color-surface-500); margin-top:8px;">A frente do lote agora e definida no editor da planta, arrastando a seta no hotspot.</p>
-            </div>
-            <div class="grid grid-cols-2" style="gap: 12px;">
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Frente (m)</label>
-                <input v-model.number="lotForm.frontage" type="number" step="0.01" class="form-input" placeholder="Ex: 10.00" />
-              </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Lado Esquerdo (m)</label>
-                <input v-model.number="lotForm.sideLeft" type="number" step="0.01" class="form-input" placeholder="Ex: 25.00" />
-              </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Fundo (m) <small>se diferente da frente</small></label>
-                <input v-model.number="lotForm.depth" type="number" step="0.01" class="form-input" placeholder="= Frente" />
-              </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Lado Direito (m) <small>se diferente</small></label>
-                <input v-model.number="lotForm.sideRight" type="number" step="0.01" class="form-input" placeholder="= Lado Esq." />
-              </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Inclinacao</label>
-                <select v-model="lotForm.slope" class="form-input">
-                  <option value="FLAT">Plano</option>
-                  <option value="UPHILL">Aclive</option>
-                  <option value="DOWNHILL">Declive</option>
-                </select>
-              </div>
-            </div>
+            <span v-if="!(lotForm.tags?.length)" class="text-xs text-p-text-muted">Nenhum selo cadastrado.</span>
           </div>
-
-          <div style="margin-top: 24px; margin-bottom: 24px;">
-            <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px;">Selos Customizados</h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-              <div
-                v-for="(tag, idx) in (lotForm.tags || [])"
-                :key="idx"
-                style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; padding: 3px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 4px;"
-              >
-                {{ tag }}
-                <span @click="lotForm.tags.splice(idx, 1)" style="cursor: pointer; opacity: 0.6; font-size: 0.8rem;">✕</span>
-              </div>
-              <div v-if="!(lotForm.tags?.length)" style="font-size: 0.75rem;">Nenhum selo cadastrado.</div>
-            </div>
-
-            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-              <input v-model="newTag" @keyup.enter="addTag" type="text" class="form-input btn-sm" style="flex: 1; height: 32px; font-size: 0.85rem;" placeholder="Novo selo (ex: sol da manhã)..." />
-              <button @click="addTag" class="btn btn-sm btn-secondary" style="height: 32px; padding: 0 12px; font-size: 0.85rem;">Adicionar</button>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button
-                v-for="suggestion in ['sol da manhã', 'esquina', 'vista livre', 'próximo à portaria', 'fundo para área verde']"
-                :key="suggestion"
-                @click="addSuggestedTag(suggestion)"
-                class="btn btn-xs btn-outline"
-                style="font-size: 9px; padding: 4px 6px; border-color: #fff;"
-              >
-                + {{ suggestion }}
-              </button>
-            </div>
+          <div class="flex gap-2">
+            <input v-model="newTag" @keyup.enter="addTag" type="text" class="flex-1 rounded-lg border border-p-border bg-p-raised px-3.5 py-2 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Novo selo (ex: sol da manhã)..." />
+            <UiButton variant="ghost" @click="addTag">Adicionar</UiButton>
           </div>
-
-          <div class="form-group" style="margin-top: 24px;">
-            <label class="form-label">Notas / Descrição</label>
-            <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informações adicionais do lote..."></textarea>
-          </div>
-
-          <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--glass-border-subtle);" />
-
-          <section class="lot-edit-section">
-            <div class="lot-edit-section__head">
-              <div>
-                <h4 style="margin-bottom: 12px;">Fotos do Lote</h4>
-                <p class="lot-edit-section__hint">Envie uma ou várias imagens da galeria deste lote de uma vez.</p>
-              </div>
-              <span class="lot-edit-section__badge">{{ lotMedias.length }} {{ lotMedias.length === 1 ? 'imagem' : 'imagens' }}</span>
-            </div>
-            <div v-if="lotMedias.length === 0" class="empty-state lot-edit-empty" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px; margin-bottom: 16px;">
-              <p>Nenhuma foto específica deste lote.</p>
-            </div>
-            <div v-else class="grid grid-cols-4 lot-edit-gallery-grid" style="gap: 12px; margin-bottom: 16px;">
-              <div v-for="m in lotMedias" :key="m.id" class="media-card-v4">
-                <img :src="m.url" class="media-thumb-v4" loading="eager" decoding="async" @error="retryMediaPreviewLoad" />
-                <button class="media-delete-btn-v4" @click="removeLotMedia(m.id)">✕</button>
-              </div>
-            </div>
-
-            <label class="btn btn-secondary btn-sm lot-edit-upload-btn" style="cursor:pointer; width: fit-content;">
-              {{ lotMediaUploadLabel }}
-              <input type="file" accept="image/*" multiple style="display:none" @change="uploadLotMediaFile" :disabled="uploadingLotMedia" />
-            </label>
-          </section>
-
-          <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--glass-border-subtle);" />
-
-          <section class="lot-edit-section lot-edit-section--panorama">
-            <div class="lot-edit-section__head">
-              <div>
-                <h4 style="margin-bottom: 12px;"><i class="bi bi-image-fill" aria-hidden="true"></i> Panorama 360° do Lote</h4>
-                <p class="lot-edit-section__hint">A imagem 360 fica isolada da galeria comum para não misturar fotos estáticas com a vista panorâmica.</p>
-              </div>
-              <span class="lot-edit-section__badge">{{ lotForm.panoramaUrl ? '360 ativo' : 'sem 360' }}</span>
-            </div>
-            <div v-if="lotForm.panoramaUrl" class="media-card-v4 lot-edit-panorama-card" style="max-width: 240px; margin-bottom: 16px;">
-              <div class="relative group">
-                <img :src="lotForm.panoramaUrl" class="media-thumb-v4" style="aspect-ratio: 2/1;" loading="eager" decoding="async" @error="retryMediaPreviewLoad" />
-                <button class="media-delete-btn-v4" @click="clearLotPanoramaSelection">✕</button>
-                <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
-                  <span class="text-white text-xs font-bold">Vista 360° Ativa</span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="empty-state lot-edit-empty" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px; margin-bottom: 16px;">
-              <p>Nenhuma imagem 360° enviada para este lote.</p>
-            </div>
-
-            <label class="btn btn-secondary btn-sm lot-edit-upload-btn" style="cursor:pointer; width: fit-content;">
-              {{ panoramaUploadLabel }}
-              <input type="file" accept="image/*" style="display:none" @change="uploadLotPanoramaFile" :disabled="uploadingPanorama" />
-            </label>
-          </section>
-
-          <div class="modal-actions lot-edit-modal__actions">
-            <button class="btn btn-secondary lot-edit-btn-secondary" style="background: var(--glass-bg-heavy); color: var(--color-surface-200); border: 1px solid var(--glass-border-subtle);" @click="closeEditingLot">Cancelar</button>
-            <button class="btn btn-primary lot-edit-btn-primary" style="background: var(--color-primary-600); color: #fff; border: none; font-weight: 600;" :disabled="!authStore.canEdit || savingLot" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="saveLotDetails">
-              {{ savingLot ? 'Salvando...' : 'Salvar Detalhes' }}
+          <div class="flex gap-1.5 flex-wrap">
+            <button
+              v-for="suggestion in ['sol da manhã', 'esquina', 'vista livre', 'próximo à portaria', 'fundo para área verde']"
+              :key="suggestion"
+              @click="addSuggestedTag(suggestion)"
+              class="rounded-lg border border-p-border bg-p-overlay px-2 py-1 text-[11px] text-p-text-secondary hover:bg-p-raised hover:text-p-text transition-colors"
+            >
+              + {{ suggestion }}
             </button>
           </div>
-        </fieldset>
-      </div>
-    </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-sm font-medium text-p-text-secondary">Notas / Descrição</label>
+          <textarea v-model="lotForm.notes" rows="3" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none resize-y min-h-[80px]" placeholder="Informações adicionais do lote..."></textarea>
+        </div>
+
+        <hr class="border-p-border" />
+
+        <section class="rounded-xl border border-p-border bg-p-raised p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h4 class="text-sm font-semibold text-p-text">Fotos do Lote</h4>
+              <p class="text-xs text-p-text-muted mt-1">Envie uma ou várias imagens da galeria deste lote de uma vez.</p>
+            </div>
+            <span class="inline-flex shrink-0 px-2.5 py-1 rounded-full bg-p-overlay border border-p-border text-[11px] font-bold uppercase tracking-wider text-p-text-secondary">{{ lotMedias.length }} {{ lotMedias.length === 1 ? 'imagem' : 'imagens' }}</span>
+          </div>
+          <div v-if="lotMedias.length === 0" class="rounded-lg bg-p-overlay px-4 py-4 text-center text-sm text-p-text-muted">
+            Nenhuma foto específica deste lote.
+          </div>
+          <div v-else class="grid lot-edit-gallery-grid gap-3">
+            <div v-for="m in lotMedias" :key="m.id" class="media-card-v4">
+              <img :src="m.url" class="media-thumb-v4" loading="eager" decoding="async" @error="retryMediaPreviewLoad" />
+              <button class="media-delete-btn-v4" @click="removeLotMedia(m.id)">✕</button>
+            </div>
+          </div>
+          <label class="inline-flex items-center justify-center gap-2 rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm font-medium text-p-text-secondary hover:bg-p-raised hover:text-p-text transition-colors cursor-pointer">
+            {{ lotMediaUploadLabel }}
+            <input type="file" accept="image/*" multiple class="hidden" @change="uploadLotMediaFile" :disabled="uploadingLotMedia" />
+          </label>
+        </section>
+
+        <hr class="border-p-border" />
+
+        <section class="rounded-xl border border-p-border bg-p-raised p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h4 class="text-sm font-semibold text-p-text">Panorama 360° do Lote</h4>
+              <p class="text-xs text-p-text-muted mt-1">A imagem 360 fica isolada da galeria comum para não misturar fotos estáticas com a vista panorâmica.</p>
+            </div>
+            <span class="inline-flex shrink-0 px-2.5 py-1 rounded-full bg-p-overlay border border-p-border text-[11px] font-bold uppercase tracking-wider text-p-text-secondary">{{ lotForm.panoramaUrl ? '360 ativo' : 'sem 360' }}</span>
+          </div>
+          <div v-if="lotForm.panoramaUrl" class="media-card-v4" style="max-width: 240px;">
+            <div class="relative group">
+              <img :src="lotForm.panoramaUrl" class="media-thumb-v4" style="aspect-ratio: 2/1;" loading="eager" decoding="async" @error="retryMediaPreviewLoad" />
+              <button class="media-delete-btn-v4" @click="clearLotPanoramaSelection">✕</button>
+              <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
+                <span class="text-white text-xs font-bold">Vista 360° Ativa</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="rounded-lg bg-p-overlay px-4 py-4 text-center text-sm text-p-text-muted">
+            Nenhuma imagem 360° enviada para este lote.
+          </div>
+          <label class="inline-flex items-center justify-center gap-2 rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm font-medium text-p-text-secondary hover:bg-p-raised hover:text-p-text transition-colors cursor-pointer">
+            {{ panoramaUploadLabel }}
+            <input type="file" accept="image/*" class="hidden" @change="uploadLotPanoramaFile" :disabled="uploadingPanorama" />
+          </label>
+        </section>
+      </fieldset>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="closeEditingLot">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="!authStore.canEdit || savingLot" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="saveLotDetails">
+            {{ savingLot ? 'Salvando...' : 'Salvar Detalhes' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </section>
 </template>
 
@@ -494,6 +474,19 @@ const lotQrModal = ref<null | {
   qrCodeUrl: string
   shareText: string
 }>(null)
+
+const showEditLotModal = computed({
+  get: () => !!editingLot.value,
+  set: (val: boolean) => { if (!val) closeEditingLot() },
+})
+const showReservationModal = computed({
+  get: () => !!viewingReservation.value,
+  set: (val: boolean) => { if (!val) { viewingReservation.value = null } },
+})
+const showQrModal = computed({
+  get: () => !!lotQrModal.value,
+  set: (val: boolean) => { if (!val) { lotQrModal.value = null } },
+})
 
 const newTag = ref('')
 const lotForm = ref({
@@ -1450,11 +1443,9 @@ defineExpose({
 .plm {
   margin-top: 24px;
   padding: 24px;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 30%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.72));
+  border: 1px solid var(--color-p-border);
+  border-radius: 16px;
+  background: var(--color-p-raised);
 }
 
 .plm__header {
@@ -1467,11 +1458,11 @@ defineExpose({
 
 .plm__eyebrow {
   display: inline-flex;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(96, 165, 250, 0.2);
-  color: #bfdbfe;
+  background: var(--color-p-accent-subtle);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  color: var(--color-p-accent);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1484,12 +1475,13 @@ defineExpose({
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.03em;
+  color: var(--color-p-text);
 }
 
 .plm__subtitle {
   margin: 8px 0 0;
   max-width: 72ch;
-  color: var(--color-surface-400);
+  color: var(--color-p-text-muted);
 }
 
 .plm__loading {
@@ -1506,12 +1498,12 @@ defineExpose({
 
 .plm__notice {
   padding: 12px 16px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--color-p-warning-subtle);
+  border: 1px solid rgba(245, 158, 11, 0.25);
   border-radius: 8px;
   margin-bottom: 16px;
   font-size: 0.85rem;
-  color: #fbbf24;
+  color: var(--color-p-warning);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1534,7 +1526,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-surface-300);
+  color: var(--color-p-text-secondary);
   font-size: 0.88rem;
   font-weight: 600;
 }
@@ -1557,12 +1549,12 @@ defineExpose({
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #bfdbfe;
-  background: rgba(59, 130, 246, 0.12);
+  color: var(--color-p-text-secondary);
+  background: var(--color-p-overlay);
 }
 
 .plm__group-title span {
-  color: var(--color-surface-400);
+  color: var(--color-p-text-muted);
 }
 
 .plm__actions {
@@ -1572,9 +1564,9 @@ defineExpose({
 .lot-import-card {
   margin-bottom: 16px;
   padding: 14px;
-  border: 1px solid var(--glass-border-subtle);
+  border: 1px solid var(--color-p-border);
   border-radius: 10px;
-  background: var(--glass-bg-heavy);
+  background: var(--color-p-elevated);
 }
 
 .lot-import-card__head {
@@ -1587,13 +1579,13 @@ defineExpose({
 .lot-import-card__head h4 {
   margin: 0;
   font-size: 0.92rem;
-  color: var(--color-surface-100);
+  color: var(--color-p-text);
 }
 
 .lot-import-card__head p {
   margin: 4px 0 0;
   font-size: 0.78rem;
-  color: var(--color-surface-400);
+  color: var(--color-p-text-muted);
 }
 
 .lot-import-card__actions {
@@ -1606,14 +1598,14 @@ defineExpose({
   margin-top: 10px;
   padding: 10px;
   border-radius: 8px;
-  border: 1px dashed var(--glass-border-subtle);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--color-p-border);
+  background: var(--color-p-overlay);
 }
 
 .lot-import-help p {
   margin: 0;
   font-size: 0.74rem;
-  color: var(--color-surface-300);
+  color: var(--color-p-text-secondary);
 }
 
 .lot-import-help p + p {
@@ -1624,8 +1616,8 @@ defineExpose({
   margin-top: 12px;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid var(--glass-border-subtle);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-p-border);
+  background: var(--color-p-overlay);
 }
 
 .lot-import-status__row {
@@ -1633,172 +1625,18 @@ defineExpose({
   flex-wrap: wrap;
   gap: 10px;
   font-size: 0.76rem;
-  color: var(--color-surface-300);
+  color: var(--color-p-text-secondary);
   margin-bottom: 4px;
 }
 
 .lot-import-status__message {
   margin: 8px 0 0;
   font-size: 0.75rem;
-  color: var(--color-surface-400);
-}
-
-.lot-edit-overlay {
-  background: rgb(0, 0, 0, 0.4);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.lot-edit-modal {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
-  background: var(--color-surface-400);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.52);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.8) transparent;
-  padding: 0;
-}
-
-.lot-edit-modal__header {
-  position: sticky;
-  top: 0;
-  z-index: 6;
-  margin-bottom: 0;
-  padding: 24px;
-  align-items: flex-start;
-  padding-right: 48px;
-  background: var(--color-surface-500);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-  backdrop-filter: blur(10px);
-}
-
-.lot-edit-modal__eyebrow {
-  display: inline-flex;
-  margin-bottom: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #ffffff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.lot-edit-modal__subtitle {
-  margin: 8px 0 0;
-  color: rgba(226, 232, 240, 0.72);
-  font-size: 0.85rem;
-  line-height: 1.45;
-  max-width: 56ch;
-}
-
-.lot-edit-modal__code-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.lot-edit-modal__code-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fff;
-}
-
-.lot-edit-modal__code-value {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-}
-
-.lot-edit-modal__close {
-  background: rgba(0, 0, 0, 0.9);
-  color: #fff;
-}
-
-.lot-edit-modal__fieldset {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 0 24px 24px;
-}
-
-.lot-edit-modal__actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 6;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-  padding: 16px;
-  background: var(--color-surface-400);
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-.lot-edit-section {
-  padding: 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: var(--color-surface-500);
-}
-
-.lot-edit-section__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.lot-edit-section__hint {
-  margin: 0;
-  color: var(--color-surface-400);
-  font-size: 0.8rem;
-}
-
-.lot-edit-section__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.16);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  color: #e2e8f0;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.lot-edit-empty p {
-  margin: 0;
-  color: var(--color-surface-400);
+  color: var(--color-p-text-muted);
 }
 
 .lot-edit-gallery-grid {
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-}
-
-.lot-edit-panorama-card {
-  overflow: hidden;
 }
 
 @media (max-width: 900px) {

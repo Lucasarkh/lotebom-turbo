@@ -212,12 +212,7 @@
   .layout a { color: #fff; }
   .layout a:hover { color: var(--color-primary-300); }
 
-  /* ─── Scrollbar (dark for panel) ──────────────────────── */
-  .layout ::-webkit-scrollbar { width: 6px; height: 6px; }
-  .layout ::-webkit-scrollbar-track { background: transparent; }
-  .layout ::-webkit-scrollbar-thumb { background: var(--color-surface-500); border-radius: 10px; }
-  .layout ::-webkit-scrollbar-thumb:hover { background: var(--color-surface-400); }
-  .layout * { scrollbar-width: thin; scrollbar-color: var(--color-surface-500) transparent; }
+  /* ─── Scrollbar — see global rules below @layer ─────── */
 
   /* ─── Buttons ─────────────────────────────────────────── */
   .btn {
@@ -608,3 +603,27 @@
   .animate-slide-up-delay-3 { animation-delay: 0.3s; animation: slideUp 0.5s cubic-bezier(0.2, 0, 0.2, 1) forwards; opacity: 0; }
   .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Global scrollbar — OUTSIDE @layer so it always wins.
+   Thin neutral bar for every scrollable element in the panel.
+   ═══════════════════════════════════════════════════════════ */
+.painel-layout,
+.painel-layout *,
+.layout,
+.layout * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-p-border) transparent;
+}
+
+.painel-layout ::-webkit-scrollbar,
+.layout ::-webkit-scrollbar { width: 6px; height: 6px; }
+
+.painel-layout ::-webkit-scrollbar-track,
+.layout ::-webkit-scrollbar-track { background: transparent; }
+
+.painel-layout ::-webkit-scrollbar-thumb,
+.layout ::-webkit-scrollbar-thumb { background: var(--color-p-border); border-radius: 10px; }
+
+.painel-layout ::-webkit-scrollbar-thumb:hover,
+.layout ::-webkit-scrollbar-thumb:hover { background: var(--color-p-border-hover); }

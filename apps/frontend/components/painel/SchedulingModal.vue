@@ -1,161 +1,137 @@
 <template>
-  <div class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm flex items-center justify-center z-[2000] p-5">
-    <div class="bg-p-elevated w-full max-w-[580px] rounded-2xl shadow-2xl flex flex-col max-h-[90vh] border border-p-border animate-[modalIn_0.4s_cubic-bezier(0.16,1,0.3,1)]">
-      <header class="px-8 py-6 border-b border-p-border flex justify-between items-center">
-        <div>
-          <h2 class="text-xl font-extrabold text-p-text m-0">Novo Agendamento</h2>
-          <p class="text-sm text-p-text-muted mt-1 m-0">Organize uma nova visita ou reunião com agilidade.</p>
-        </div>
-        <button
-          class="w-9 h-9 rounded-full border-none bg-p-overlay text-p-text-muted flex items-center justify-center cursor-pointer transition-all duration-200 hover:bg-red-500 hover:text-white hover:scale-110"
-          @click="$emit('close')"
-          aria-label="Fechar"
-        >
-          <i class="pi pi-times"></i>
-        </button>
-      </header>
+  <UiModal :modelValue="true" @update:modelValue="$emit('close')" size="lg">
+    <template #header>
+      <div>
+        <h2 class="text-lg font-semibold text-p-text">Novo Agendamento</h2>
+        <p class="text-sm text-p-text-muted mt-1">Organize uma nova visita ou reunião com agilidade.</p>
+      </div>
+    </template>
 
-      <main class="px-8 py-8 overflow-y-auto">
-        <form id="scheduling-form" @submit.prevent="save" class="flex flex-col gap-8">
-          <fieldset :disabled="!canWriteScheduling" class="contents">
-          <!-- Seção: Ativos e Horários -->
-          <div class="flex flex-col gap-4 pb-6 border-b border-p-border">
-            <h3 class="text-xs font-extrabold uppercase tracking-wide text-blue-500 mb-1">Detalhes da Visita</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="flex flex-col">
-                <label class="block text-[0.8125rem] font-semibold text-p-text mb-1.5">Projeto / Empreendimento</label>
-                <div class="relative flex items-center">
-                  <select
-                    v-model="form.projectId"
-                    class="w-full h-[46px] bg-p-raised border border-p-border rounded-lg pl-10 pr-4 text-[0.9375rem] text-p-text transition-all duration-200 appearance-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none"
-                    required
-                    @change="onProjectChange"
-                  >
-                    <option value="" disabled>Selecione o projeto</option>
-                    <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-                  </select>
-                  <i class="pi pi-building absolute left-3.5 text-p-text-muted text-lg pointer-events-none"></i>
-                  <i class="pi pi-chevron-down absolute right-3.5 text-p-text-muted pointer-events-none"></i>
-                </div>
+    <form id="scheduling-form" @submit.prevent="save" class="space-y-5">
+      <fieldset :disabled="!canWriteScheduling" class="contents">
+        <div class="space-y-4 pb-5 border-b border-p-border">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-p-text-muted">Detalhes da Visita</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Projeto / Empreendimento</label>
+              <div class="relative flex items-center">
+                <select
+                  v-model="form.projectId"
+                  class="w-full rounded-lg border border-p-border bg-p-raised px-10 py-2.5 text-sm text-p-text appearance-none focus:border-p-accent focus:outline-none transition-colors"
+                  required
+                  @change="onProjectChange"
+                >
+                  <option value="" disabled>Selecione o projeto</option>
+                  <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+                </select>
+                <i class="pi pi-building absolute left-3.5 text-p-text-muted text-lg pointer-events-none"></i>
+                <i class="pi pi-chevron-down absolute right-3.5 text-p-text-muted pointer-events-none"></i>
               </div>
-              <div class="flex flex-col">
-                <label class="block text-[0.8125rem] font-semibold text-p-text mb-1.5">Data e Horário</label>
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Data e Horário</label>
+              <div class="relative flex items-center">
+                <input
+                  v-model="form.scheduledAt"
+                  type="datetime-local"
+                  class="w-full rounded-lg border border-p-border bg-p-raised px-10 py-2.5 text-sm text-p-text appearance-none focus:border-p-accent focus:outline-none transition-colors"
+                  required
+                >
+                <i class="pi pi-calendar absolute left-3.5 text-p-text-muted text-lg pointer-events-none"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4 pb-5 border-b border-p-border">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-p-text-muted">Participante</h3>
+          <div class="space-y-1.5">
+            <label class="block text-sm font-medium text-p-text-secondary">Vincular Lead</label>
+
+            <div v-if="form.projectId">
+              <div v-if="form.leadId" class="flex items-center justify-between bg-p-accent-subtle border border-p-accent/25 rounded-xl px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-p-accent text-white flex items-center justify-center rounded-full font-extrabold">{{ selectedLeadName.charAt(0) }}</div>
+                  <div class="flex flex-col">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-p-accent">Lead Vinculado</span>
+                    <h4 class="m-0 text-sm font-bold text-p-text">{{ selectedLeadName }}</h4>
+                  </div>
+                </div>
+                <button type="button" class="w-8 h-8 border-none bg-transparent text-p-text-muted flex items-center justify-center cursor-pointer rounded-full transition-colors hover:bg-p-danger/10 hover:text-p-danger" @click="clearLead" title="Remover lead vinculado"><i class="pi pi-times"></i></button>
+              </div>
+
+              <div v-else class="relative">
                 <div class="relative flex items-center">
                   <input
-                    v-model="form.scheduledAt"
-                    type="datetime-local"
-                    class="w-full h-[46px] bg-p-raised border border-p-border rounded-lg pl-10 pr-4 text-[0.9375rem] text-p-text transition-all duration-200 appearance-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none"
-                    required
+                    v-model="leadSearch"
+                    type="text"
+                    placeholder="Pesquise por nome, e-mail ou celular..."
+                    class="w-full rounded-lg border border-p-border bg-p-raised px-10 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none transition-colors"
+                    @input="onLeadSearch"
                   >
-                  <i class="pi pi-calendar absolute left-3.5 text-p-text-muted text-lg pointer-events-none"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Seção: Participante (Lead) -->
-          <div class="flex flex-col gap-4 pb-6 border-b border-p-border">
-            <h3 class="text-xs font-extrabold uppercase tracking-wide text-p-text-muted mb-1">Participante</h3>
-            <div class="flex flex-col">
-              <label class="block text-[0.8125rem] font-semibold text-p-text mb-1.5">Vincular Lead</label>
-
-              <div v-if="form.projectId">
-                <!-- Se selecionado -->
-                <div v-if="form.leadId" class="flex items-center justify-between bg-blue-500/[0.08] border border-blue-500/25 rounded-xl px-4 py-3">
-                  <div class="flex items-center gap-3">
-                   <div class="w-10 h-10 bg-blue-500 text-white flex items-center justify-center rounded-full font-extrabold">{{ selectedLeadName.charAt(0) }}</div>
-                   <div class="flex flex-col">
-                     <span class="text-[0.7rem] font-bold text-blue-400 uppercase tracking-wide">Lead Vinculado</span>
-                     <h4 class="m-0 text-[0.9375rem] font-bold text-blue-300">{{ selectedLeadName }}</h4>
-                   </div>
-                  </div>
-                  <button type="button" class="w-8 h-8 border-none bg-transparent text-p-text-muted flex items-center justify-center cursor-pointer rounded-full transition-all duration-200 hover:bg-red-500 hover:text-white" @click="clearLead" title="Remover lead vinculado"><i class="pi pi-times"></i></button>
+                  <i class="pi pi-search absolute left-3.5 text-p-text-muted text-lg pointer-events-none"></i>
+                  <i v-if="loadingLeads" class="pi pi-spin pi-spinner absolute right-3.5 text-p-text-muted pointer-events-none"></i>
                 </div>
 
-                <!-- Campo de busca se não selecionado -->
-                <div v-else class="relative">
-                  <div class="relative flex items-center">
-                    <input
-                      v-model="leadSearch"
-                      type="text"
-                      placeholder="Pesquise por nome, e-mail ou celular..."
-                      class="w-full h-[46px] bg-p-raised border border-p-border rounded-lg pl-10 pr-4 text-[0.9375rem] text-p-text transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none"
-                      @input="onLeadSearch"
+                <Transition name="fade-slide">
+                  <div v-if="leadSearch && leads.length > 0" class="absolute top-full left-0 right-0 bg-p-elevated rounded-xl border border-p-border max-h-60 overflow-y-auto z-[100] mt-2 p-2 shadow-xl">
+                    <div
+                      v-for="l in leads"
+                      :key="l.id"
+                      class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-p-overlay"
+                      @click="selectLead(l)"
                     >
-                    <i class="pi pi-search absolute left-3.5 text-p-text-muted text-lg pointer-events-none"></i>
-                    <i v-if="loadingLeads" class="pi pi-spin pi-spinner absolute right-3.5 text-p-text-muted pointer-events-none"></i>
-                  </div>
-
-                  <Transition name="fade-slide">
-                    <div v-if="leadSearch && leads.length > 0" class="absolute top-full left-0 right-0 bg-p-elevated rounded-xl border border-p-border max-h-60 overflow-y-auto z-[100] mt-2 p-2 shadow-xl">
-                      <div
-                        v-for="l in leads"
-                        :key="l.id"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 hover:bg-p-overlay"
-                        @click="selectLead(l)"
-                      >
-                         <div class="w-8 h-8 bg-white/15 text-p-text-muted flex items-center justify-center rounded-full font-bold text-[0.8rem]">{{ l.name.charAt(0) }}</div>
-                         <div>
-                           <div class="font-semibold text-p-text text-sm">{{ l.name }}</div>
-                           <div class="text-xs text-p-text-muted">{{ l.email || l.phone || 'Sem contato' }}</div>
-                         </div>
+                      <div class="w-8 h-8 bg-p-overlay text-p-text-muted flex items-center justify-center rounded-full font-bold text-xs">{{ l.name.charAt(0) }}</div>
+                      <div>
+                        <div class="font-semibold text-p-text text-sm">{{ l.name }}</div>
+                        <div class="text-xs text-p-text-muted">{{ l.email || l.phone || 'Sem contato' }}</div>
                       </div>
                     </div>
-                  </Transition>
-                  <div v-if="leadSearch && leads.length === 0 && !loadingLeads" class="text-[0.8rem] text-p-text-muted mt-2 px-1">Nenhum lead encontrado com seu critério de busca.</div>
-                </div>
+                  </div>
+                </Transition>
+                <div v-if="leadSearch && leads.length === 0 && !loadingLeads" class="text-xs text-p-text-muted mt-2 px-1">Nenhum lead encontrado com seu critério de busca.</div>
               </div>
-              <div v-else class="text-sm text-p-text-muted italic p-3 bg-p-overlay border border-dashed border-p-border rounded-lg">Selecione um projeto para buscar leads vinculados.</div>
             </div>
+            <div v-else class="text-sm text-p-text-muted italic p-3 bg-p-overlay border border-dashed border-p-border rounded-lg">Selecione um projeto para buscar leads vinculados.</div>
+          </div>
 
-            <Transition name="expand">
-              <div v-if="!form.leadId" class="bg-p-overlay border border-p-border rounded-xl p-4 mt-2">
-                <div class="flex justify-between text-xs font-bold text-p-text-muted mb-3">
-                  <span>{{ leadSearch ? 'Você pode criar um novo Lead agora:' : 'Deseja cadastrar um novo Lead?' }}</span>
-                </div>
-                <div>
-                  <div class="flex flex-col">
-                    <input v-model="form.leadName" type="text" placeholder="Nome completo" class="w-full h-[42px] bg-p-raised border border-p-border rounded-lg px-3 text-sm text-p-text focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none">
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                  <div class="flex flex-col">
-                    <input v-model="form.leadEmail" type="email" placeholder="E-mail" class="w-full h-[42px] bg-p-raised border border-p-border rounded-lg px-3 text-sm text-p-text focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none">
-                  </div>
-                  <div class="flex flex-col">
-                    <input :value="form.leadPhone" @input="onLeadPhoneInput" type="text" placeholder="Celular/WhatsApp" class="w-full h-[42px] bg-p-raised border border-p-border rounded-lg px-3 text-sm text-p-text focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none">
-                  </div>
+          <Transition name="expand">
+            <div v-if="!form.leadId" class="bg-p-overlay border border-p-border rounded-xl p-4 mt-2">
+              <div class="text-xs font-bold text-p-text-muted mb-3">
+                {{ leadSearch ? 'Você pode criar um novo Lead agora:' : 'Deseja cadastrar um novo Lead?' }}
+              </div>
+              <div class="space-y-2">
+                <input v-model="form.leadName" type="text" placeholder="Nome completo" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input v-model="form.leadEmail" type="email" placeholder="E-mail" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none">
+                  <input :value="form.leadPhone" @input="onLeadPhoneInput" type="text" placeholder="Celular/WhatsApp" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none">
                 </div>
               </div>
-            </Transition>
-          </div>
+            </div>
+          </Transition>
+        </div>
 
-          <!-- Seção: Notas -->
-          <div class="flex flex-col gap-4">
-            <label class="text-xs font-extrabold uppercase tracking-wide text-p-text-muted">Observações Internas</label>
-            <textarea v-model="form.notes" rows="3" class="w-full bg-p-raised border border-p-border rounded-lg px-4 py-3 text-sm text-p-text resize-y focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 focus:outline-none" placeholder="Detalhes ou requisitos especiais para este agendamento..."></textarea>
-          </div>
-          </fieldset>
-        </form>
-      </main>
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-p-text-muted">Observações Internas</label>
+          <textarea v-model="form.notes" rows="3" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none resize-y" placeholder="Detalhes ou requisitos especiais para este agendamento..."></textarea>
+        </div>
+      </fieldset>
+    </form>
 
-      <footer class="px-8 py-6 border-t border-p-border flex justify-end gap-4">
+    <template #footer>
+      <div class="flex justify-end gap-3">
         <UiButton variant="ghost" @click="$emit('close')">Cancelar</UiButton>
         <UiButton
-          type="submit"
           variant="primary"
-          size="lg"
-          :loading="saving"
           :disabled="saving || !canWriteScheduling"
           :title="!canWriteScheduling ? writePermissionHint : undefined"
-          @click="$refs['scheduling-form']?.requestSubmit?.()"
+          @click="save"
         >
-          <template v-if="!saving">Confirmar Agendamento</template>
-          <template v-else>Salvando...</template>
+          {{ saving ? 'Salvando...' : 'Confirmar Agendamento' }}
         </UiButton>
-      </footer>
-    </div>
-  </div>
+      </div>
+    </template>
+  </UiModal>
 </template>
 
 <script setup lang="ts">

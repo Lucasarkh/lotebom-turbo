@@ -1,6 +1,6 @@
 <template>
   <component
-    :is="to ? resolveComponent('NuxtLink') : 'button'"
+    :is="to ? NuxtLink : 'button'"
     :to="to"
     :type="to ? undefined : type"
     :disabled="disabled || loading"
@@ -15,7 +15,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, resolveComponent } from 'vue'
+import { computed } from 'vue'
+import { NuxtLink } from '#components'
 
 const props = withDefaults(defineProps<{
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline' | 'warning' | 'success'

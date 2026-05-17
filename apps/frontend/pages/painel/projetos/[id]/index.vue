@@ -243,7 +243,7 @@
               <label class="mb-1 block text-sm font-medium text-p-text-secondary">Slug</label>
               <input v-model="editForm.slug" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" :class="{ '!border-red-500': editSlugTaken }" required />
               <small v-if="editSlugTaken" style="color:var(--error-color, #ef4444); font-size:0.75rem">Este slug já está em uso por outro projeto!</small>
-              <small v-else style="color:var(--color-surface-400); font-size:0.75rem">URL pública: /{{ editForm.slug || '...' }}</small>
+              <small v-else class="text-xs text-p-text-muted">URL pública: /{{ editForm.slug || '...' }}</small>
             </div>
             <div class="space-y-4">
               <label class="mb-1 block text-sm font-medium text-p-text-secondary">Descrição</label>
@@ -259,12 +259,12 @@
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px;">
                 <div>
                   <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="margin: 0;">Logo do Projeto (Open Graph)</label>
-                  <p style="margin: 4px 0 0; color: var(--color-surface-500); font-size: 0.75rem;">
+                  <p class="text-xs text-p-text-muted mt-1">
                     Este logo é exclusivo para compartilhamento (Open Graph). Nao afeta os logos de rodape.
                   </p>
                 </div>
 
-                <label v-if="authStore.canEdit" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">
+                <label v-if="authStore.canEdit" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0" style="cursor: pointer;">
                   {{ uploadingOgLogo ? 'Enviando...' : '+ Enviar Logo' }}
                   <input
                     type="file"
@@ -553,7 +553,9 @@
             </div>
             <div v-if="settingsError" class="rounded-lg border border-p-danger/30 bg-p-danger-subtle/30 px-4 py-3 text-sm text-p-danger">{{ settingsError }}</div>
             <div v-if="settingsSaved" class="rounded-lg border border-p-success/30 bg-p-success-subtle/30 px-4 py-3 text-sm text-p-success">Salvo com sucesso!</div>
-            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!authStore.canEdit || savingSettings || editSlugTaken" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined">{{ savingSettings ? 'Salvando...' : 'Salvar' }}</button>
+            <div class="pt-4 mt-4 border-t border-p-border">
+              <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!authStore.canEdit || savingSettings || editSlugTaken" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined">{{ savingSettings ? 'Salvando...' : 'Salvar' }}</button>
+            </div>
             </fieldset>
           </form>
         </div>
