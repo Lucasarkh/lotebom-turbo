@@ -32,7 +32,12 @@ export function sanitizeRichTextTheme(html: string): string {
       .split(';')
       .map((rule: string) => rule.trim())
       .filter(Boolean)
-      .filter((rule: string) => !/^color\s*:/i.test(rule) && !/^background(?:-color)?\s*:/i.test(rule))
+      .filter((rule: string) =>
+        !/^color\s*:/i.test(rule)
+        && !/^background(?:-color)?\s*:/i.test(rule)
+        && !/^font-size\s*:/i.test(rule)
+        && !/^line-height\s*:/i.test(rule)
+      )
 
     if (!filtered.length) return ''
     return ` style=${quote}${filtered.join('; ')}${quote}`
