@@ -1,83 +1,81 @@
 <template>
   <div>
-    <div class="page-header">
-      <div>
-        <h1>Usuários</h1>
-        <p>{{ authStore.isSysAdmin ? 'Gerenciar usuários internos da Lotio' : 'Gerenciar usuários que acessam o sistema da loteadora' }}</p>
-      </div>
-      <button class="btn btn-primary" :disabled="!canWriteUsers" :title="!canWriteUsers ? writePermissionHint : undefined" @click="showCreate = true">+ Novo Usuário</button>
-    </div>
+    <UiPageHeader :title="'Usuários'" :description="authStore.isSysAdmin ? 'Gerenciar usuários internos da Lotio' : 'Gerenciar usuários que acessam o sistema da loteadora'">
+      <template #actions>
+        <UiButton variant="primary" :disabled="!canWriteUsers" :title="!canWriteUsers ? writePermissionHint : undefined" @click="showCreate = true">+ Novo Usuário</UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="!authStore.isSysAdmin" class="permissions-intro card">
-      <strong>Escopo deste cadastro</strong>
-      <p>
+    <UiCard v-if="!authStore.isSysAdmin" class="mt-6">
+      <strong class="text-p-text">Escopo deste cadastro</strong>
+      <p class="mt-2 text-sm text-p-text-secondary">
         Este gerenciador controla apenas usuários internos do sistema. Imobiliárias e corretores continuam sendo criados
         nos menus próprios, com seus fluxos específicos.
       </p>
+    </UiCard>
+
+    <div v-if="loading" class="mt-6">
+      <UiLoadingState />
     </div>
 
-    <div v-if="loading" class="loading-state"><div class="loading-spinner"></div></div>
-
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-      <button class="btn btn-primary" style="margin-top: 16px;" @click="loadUsers">Tentar novamente</button>
+    <div v-else-if="error" class="mt-6">
+      <UiCard>
+        <div class="text-center">
+          <p class="text-sm text-p-danger">{{ error }}</p>
+          <UiButton variant="primary" class="mt-4" @click="loadUsers">Tentar novamente</UiButton>
+        </div>
+      </UiCard>
     </div>
 
-    <div v-else-if="users.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-person-fill" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Nenhum usuário</h3>
-        <p class="mb-4 px-4">Os usuários internos do sistema aparecerão aqui.</p>
-      </div>
+    <div v-else-if="users.length === 0" class="mt-6">
+      <UiCard padding="none">
+        <UiEmptyState title="Nenhum usuário" description="Os usuários internos do sistema aparecerão aqui." icon="👤" />
+      </UiCard>
     </div>
 
-    <div v-else class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Email</th>
-            <th>Tipo</th>
-            <th>Acessos</th>
-            <th>Data</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="u in users" :key="u.id">
-            <td><strong>{{ u.name }}</strong></td>
-            <td>{{ u.email }}</td>
-            <td>
-              <span class="badge" :class="roleBadge(u.role)">{{ roleLabel(u.role) }}</span>
-            </td>
-            <td>
-              <div v-if="u.role === 'SYSADMIN'" class="permission-tags">
-                <span class="permission-chip permission-chip--write">Acesso total</span>
-              </div>
-              <div v-else class="permission-tags">
-                <span
-                  v-for="permission in permissionPreview(u.panelPermissions)"
-                  :key="`${u.id}-${permission.key}`"
-                  class="permission-chip"
-                  :class="permission.level === 'write' ? 'permission-chip--write' : 'permission-chip--read'"
-                >
-                  {{ permission.label }}: {{ permissionLevelLabel(permission.level) }}
-                </span>
-                <span v-if="permissionPreview(u.panelPermissions).length === 0" class="permission-empty">Sem acessos definidos</span>
-              </div>
-            </td>
-            <td>{{ formatDateToBrasilia(u.createdAt) }}</td>
-            <td>
-              <div class="flex gap-2">
-                <button class="btn btn-secondary btn-sm" :disabled="!canWriteUsers" :title="!canWriteUsers ? writePermissionHint : undefined" @click="startEdit(u)">Editar</button>
-                <button class="btn btn-danger btn-sm" @click="deleteUser(u)" :disabled="!canWriteUsers || u.id === authStore.user?.id" :title="!canWriteUsers ? writePermissionHint : undefined">Excluir</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-else class="mt-6">
+      <UiTable>
+        <template #head>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Nome</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Email</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Tipo</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Acessos</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Data</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Ações</th>
+        </template>
+        <tr v-for="u in users" :key="u.id">
+          <td class="px-4 py-3 text-sm font-semibold text-p-text">{{ u.name }}</td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ u.email }}</td>
+          <td class="px-4 py-3 text-sm">
+            <UiBadge :variant="roleBadgeVariant(u.role)">{{ roleLabel(u.role) }}</UiBadge>
+          </td>
+          <td class="px-4 py-3 text-sm">
+            <div v-if="u.role === 'SYSADMIN'" class="flex flex-wrap gap-1.5">
+              <span class="inline-flex items-center rounded-full bg-p-success/15 px-2 py-0.5 text-[11px] font-semibold text-p-success">Acesso total</span>
+            </div>
+            <div v-else class="flex flex-wrap gap-1.5">
+              <span
+                v-for="permission in permissionPreview(u.panelPermissions)"
+                :key="`${u.id}-${permission.key}`"
+                class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                :class="permission.level === 'write' ? 'bg-p-success/15 text-p-success' : 'bg-blue-500/15 text-blue-400'"
+              >
+                {{ permission.label }}: {{ permissionLevelLabel(permission.level) }}
+              </span>
+              <span v-if="permissionPreview(u.panelPermissions).length === 0" class="text-[13px] text-p-text-muted">Sem acessos definidos</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ formatDateToBrasilia(u.createdAt) }}</td>
+          <td class="px-4 py-3 text-sm">
+            <div class="flex gap-2">
+              <UiButton variant="secondary" size="xs" :disabled="!canWriteUsers" :title="!canWriteUsers ? writePermissionHint : undefined" @click="startEdit(u)">Editar</UiButton>
+              <UiButton variant="danger" size="xs" @click="deleteUser(u)" :disabled="!canWriteUsers || u.id === authStore.user?.id" :title="!canWriteUsers ? writePermissionHint : undefined">Excluir</UiButton>
+            </div>
+          </td>
+        </tr>
+      </UiTable>
 
-      <div v-if="meta.totalPages > 1" style="margin-top: 16px; padding: 0 16px 16px;">
+      <div v-if="meta.totalPages > 1" class="mt-4">
         <CommonPagination
           :current-page="meta.currentPage"
           :total-pages="meta.totalPages"
@@ -86,61 +84,59 @@
       </div>
     </div>
 
-    <div v-if="showCreate || editingUser" class="modal-overlay">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>{{ editingUser ? 'Editar Usuário' : 'Novo Usuário' }}</h2>
-          <button class="modal-close" @click="closeModal">&times;</button>
-        </div>
-        <form @submit.prevent="editingUser ? saveEdit() : createUser()">
-          <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label">Nome</label>
-              <input v-model="form.name" class="form-input" required minlength="2" />
+    <UiModal v-model="showModalFlag" :title="editingUser ? 'Editar Usuário' : 'Novo Usuário'" size="lg">
+      <form @submit.prevent="editingUser ? saveEdit() : createUser()">
+        <div class="space-y-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Nome</label>
+            <input v-model="form.name" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" required minlength="2" />
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Email</label>
+            <input v-model="form.email" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" type="email" required :disabled="!!editingUser" />
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">{{ editingUser ? 'Nova Senha (deixe vazio para manter)' : 'Senha' }}</label>
+            <AppPasswordInput v-model="form.password" :required="!editingUser" :placeholder="editingUser ? 'Deixe vazio para manter a atual' : PASSWORD_POLICY_HINT" />
+            <p v-if="modalPasswordError" class="mt-1 text-xs text-p-danger">{{ modalPasswordError }}</p>
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Tipo de usuário</label>
+            <div class="rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text">
+              {{ authStore.isSysAdmin ? 'Administrador do sistema' : 'Usuário interno do sistema' }}
             </div>
-            <div class="form-group">
-              <label class="form-label">Email</label>
-              <input v-model="form.email" class="form-input" type="email" required :disabled="!!editingUser" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">{{ editingUser ? 'Nova Senha (deixe vazio para manter)' : 'Senha' }}</label>
-              <AppPasswordInput v-model="form.password" :required="!editingUser" :placeholder="editingUser ? 'Deixe vazio para manter a atual' : PASSWORD_POLICY_HINT" />
-              <div v-if="modalPasswordError" class="form-error">{{ modalPasswordError }}</div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Tipo de usuário</label>
-              <div class="form-static-value">
-                {{ authStore.isSysAdmin ? 'Administrador do sistema' : 'Usuário interno do sistema' }}
-              </div>
-            </div>
-            <div v-if="!authStore.isSysAdmin" class="form-group">
-              <label class="form-label">Permissões por funcionalidade</label>
-              <div class="permissions-grid">
-                <div v-for="feature in panelFeatures" :key="feature.key" class="permission-row">
-                  <div class="permission-row__info">
-                    <strong>{{ feature.label }}</strong>
-                    <small>{{ feature.description }}</small>
-                  </div>
-                  <select v-model="form.panelPermissions[feature.key]" class="form-select permission-select">
-                    <option value="none">Oculto</option>
-                    <option value="read">Leitura</option>
-                    <option value="write">Edição</option>
-                  </select>
+          </div>
+          <div v-if="!authStore.isSysAdmin">
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Permissões por funcionalidade</label>
+            <div class="space-y-3">
+              <div v-for="feature in panelFeatures" :key="feature.key" class="grid grid-cols-1 items-center gap-3 rounded-xl border border-p-border bg-p-raised p-3 sm:grid-cols-[1fr_180px]">
+                <div class="flex flex-col gap-1">
+                  <strong class="text-sm text-p-text">{{ feature.label }}</strong>
+                  <small class="text-xs text-p-text-muted">{{ feature.description }}</small>
                 </div>
+                <select v-model="form.panelPermissions[feature.key]" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text appearance-none focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30">
+                  <option value="none">Oculto</option>
+                  <option value="read">Leitura</option>
+                  <option value="write">Edição</option>
+                </select>
               </div>
-              <small class="form-hint">Tudo que ficar como oculto será removido do menu e bloqueado nas rotas.</small>
             </div>
-            <div v-if="formError" class="alert alert-error">{{ formError }}</div>
+            <p class="mt-2 text-xs text-p-text-muted">Tudo que ficar como oculto será removido do menu e bloqueado nas rotas.</p>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-ghost" @click="closeModal">Cancelar</button>
-            <button type="submit" class="btn btn-primary" :disabled="formLoading">
-              {{ formLoading ? 'Salvando...' : editingUser ? 'Salvar' : 'Criar' }}
-            </button>
+          <div v-if="formError">
+            <UiAlert variant="error">{{ formError }}</UiAlert>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="closeModal">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="formLoading" @click="editingUser ? saveEdit() : createUser()">
+            {{ formLoading ? 'Salvando...' : editingUser ? 'Salvar' : 'Criar' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -173,6 +169,13 @@ const panelFeatures = PANEL_FEATURES
 const canWriteUsers = computed(() => authStore.isSysAdmin || authStore.canWriteFeature('users'))
 const writePermissionHint = 'Disponível apenas para usuários com permissão de edição'
 
+const showModalFlag = computed({
+  get: () => showCreate.value || !!editingUser.value,
+  set: (val) => {
+    if (!val) closeModal()
+  }
+})
+
 const getDefaultRole = () => (authStore.isSysAdmin ? 'SYSADMIN' : 'LOTEADORA')
 const buildDefaultForm = () => ({
   name: '',
@@ -189,7 +192,7 @@ const modalPasswordError = computed(() => {
   return getPasswordPolicyError(form.value.password)
 })
 
-const roleBadge = (r) => ({ SYSADMIN: 'badge-danger', LOTEADORA: 'badge-primary', IMOBILIARIA: 'badge-info', CORRETOR: 'badge-neutral' }[r] || 'badge-neutral')
+const roleBadgeVariant = (r) => ({ SYSADMIN: 'danger', LOTEADORA: 'primary', IMOBILIARIA: 'info', CORRETOR: 'neutral' }[r] || 'neutral')
 const roleLabel = (r) => ({ SYSADMIN: 'System Admin', LOTEADORA: 'Usuário do sistema', IMOBILIARIA: 'Imobiliária', CORRETOR: 'Corretor' }[r] || r)
 const permissionLevelLabel = (level) => ({ read: 'Leitura', write: 'Edição', none: 'Oculto' }[level] || level)
 
@@ -316,93 +319,8 @@ const deleteUser = async (u) => {
 }
 
 onMounted(loadUsers)
+
+definePageMeta({
+  layout: 'painel'
+})
 </script>
-
-<style scoped>
-.permissions-intro {
-  margin-bottom: 20px;
-  padding: 16px 18px;
-}
-
-.permissions-intro p {
-  margin: 8px 0 0;
-  color: var(--color-surface-300);
-}
-
-.permission-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.permission-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: rgba(148, 163, 184, 0.14);
-  color: var(--color-surface-100);
-}
-
-.permission-chip--read {
-  background: rgba(59, 130, 246, 0.16);
-  color: #bfdbfe;
-}
-
-.permission-chip--write {
-  background: rgba(16, 185, 129, 0.16);
-  color: #bbf7d0;
-}
-
-.permission-empty {
-  color: var(--color-surface-400);
-  font-size: 0.8125rem;
-}
-
-.form-static-value {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--color-surface-100);
-}
-
-.permissions-grid {
-  display: grid;
-  gap: 12px;
-}
-
-.permission-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.permission-row__info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.permission-row__info small,
-.form-hint {
-  color: var(--color-surface-400);
-}
-
-.permission-select {
-  min-width: 0;
-}
-
-@media (max-width: 900px) {
-  .permission-row {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

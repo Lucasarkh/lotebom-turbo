@@ -1,31 +1,33 @@
 <template>
-  <div class="heatmap-report">
-    <div v-if="!report?.plantMap" class="heatmap-empty">
-      <div class="heatmap-empty__icon">
+  <div>
+    <div v-if="!report?.plantMap" class="flex items-center gap-5 rounded-xl border border-p-border bg-p-base/30 p-7">
+      <div class="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-2xl text-blue-400">
         <i class="bi bi-image-alt" aria-hidden="true"></i>
       </div>
       <div>
-        <h3>Planta indisponível</h3>
-        <p>Cadastre a planta do empreendimento para visualizar o mapa de calor sobre os lotes.</p>
+        <h3 class="text-base font-semibold text-p-text">Planta indisponível</h3>
+        <p class="mt-1.5 text-sm text-p-text-muted">Cadastre a planta do empreendimento para visualizar o mapa de calor sobre os lotes.</p>
       </div>
     </div>
 
-    <div v-else class="heatmap-shell">
-      <section class="heatmap-stage">
-        <div class="heatmap-stage__header">
+    <div v-else class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.95fr)]">
+      <section class="rounded-2xl border border-p-border bg-p-base/30 p-6 shadow-md">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p class="eyebrow">Mapa de calor da planta</p>
-            <h2>Distribuição visual de interesse por lote</h2>
-            <p class="subtitle">Troque a camada para comparar volume de acessos, geração de leads, reservas e eficiência por lote.</p>
+            <p class="mb-2 text-[0.74rem] font-bold uppercase tracking-[0.12em] text-p-accent">Mapa de calor da planta</p>
+            <h2 class="text-lg font-semibold text-p-text">Distribuição visual de interesse por lote</h2>
+            <p class="mt-1.5 text-sm text-p-text-muted">Troque a camada para comparar volume de acessos, geração de leads, reservas e eficiência por lote.</p>
           </div>
 
-          <div class="metric-switcher" role="tablist" aria-label="Camadas do mapa de calor">
+          <div class="flex flex-wrap justify-end gap-2" role="tablist" aria-label="Camadas do mapa de calor">
             <button
               v-for="option in metricOptions"
               :key="option.value"
               type="button"
-              class="metric-switcher__button"
-              :class="{ 'is-active': selectedMetric === option.value }"
+              class="rounded-full border px-3.5 py-2.5 text-[0.84rem] font-semibold transition-all hover:-translate-y-px"
+              :class="selectedMetric === option.value
+                ? 'border-p-accent/30 bg-p-accent/15 text-green-300'
+                : 'border-p-border bg-p-base/50 text-p-text-secondary hover:border-p-accent/30'"
               @click="selectedMetric = option.value"
             >
               {{ option.label }}
@@ -33,47 +35,47 @@
           </div>
         </div>
 
-        <div class="heatmap-stage__legend">
+        <div class="mt-5 mb-5 flex items-center gap-3 text-[0.84rem] text-p-text-muted">
           <span>{{ currentMetricLabel }}</span>
-          <div class="legend-gradient" aria-hidden="true"></div>
+          <div class="h-2.5 flex-1 rounded-full" style="background: linear-gradient(90deg, #22c55e, #facc15 48%, #ef4444);" aria-hidden="true"></div>
           <span>Mais intenso</span>
         </div>
 
-        <div class="heatmap-stage__summary">
-          <div class="heat-chip heat-chip--primary">
-            <span>Camada ativa</span>
-            <strong>{{ currentMetricLabel }}</strong>
+        <div class="mb-5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <div class="flex flex-col gap-1 rounded-2xl border border-p-accent/20 bg-p-accent/10 px-3.5 py-3">
+            <span class="text-[0.72rem] font-bold uppercase tracking-wider text-p-text-muted">Camada ativa</span>
+            <strong class="text-sm text-p-text">{{ currentMetricLabel }}</strong>
           </div>
-          <div class="heat-chip" v-if="topLots.length">
-            <span>Ponto mais quente</span>
-            <strong>{{ topLots[0]?.code }}</strong>
+          <div v-if="topLots.length" class="flex flex-col gap-1 rounded-2xl border border-p-border bg-p-base/40 px-3.5 py-3">
+            <span class="text-[0.72rem] font-bold uppercase tracking-wider text-p-text-muted">Ponto mais quente</span>
+            <strong class="text-sm text-p-text">{{ topLots[0]?.code }}</strong>
           </div>
-          <div class="heat-chip">
-            <span>Lotes com calor</span>
-            <strong>{{ formatNumber(activeLots.length) }}</strong>
+          <div class="flex flex-col gap-1 rounded-2xl border border-p-border bg-p-base/40 px-3.5 py-3">
+            <span class="text-[0.72rem] font-bold uppercase tracking-wider text-p-text-muted">Lotes com calor</span>
+            <strong class="text-sm text-p-text">{{ formatNumber(activeLots.length) }}</strong>
           </div>
-          <div class="heat-chip heat-chip--hint">
-            <span>Como ler</span>
-            <strong>Passe o mouse nos focos</strong>
+          <div class="flex flex-col gap-1 rounded-2xl border border-p-border bg-blue-500/5 px-3.5 py-3">
+            <span class="text-[0.72rem] font-bold uppercase tracking-wider text-p-text-muted">Como ler</span>
+            <strong class="text-sm text-p-text">Passe o mouse nos focos</strong>
           </div>
         </div>
 
-        <div class="heatmap-canvas">
-          <div class="heatmap-canvas__chrome">
-            <span class="heatmap-canvas__badge">Mapa de Calor</span>
-            <span class="heatmap-canvas__caption">A concentração aparece diretamente sobre a planta.</span>
+        <div class="relative min-h-[420px] overflow-hidden rounded-2xl border border-p-border bg-p-base/30">
+          <div class="pointer-events-none absolute inset-x-0 top-4 z-[2] flex items-center justify-between gap-3 px-4 max-md:flex-col max-md:items-start">
+            <span class="inline-flex items-center rounded-full border border-p-border bg-p-base/60 px-3 py-2 text-[0.74rem] font-extrabold uppercase tracking-wider text-green-300 backdrop-blur-xl">Mapa de Calor</span>
+            <span class="inline-flex items-center rounded-full border border-p-border bg-p-base/60 px-3 py-2 text-[0.78rem] text-p-text-secondary backdrop-blur-xl">A concentração aparece diretamente sobre a planta.</span>
           </div>
 
-          <div class="heatmap-canvas__wash" aria-hidden="true"></div>
+          <div class="pointer-events-none absolute inset-0 z-0" style="background: radial-gradient(circle at center, rgba(16,185,129,0.05), transparent 42%), linear-gradient(180deg, rgba(2,6,23,0.12), rgba(2,6,23,0.34));" aria-hidden="true"></div>
 
           <img
             :src="report.plantMap.imageUrl"
-            class="heatmap-canvas__image"
+            class="block h-auto min-h-[420px] w-full object-cover saturate-[0.88] brightness-[0.78] contrast-[1.05]"
             alt="Planta do empreendimento"
           />
 
           <svg
-            class="heatmap-canvas__overlay"
+            class="absolute inset-0 z-[1] h-full w-full"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -87,7 +89,6 @@
             <g
               v-for="hotspot in lotHotspots"
               :key="hotspot.id"
-              class="heatmap-hotspot"
               @mouseenter="setActiveLot(hotspot.lotMetrics?.mapElementId || null)"
               @mouseleave="setActiveLot(null)"
             >
@@ -135,102 +136,116 @@
                 :cx="hotspot.x * 100"
                 :cy="hotspot.y * 100"
                 :r="0.58"
-                class="heatmap-hotspot__pin"
-                :class="{
-                  'is-active': hotspot.lotMetrics?.mapElementId === activeLotId,
-                  'is-idle': !hotspot.lotMetrics || metricValue(hotspot.lotMetrics) === 0
-                }"
+                :fill="(!hotspot.lotMetrics || metricValue(hotspot.lotMetrics) === 0) ? 'rgba(148,163,184,0.68)' : (hotspot.lotMetrics?.mapElementId === activeLotId ? 'white' : 'rgba(255,255,255,0.85)')"
+                stroke="rgba(15,23,42,0.8)"
+                stroke-width="0.28"
+                class="transition-all duration-200"
               />
 
               <text
                 v-if="hotspot.lotMetrics && normalizedMetric(hotspot.lotMetrics) >= 0.48"
                 :x="hotspot.x * 100"
                 :y="hotspot.y * 100 - 1.45"
-                class="heatmap-hotspot__label"
                 text-anchor="middle"
+                fill="rgba(255,255,255,0.94)"
+                font-size="1.45"
+                font-weight="700"
+                paint-order="stroke"
+                stroke="rgba(15,23,42,0.82)"
+                stroke-width="0.55"
+                letter-spacing="0.08"
               >
                 {{ hotspot.lotMetrics.code }}
               </text>
             </g>
           </svg>
 
-          <div v-if="activeLot" class="heatmap-tooltip" :style="tooltipStyle">
+          <div v-if="activeLot" class="absolute z-[3] min-w-[180px] max-w-[min(280px,calc(100%-24px))] max-md:!inset-x-4 max-md:!bottom-4 max-md:!top-auto max-md:max-w-none max-md:!transform-none" :style="tooltipStyle">
             <div
-              class="heatmap-tooltip__surface"
-              :class="{ 'is-expanded': isTooltipExpanded }"
+              class="rounded-2xl border border-p-border p-2.5 shadow-lg backdrop-blur-xl transition-all duration-150"
+              :class="isTooltipExpanded ? 'min-w-[220px] bg-p-base/95 p-3.5' : 'bg-p-base/90'"
+              style="background-image: linear-gradient(135deg, rgba(16,185,129,0.06), transparent 48%);"
               @mouseenter="handleTooltipMouseEnter"
               @mouseleave="handleTooltipMouseLeave"
             >
-              <div class="heatmap-tooltip__header">
-                <div class="heatmap-tooltip__identity" :class="{ 'is-compact': !tooltipPrimaryTitle(activeLot) }">
-                  <span class="heatmap-tooltip__code">{{ activeLot.code }}</span>
-                  <strong v-if="tooltipPrimaryTitle(activeLot)">{{ tooltipPrimaryTitle(activeLot) }}</strong>
-                  <p v-if="isTooltipExpanded && tooltipSecondaryText(activeLot)" class="heatmap-tooltip__subtitle">{{ tooltipSecondaryText(activeLot) }}</p>
+              <div class="relative z-[1] flex items-start justify-between gap-2.5">
+                <div class="min-w-0" :class="{ 'flex items-center min-h-[28px]': !tooltipPrimaryTitle(activeLot) }">
+                  <span class="block text-[0.68rem] font-bold uppercase tracking-[0.12em] text-green-300">{{ activeLot.code }}</span>
+                  <strong v-if="tooltipPrimaryTitle(activeLot)" class="text-sm text-p-text">{{ tooltipPrimaryTitle(activeLot) }}</strong>
+                  <p v-if="isTooltipExpanded && tooltipSecondaryText(activeLot)" class="mt-1 text-[0.78rem] text-p-text-muted">{{ tooltipSecondaryText(activeLot) }}</p>
                 </div>
-                <span class="status-pill" :class="statusClass(activeLot.status)">{{ statusLabel(activeLot.status) }}</span>
+                <span
+                  class="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[0.72rem] font-bold"
+                  :class="{
+                    'bg-green-500/15 text-green-300': activeLot.status === 'AVAILABLE',
+                    'bg-yellow-500/15 text-yellow-200': activeLot.status === 'RESERVED',
+                    'bg-red-500/15 text-red-300': activeLot.status === 'SOLD',
+                    'bg-white/10 text-p-text-secondary': !activeLot.status || !['AVAILABLE','RESERVED','SOLD'].includes(activeLot.status)
+                  }"
+                >{{ statusLabel(activeLot.status) }}</span>
               </div>
 
-              <div v-if="isTooltipExpanded" class="heatmap-tooltip__metrics">
-                <div class="heatmap-tooltip__metric-card">
-                  <span>Acessos</span>
-                  <strong>{{ formatNumber(activeLot.views) }}</strong>
+              <div v-if="isTooltipExpanded" class="relative z-[1] mt-3 grid grid-cols-2 gap-2">
+                <div class="rounded-xl border border-white/5 bg-p-base/30 p-2.5">
+                  <span class="text-[0.72rem] text-p-text-muted">Acessos</span>
+                  <strong class="mt-0.5 block text-base text-p-text">{{ formatNumber(activeLot.views) }}</strong>
                 </div>
-                <div class="heatmap-tooltip__metric-card">
-                  <span>Leads</span>
-                  <strong>{{ formatNumber(activeLot.leads) }}</strong>
+                <div class="rounded-xl border border-white/5 bg-p-base/30 p-2.5">
+                  <span class="text-[0.72rem] text-p-text-muted">Leads</span>
+                  <strong class="mt-0.5 block text-base text-p-text">{{ formatNumber(activeLot.leads) }}</strong>
                 </div>
-                <div class="heatmap-tooltip__metric-card">
-                  <span>Reservas</span>
-                  <strong>{{ formatNumber(activeLot.reservations) }}</strong>
+                <div class="rounded-xl border border-white/5 bg-p-base/30 p-2.5">
+                  <span class="text-[0.72rem] text-p-text-muted">Reservas</span>
+                  <strong class="mt-0.5 block text-base text-p-text">{{ formatNumber(activeLot.reservations) }}</strong>
                 </div>
-                <div class="heatmap-tooltip__metric-card heatmap-tooltip__metric-card--accent">
-                  <span class="heatmap-tooltip__metric-label">Conversão</span>
-                  <strong :class="{ 'is-empty': !hasConversionData(activeLot) }">{{ formatTooltipConversion(activeLot) }}</strong>
+                <div class="rounded-xl border border-p-accent/15 bg-p-accent/10 p-2.5">
+                  <span class="block whitespace-nowrap text-[0.72rem] text-p-text-muted">Conversão</span>
+                  <strong class="mt-0.5 block text-base" :class="hasConversionData(activeLot) ? 'text-p-text' : 'text-[0.92rem] tracking-wider text-p-text-secondary'">{{ formatTooltipConversion(activeLot) }}</strong>
                 </div>
               </div>
 
-              <div v-else class="heatmap-tooltip__peek">
+              <div v-else class="relative z-[1] mt-2 flex items-center justify-between gap-2 text-[0.76rem] text-p-text-secondary">
                 <span>{{ formatNumber(activeLot.views) }} acessos</span>
-                <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
+                <i class="bi bi-arrows-angle-expand text-[0.8rem] text-blue-300" aria-hidden="true"></i>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <aside class="heatmap-sidebar">
-        <section class="sidebar-card">
-          <div class="sidebar-card__header">
+      <aside class="flex flex-col gap-5">
+        <section class="rounded-2xl border border-p-border bg-p-base/30 p-5 shadow-md">
+          <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="eyebrow">Ranking dinâmico</p>
-              <h3>Lotes mais quentes</h3>
+              <p class="mb-2 text-[0.74rem] font-bold uppercase tracking-[0.12em] text-p-accent">Ranking dinâmico</p>
+              <h3 class="text-base font-semibold text-p-text">Lotes mais quentes</h3>
             </div>
-            <span class="sidebar-card__badge">{{ currentMetricLabel }}</span>
+            <span class="inline-flex items-center justify-center rounded-full bg-white/10 px-2.5 py-1.5 text-[0.72rem] font-bold text-p-text-secondary">{{ currentMetricLabel }}</span>
           </div>
 
-          <div v-if="topLots.length" class="ranking-list">
+          <div v-if="topLots.length" class="mt-5 flex flex-col gap-3">
             <button
               v-for="(lot, index) in topLots"
               :key="lot.mapElementId"
               type="button"
-              class="ranking-item"
-              :class="{ 'is-active': lot.mapElementId === activeLotId }"
+              class="grid w-full grid-cols-[36px_minmax(0,1fr)] gap-3.5 rounded-2xl border border-p-border bg-p-base/35 p-3.5 text-left transition-all hover:-translate-y-px hover:border-p-accent/20 hover:bg-p-base/50 max-md:grid-cols-1"
+              :class="{ '!border-p-accent/20 !bg-p-base/50 -translate-y-px': lot.mapElementId === activeLotId }"
               @mouseenter="setActiveLot(lot.mapElementId)"
               @mouseleave="setActiveLot(null)"
             >
-              <span class="ranking-item__index">{{ index + 1 }}</span>
-              <div class="ranking-item__content">
-                <div class="ranking-item__title-row">
+              <span class="grid h-9 w-9 place-items-center rounded-xl bg-blue-500/10 font-bold text-blue-300">{{ index + 1 }}</span>
+              <div class="min-w-0">
+                <div class="flex items-start justify-between gap-2.5">
                   <div>
-                    <strong>{{ lot.code }}</strong>
-                    <span v-if="tooltipPrimaryTitle(lot)">{{ tooltipPrimaryTitle(lot) }}</span>
+                    <strong class="text-sm text-p-text">{{ lot.code }}</strong>
+                    <span v-if="tooltipPrimaryTitle(lot)" class="mt-0.5 block text-[0.82rem] text-p-text-muted">{{ tooltipPrimaryTitle(lot) }}</span>
                   </div>
-                  <span class="ranking-item__metric">{{ formatMetric(lot) }}</span>
+                  <span class="shrink-0 font-bold text-p-text">{{ formatMetric(lot) }}</span>
                 </div>
-                <div class="ranking-item__bar">
-                  <span :style="{ width: `${normalizedMetric(lot) * 100}%`, background: heatColor(lot) }"></span>
+                <div class="mt-3 mb-2.5 h-2 overflow-hidden rounded-full bg-white/10">
+                  <span class="block h-full rounded-full" :style="{ width: `${normalizedMetric(lot) * 100}%`, background: heatColor(lot) }"></span>
                 </div>
-                <div class="ranking-item__meta">
+                <div class="flex flex-wrap gap-2.5 text-[0.76rem] text-p-text-muted">
                   <span>{{ formatNumber(lot.views) }} acessos</span>
                   <span>{{ formatNumber(lot.leads) }} leads</span>
                   <span>{{ formatNumber(lot.reservations) }} reservas</span>
@@ -239,51 +254,47 @@
             </button>
           </div>
 
-          <div v-else class="sidebar-card__empty">
+          <div v-else class="mt-5 text-sm text-p-text-muted">
             Nenhuma atividade registrada nos lotes para o período selecionado.
           </div>
         </section>
 
-        <section class="sidebar-card sidebar-card--compact">
-          <div class="sidebar-card__header">
-            <div>
-              <p class="eyebrow">Cobertura do mapa</p>
-              <h3>Qualidade do espelhamento</h3>
-            </div>
+        <section class="rounded-2xl border border-p-border bg-p-base/30 p-5 shadow-md">
+          <div>
+            <p class="mb-2 text-[0.74rem] font-bold uppercase tracking-[0.12em] text-p-accent">Cobertura do mapa</p>
+            <h3 class="text-base font-semibold text-p-text">Qualidade do espelhamento</h3>
           </div>
 
-          <div class="coverage-grid">
-            <div>
-              <span>Lotes na planta</span>
-              <strong>{{ formatNumber(report.summary.totalPlantLots) }}</strong>
+          <div class="mt-5 grid grid-cols-2 gap-3.5 max-md:grid-cols-1">
+            <div class="flex flex-col">
+              <span class="text-[0.72rem] text-p-text-muted">Lotes na planta</span>
+              <strong class="mt-0.5 text-base text-p-text">{{ formatNumber(report.summary.totalPlantLots) }}</strong>
             </div>
-            <div>
-              <span>Lotes com atividade</span>
-              <strong>{{ formatNumber(report.summary.totalTrackedLots) }}</strong>
+            <div class="flex flex-col">
+              <span class="text-[0.72rem] text-p-text-muted">Lotes com atividade</span>
+              <strong class="mt-0.5 text-base text-p-text">{{ formatNumber(report.summary.totalTrackedLots) }}</strong>
             </div>
-            <div>
-              <span>Atividade espelhada</span>
-              <strong>{{ formatNumber(report.summary.lotsWithHotspot) }}</strong>
+            <div class="flex flex-col">
+              <span class="text-[0.72rem] text-p-text-muted">Atividade espelhada</span>
+              <strong class="mt-0.5 text-base text-p-text">{{ formatNumber(report.summary.lotsWithHotspot) }}</strong>
             </div>
-            <div>
-              <span>Média de acessos</span>
-              <strong>{{ report.summary.avgViewsPerTrackedLot.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) }}</strong>
+            <div class="flex flex-col">
+              <span class="text-[0.72rem] text-p-text-muted">Média de acessos</span>
+              <strong class="mt-0.5 text-base text-p-text">{{ report.summary.avgViewsPerTrackedLot.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) }}</strong>
             </div>
           </div>
         </section>
 
-        <section v-if="report.unmappedLots.length" class="sidebar-card sidebar-card--compact">
-          <div class="sidebar-card__header">
-            <div>
-              <p class="eyebrow">Pendências</p>
-              <h3>Lotes sem hotspot</h3>
-            </div>
+        <section v-if="report.unmappedLots.length" class="rounded-2xl border border-p-border bg-p-base/30 p-5 shadow-md">
+          <div>
+            <p class="mb-2 text-[0.74rem] font-bold uppercase tracking-[0.12em] text-p-accent">Pendências</p>
+            <h3 class="text-base font-semibold text-p-text">Lotes sem hotspot</h3>
           </div>
 
-          <ul class="unmapped-list">
-            <li v-for="item in report.unmappedLots" :key="item.label">
+          <ul class="mt-5 flex list-none flex-col gap-2.5 p-0">
+            <li v-for="item in report.unmappedLots" :key="item.label" class="flex items-center justify-between gap-3 rounded-2xl bg-p-base/50 px-3.5 py-3 text-p-text-secondary">
               <span>{{ item.label }}</span>
-              <strong>{{ formatNumber(item.views) }}</strong>
+              <strong class="text-p-text">{{ formatNumber(item.views) }}</strong>
             </li>
           </ul>
         </section>
@@ -590,601 +601,3 @@ function statusClass(status?: string | null) {
   return status ? classes[status] || '' : ''
 }
 </script>
-
-<style scoped>
-.heatmap-report {
-  display: block;
-}
-
-.heatmap-empty {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 28px;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: var(--radius-lg);
-  background: rgba(15, 23, 42, 0.28);
-}
-
-.heatmap-empty__icon {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
-  font-size: 1.5rem;
-}
-
-.heatmap-empty h3,
-.heatmap-stage__header h2,
-.sidebar-card h3 {
-  margin: 0;
-}
-
-.heatmap-empty p,
-.subtitle {
-  margin: 6px 0 0;
-  color: var(--color-surface-400);
-}
-
-.heatmap-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
-  gap: 24px;
-}
-
-.heatmap-stage,
-.sidebar-card {
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.28);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-}
-
-.heatmap-stage {
-  padding: 24px;
-}
-
-.heatmap-stage__header,
-.sidebar-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  font-size: 0.74rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary-400);
-  font-weight: 700;
-}
-
-.metric-switcher {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.metric-switcher__button {
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.52);
-  color: var(--color-surface-200);
-  padding: 10px 14px;
-  font-size: 0.84rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.metric-switcher__button:hover,
-.metric-switcher__button.is-active {
-  transform: translateY(-1px);
-  border-color: rgba(16, 185, 129, 0.28);
-}
-
-.metric-switcher__button.is-active {
-  background: rgba(16, 185, 129, 0.14);
-  color: #86efac;
-}
-
-.heatmap-stage__legend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 18px 0 20px;
-  color: var(--color-surface-400);
-  font-size: 0.84rem;
-}
-
-.legend-gradient {
-  flex: 1;
-  height: 10px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #22c55e, #facc15 48%, #ef4444);
-}
-
-.heatmap-stage__summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 18px;
-}
-
-.heat-chip {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--glass-border-subtle);
-  background: rgba(15, 23, 42, 0.36);
-}
-
-.heat-chip span {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-surface-400);
-}
-
-.heat-chip strong {
-  color: var(--color-surface-50);
-}
-
-.heat-chip--primary {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.18);
-}
-
-.heat-chip--hint {
-  background: rgba(59, 130, 246, 0.08);
-}
-
-.heatmap-canvas {
-  position: relative;
-  overflow: hidden;
-  border-radius: 16px;
-  background: rgba(2, 6, 23, 0.32);
-  border: 1px solid var(--glass-border-subtle);
-  min-height: 420px;
-}
-
-.heatmap-canvas__chrome {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  pointer-events: none;
-}
-
-.heatmap-canvas__badge,
-.heatmap-canvas__caption {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 999px;
-  backdrop-filter: blur(12px);
-  background: rgba(15, 23, 42, 0.62);
-  border: 1px solid var(--glass-border-subtle);
-  color: var(--color-surface-50);
-}
-
-.heatmap-canvas__badge {
-  font-size: 0.74rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-weight: 800;
-  color: #86efac;
-}
-
-.heatmap-canvas__caption {
-  font-size: 0.78rem;
-  color: var(--color-surface-200);
-}
-
-.heatmap-canvas__wash {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(circle at center, rgba(16, 185, 129, 0.05), transparent 42%),
-    linear-gradient(180deg, rgba(2, 6, 23, 0.12), rgba(2, 6, 23, 0.34));
-  pointer-events: none;
-}
-
-.heatmap-canvas__image {
-  display: block;
-  width: 100%;
-  height: auto;
-  min-height: 420px;
-  object-fit: cover;
-  filter: saturate(0.88) brightness(0.78) contrast(1.05);
-}
-
-.heatmap-canvas__overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
-.heatmap-hotspot__pin {
-  fill: rgba(255, 255, 255, 0.85);
-  stroke: rgba(15, 23, 42, 0.8);
-  stroke-width: 0.28;
-  transition: transform 0.2s ease, fill 0.2s ease;
-}
-
-.heatmap-hotspot__pin.is-idle {
-  fill: rgba(148, 163, 184, 0.68);
-}
-
-.heatmap-hotspot__pin.is-active {
-  fill: white;
-}
-
-.heatmap-hotspot__label {
-  fill: rgba(255, 255, 255, 0.94);
-  font-size: 1.45px;
-  font-weight: 700;
-  paint-order: stroke;
-  stroke: rgba(15, 23, 42, 0.82);
-  stroke-width: 0.55px;
-  letter-spacing: 0.08px;
-}
-
-.heatmap-tooltip {
-  position: absolute;
-  z-index: 3;
-  min-width: 180px;
-  max-width: min(280px, calc(100% - 24px));
-}
-
-.heatmap-tooltip__surface {
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: linear-gradient(165deg, rgba(15, 23, 42, 0.88), rgba(17, 24, 39, 0.92));
-  border: 1px solid var(--glass-border-subtle);
-  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.22);
-  backdrop-filter: blur(10px);
-  transition: padding 0.18s ease, width 0.18s ease, background 0.18s ease;
-}
-
-.heatmap-tooltip__surface.is-expanded {
-  min-width: 220px;
-  padding: 14px;
-  background: linear-gradient(165deg, rgba(15, 23, 42, 0.94), rgba(17, 24, 39, 0.94));
-}
-
-.heatmap-tooltip__surface::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), transparent 48%);
-  pointer-events: none;
-}
-
-.heatmap-tooltip__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  position: relative;
-  z-index: 1;
-}
-
-.heatmap-tooltip__identity {
-  min-width: 0;
-}
-
-.heatmap-tooltip__identity.is-compact {
-  display: flex;
-  align-items: center;
-  min-height: 28px;
-}
-
-.heatmap-tooltip__code {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #86efac;
-}
-
-.heatmap-tooltip__subtitle {
-  margin: 4px 0 0;
-  font-size: 0.78rem;
-  color: var(--color-surface-400);
-}
-
-.heatmap-tooltip__peek {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 0.76rem;
-  color: var(--color-surface-300);
-  position: relative;
-  z-index: 1;
-}
-
-.heatmap-tooltip__peek i {
-  font-size: 0.8rem;
-  color: #93c5fd;
-}
-
-.heatmap-tooltip__metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-  position: relative;
-  z-index: 1;
-}
-
-.heatmap-tooltip__metric-card {
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.heatmap-tooltip__metric-label {
-  display: block;
-  white-space: nowrap;
-}
-
-.heatmap-tooltip__metric-card--accent {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.14);
-}
-
-.heatmap-tooltip__metrics span,
-.coverage-grid span,
-.ranking-item__meta,
-.ranking-item__title-row span {
-  color: var(--color-surface-400);
-}
-
-.heatmap-tooltip__metrics strong,
-.coverage-grid strong {
-  display: block;
-  margin-top: 3px;
-  font-size: 1.02rem;
-  white-space: nowrap;
-}
-
-.heatmap-tooltip__metrics strong.is-empty {
-  font-size: 0.92rem;
-  letter-spacing: 0.04em;
-  color: var(--color-surface-300);
-}
-
-.status-pill,
-.sidebar-card__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: rgba(148, 163, 184, 0.12);
-  color: var(--color-surface-200);
-}
-
-.status-pill.is-available {
-  background: rgba(34, 197, 94, 0.14);
-  color: #86efac;
-}
-
-.status-pill.is-reserved {
-  background: rgba(250, 204, 21, 0.16);
-  color: #fde68a;
-}
-
-.status-pill.is-sold {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-}
-
-.heatmap-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.sidebar-card {
-  padding: 22px;
-}
-
-.sidebar-card--compact {
-  padding: 18px 20px;
-}
-
-.ranking-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 18px;
-}
-
-.ranking-item {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  gap: 14px;
-  width: 100%;
-  padding: 14px;
-  text-align: left;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.34);
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.ranking-item:hover,
-.ranking-item.is-active {
-  transform: translateY(-1px);
-  border-color: rgba(16, 185, 129, 0.22);
-  background: rgba(15, 23, 42, 0.5);
-}
-
-.ranking-item__index {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 14px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #93c5fd;
-  font-weight: 700;
-}
-
-.ranking-item__content {
-  min-width: 0;
-}
-
-.ranking-item__title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.ranking-item__title-row strong,
-.coverage-grid strong {
-  color: var(--color-surface-50);
-}
-
-.ranking-item__title-row span {
-  display: block;
-  margin-top: 3px;
-  font-size: 0.82rem;
-}
-
-.ranking-item__metric {
-  flex-shrink: 0;
-  font-weight: 700;
-  color: var(--color-surface-50);
-}
-
-.ranking-item__bar {
-  height: 8px;
-  margin: 12px 0 10px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.14);
-  overflow: hidden;
-}
-
-.ranking-item__bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-}
-
-.ranking-item__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 0.76rem;
-}
-
-.sidebar-card__empty {
-  margin-top: 18px;
-  color: var(--color-surface-400);
-}
-
-.coverage-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
-}
-
-.unmapped-list {
-  margin: 18px 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.unmapped-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.48);
-  color: var(--color-surface-300);
-}
-
-@media (max-width: 1180px) {
-  .heatmap-shell {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .heatmap-stage,
-  .sidebar-card {
-    padding: 18px;
-    border-radius: 24px;
-  }
-
-  .heatmap-stage__header,
-  .sidebar-card__header {
-    flex-direction: column;
-  }
-
-  .metric-switcher {
-    justify-content: flex-start;
-  }
-
-  .heatmap-stage__summary {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .heatmap-canvas__chrome {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .heatmap-tooltip {
-    left: 16px !important;
-    right: 16px;
-    top: auto !important;
-    bottom: 16px;
-    transform: none !important;
-    min-width: 0;
-    max-width: none;
-  }
-
-  .coverage-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ranking-item {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

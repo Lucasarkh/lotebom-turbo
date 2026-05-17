@@ -48,7 +48,7 @@ onMounted(async () => {
 })
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 
 const maxHistoryValue = computed(() => {
@@ -193,241 +193,240 @@ const topicCards = computed(() => [
 </script>
 
 <template>
-  <div class="metrics-page">
-    <div class="header">
-      <div>
-        <h1>Métricas de Acesso</h1>
-        <p class="subtitle">Acompanhe detalhadamente o desempenho dos seus empreendimentos</p>
-      </div>
-
-      <div class="filter-actions">
-        <div class="filter-group">
-          <label>Data Início:</label>
-          <input type="date" v-model="startDate" :max="startDateMax" class="date-input" />
+  <div class="space-y-6">
+    <UiPageHeader title="Métricas de Acesso" description="Acompanhe detalhadamente o desempenho dos seus empreendimentos">
+      <template #actions>
+        <div class="flex flex-wrap items-end gap-4 rounded-xl border border-p-border bg-p-elevated p-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Início:</label>
+            <input type="date" v-model="startDate" :max="startDateMax" class="rounded-lg border border-p-border bg-p-base px-3.5 py-2.5 text-sm font-medium text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/20" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Fim:</label>
+            <input type="date" v-model="endDate" :min="endDateMin" :max="endDateMax" class="rounded-lg border border-p-border bg-p-base px-3.5 py-2.5 text-sm font-medium text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/20" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Empreendimento:</label>
+            <select v-model="selectedProjectId" class="rounded-lg border border-p-border bg-p-base px-3.5 py-2.5 pr-9 text-sm font-medium text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/20">
+              <option v-if="canAggregateAllProjects" value="all">Todos os Projetos</option>
+              <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+          </div>
         </div>
-        <div class="filter-group">
-          <label>Data Fim:</label>
-          <input type="date" v-model="endDate" :min="endDateMin" :max="endDateMax" class="date-input" />
-        </div>
-        <div class="filter-group">
-          <label>Empreendimento:</label>
-          <select v-model="selectedProjectId" class="project-select">
-            <option v-if="canAggregateAllProjects" value="all">Todos os Projetos</option>
-            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-          </select>
-        </div>
-      </div>
-    </div>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="loadingMetrics && !metrics" class="loading">Carregando métricas...</div>
+    <UiLoadingState v-if="loadingMetrics && !metrics" text="Carregando métricas..." />
 
-    <div v-else-if="metrics" class="dashboard" :class="{ 'loading-overlay': loadingMetrics }">
+    <div v-else-if="metrics" class="space-y-8" :class="{ 'opacity-70 transition-opacity': loadingMetrics }">
       <!-- Summary Cards -->
-      <div class="stats-grid">
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon sessions">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Número de sessões reais iniciadas no período. Uma nova sessão surge após 30 minutos de inatividade ou quando a visita é retomada em uma nova janela de navegação." position="bottom"><span class="stat-label">Total de Sessões</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ metrics.summary.totalSessions }}</span>
-          </div>
-        </div>
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon sessions">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Visitantes únicos identificados no período, mesmo quando retornam em várias sessões." position="bottom"><span class="stat-label">Total de Visitantes</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ metrics.summary.totalVisitors }}</span>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Número de sessões reais iniciadas no período. Uma nova sessão surge após 30 minutos de inatividade ou quando a visita é retomada em uma nova janela de navegação." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Total de Sessões</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ metrics.summary.totalSessions }}</span>
           </div>
         </div>
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon duration">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7a4 4 0 1 1 8 0c0 1.4-.67 2.64-1.71 3.37A5 5 0 0 1 18 15v1a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-1a5 5 0 0 1 3.71-4.83A3.98 3.98 0 0 1 8 7Z"/></svg>
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Quantidade e taxa de visitantes que voltaram em mais de uma sessão dentro do período." position="bottom"><span class="stat-label">Visitantes Retornantes</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ metrics.summary.returningVisitors }} ({{ returningRate }}%)</span>
-          </div>
-        </div>
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon avg-pages">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-          </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Média de páginas vistas por sessão ativa. Leituras longas sem nova navegação não inflacionam esse número com page views artificiais." position="bottom"><span class="stat-label">Páginas por Sessão</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ pagesPerSession }}</span>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Visitantes únicos identificados no período, mesmo quando retornam em várias sessões." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Total de Visitantes</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ metrics.summary.totalVisitors }}</span>
           </div>
         </div>
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon views">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7a4 4 0 1 1 8 0c0 1.4-.67 2.64-1.71 3.37A5 5 0 0 1 18 15v1a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-1a5 5 0 0 1 3.71-4.83A3.98 3.98 0 0 1 8 7Z"/></svg>
           </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Total de vezes que qualquer página do site foi carregada ou visualizada, incluindo recarregamentos." position="bottom"><span class="stat-label">Visualizações de Página</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ metrics.summary.totalPageViews }}</span>
-          </div>
-        </div>
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon duration">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Tempo médio observado entre o primeiro e o último sinal real de atividade da sessão. A aba visível mantém a sessão viva; períodos longos de ausência não são reaproveitados como se fossem navegação contínua." position="bottom"><span class="stat-label">Tempo Médio/Sessão</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ avgSessionDuration }}</span>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Quantidade e taxa de visitantes que voltaram em mais de uma sessão dentro do período." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Visitantes Retornantes</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ metrics.summary.returningVisitors }} ({{ returningRate }}%)</span>
           </div>
         </div>
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon bounce">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
           </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Percentual de sessões sem engajamento relevante: uma página apenas, sem interações adicionais com lotes, ferramentas ou envio de lead. Valores menores são melhores." position="bottom"><span class="stat-label">Taxa de Rejeição</span></CommonAppTooltip>
-            <span class="stat-value stat-value--warning">{{ bounceRate }}%</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon leads">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-          </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Total de leads gerados e a taxa de conversão (leads / sessões). Indica a eficiência do site em captar contatos." position="bottom"><span class="stat-label">Leads: Taxa de Conv.</span></CommonAppTooltip>
-            <span class="stat-value stat-value--success">{{ metrics.summary.totalLeads }} ({{ conversionRate }}%)</span>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Média de páginas vistas por sessão ativa. Leituras longas sem nova navegação não inflacionam esse número com page views artificiais." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Páginas por Sessão</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ pagesPerSession }}</span>
           </div>
         </div>
-        <div v-if="!auth.isCorretor" class="stat-card">
-          <div class="stat-icon realtor">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Total de acessos que vieram através de links de corretores. Mostra quantos visitantes os corretores estão trazendo." position="bottom"><span class="stat-label">Acessos via Corretor</span></CommonAppTooltip>
-            <span class="stat-value stat-value--muted">{{ metrics.summary.totalRealtorClicks }}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon sessions">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
-          </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Total de buscas registradas no modal após 7 segundos, no modal inteligente e na página de busca por preferência, respeitando o filtro de empreendimento atual." position="bottom"><span class="stat-label">Buscas Guiadas</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ searchSummary.totalSearches || 0 }}</span>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Total de vezes que qualquer página do site foi carregada ou visualizada, incluindo recarregamentos." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Visualizações de Página</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ metrics.summary.totalPageViews }}</span>
           </div>
         </div>
-        <div v-if="hasSpecificProjectSelected" class="stat-card">
-          <div class="stat-icon sessions">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M12 3v18"/></svg>
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Quantidade de buscas originadas pelo modal guiado que aparece após alguns segundos de permanência na landing do projeto." position="bottom"><span class="stat-label">Modal após 7s</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ searchSummary.timedOnboardingSearches || 0 }}</span>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Tempo médio observado entre o primeiro e o último sinal real de atividade da sessão. A aba visível mantém a sessão viva; períodos longos de ausência não são reaproveitados como se fossem navegação contínua." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Tempo Médio/Sessão</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ avgSessionDuration }}</span>
           </div>
         </div>
-        <div v-if="hasSpecificProjectSelected" class="stat-card">
-          <div class="stat-icon sessions">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-rose-500/20 bg-rose-500/10 text-rose-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </div>
-          <div class="stat-content">
-            <CommonAppTooltip text="Buscas disparadas na página de unidades usando o fluxo de busca por preferência, dentro do projeto filtrado." position="bottom"><span class="stat-label">Busca por Preferência</span></CommonAppTooltip>
-            <span class="stat-value stat-value--default">{{ searchSummary.preferencePageSearches || 0 }}</span>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Percentual de sessões sem engajamento relevante: uma página apenas, sem interações adicionais com lotes, ferramentas ou envio de lead. Valores menores são melhores." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Taxa de Rejeição</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-warning">{{ bounceRate }}%</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-green-500/20 bg-green-500/10 text-green-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Total de leads gerados e a taxa de conversão (leads / sessões). Indica a eficiência do site em captar contatos." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Leads: Taxa de Conv.</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-success">{{ metrics.summary.totalLeads }} ({{ conversionRate }}%)</span>
+          </div>
+        </div>
+        <div v-if="!auth.isCorretor" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Total de acessos que vieram através de links de corretores. Mostra quantos visitantes os corretores estão trazendo." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Acessos via Corretor</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text-muted">{{ metrics.summary.totalRealtorClicks }}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Total de buscas registradas no modal após 7 segundos, no modal inteligente e na página de busca por preferência, respeitando o filtro de empreendimento atual." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Buscas Guiadas</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ searchSummary.totalSearches || 0 }}</span>
+          </div>
+        </div>
+        <div v-if="hasSpecificProjectSelected" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M12 3v18"/></svg>
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Quantidade de buscas originadas pelo modal guiado que aparece após alguns segundos de permanência na landing do projeto." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Modal após 7s</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ searchSummary.timedOnboardingSearches || 0 }}</span>
+          </div>
+        </div>
+        <div v-if="hasSpecificProjectSelected" class="flex items-center gap-3.5 rounded-xl border border-p-border bg-p-elevated p-5 transition-colors hover:border-emerald-500/20 hover:bg-p-overlay">
+          <div class="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5">
+            <CommonAppTooltip text="Buscas disparadas na página de unidades usando o fluxo de busca por preferência, dentro do projeto filtrado." position="bottom"><span class="text-xs font-semibold text-p-text-secondary">Busca por Preferência</span></CommonAppTooltip>
+            <span class="text-2xl font-bold text-p-text">{{ searchSummary.preferencePageSearches || 0 }}</span>
           </div>
         </div>
       </div>
 
-      <section class="details-card search-intelligence-card full-width">
-        <div class="search-intelligence-card__header">
+      <!-- Search Intelligence -->
+      <section class="flex flex-col gap-4 rounded-xl border border-p-border bg-p-elevated p-6">
+        <div class="flex items-start justify-between gap-4">
           <div>
-            <h3>Busca Inteligente</h3>
-            <p class="search-intelligence-card__subtitle">
+            <h3 class="text-base font-semibold text-p-text">Busca Inteligente</h3>
+            <p class="mt-2 text-sm text-p-text-muted">
               Leituras da intenção declarada do usuário nas buscas do projeto{{ hasSpecificProjectSelected && selectedProject ? ` · ${selectedProject.name}` : '' }}.
             </p>
           </div>
-          <div v-if="hasSpecificProjectSelected && selectedProject" class="heatmap-dashboard-card__project-pill">
+          <div v-if="hasSpecificProjectSelected && selectedProject" class="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-xs font-bold text-emerald-400">
             {{ selectedProject.name }}
           </div>
         </div>
 
-        <div v-if="hasSpecificProjectSelected" class="search-intelligence-grid">
-          <div class="search-intelligence-panel">
-            <span class="search-intelligence-panel__label">Resumo</span>
-            <div class="search-intelligence-stats">
-              <div>
-                <span>Total de buscas</span>
-                <strong>{{ searchSummary.totalSearches || 0 }}</strong>
+        <div v-if="hasSpecificProjectSelected" class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div class="flex flex-col gap-4 rounded-2xl border border-p-border bg-p-base/30 p-4">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Resumo</span>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-p-text-muted">Total de buscas</span>
+                <strong class="text-p-text">{{ searchSummary.totalSearches || 0 }}</strong>
               </div>
-              <div>
-                <span>Modal inteligente</span>
-                <strong>{{ searchSummary.smartModalSearches || 0 }}</strong>
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-p-text-muted">Modal inteligente</span>
+                <strong class="text-p-text">{{ searchSummary.smartModalSearches || 0 }}</strong>
               </div>
-              <div>
-                <span>Modal após 7s</span>
-                <strong>{{ searchSummary.timedOnboardingSearches || 0 }}</strong>
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-p-text-muted">Modal após 7s</span>
+                <strong class="text-p-text">{{ searchSummary.timedOnboardingSearches || 0 }}</strong>
               </div>
-              <div>
-                <span>Média de resultados</span>
-                <strong>{{ averageSearchResults }}</strong>
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-p-text-muted">Média de resultados</span>
+                <strong class="text-p-text">{{ averageSearchResults }}</strong>
               </div>
             </div>
           </div>
 
-          <div class="search-intelligence-panel">
-            <span class="search-intelligence-panel__label">Intenções mais frequentes</span>
-            <div v-if="searchIntentRows.length" class="search-intelligence-list">
-              <div v-for="item in searchIntentRows" :key="item.value" class="search-intelligence-list__item">
-                <strong>{{ item.label }}</strong>
-                <span>{{ item.count }}</span>
+          <div class="flex flex-col gap-4 rounded-2xl border border-p-border bg-p-base/30 p-4">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Intenções mais frequentes</span>
+            <div v-if="searchIntentRows.length" class="flex flex-col gap-3">
+              <div v-for="item in searchIntentRows" :key="item.value" class="flex items-center justify-between gap-3">
+                <strong class="text-sm text-p-text">{{ item.label }}</strong>
+                <span class="text-sm text-p-text-muted">{{ item.count }}</span>
               </div>
             </div>
-            <p v-else class="search-intelligence-empty">Nenhuma intenção de busca registrada no período.</p>
+            <p v-else class="text-sm text-p-text-muted">Nenhuma intenção de busca registrada no período.</p>
           </div>
 
-          <div class="search-intelligence-panel">
-            <span class="search-intelligence-panel__label">Origem das buscas</span>
-            <div v-if="searchSourceRows.length" class="search-intelligence-list">
-              <div v-for="item in searchSourceRows" :key="item.value" class="search-intelligence-list__item">
-                <strong>{{ item.label }}</strong>
-                <span>{{ item.count }}</span>
+          <div class="flex flex-col gap-4 rounded-2xl border border-p-border bg-p-base/30 p-4">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Origem das buscas</span>
+            <div v-if="searchSourceRows.length" class="flex flex-col gap-3">
+              <div v-for="item in searchSourceRows" :key="item.value" class="flex items-center justify-between gap-3">
+                <strong class="text-sm text-p-text">{{ item.label }}</strong>
+                <span class="text-sm text-p-text-muted">{{ item.count }}</span>
               </div>
             </div>
-            <p v-else class="search-intelligence-empty">Nenhuma origem de busca registrada no período.</p>
+            <p v-else class="text-sm text-p-text-muted">Nenhuma origem de busca registrada no período.</p>
           </div>
         </div>
 
-        <div v-else class="heatmap-dashboard-card__empty">
-          <div class="heatmap-dashboard-card__empty-icon">
+        <div v-else class="flex items-center gap-4 rounded-2xl border border-dashed border-p-border bg-p-base/30 p-6">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-lg text-emerald-400">
             <i class="bi bi-search" aria-hidden="true"></i>
           </div>
           <div>
-            <h4>Selecione um empreendimento para abrir as métricas de busca</h4>
-            <p>
+            <h4 class="font-semibold text-p-text">Selecione um empreendimento para abrir as métricas de busca</h4>
+            <p class="mt-2 max-w-xl text-sm text-p-text-muted">
               As métricas de intenção e origem da busca são exibidas aqui usando o filtro de empreendimento no topo da página.
             </p>
           </div>
         </div>
       </section>
 
-      <section class="details-card heatmap-dashboard-card full-width">
-        <div class="heatmap-dashboard-card__header">
+      <!-- Heatmap -->
+      <section class="flex flex-col gap-4 rounded-xl border border-p-border bg-p-elevated p-6">
+        <div class="flex items-start justify-between gap-4">
           <div>
-            <h3>{{ selectedProjectHeatmapTitle }}</h3>
-            <p class="heatmap-dashboard-card__subtitle">
+            <h3 class="text-base font-semibold text-p-text">{{ selectedProjectHeatmapTitle }}</h3>
+            <p class="mt-2 text-sm text-p-text-muted">
               Visualize a planta com concentração de acessos, leads e reservas do empreendimento filtrado.
             </p>
           </div>
-          <div v-if="selectedProject" class="heatmap-dashboard-card__project-pill">
+          <div v-if="selectedProject" class="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2.5 text-xs font-bold text-emerald-400">
             {{ selectedProject.name }}
           </div>
         </div>
 
         <ProjectHeatmapReport v-if="projectHeatmap" :report="projectHeatmap" />
 
-        <div v-else class="heatmap-dashboard-card__empty">
-          <div class="heatmap-dashboard-card__empty-icon">
+        <div v-else class="flex items-center gap-4 rounded-2xl border border-dashed border-p-border bg-p-base/30 p-6">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-lg text-emerald-400">
             <i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i>
           </div>
           <div>
-            <h4>Selecione um empreendimento para abrir o mapa de calor</h4>
-            <p>
+            <h4 class="font-semibold text-p-text">Selecione um empreendimento para abrir o mapa de calor</h4>
+            <p class="mt-2 max-w-xl text-sm text-p-text-muted">
               O relatório visual usa a planta do projeto. Quando um projeto estiver selecionado no filtro, a tela mostra automaticamente o heatmap dele.
             </p>
           </div>
@@ -435,40 +434,40 @@ const topicCards = computed(() => [
       </section>
 
       <!-- History Chart -->
-      <div v-if="!auth.isCorretor" class="details-card history-card full-width">
-        <h3>Histórico de Acessos</h3>
-        <div class="history-chart-container">
-          <div v-for="h in metrics.history" :key="h.date" class="chart-col">
-            <div class="bars">
-              <div class="bar-group">
-                <span class="bar-value views">{{ h.views }}</span>
-                <div class="bar views-bar" :style="{ height: `${(h.views / maxHistoryValue) * 100}%` }"></div>
+      <div v-if="!auth.isCorretor" class="rounded-xl border border-p-border bg-p-elevated p-6">
+        <h3 class="mb-5 text-base font-semibold text-p-text">Histórico de Acessos</h3>
+        <div class="relative mt-8 flex h-[250px] items-end gap-6 overflow-x-auto border-b border-p-border px-4 pb-8">
+          <div v-for="h in metrics.history" :key="h.date" class="flex h-full w-20 shrink-0 flex-col justify-end">
+            <div class="mb-2 flex h-full items-end gap-2">
+              <div class="flex h-full flex-1 flex-col items-center justify-end">
+                <span class="mb-1 text-[10px] font-bold text-emerald-400">{{ h.views }}</span>
+                <div class="w-full rounded-t bg-emerald-500/60 transition-all duration-300" :style="{ height: `${(h.views / maxHistoryValue) * 100}%`, minHeight: '2px' }"></div>
               </div>
-              <div class="bar-group">
-                <span class="bar-value sessions-val">{{ h.sessions }}</span>
-                <div class="bar sessions-bar" :style="{ height: `${(h.sessions / maxHistoryValue) * 100}%` }"></div>
+              <div class="flex h-full flex-1 flex-col items-center justify-end">
+                <span class="mb-1 text-[10px] font-bold text-slate-300">{{ h.sessions }}</span>
+                <div class="w-full rounded-t bg-emerald-300/40 transition-all duration-300" :style="{ height: `${(h.sessions / maxHistoryValue) * 100}%`, minHeight: '2px' }"></div>
               </div>
             </div>
-            <span class="label">{{ formatDate(h.date) }}</span>
+            <span class="text-center text-[10px] font-semibold text-p-text-muted">{{ formatDate(h.date) }}</span>
           </div>
-          <div v-if="!metrics.history?.length" class="no-data">Nenhum dado no período</div>
+          <div v-if="!metrics.history?.length" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-semibold text-p-text-muted">Nenhum dado no período</div>
         </div>
-        <div class="chart-legend">
-          <div class="legend-item">
-            <span class="legend-color views"></span>
+        <div class="mt-6 flex gap-6 border-t border-dashed border-p-border pt-4">
+          <div class="flex cursor-help items-center gap-2 text-[13px] text-p-text-secondary">
+            <span class="h-3.5 w-3.5 rounded bg-emerald-500/80"></span>
             <CommonAppTooltip text="Número total de vezes que as páginas foram carregadas, incluindo recarregamentos e navegação interna." position="top" :no-icon="true"><strong>Visualizações</strong> (Cliques em links/páginas)</CommonAppTooltip>
           </div>
-          <div class="legend-item">
-            <span class="legend-color sessions"></span>
+          <div class="flex cursor-help items-center gap-2 text-[13px] text-p-text-secondary">
+            <span class="h-3.5 w-3.5 rounded bg-emerald-300/70"></span>
             <CommonAppTooltip text="Cada sessão representa uma janela real de visita. Um mesmo visitante pode gerar múltiplas sessões quando volta depois de um período relevante de inatividade." position="top" :no-icon="true"><strong>Sessões</strong> (Janelas de visita)</CommonAppTooltip>
           </div>
         </div>
       </div>
 
       <!-- Topic Cards -->
-      <div v-if="!auth.isCorretor" class="topics-grid">
-        <NuxtLink v-for="card in topicCards" :key="card.route" :to="card.route" class="topic-card" :class="`topic-${card.color}`">
-          <div class="topic-icon" :class="card.icon">
+      <div v-if="!auth.isCorretor" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <NuxtLink v-for="card in topicCards" :key="card.route" :to="card.route" class="group flex items-center gap-5 rounded-2xl border border-p-border bg-p-elevated p-6 no-underline transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/20 hover:shadow-lg">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
             <!-- Lot -->
             <svg v-if="card.icon === 'lot'" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             <!-- Trend -->
@@ -488,657 +487,14 @@ const topicCards = computed(() => [
             <!-- Personas -->
             <svg v-if="card.icon === 'personas'" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
-          <div class="topic-content">
-            <h3>{{ card.title }}</h3>
-            <p>{{ card.subtitle }}</p>
-            <span v-if="card.highlight" class="topic-highlight">{{ card.highlight }}</span>
+          <div class="min-w-0 flex-1">
+            <h3 class="mb-1 text-base font-bold text-p-text">{{ card.title }}</h3>
+            <p class="text-[13px] leading-relaxed text-p-text-muted">{{ card.subtitle }}</p>
+            <span v-if="card.highlight" class="mt-2 inline-block rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">{{ card.highlight }}</span>
           </div>
-          <svg class="topic-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="shrink-0 text-p-text-muted transition-transform duration-200 group-hover:translate-x-1 group-hover:text-p-text-secondary" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </NuxtLink>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.metrics-page {
-  padding: 24px;
-  --metrics-accent: #86efac;
-  --metrics-accent-strong: #34d399;
-  --metrics-accent-surface: rgba(16, 185, 129, 0.1);
-  --metrics-accent-border: rgba(16, 185, 129, 0.18);
-  --metrics-success-strong: #4ade80;
-  --metrics-success-surface: rgba(34, 197, 94, 0.14);
-  --metrics-success-border: rgba(34, 197, 94, 0.24);
-  --metrics-warning: #fb7185;
-  --metrics-warning-surface: rgba(244, 63, 94, 0.14);
-  --metrics-warning-border: rgba(244, 63, 94, 0.24);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-}
-
-h1 {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--color-surface-50);
-  margin: 0 0 8px 0;
-}
-
-.subtitle {
-  color: var(--color-surface-400);
-  font-size: 16px;
-  margin: 0;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 16px;
-  background: var(--glass-bg);
-  padding: 16px 24px;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  border: 1px solid var(--glass-border-subtle);
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.filter-group label {
-  font-size: 11px;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--color-surface-400);
-  letter-spacing: 0.05em;
-}
-
-.project-select, .date-input {
-  padding: 10px 14px;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-900);
-  color: var(--color-surface-100);
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  -webkit-appearance: none;
-  appearance: none;
-  color-scheme: dark;
-}
-
-.project-select:focus,
-.date-input:focus {
-  outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-}
-
-.project-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%239cb3a5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px;
-}
-
-.project-select option {
-  background: var(--color-surface-800);
-  color: var(--color-surface-50);
-}
-
-.heatmap-dashboard-card {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.search-intelligence-card {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.search-intelligence-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.search-intelligence-card__subtitle {
-  margin: 8px 0 0;
-  color: var(--color-surface-400);
-}
-
-.search-intelligence-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.search-intelligence-panel {
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.28);
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.search-intelligence-panel__label {
-  font-size: 11px;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--color-surface-400);
-  letter-spacing: 0.05em;
-}
-
-.search-intelligence-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.search-intelligence-stats span,
-.search-intelligence-list__item span,
-.search-intelligence-empty {
-  color: var(--color-surface-400);
-}
-
-.search-intelligence-stats strong,
-.search-intelligence-list__item strong {
-  color: var(--color-surface-50);
-}
-
-.search-intelligence-stats div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.search-intelligence-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.search-intelligence-list__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.heatmap-dashboard-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.heatmap-dashboard-card__subtitle {
-  margin: 8px 0 0;
-  color: var(--color-surface-400);
-}
-
-.heatmap-dashboard-card__project-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: var(--metrics-accent-surface);
-  color: var(--metrics-accent);
-  font-size: 0.82rem;
-  font-weight: 700;
-  white-space: nowrap;
-  border: 1px solid var(--metrics-accent-border);
-}
-
-.heatmap-dashboard-card__empty {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  min-height: 220px;
-  padding: 24px;
-  border-radius: 22px;
-  border: 1px dashed rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.28);
-}
-
-.heatmap-dashboard-card__empty h4 {
-  margin: 0;
-  color: var(--color-surface-50);
-}
-
-.heatmap-dashboard-card__empty p {
-  margin: 8px 0 0;
-  color: var(--color-surface-400);
-  max-width: 560px;
-}
-
-.heatmap-dashboard-card__empty-icon {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  background: var(--metrics-accent-surface);
-  color: var(--metrics-accent);
-  font-size: 1.25rem;
-  flex-shrink: 0;
-  border: 1px solid var(--metrics-accent-border);
-}
-
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  transition: opacity 0.2s;
-}
-
-.loading-overlay {
-  opacity: 0.7;
-}
-
-/* Stats Cards */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  align-items: stretch;
-}
-
-.stat-card {
-  background: var(--glass-bg);
-  padding: 18px 20px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 122px;
-  border: 1px solid var(--glass-border-subtle);
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.stat-card:hover {
-  border-color: var(--metrics-accent-border);
-  background: rgba(15, 23, 42, 0.34);
-}
-
-.stat-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.stat-icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.stat-icon.sessions,
-.stat-icon.views,
-.stat-icon.avg-pages,
-.stat-icon.realtor,
-.stat-icon.duration {
-  background: var(--metrics-accent-surface);
-  color: var(--metrics-accent);
-  border-color: var(--metrics-accent-border);
-}
-
-.stat-icon.leads {
-  background: var(--metrics-success-surface);
-  color: var(--metrics-success-strong);
-  border-color: var(--metrics-success-border);
-}
-
-.stat-icon.bounce {
-  background: var(--metrics-warning-surface);
-  color: var(--metrics-warning);
-  border-color: var(--metrics-warning-border);
-}
-
-.stat-label {
-  display: block;
-  color: var(--color-surface-200);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.3;
-  text-wrap: balance;
-}
-
-.stat-value {
-  display: block;
-  font-size: clamp(1.55rem, 2vw, 2rem);
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--color-surface-100);
-  overflow-wrap: anywhere;
-}
-
-.stat-value--default {
-  color: var(--color-surface-50);
-}
-
-.stat-value--success {
-  color: var(--metrics-success-strong);
-}
-
-.stat-value--warning {
-  color: var(--metrics-warning);
-}
-
-.stat-value--muted {
-  color: #e2e8f0;
-}
-
-.stat-content {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 10px;
-  justify-content: center;
-}
-
-.text-emerald {
-  font-size: clamp(1.3rem, 1.8vw, 1.7rem);
-}
-
-@media (max-width: 1400px) {
-  .stats-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 980px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .search-intelligence-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.text-blue,
-.text-indigo,
-.text-teal,
-.text-emerald,
-.text-orange,
-.text-cyan,
-.text-rose,
-.text-sky {
-  color: var(--color-surface-100);
-}
-
-/* History Chart */
-.details-card {
-  background: var(--glass-bg);
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  border: 1px solid var(--glass-border-subtle);
-}
-
-.details-card h3 {
-  margin: 0 0 20px 0;
-  font-size: 16px;
-  color: var(--color-surface-100);
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-.history-chart-container {
-  height: 250px;
-  display: flex;
-  align-items: flex-end;
-  gap: 24px;
-  margin-top: 32px;
-  padding: 0 16px 32px 16px;
-  border-bottom: 1px solid var(--glass-border-subtle);
-  overflow-x: auto;
-  position: relative;
-}
-
-.chart-col {
-  flex: 0 0 80px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  justify-content: flex-end;
-}
-
-.bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 100%;
-  margin-bottom: 8px;
-}
-
-.bar-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  height: 100%;
-  position: relative;
-}
-
-.bar-value {
-  font-size: 10px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-.bar-value.views { color: var(--metrics-accent); }
-.bar-value.sessions-val { color: #e2e8f0; }
-
-.bar {
-  width: 100%;
-  border-radius: 4px 4px 0 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 2px;
-}
-
-.views-bar { background: rgba(16, 185, 129, 0.58); opacity: 1; }
-.sessions-bar { background: rgba(134, 239, 172, 0.42); opacity: 1; }
-
-.chart-col .label {
-  font-size: 10px;
-  text-align: center;
-  color: var(--color-surface-500);
-  font-weight: 600;
-}
-
-.chart-legend {
-  display: flex;
-  gap: 24px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--glass-border-subtle);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--color-surface-200);
-  cursor: help;
-}
-
-.legend-color { width: 14px; height: 14px; border-radius: 4px; }
-.legend-color.views { background: rgba(16, 185, 129, 0.82); }
-.legend-color.sessions { background: rgba(134, 239, 172, 0.72); opacity: 1; }
-
-/* Topic Cards Grid */
-.topics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 20px;
-}
-
-.topic-card {
-  background: var(--glass-bg);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  border: 1px solid var(--glass-border-subtle);
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.topic-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-
-.topic-card.topic-blue:hover,
-.topic-card.topic-emerald:hover,
-.topic-card.topic-orange:hover,
-.topic-card.topic-purple:hover,
-.topic-card.topic-indigo:hover,
-.topic-card.topic-slate:hover,
-.topic-card.topic-cyan:hover,
-.topic-card.topic-amber:hover {
-  border-color: var(--metrics-accent-border);
-}
-
-.topic-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.topic-icon.lot,
-.topic-icon.trend,
-.topic-icon.users,
-.topic-icon.building,
-.topic-icon.globe,
-.topic-icon.office,
-.topic-icon.pulse,
-.topic-icon.personas {
-  background: var(--metrics-accent-surface);
-  color: var(--metrics-accent);
-  border: 1px solid var(--metrics-accent-border);
-}
-
-.topic-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.topic-content h3 {
-  margin: 0 0 4px 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-surface-50);
-}
-
-.topic-content p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-surface-400);
-  line-height: 1.4;
-}
-
-.topic-highlight {
-  display: inline-block;
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--metrics-accent);
-  background: var(--metrics-accent-surface);
-  padding: 2px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--metrics-accent-border);
-}
-
-.topic-arrow {
-  color: var(--color-surface-500);
-  flex-shrink: 0;
-  transition: transform 0.2s;
-}
-
-.topic-card:hover .topic-arrow {
-  transform: translateX(4px);
-  color: var(--color-surface-200);
-}
-
-.loading {
-  padding: 48px;
-  text-align: center;
-  color: var(--color-surface-400);
-}
-
-.no-data {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: var(--color-surface-500);
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    gap: 20px;
-  }
-  .filter-actions {
-    width: 100%;
-  }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .stat-card {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 12px;
-    min-height: 0;
-  }
-  .stat-content {
-    align-items: center;
-    gap: 8px;
-  }
-  .stat-label {
-    min-height: 0;
-  }
-  .topics-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

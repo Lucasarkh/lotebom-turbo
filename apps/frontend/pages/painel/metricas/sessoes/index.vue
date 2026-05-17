@@ -87,35 +87,35 @@ onMounted(async () => {
 })
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 </script>
 
 <template>
-  <div class="metrics-page">
-    <NuxtLink to="/painel/metricas" class="back-link">
+  <div class="space-y-6">
+    <NuxtLink to="/painel/metricas" class="inline-flex items-center gap-2 text-sm font-medium text-p-text-muted hover:text-p-accent transition-colors">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Voltar às Métricas
     </NuxtLink>
 
-    <div class="header">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <h1>Explorador de Sessões</h1>
-        <p class="subtitle">Entenda cada visita: origem, engajamento, lotes acessados e leads gerados</p>
+        <h1 class="text-2xl font-extrabold text-p-text">Explorador de Sessões</h1>
+        <p class="mt-1 text-sm text-p-text-muted">Entenda cada visita: origem, engajamento, lotes acessados e leads gerados</p>
       </div>
 
-      <div class="filter-actions">
-        <div class="filter-group">
-          <label>Data Início:</label>
-          <input v-model="startDate" type="date" :max="startDateMax" class="date-input" />
+      <div class="flex flex-wrap items-end gap-4 rounded-xl border border-p-border bg-p-elevated p-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Início:</label>
+          <input v-model="startDate" type="date" :max="startDateMax" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" />
         </div>
-        <div class="filter-group">
-          <label>Data Fim:</label>
-          <input v-model="endDate" type="date" :min="endDateMin" :max="endDateMax" class="date-input" />
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Fim:</label>
+          <input v-model="endDate" type="date" :min="endDateMin" :max="endDateMax" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" />
         </div>
-        <div class="filter-group">
-          <label>Empreendimento:</label>
-          <select v-model="selectedProjectId" class="project-select">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Empreendimento:</label>
+          <select v-model="selectedProjectId" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text appearance-none focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30">
             <option value="all">Todos os Projetos</option>
             <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
           </select>
@@ -123,271 +123,88 @@ definePageMeta({
       </div>
     </div>
 
-    <div v-if="loading && !data" class="loading">Carregando sessões...</div>
+    <UiLoadingState v-if="loading && !data" text="Carregando sessões..." />
 
-    <div v-else-if="data" class="dashboard" :class="{ 'loading-overlay': loading }">
-      <div class="stats-grid compact">
-        <div class="stat-card">
-          <CommonAppTooltip text="Quantidade total de sessões reais registradas no período filtrado." position="bottom"><span class="stat-label">Sessões no período</span></CommonAppTooltip>
-          <span class="stat-value text-blue">{{ data.summary.totalSessions }}</span>
-        </div>
+    <div v-else-if="data" class="space-y-6" :class="{ 'opacity-60': loading }">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <UiCard padding="md">
+          <CommonAppTooltip text="Quantidade total de sessões reais registradas no período filtrado." position="bottom"><span class="text-xs text-p-text-muted">Sessões no período</span></CommonAppTooltip>
+          <span class="mt-2 block text-2xl font-extrabold text-blue-400">{{ data.summary.totalSessions }}</span>
+        </UiCard>
       </div>
 
-      <div class="details-card">
-        <div class="section-head">
+      <UiCard padding="md">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
-            <h3>Sessões Recentes</h3>
-            <p v-if="visibleResultsLabel" class="section-caption">{{ visibleResultsLabel }}</p>
-            <p v-else class="section-caption">Período sem sessões encontradas.</p>
+            <h3 class="text-base font-semibold text-p-text">Sessões Recentes</h3>
+            <p v-if="visibleResultsLabel" class="mt-1 text-[13px] text-p-text-muted">{{ visibleResultsLabel }}</p>
+            <p v-else class="mt-1 text-[13px] text-p-text-muted">Período sem sessões encontradas.</p>
           </div>
-          <div v-if="data.pagination.totalPages > 1" class="pagination-actions">
-            <button class="page-button" :disabled="page <= 1" @click="previousPage">Anterior</button>
-            <button class="page-button" :disabled="page >= data.pagination.totalPages" @click="nextPage">Próxima</button>
+          <div v-if="data.pagination.totalPages > 1" class="flex gap-2">
+            <UiButton variant="secondary" size="sm" :disabled="page <= 1" @click="previousPage">Anterior</UiButton>
+            <UiButton variant="secondary" size="sm" :disabled="page >= data.pagination.totalPages" @click="nextPage">Próxima</UiButton>
           </div>
         </div>
 
-        <div v-if="!data.items?.length" class="no-data-placeholder">Nenhuma sessão encontrada no período.</div>
+        <UiEmptyState v-if="!data.items?.length" title="Nenhuma sessão encontrada no período." />
 
-        <table v-else class="simple-table">
-          <thead>
-            <tr>
-              <th><CommonAppTooltip text="Identificador da sessão individual. Cada linha representa uma visita distinta." position="bottom">Sessão</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Visitante persistente associado à sessão, permitindo ver recorrência entre visitas." position="bottom">Visitante</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Projeto e corretor atribuídos à sessão filtrada." position="bottom">Projeto</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Origem e campanha atribuídas à visita no momento da sessão." position="bottom">Origem</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Total de page views registrados dentro da sessão." position="bottom">Páginas</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Total de interações relacionadas a lotes durante a sessão." position="bottom">Lotes</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Quantidade de leads gerados dentro da sessão." position="bottom">Leads</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Tempo observado entre o primeiro e o último sinal real de atividade da sessão. A visita não continua contando indefinidamente quando o usuário some por muito tempo." position="bottom">Duração</CommonAppTooltip></th>
-              <th><CommonAppTooltip text="Início da sessão e último momento em que houve atividade efetiva registrada com a sessão ainda válida." position="bottom">Última atividade</CommonAppTooltip></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="session in data.items"
-              :key="session.id"
-              class="table-row-link"
-              tabindex="0"
-              @click="openSession(session.id)"
-              @keydown.enter.prevent="openSession(session.id)"
-              @keydown.space.prevent="openSession(session.id)"
-            >
-              <td>
-                <span class="table-link">{{ session.id.slice(-8) }}</span>
-                <span class="table-muted">{{ session.deviceType || '---' }}</span>
-              </td>
-              <td>
-                <div>{{ session.visitorId ? session.visitorId.slice(-8) : '---' }}</div>
-                <span class="table-muted">{{ session.visitorSessions || 1 }} visita(s)</span>
-              </td>
-              <td>
-                <div>{{ session.projectName || '---' }}</div>
-                <span class="table-muted">{{ session.realtorName || 'Sem corretor' }}</span>
-              </td>
-              <td>
-                <div>{{ session.utmSource || '(Direto)' }}</div>
-                <span class="table-muted">{{ session.utmCampaign || '(Nenhuma)' }}</span>
-              </td>
-              <td>{{ session.pageViews }}</td>
-              <td>{{ session.lotInteractions }}</td>
-              <td>{{ session.totalLeads }}</td>
-              <td>
-                <div>{{ formatDuration(session.durationSec) }}</div>
-                <span class="table-muted">{{ session.isBounce ? 'Bounce' : 'Engajada' }}</span>
-              </td>
-              <td>
-                <div>{{ formatDateTime(session.lastSeenAt) }}</div>
-                <span class="table-muted">Entrada: {{ formatDateTime(session.firstSeenAt) }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-p-border">
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Identificador da sessão individual. Cada linha representa uma visita distinta." position="bottom">Sessão</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Visitante persistente associado à sessão, permitindo ver recorrência entre visitas." position="bottom">Visitante</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Projeto e corretor atribuídos à sessão filtrada." position="bottom">Projeto</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Origem e campanha atribuídas à visita no momento da sessão." position="bottom">Origem</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Total de page views registrados dentro da sessão." position="bottom">Páginas</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Total de interações relacionadas a lotes durante a sessão." position="bottom">Lotes</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Quantidade de leads gerados dentro da sessão." position="bottom">Leads</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Tempo observado entre o primeiro e o último sinal real de atividade da sessão. A visita não continua contando indefinidamente quando o usuário some por muito tempo." position="bottom">Duração</CommonAppTooltip></th>
+                <th class="px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Início da sessão e último momento em que houve atividade efetiva registrada com a sessão ainda válida." position="bottom">Última atividade</CommonAppTooltip></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-p-border">
+              <tr
+                v-for="session in data.items"
+                :key="session.id"
+                class="cursor-pointer hover:bg-p-overlay/50 focus-visible:bg-p-overlay/50 focus-visible:outline-none"
+                tabindex="0"
+                @click="openSession(session.id)"
+                @keydown.enter.prevent="openSession(session.id)"
+                @keydown.space.prevent="openSession(session.id)"
+              >
+                <td class="px-3 py-3.5 align-top">
+                  <span class="font-bold text-p-accent">{{ session.id.slice(-8) }}</span>
+                  <span class="block text-xs text-p-text-muted">{{ session.deviceType || '---' }}</span>
+                </td>
+                <td class="px-3 py-3.5 align-top">
+                  <div>{{ session.visitorId ? session.visitorId.slice(-8) : '---' }}</div>
+                  <span class="text-xs text-p-text-muted">{{ session.visitorSessions || 1 }} visita(s)</span>
+                </td>
+                <td class="px-3 py-3.5 align-top">
+                  <div>{{ session.projectName || '---' }}</div>
+                  <span class="text-xs text-p-text-muted">{{ session.realtorName || 'Sem corretor' }}</span>
+                </td>
+                <td class="px-3 py-3.5 align-top">
+                  <div>{{ session.utmSource || '(Direto)' }}</div>
+                  <span class="text-xs text-p-text-muted">{{ session.utmCampaign || '(Nenhuma)' }}</span>
+                </td>
+                <td class="px-3 py-3.5 align-top text-p-text-secondary">{{ session.pageViews }}</td>
+                <td class="px-3 py-3.5 align-top text-p-text-secondary">{{ session.lotInteractions }}</td>
+                <td class="px-3 py-3.5 align-top text-p-text-secondary">{{ session.totalLeads }}</td>
+                <td class="px-3 py-3.5 align-top">
+                  <div>{{ formatDuration(session.durationSec) }}</div>
+                  <span class="text-xs text-p-text-muted">{{ session.isBounce ? 'Bounce' : 'Engajada' }}</span>
+                </td>
+                <td class="px-3 py-3.5 align-top">
+                  <div>{{ formatDateTime(session.lastSeenAt) }}</div>
+                  <span class="text-xs text-p-text-muted">Entrada: {{ formatDateTime(session.firstSeenAt) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </UiCard>
     </div>
   </div>
 </template>
-
-<style scoped>
-.metrics-page {
-  padding: 24px;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-surface-400);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 24px;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-h1 {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--color-surface-50);
-  margin: 0 0 8px;
-}
-
-.subtitle {
-  margin: 0;
-  color: var(--color-surface-400);
-}
-
-.filter-actions {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 16px 20px;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.filter-group label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-surface-500);
-}
-
-.date-input,
-.project-select,
-.page-button {
-  border: 1px solid var(--glass-border-subtle);
-  background: rgba(15, 23, 42, 0.55);
-  color: var(--color-surface-50);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-
-.dashboard {
-  display: grid;
-  gap: 24px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.stat-card,
-.details-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-}
-
-.stat-label,
-.table-muted {
-  color: var(--color-surface-400);
-  font-size: 12px;
-}
-
-.stat-value {
-  display: block;
-  margin-top: 8px;
-  font-size: 28px;
-  font-weight: 800;
-}
-
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.section-caption {
-  margin: 6px 0 0;
-  color: var(--color-surface-400);
-  font-size: 13px;
-}
-
-.pagination-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.page-button:disabled {
-  opacity: 0.45;
-}
-
-.simple-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.simple-table th,
-.simple-table td {
-  padding: 14px 10px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-  text-align: left;
-  vertical-align: top;
-}
-
-.simple-table th {
-  color: var(--color-surface-400);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.table-link {
-  color: var(--color-primary-400);
-  font-weight: 700;
-}
-
-.table-row-link {
-  cursor: pointer;
-}
-
-.table-row-link:hover td,
-.table-row-link:focus-visible td {
-  background: rgba(15, 23, 42, 0.38);
-}
-
-.table-row-link:focus-visible {
-  outline: none;
-}
-
-.loading,
-.no-data-placeholder {
-  color: var(--color-surface-400);
-}
-
-.text-blue { color: #60a5fa; }
-.text-cyan { color: #22d3ee; }
-.text-indigo { color: #818cf8; }
-
-@media (max-width: 960px) {
-  .header,
-  .section-head {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .simple-table {
-    display: block;
-    overflow-x: auto;
-  }
-}
-</style>

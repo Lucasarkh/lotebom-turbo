@@ -2,16 +2,19 @@
   <Transition name="slide-down">
     <div
       v-if="showBanner"
-      class="billing-warning-banner"
-      :class="bannerClass"
+      class="sticky top-0 z-[1050] text-sm font-medium"
+      :class="isBlocked
+        ? 'bg-p-danger-subtle text-p-danger border-b border-p-danger/30'
+        : 'bg-p-warning-subtle text-p-warning border-b border-p-warning/30'"
     >
-      <div class="container d-flex align-items-center justify-content-between py-2">
-        <div class="d-flex align-items-center gap-2">
-          <i :class="iconClass"></i>
+      <div class="max-w-7xl mx-auto flex items-center justify-between py-2 px-4">
+        <div class="flex items-center gap-2">
+          <svg v-if="isBlocked" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span>{{ message }}</span>
         </div>
-        <NuxtLink to="/painel/pagamentos" class="btn btn-sm btn-light">
-          Resolver
+        <NuxtLink to="/painel/pagamentos">
+          <UiButton size="sm" variant="secondary">Resolver</UiButton>
         </NuxtLink>
       </div>
     </div>
@@ -29,17 +32,6 @@ onMounted(() => {
 
 const showBanner = computed(() => isGracePeriod.value || isBlocked.value);
 
-const bannerClass = computed(() => {
-  if (isBlocked.value) return 'banner-danger';
-  if (isGracePeriod.value) return 'banner-warning';
-  return '';
-});
-
-const iconClass = computed(() => {
-  if (isBlocked.value) return 'fas fa-ban';
-  return 'fas fa-exclamation-triangle';
-});
-
 const message = computed(() => {
   if (isBlocked.value)
     return 'Acesso bloqueado por inadimplência. Regularize sua situação.';
@@ -50,36 +42,3 @@ const message = computed(() => {
   return '';
 });
 </script>
-
-<style scoped>
-.billing-warning-banner {
-  position: sticky;
-  top: 0;
-  z-index: 1050;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.banner-warning {
-  background: #fff3cd;
-  color: #856404;
-  border-bottom: 1px solid #ffc107;
-}
-
-.banner-danger {
-  background: #f8d7da;
-  color: #842029;
-  border-bottom: 1px solid #dc3545;
-}
-
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-</style>

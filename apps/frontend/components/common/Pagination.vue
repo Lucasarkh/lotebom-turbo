@@ -1,32 +1,35 @@
 <template>
-  <div v-if="meta.totalPages > 1" class="pagination">
-    <div class="pagination-info">
-      Exibindo <strong>{{ meta.itemCount }}</strong> de <strong>{{ meta.totalItems }}</strong> registros
+  <div v-if="meta.totalPages > 1" class="mt-4 flex flex-col items-center justify-between gap-3 border-t border-p-border pt-4 sm:flex-row">
+    <div class="text-sm text-p-text-secondary">
+      Exibindo <strong class="text-p-text">{{ meta.itemCount }}</strong> de <strong class="text-p-text">{{ meta.totalItems }}</strong> registros
     </div>
-    <div class="pagination-actions">
-      <button 
-        class="pagination-btn" 
-        :disabled="meta.currentPage === 1" 
+    <div class="flex items-center gap-2">
+      <button
+        class="rounded-lg border border-p-border bg-p-elevated px-3 py-2 text-sm text-p-text-secondary transition-colors hover:border-p-accent hover:text-p-accent disabled:cursor-not-allowed disabled:opacity-50"
+        :disabled="meta.currentPage === 1"
         @click="changePage(meta.currentPage - 1)"
       >
         &laquo; Anterior
       </button>
-      
-      <div class="pagination-pages">
-        <button 
-          v-for="page in displayedPages" 
-          :key="page" 
-          class="pagination-btn" 
-          :class="{ active: page === meta.currentPage }"
+
+      <div class="flex gap-1">
+        <button
+          v-for="page in displayedPages"
+          :key="page"
+          class="min-w-[2.5rem] rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+          :class="page === meta.currentPage
+            ? 'border-p-accent bg-p-accent text-white'
+            : 'border-p-border bg-p-elevated text-p-text-secondary hover:border-p-accent hover:text-p-accent'"
+          :disabled="typeof page !== 'number'"
           @click="changePage(page)"
         >
           {{ page }}
         </button>
       </div>
 
-      <button 
-        class="pagination-btn" 
-        :disabled="meta.currentPage === meta.totalPages" 
+      <button
+        class="rounded-lg border border-p-border bg-p-elevated px-3 py-2 text-sm text-p-text-secondary transition-colors hover:border-p-accent hover:text-p-accent disabled:cursor-not-allowed disabled:opacity-50"
+        :disabled="meta.currentPage === meta.totalPages"
         @click="changePage(meta.currentPage + 1)"
       >
         Próximo &raquo;
@@ -64,7 +67,7 @@ const displayedPages = computed(() => {
   const current = props.meta.currentPage
   const delta = 2
   const range = []
-  
+
   if (total <= 7) {
     for (let i = 1; i <= total; i++) range.push(i)
     return range
@@ -92,65 +95,3 @@ const displayedPages = computed(() => {
   return range
 })
 </script>
-
-<style scoped>
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  margin-top: 16px;
-  border-top: 1px solid var(--glass-border-subtle);
-}
-
-.pagination-info {
-  font-size: 0.875rem;
-  color: var(--color-surface-200);
-}
-
-.pagination-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.pagination-pages {
-  display: flex;
-  gap: 4px;
-}
-
-.pagination-btn {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--color-surface-200);
-  border-radius: 8px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  min-width: 2.5rem;
-  transition: all 0.2s;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  border-color: var(--color-primary-500);
-  color: var(--color-primary-500);
-  background: rgba(16, 185, 129, 0.1);
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-btn.active {
-  background: var(--color-primary-500);
-  color: white;
-  border-color: var(--color-primary-500);
-}
-
-.pagination-pages button[disabled] {
-  border: none;
-  background: transparent;
-  cursor: default;
-}
-</style>

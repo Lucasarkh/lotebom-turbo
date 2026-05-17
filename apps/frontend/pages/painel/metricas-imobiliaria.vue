@@ -1,130 +1,111 @@
 <template>
-  <div>
-    <div class="page-header">
-      <div>
-        <h1>Métricas da Equipe</h1>
-        <p>Acompanhe o desempenho de seus corretores em tempo real.</p>
-      </div>
-      <button class="btn btn-primary" @click="openInviteModal">
-        <i class="pi pi-user-plus me-2"></i>Convidar Corretor
-      </button>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Métricas da Equipe" description="Acompanhe o desempenho de seus corretores em tempo real.">
+      <template #actions>
+        <UiButton variant="primary" @click="openInviteModal">
+          <i class="pi pi-user-plus mr-2"></i>Convidar Corretor
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
     <!-- Stats Overview -->
-    <div class="grid grid-cols-3">
-      <div class="stat-card stat-card--highlight">
-        <div class="stat-icon-wrap stat-icon--blue"><i class="pi pi-users"></i></div>
-        <div class="stat-value">{{ summary.totalRealtors }}</div>
-        <CommonAppTooltip text="Total de corretores vinculados à sua equipe na plataforma." position="bottom"><div class="stat-label">Corretores na equipe</div></CommonAppTooltip>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon-wrap stat-icon--green"><i class="pi pi-target"></i></div>
-        <div class="stat-value">{{ summary.totalLeads }}</div>
-        <CommonAppTooltip text="Soma de todos os leads gerados pela equipe." position="bottom"><div class="stat-label">Leads totais</div></CommonAppTooltip>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon-wrap stat-icon--purple"><i class="pi pi-eye"></i></div>
-        <div class="stat-value">{{ summary.totalSessions }}</div>
-        <CommonAppTooltip text="Total de sessões (visitas) geradas por todos os corretores da equipe." position="bottom"><div class="stat-label">Acessos totais</div></CommonAppTooltip>
-      </div>
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <UiCard padding="md" class="!bg-gradient-to-br !from-p-accent !to-blue-700 !border-transparent">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 text-white mb-3">
+          <i class="pi pi-users"></i>
+        </div>
+        <div class="text-2xl font-extrabold text-white">{{ summary.totalRealtors }}</div>
+        <CommonAppTooltip text="Total de corretores vinculados à sua equipe na plataforma." position="bottom"><div class="text-sm text-white/80">Corretores na equipe</div></CommonAppTooltip>
+      </UiCard>
+      <UiCard padding="md">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-500/10 text-green-500 mb-3">
+          <i class="pi pi-target"></i>
+        </div>
+        <div class="text-2xl font-extrabold text-p-text">{{ summary.totalLeads }}</div>
+        <CommonAppTooltip text="Soma de todos os leads gerados pela equipe." position="bottom"><div class="text-sm text-p-text-muted">Leads totais</div></CommonAppTooltip>
+      </UiCard>
+      <UiCard padding="md">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500 mb-3">
+          <i class="pi pi-eye"></i>
+        </div>
+        <div class="text-2xl font-extrabold text-p-text">{{ summary.totalSessions }}</div>
+        <CommonAppTooltip text="Total de sessões (visitas) geradas por todos os corretores da equipe." position="bottom"><div class="text-sm text-p-text-muted">Acessos totais</div></CommonAppTooltip>
+      </UiCard>
     </div>
 
     <!-- Metrics Table -->
-    <div style="margin-top: 32px;">
-      <div v-if="loading" class="loading-state">
-        <div class="loading-spinner"></div>
-        <span>Carregando métricas...</span>
-      </div>
+    <div>
+      <UiLoadingState v-if="loading" text="Carregando métricas..." />
 
-      <div v-else-if="team.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-        <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-          <div class="icon-blob mx-auto mb-4"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></div>
-          <h3 class="fw-bold mb-3">Nenhum corretor na equipe</h3>
-          <p class="mb-4 px-4">Convide corretores para começar a acompanhar métricas.</p>
-          <button class="btn btn-primary btn-lg rounded-pill px-5" @click="openInviteModal">Convidar Corretor</button>
-        </div>
-      </div>
+      <UiEmptyState
+        v-else-if="team.length === 0"
+        title="Nenhum corretor na equipe"
+        description="Convide corretores para começar a acompanhar métricas."
+      >
+        <template #action>
+          <UiButton variant="primary" size="lg" @click="openInviteModal">Convidar Corretor</UiButton>
+        </template>
+      </UiEmptyState>
 
-      <div v-else class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Corretor</th>
-              <th class="text-center-col"><CommonAppTooltip text="Total de leads gerados pelo corretor." position="bottom">Leads</CommonAppTooltip></th>
-              <th class="text-center-col"><CommonAppTooltip text="Total de visitas geradas através do link do corretor." position="bottom">Acessos</CommonAppTooltip></th>
-              <th class="text-center-col"><CommonAppTooltip text="Taxa de conversão: percentual de acessos que resultaram em leads." position="bottom">Conversão</CommonAppTooltip></th>
-              <th class="text-center-col">Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in team" :key="r.id">
-              <td>
-                <div class="realtor-info">
-                  <div class="realtor-avatar-circle">{{ r.name?.charAt(0) || '?' }}</div>
-                  <div>
-                    <div class="realtor-name-text">{{ r.name }}</div>
-                    <div class="realtor-role-label">Corretor Ativo</div>
-                  </div>
-                </div>
-              </td>
-              <td class="text-center-col">
-                <span class="badge badge-success">{{ r.leads || 0 }} leads</span>
-              </td>
-              <td class="text-center-col">
-                <span class="metric-number">{{ r.accesses || 0 }}</span>
-              </td>
-              <td class="text-center-col">
-                <span class="metric-conversion-val">
-                  {{ r.accesses ? ((r.leads / r.accesses) * 100).toFixed(1) + '%' : '0%' }}
-                </span>
-              </td>
-              <td class="text-center-col">
-                <button v-if="r.code" class="btn btn-ghost btn-sm" @click="copyRealtorLink(r)" title="Copiar link de divulgação">
-                  <i class="pi pi-copy"></i>
-                </button>
-                <span v-else class="text-muted-cell">—</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <UiTable v-else>
+        <template #head>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-muted">Corretor</th>
+          <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Total de leads gerados pelo corretor." position="bottom">Leads</CommonAppTooltip></th>
+          <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Total de visitas geradas através do link do corretor." position="bottom">Acessos</CommonAppTooltip></th>
+          <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Taxa de conversão: percentual de acessos que resultaram em leads." position="bottom">Conversão</CommonAppTooltip></th>
+          <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-p-text-muted">Link</th>
+        </template>
+        <tr v-for="r in team" :key="r.id" class="hover:bg-p-overlay/50">
+          <td class="px-4 py-3.5">
+            <div class="flex items-center gap-3">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-p-accent text-sm font-extrabold text-white">{{ r.name?.charAt(0) || '?' }}</div>
+              <div>
+                <div class="text-sm font-bold text-p-text">{{ r.name }}</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Corretor Ativo</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3.5 text-center">
+            <UiBadge variant="success">{{ r.leads || 0 }} leads</UiBadge>
+          </td>
+          <td class="px-4 py-3.5 text-center">
+            <span class="text-sm font-semibold text-p-text-secondary">{{ r.accesses || 0 }}</span>
+          </td>
+          <td class="px-4 py-3.5 text-center">
+            <span class="text-sm italic text-p-text-muted">
+              {{ r.accesses ? ((r.leads / r.accesses) * 100).toFixed(1) + '%' : '0%' }}
+            </span>
+          </td>
+          <td class="px-4 py-3.5 text-center">
+            <UiButton v-if="r.code" variant="ghost" size="sm" @click="copyRealtorLink(r)" title="Copiar link de divulgação">
+              <i class="pi pi-copy"></i>
+            </UiButton>
+            <span v-else class="text-p-text-muted">&mdash;</span>
+          </td>
+        </tr>
+      </UiTable>
     </div>
 
     <!-- Invite Modal -->
-    <Teleport to="body">
-      <div v-if="showInviteModal" class="modal-overlay">
-        <div class="modal" @click.stop>
-          <div class="modal-header">
-            <h2>Convidar Novo Corretor</h2>
-            <button class="modal-close" @click="showInviteModal = false">&times;</button>
-          </div>
-
-          <div class="modal-body">
-            <p style="color: var(--color-surface-200); font-size: 0.875rem; margin-bottom: 20px;">
-              O corretor receberá um link para criar sua conta e será automaticamente vinculado à sua equipe.
-            </p>
-            <form @submit.prevent="sendInvite">
-              <div class="form-group">
-                <label class="form-label">Email do Corretor <span style="color: var(--color-danger);">*</span></label>
-                <input
-                  v-model="inviteForm.email"
-                  type="email"
-                  class="form-input"
-                  placeholder="corretor@imobiliaria.com"
-                  required
-                >
-              </div>
-              <div class="modal-actions">
-                <button type="button" class="btn btn-ghost" @click="showInviteModal = false">Cancelar</button>
-                <button type="submit" class="btn btn-primary" :disabled="inviteSending">
-                  {{ inviteSending ? 'Enviando...' : 'Enviar Convite' }}
-                </button>
-              </div>
-            </form>
-          </div>
+    <UiModal v-model="showInviteModal" title="Convidar Novo Corretor">
+      <p class="text-sm text-p-text-secondary mb-5">
+        O corretor receberá um link para criar sua conta e será automaticamente vinculado à sua equipe.
+      </p>
+      <form @submit.prevent="sendInvite">
+        <UiInput
+          v-model="inviteForm.email"
+          type="email"
+          label="Email do Corretor"
+          placeholder="corretor@imobiliaria.com"
+        />
+        <div class="mt-5 flex justify-end gap-3">
+          <UiButton variant="ghost" type="button" @click="showInviteModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" type="submit" :disabled="inviteSending">
+            {{ inviteSending ? 'Enviando...' : 'Enviar Convite' }}
+          </UiButton>
         </div>
-      </div>
-    </Teleport>
+      </form>
+    </UiModal>
   </div>
 </template>
 
@@ -200,87 +181,5 @@ function copyRealtorLink(r: any) {
 
 onMounted(fetchMetrics)
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'painel' })
 </script>
-
-<style scoped>
-/* Stat highlight variant */
-.stat-card--highlight {
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, #0062CC 100%);
-  border-color: transparent !important;
-  color: white;
-}
-.stat-card--highlight .stat-value { color: white; }
-.stat-card--highlight .stat-label { color: white; }
-.stat-card--highlight .stat-icon-wrap { background: rgba(255, 255, 255, 0.2) !important; color: white !important; }
-
-.stat-icon-wrap {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  margin-bottom: 12px;
-}
-
-.stat-icon--blue { background: rgba(59, 130, 246, 0.12); color: var(--color-primary-500); }
-.stat-icon--green { background: rgba(16, 185, 129, 0.12); color: #16a34a; }
-.stat-icon--purple { background: rgba(147, 51, 234, 0.12); color: #9333ea; }
-
-/* Table */
-.text-center-col { text-align: center; }
-
-.realtor-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.realtor-avatar-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-primary-500);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.875rem;
-  flex-shrink: 0;
-}
-
-.realtor-name-text {
-  font-weight: 700;
-  color: var(--color-surface-50);
-  font-size: 0.875rem;
-}
-
-.realtor-role-label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-surface-500);
-  letter-spacing: 0.04em;
-}
-
-.metric-number {
-  font-weight: 600;
-  color: var(--color-surface-200);
-  font-size: 0.875rem;
-}
-
-.metric-conversion-val {
-  font-size: 0.875rem;
-  color: var(--color-surface-500);
-  font-style: italic;
-}
-
-.text-muted-cell {
-  color: var(--color-surface-500);
-}
-
-.me-2 { margin-right: 0.5rem; }
-</style>

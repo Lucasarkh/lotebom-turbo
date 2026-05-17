@@ -1,49 +1,49 @@
 <template>
   <div>
-    <div v-if="loading" class="loading-state"><div class="loading-spinner"></div></div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-      <button class="btn btn-primary" style="margin-top: 16px;" @click="loadProject">Tentar novamente</button>
+    <div v-else-if="error" class="flex flex-col items-center justify-center py-12 text-center">
+      <p class="text-p-text-muted">{{ error }}</p>
+      <UiButton variant="primary" class="mt-4" @click="loadProject">Tentar novamente</UiButton>
     </div>
 
     <template v-else-if="project">
-      <div class="page-header" style="border-bottom: 1px solid var(--glass-border-subtle); padding-bottom: 24px; margin-bottom: 32px;">
-        <div style="flex: 1;">
+      <div class="flex flex-col gap-8 border-b border-p-border pb-6 mb-8 md:flex-row md:items-start md:justify-between">
+        <div class="flex-1">
           <div class="flex items-center gap-2" style="margin-bottom: 4px;">
-            <NuxtLink to="/painel/projetos" class="btn btn-ghost btn-sm page-back-btn">
-              <i class="bi bi-arrow-left-short back-nav-icon" aria-hidden="true"></i>
-              <span class="back-nav-label">Projetos</span>
+            <NuxtLink to="/painel/projetos" class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors">
+              <i class="bi bi-arrow-left-short text-lg" aria-hidden="true"></i>
+              <span>Projetos</span>
             </NuxtLink>
-            <div style="width: 1px; height: 10px; background: rgba(255, 255, 255, 0.06);"></div>
-            <span class="badge" :class="project.status === 'PUBLISHED' ? 'badge-success' : 'badge-neutral'" style="font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase;">
+            <div class="h-2.5 w-px bg-p-border"></div>
+            <UiBadge :variant="project.status === 'PUBLISHED' ? 'success' : 'neutral'">
               {{ project.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho' }}
-            </span>
-            <span v-if="project.preLaunchEnabled" class="badge" style="font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: rgba(245, 158, 11, 0.28);">
+            </UiBadge>
+            <UiBadge v-if="project.preLaunchEnabled" variant="warning">
               Pré-lançamento
-            </span>
+            </UiBadge>
           </div>
-          <h1 style="margin: 0; font-size: 1.75rem; letter-spacing: -0.02em;">{{ project.name }}</h1>
-          <p style="margin: 0; color: var(--color-surface-400); font-weight: 500;">{{ project.description || 'Sem descrição' }}</p>
+          <h1 class="text-2xl font-bold tracking-tight text-p-text">{{ project.name }}</h1>
+          <p class="text-sm text-p-text-muted font-medium">{{ project.description || 'Sem descrição' }}</p>
 
           <!-- Quick Stats -->
-          <div v-if="lots.length > 0" class="project-stats-bar">
-            <div class="stat-chip">
-              <span class="stat-chip-value">{{ lotStats.total }}</span>
-              <span class="stat-chip-label">Lotes</span>
-            </div>
-            <div class="stat-chip stat-chip-success">
-              <span class="stat-chip-value">{{ lotStats.available }}</span>
-              <span class="stat-chip-label">Disponíveis</span>
-            </div>
-            <div class="stat-chip stat-chip-warning">
-              <span class="stat-chip-value">{{ lotStats.reserved }}</span>
-              <span class="stat-chip-label">Reservados</span>
-            </div>
-            <div class="stat-chip stat-chip-danger">
-              <span class="stat-chip-value">{{ lotStats.sold }}</span>
-              <span class="stat-chip-label">Vendidos</span>
-            </div>
+          <div v-if="lots.length > 0" class="flex gap-2.5 mt-3 flex-wrap">
+            <span class="inline-flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.total }}</span>
+              <span class="text-p-text-muted font-medium">Lotes</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-success">{{ lotStats.available }}</span>
+              <span class="text-p-text-muted font-medium">Disponíveis</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-warning">{{ lotStats.reserved }}</span>
+              <span class="text-p-text-muted font-medium">Reservados</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-danger">{{ lotStats.sold }}</span>
+              <span class="text-p-text-muted font-medium">Vendidos</span>
+            </span>
           </div>
         </div>
 
@@ -52,10 +52,9 @@
             v-if="project.status === 'PUBLISHED'"
             :href="`/${project.slug}`"
             target="_blank"
-            class="btn btn-sm btn-primary topbar-action-btn"
-            style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
+            class="inline-flex items-center gap-2 rounded-full bg-p-accent px-5 py-2 text-sm font-semibold text-white hover:bg-p-accent-hover transition-colors"
           >
-            <span style="font-size: 1rem;"><i class="bi bi-globe2" aria-hidden="true"></i></span>
+            <i class="bi bi-globe2" aria-hidden="true"></i>
             <span>Ver Página Pública</span>
           </a>
 
@@ -63,10 +62,9 @@
             v-else
             :to="`/preview/${project.id}`"
             target="_blank"
-            class="btn btn-sm btn-primary"
-            style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
+            class="inline-flex items-center gap-2 rounded-full bg-p-accent px-5 py-2 text-sm font-semibold text-white hover:bg-p-accent-hover transition-colors"
           >
-            <span style="font-size: 1rem;"><i class="bi bi-eye-fill" aria-hidden="true"></i></span>
+            <i class="bi bi-eye-fill" aria-hidden="true"></i>
             <span>Link de Preview</span>
           </NuxtLink>
 
@@ -74,112 +72,108 @@
             v-if="plantMirrorPath"
             :href="plantMirrorPath"
             target="_blank"
-            class="btn btn-sm btn-primary"
-            style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
+            class="inline-flex items-center gap-2 rounded-full bg-p-accent px-5 py-2 text-sm font-semibold text-white hover:bg-p-accent-hover transition-colors"
           >
-            <span style="font-size: 1rem;"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i></span>
+            <i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i>
             <span>Espelho da Planta</span>
           </a>
 
           <button
             v-if="plantMirrorAbsoluteUrl"
-            class="btn btn-sm btn-primary"
-            style="border-radius: 9999px; padding-left: 14px; padding-right: 14px; height: 38px;"
+            class="inline-flex items-center justify-center rounded-full bg-p-accent px-3.5 py-2 text-sm font-semibold text-white hover:bg-p-accent-hover transition-colors"
             @click="copyLink(plantMirrorAbsoluteUrl)"
             title="Copiar link do espelho da planta"
           >
-            <span><i class="bi bi-clipboard-check" aria-hidden="true"></i></span>
+            <i class="bi bi-clipboard-check" aria-hidden="true"></i>
           </button>
 
-          <div style="width: 1px; height: 24px; background: rgba(255, 255, 255, 0.06);"></div>
+          <div class="h-6 w-px bg-p-border"></div>
 
           <div class="flex items-center gap-2">
             <button
-              class="btn btn-sm"
-              :style="project.preLaunchEnabled
-                ? 'border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.28); color: #fcd34d;'
-                : 'border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border-subtle); color: var(--color-surface-100);'"
+              class="inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition-colors"
+              :class="project.preLaunchEnabled
+                ? 'bg-p-warning/15 border border-p-warning/30 text-p-warning'
+                : 'bg-p-overlay border border-p-border text-p-text-secondary'"
               :disabled="!authStore.canEdit || togglingPreLaunch || isArchivedProject"
               :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : (isArchivedProject ? 'Projeto arquivado em modo somente leitura' : undefined)"
               @click="togglePreLaunchMode"
             >
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <i :class="project.preLaunchEnabled ? 'bi bi-stars' : 'bi bi-megaphone-fill'" aria-hidden="true"></i>
-                <span>{{ togglingPreLaunch ? 'Salvando...' : (project.preLaunchEnabled ? 'Desativar Pré-lançamento' : 'Ativar Pré-lançamento') }}</span>
-              </span>
+              <i :class="project.preLaunchEnabled ? 'bi bi-stars' : 'bi bi-megaphone-fill'" aria-hidden="true"></i>
+              <span>{{ togglingPreLaunch ? 'Salvando...' : (project.preLaunchEnabled ? 'Desativar Pré-lançamento' : 'Ativar Pré-lançamento') }}</span>
             </button>
 
-            <button 
-              class="btn btn-sm btn-primary" 
-              style="border-radius: 9999px; padding-left: 20px; padding-right: 20px; height: 38px;"
+            <UiButton
+              variant="primary"
+              size="sm"
+              class="rounded-full px-5"
               :disabled="!authStore.canEdit"
               :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined"
               @click="togglePublish"
             >
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <i :class="project.status === 'PUBLISHED' ? 'bi bi-pause-circle-fill' : 'bi bi-broadcast-pin'" aria-hidden="true"></i>
-                <span>{{ project.status === 'PUBLISHED' ? 'Parar Publicação' : 'Publicar Agora' }}</span>
-              </span>
-            </button>
-            
-            <button 
-              class="btn btn-sm btn-danger" 
-              style="border-radius: 9999px; padding-left: 16px; padding-right: 16px; height: 38px;"
+              <i :class="project.status === 'PUBLISHED' ? 'bi bi-pause-circle-fill' : 'bi bi-broadcast-pin'" aria-hidden="true"></i>
+              <span>{{ project.status === 'PUBLISHED' ? 'Parar Publicação' : 'Publicar Agora' }}</span>
+            </UiButton>
+
+            <UiButton
+              variant="danger"
+              size="sm"
+              class="rounded-full px-4"
               :disabled="!authStore.canEdit || isArchivedProject"
               :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : (isArchivedProject ? 'Projeto arquivado em modo somente leitura' : undefined)"
               @click="confirmDelete"
             >
-              <span><i class="bi bi-trash3-fill" aria-hidden="true"></i> Excluir</span>
-            </button>
+              <i class="bi bi-trash3-fill" aria-hidden="true"></i> Excluir
+            </UiButton>
           </div>
         </div>
       </div>
 
-      <div v-if="isArchivedProject" class="alert alert-warning archived-project-warning">
+      <UiAlert v-if="isArchivedProject" variant="warning" class="-mt-3 mb-4">
         Projeto arquivado em modo somente leitura. Publique o projeto para liberar edições.
-      </div>
+      </UiAlert>
 
       <!-- Sidebar + Content Layout -->
-      <div class="project-layout" :class="{ 'archived-readonly': isArchivedProject }">
-        <aside class="project-sidebar">
-          <div class="sidebar-tools">
-            <p class="sidebar-tools-title">Editores</p>
-            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="sidebar-tool-link sidebar-tool-link--primary">
-              <span class="sidebar-icon"><i class="bi bi-map" aria-hidden="true"></i></span>
-              <span class="sidebar-label">Planta Interativa</span>
+      <div class="grid gap-6 items-start min-h-[calc(100vh-180px)] lg:grid-cols-[minmax(250px,310px)_minmax(0,1fr)]" :class="{ 'opacity-[0.78]': isArchivedProject }">
+        <aside class="sticky top-4 flex flex-col gap-3.5 rounded-2xl border border-p-border bg-p-raised p-3.5 max-h-[calc(100vh-28px)] overflow-y-auto lg:top-4 max-lg:static max-lg:max-h-none max-lg:overflow-visible max-lg:gap-2.5 max-lg:p-3 max-lg:rounded-xl">
+          <div class="flex flex-col gap-1.5 max-lg:grid max-lg:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] max-lg:gap-1">
+            <p class="m-0 pb-2 text-[0.68rem] font-bold tracking-[0.12em] uppercase text-p-text-muted border-b border-p-border max-lg:col-span-full max-lg:pb-1.5 max-lg:text-[0.64rem]">Editores</p>
+            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="flex items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-[0.8125rem] font-medium text-p-text-muted no-underline transition-all hover:bg-p-overlay hover:text-p-text-secondary max-lg:px-2.5 max-lg:py-1.5 max-lg:text-xs">
+              <span class="text-base shrink-0 w-5 text-center"><i class="bi bi-map" aria-hidden="true"></i></span>
+              <span class="truncate">Planta Interativa</span>
             </NuxtLink>
-            <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="sidebar-tool-link sidebar-tool-link--primary">
-              <span class="sidebar-icon"><i class="bi bi-image-fill" aria-hidden="true"></i></span>
-              <span class="sidebar-label">Panorama 360°</span>
+            <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="flex items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-[0.8125rem] font-medium text-p-text-muted no-underline transition-all hover:bg-p-overlay hover:text-p-text-secondary max-lg:px-2.5 max-lg:py-1.5 max-lg:text-xs">
+              <span class="text-base shrink-0 w-5 text-center"><i class="bi bi-image-fill" aria-hidden="true"></i></span>
+              <span class="truncate">Panorama 360°</span>
             </NuxtLink>
-            <NuxtLink :to="`/painel/projetos/${projectId}/pos-reserva`" class="sidebar-tool-link sidebar-tool-link--primary">
-              <span class="sidebar-icon"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i></span>
-              <span class="sidebar-label">Reservas</span>
+            <NuxtLink :to="`/painel/projetos/${projectId}/pos-reserva`" class="flex items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-[0.8125rem] font-medium text-p-text-muted no-underline transition-all hover:bg-p-overlay hover:text-p-text-secondary max-lg:px-2.5 max-lg:py-1.5 max-lg:text-xs">
+              <span class="text-base shrink-0 w-5 text-center"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i></span>
+              <span class="truncate">Reservas</span>
             </NuxtLink>
-            <NuxtLink :to="`/painel/projetos/${projectId}/categorias`" class="sidebar-tool-link sidebar-tool-link--primary">
-              <span class="sidebar-icon"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i></span>
-              <span class="sidebar-label">Categorias</span>
+            <NuxtLink :to="`/painel/projetos/${projectId}/categorias`" class="flex items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-[0.8125rem] font-medium text-p-text-muted no-underline transition-all hover:bg-p-overlay hover:text-p-text-secondary max-lg:px-2.5 max-lg:py-1.5 max-lg:text-xs">
+              <span class="text-base shrink-0 w-5 text-center"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i></span>
+              <span class="truncate">Categorias</span>
             </NuxtLink>
           </div>
-          <nav class="sidebar-nav">
-            <div v-for="group in sidebarGroups" :key="group.id" class="sidebar-group">
-              <p class="sidebar-group-title">{{ group.label }}</p>
-              <div class="sidebar-group-content">
+          <nav class="flex flex-col gap-2.5">
+            <div v-for="group in sidebarGroups" :key="group.id" class="flex flex-col gap-1.5">
+              <p class="m-0 pb-2 text-[0.68rem] font-bold tracking-[0.12em] uppercase text-p-text-muted border-b border-p-border max-lg:pb-1.5 max-lg:text-[0.64rem]">{{ group.label }}</p>
+              <div class="flex flex-col gap-0.5 max-lg:grid max-lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] max-lg:gap-1">
                 <template v-if="group.id === 'pagina-publica'">
-                  <div v-for="s in group.items" :key="s.id" class="sidebar-public-row">
+                  <div v-for="s in group.items" :key="s.id" class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center max-lg:block">
                     <button
-                      class="sidebar-link sidebar-link--public"
-                      :class="{ active: activeSection === s.id }"
+                      class="flex items-center gap-2.5 w-full min-w-0 rounded-[10px] px-3.5 py-2.5 pr-2.5 text-[0.8125rem] font-medium text-p-text-muted transition-all cursor-pointer bg-transparent border-0 text-left hover:bg-p-overlay hover:text-p-text-secondary max-lg:px-2.5 max-lg:py-1.5 max-lg:text-xs"
+                      :class="{ '!bg-p-accent/[0.14] !text-p-accent !font-bold': activeSection === s.id }"
                       @click="setActiveSection(s.id)"
                     >
-                      <span class="sidebar-icon"><i :class="s.icon" aria-hidden="true"></i></span>
-                      <span class="sidebar-label">{{ s.label }}</span>
-                      <span v-if="isFixedPublicSection(s.id)" class="sidebar-fixed-chip">Fixo</span>
+                      <span class="text-base shrink-0 w-5 text-center"><i :class="s.icon" aria-hidden="true"></i></span>
+                      <span class="break-words leading-tight">{{ s.label }}</span>
+                      <span v-if="isFixedPublicSection(s.id)" class="ml-1.5 text-[0.62rem] font-bold text-p-text-muted uppercase tracking-wide border border-p-border rounded-full px-1.5 py-0.5">Fixo</span>
                     </button>
 
-                    <div v-if="!isFixedPublicSection(s.id)" class="sidebar-public-actions">
+                    <div v-if="!isFixedPublicSection(s.id)" class="flex items-center flex-nowrap gap-1 justify-end max-lg:hidden">
                       <button
-                        class="sidebar-toggle-btn"
+                        class="rounded-full border border-p-accent/25 bg-p-accent/[0.08] text-p-accent px-2 py-0.5 text-[0.6rem] font-bold tracking-wide cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
                         type="button"
                         :disabled="!authStore.canEdit || savingPublicSectionOrder || !isPublicSectionConfigured(s.id)"
                         :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined"
@@ -189,7 +183,7 @@
                       </button>
 
                       <button
-                        class="sidebar-order-btn"
+                        class="inline-flex items-center justify-center w-5 h-5 rounded-md border border-p-border bg-p-overlay text-p-text-muted text-[0.65rem] cursor-pointer transition-all hover:border-p-accent hover:text-p-accent disabled:opacity-35 disabled:cursor-not-allowed"
                         type="button"
                         :disabled="!authStore.canEdit || !canMovePublicSection(s.id, 'up') || savingPublicSectionOrder"
                         :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : 'Mover para cima'"
@@ -198,7 +192,7 @@
                         <i class="bi bi-chevron-up" aria-hidden="true"></i>
                       </button>
                       <button
-                        class="sidebar-order-btn"
+                        class="inline-flex items-center justify-center w-5 h-5 rounded-md border border-p-border bg-p-overlay text-p-text-muted text-[0.65rem] cursor-pointer transition-all hover:border-p-accent hover:text-p-accent disabled:opacity-35 disabled:cursor-not-allowed"
                         type="button"
                         :disabled="!authStore.canEdit || !canMovePublicSection(s.id, 'down') || savingPublicSectionOrder"
                         :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : 'Mover para baixo'"
@@ -214,12 +208,12 @@
                   <button
                     v-for="s in group.items"
                     :key="s.id"
-                    class="sidebar-link"
-                    :class="{ active: activeSection === s.id }"
+                    class="flex items-center gap-2.5 w-full rounded-[10px] px-3.5 py-2.5 text-[0.8125rem] font-medium text-p-text-muted transition-all cursor-pointer bg-transparent border-0 text-left hover:bg-p-overlay hover:text-p-text-secondary max-lg:px-2.5 max-lg:py-1.5 max-lg:text-xs"
+                    :class="{ '!bg-p-accent/[0.14] !text-p-accent !font-bold': activeSection === s.id }"
                     @click="setActiveSection(s.id)"
                   >
-                    <span class="sidebar-icon"><i :class="s.icon" aria-hidden="true"></i></span>
-                    <span class="sidebar-label">{{ s.label }}</span>
+                    <span class="text-base shrink-0 w-5 text-center"><i :class="s.icon" aria-hidden="true"></i></span>
+                    <span class="truncate">{{ s.label }}</span>
                   </button>
                 </template>
               </div>
@@ -227,12 +221,12 @@
           </nav>
         </aside>
 
-        <main class="project-content">
+        <main class="flex-1 min-w-0 w-full">
 
       <!-- Configurações do Projeto -->
-      <section v-if="activeSection === 'configuracoes' || activeSection === 'movimento-loteamento'" id="configuracoes" class="content-section">
+      <section v-if="activeSection === 'configuracoes' || activeSection === 'movimento-loteamento'" id="configuracoes" class="animate-[fadeIn_0.15s_ease]">
         <div
-          class="card"
+          class="rounded-xl border border-p-border bg-p-elevated p-5"
           :style="{
             maxWidth: activeSection === 'movimento-loteamento' ? '1200px' : '600px',
             width: '100%'
@@ -241,36 +235,36 @@
           <form @submit.prevent="saveSettings">
             <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
             <template v-if="activeSection === 'configuracoes'">
-            <div class="form-group">
-              <label class="form-label">Nome</label>
-              <input v-model="editForm.name" class="form-input" required />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Nome</label>
+              <input v-model="editForm.name" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" required />
             </div>
-            <div class="form-group">
-              <label class="form-label">Slug</label>
-              <input v-model="editForm.slug" class="form-input" :class="{ 'input-error': editSlugTaken }" required />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Slug</label>
+              <input v-model="editForm.slug" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" :class="{ '!border-red-500': editSlugTaken }" required />
               <small v-if="editSlugTaken" style="color:var(--error-color, #ef4444); font-size:0.75rem">Este slug já está em uso por outro projeto!</small>
               <small v-else style="color:var(--color-surface-400); font-size:0.75rem">URL pública: /{{ editForm.slug || '...' }}</small>
             </div>
-            <div class="form-group">
-              <label class="form-label">Descrição</label>
-              <textarea v-model="editForm.description" class="form-textarea" rows="3"></textarea>
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Descrição</label>
+              <textarea v-model="editForm.description" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" rows="3"></textarea>
             </div>
-            <div v-if="authStore.isSysAdmin" class="form-group">
-              <label class="form-label">Domínio Customizado (Somente SysAdmin)</label>
-              <input v-model="editForm.customDomain" class="form-input" placeholder="ex: vendas.meu-loteamento.com" />
-              <small class="text-muted">Informe o domínio completo ou subdomínio que aponta para cá.</small>
+            <div v-if="authStore.isSysAdmin" class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Domínio Customizado (Somente SysAdmin)</label>
+              <input v-model="editForm.customDomain" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="ex: vendas.meu-loteamento.com" />
+              <small class="text-sm text-p-text-muted">Informe o domínio completo ou subdomínio que aponta para cá.</small>
             </div>
 
-            <div class="form-group" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--glass-border-subtle);">
+            <div class="space-y-4" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--glass-border-subtle);">
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px;">
                 <div>
-                  <label class="form-label" style="margin: 0;">Logo do Projeto (Open Graph)</label>
+                  <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="margin: 0;">Logo do Projeto (Open Graph)</label>
                   <p style="margin: 4px 0 0; color: var(--color-surface-500); font-size: 0.75rem;">
                     Este logo é exclusivo para compartilhamento (Open Graph). Nao afeta os logos de rodape.
                   </p>
                 </div>
 
-                <label v-if="authStore.canEdit" class="btn btn-primary btn-sm" style="cursor: pointer;">
+                <label v-if="authStore.canEdit" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">
                   {{ uploadingOgLogo ? 'Enviando...' : '+ Enviar Logo' }}
                   <input
                     type="file"
@@ -287,11 +281,11 @@
                   style="position: relative; width: 120px; height: 78px; border-radius: 8px; border: 1px solid var(--glass-border-subtle); background: var(--glass-bg-heavy); overflow: hidden; display: flex; align-items: center; justify-content: center;"
                 >
                   <img :src="projectOgLogoUrl" :alt="project?.name || 'Logo Open Graph'" style="max-width: 100%; max-height: 100%; object-fit: contain; padding: 8px;" />
-                  <span class="badge badge-success" style="position: absolute; left: 6px; bottom: 6px; font-size: 0.6rem;">Logo OG</span>
+                  <UiBadge variant="success" size="sm" style="position: absolute; left: 6px; bottom: 6px; font-size: 0.6rem;">Logo OG</UiBadge>
                   <button
                     v-if="authStore.canEdit"
                     type="button"
-                    class="pub-remove-btn"
+                    class="border-none bg-transparent text-p-text-muted text-xs px-1.5 py-0.5 rounded cursor-pointer hover:text-p-danger hover:bg-p-danger/10"
                     style="position: absolute; top: 6px; right: 6px;"
                     :disabled="removingOgLogo"
                     @click="removeProjectOgLogo"
@@ -301,14 +295,14 @@
                 </div>
               </div>
 
-              <div v-else class="pub-empty" style="margin-top: 6px;">
+              <div v-else class="rounded-lg bg-p-overlay px-4 py-6 text-center text-sm text-p-text-muted" style="margin-top: 6px;">
                 Nenhum logo enviado ainda.
               </div>
             </div>
             </template>
 
-            <div v-if="activeSection === 'movimento-loteamento'" class="form-group">
-              <label class="form-label" style="display:flex; align-items:center; gap:8px; margin-bottom: 10px;">
+            <div v-if="activeSection === 'movimento-loteamento'" class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="display:flex; align-items:center; gap:8px; margin-bottom: 10px;">
                 <span><i class="bi bi-broadcast-pin" aria-hidden="true"></i></span>
                 <span>Movimento do Loteamento (efeito stand de vendas)</span>
               </label>
@@ -318,15 +312,15 @@
                 <span style="font-size: 0.86rem; font-weight: 700;">Ativar movimento do loteamento</span>
               </label>
 
-              <p class="text-muted" style="font-size: 0.78rem; margin-bottom: 12px;">
+              <p class="text-sm text-p-text-muted" style="font-size: 0.78rem; margin-bottom: 12px;">
                 {{ salesMotionMasterEnabled ? 'Ativo: mensagens de movimento podem aparecer no empreendimento e na página de lote.' : 'Desativado: nenhuma mensagem de movimento será exibida nas páginas públicas.' }}
               </p>
 
               <div :style="{ opacity: salesMotionMasterEnabled ? 1 : 0.55, pointerEvents: salesMotionMasterEnabled ? 'auto' : 'none' }">
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 12px; align-items: start;">
 
-              <div class="form-group" style="margin-bottom: 14px; padding: 12px; border: 1px solid var(--glass-border-subtle); border-radius: 10px;">
-                <label class="form-label" style="display:flex; align-items:center; gap:8px; margin-bottom: 10px;">
+              <div class="space-y-4" style="margin-bottom: 14px; padding: 12px; border: 1px solid var(--glass-border-subtle); border-radius: 10px;">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="display:flex; align-items:center; gap:8px; margin-bottom: 10px;">
                   <span><i class="bi bi-building" aria-hidden="true"></i></span>
                   <span>Mensagens da página do empreendimento</span>
                 </label>
@@ -338,12 +332,12 @@
 
                 <div v-if="!editForm.salesMotionConfig.enterprise.showOnce" class="grid grid-cols-2 gap-3" style="margin-bottom: 10px;">
                   <div>
-                    <label class="form-label">Intervalo mínimo (s)</label>
-                    <input v-model.number="editForm.salesMotionConfig.enterprise.intervalSeconds" type="number" min="5" max="120" class="form-input" />
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Intervalo mínimo (s)</label>
+                    <input v-model.number="editForm.salesMotionConfig.enterprise.intervalSeconds" type="number" min="5" max="120" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                   </div>
                   <div>
-                    <label class="form-label">Máx. avisos/sessão</label>
-                    <input v-model.number="editForm.salesMotionConfig.enterprise.maxNotices" type="number" min="1" max="20" class="form-input" />
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Máx. avisos/sessão</label>
+                    <input v-model.number="editForm.salesMotionConfig.enterprise.maxNotices" type="number" min="1" max="20" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                   </div>
                 </div>
 
@@ -352,13 +346,13 @@
                   <span style="font-size: 0.8rem; font-weight: 600;">Exibição única por página</span>
                 </label>
 
-                <div class="form-group" style="margin-bottom: 8px;">
+                <div class="space-y-4" style="margin-bottom: 8px;">
                   <div class="flex justify-between items-center" style="margin-bottom: 8px;">
-                    <label class="form-label" style="margin-bottom: 0;">Textos configurados</label>
-                    <button type="button" class="btn btn-ghost btn-sm" @click="addSalesMotionTemplate('enterprise')">+ Adicionar texto</button>
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="margin-bottom: 0;">Textos configurados</label>
+                    <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="addSalesMotionTemplate('enterprise')">+ Adicionar texto</button>
                   </div>
 
-                  <div v-if="!editForm.salesMotionConfig.enterprise.templates.length" class="text-muted" style="font-size: 0.8rem; padding: 10px 12px; border: 1px dashed var(--glass-border-subtle); border-radius: 8px;">
+                  <div v-if="!editForm.salesMotionConfig.enterprise.templates.length" class="text-sm text-p-text-muted" style="font-size: 0.8rem; padding: 10px 12px; border: 1px dashed var(--glass-border-subtle); border-radius: 8px;">
                     Nenhum texto cadastrado. Adicione um texto para começar.
                   </div>
 
@@ -372,12 +366,12 @@
                         <input v-model="tpl.enabled" type="checkbox" style="width: 14px; height: 14px;" />
                         <span>{{ tpl.enabled ? 'Exibir este texto' : 'Oculto' }}</span>
                       </label>
-                      <button type="button" class="btn btn-danger btn-sm" @click="removeSalesMotionTemplate('enterprise', Number(idx))">Remover</button>
+                      <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-danger text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="removeSalesMotionTemplate('enterprise', Number(idx))">Remover</button>
                     </div>
                     <textarea
                       v-model="tpl.text"
                       @input="ensureSalesMotionTemplateRanges(tpl)"
-                      class="form-textarea"
+                      class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
                       rows="2"
                       placeholder="Ex: {{viewsToday}} pessoas visualizaram este empreendimento hoje"
                     ></textarea>
@@ -386,18 +380,18 @@
                         <input v-model="tpl.manualRangeEnabled" type="checkbox" style="width: 14px; height: 14px;" />
                         <span>Usar faixa manual</span>
                       </label>
-                      <p class="text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">
+                      <p class="text-sm text-p-text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">
                         {{ tpl.manualRangeEnabled ? 'Manual ativo: o sistema usará os valores entre mínimo e máximo.' : 'Manual inativo: o sistema usa contagem automática (real/estimada pelos dados atuais).' }}
                       </p>
                     </div>
                     <div v-if="tpl.manualRangeEnabled && salesMotionTemplateTokenList(tpl).length > 0" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--glass-border-subtle);">
-                      <p class="text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">Faixa dos números dinâmicos deste texto</p>
+                      <p class="text-sm text-p-text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">Faixa dos números dinâmicos deste texto</p>
                       <div class="grid grid-cols-3 gap-2">
                         <div v-for="token in salesMotionTemplateTokenList(tpl)" :key="`enterprise-${tpl.id || idx}-${token}`">
-                          <label class="form-label" style="font-size: 0.7rem; margin-bottom: 4px;">{{ salesMotionTokenLabel(token) }}</label>
+                          <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="font-size: 0.7rem; margin-bottom: 4px;">{{ salesMotionTokenLabel(token) }}</label>
                           <div style="display:flex; gap: 6px;">
                             <input
-                              class="form-input"
+                              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
                               type="number"
                               :min="0"
                               :value="salesMotionTemplateRangeValue(tpl, token, 'min')"
@@ -406,7 +400,7 @@
                               style="height: 32px; font-size: 0.78rem;"
                             />
                             <input
-                              class="form-input"
+                              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
                               type="number"
                               :min="0"
                               :value="salesMotionTemplateRangeValue(tpl, token, 'max')"
@@ -420,7 +414,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="text-muted" style="display:flex; flex-wrap:wrap; gap:8px; margin-top: 8px; font-size: 0.78rem;">
+                <div class="text-sm text-p-text-muted" style="display:flex; flex-wrap:wrap; gap:8px; margin-top: 8px; font-size: 0.78rem;">
                   <span style="opacity: 0.9;">Placeholders:</span>
                   <CommonAppTooltip text="Quantidade estimada de pessoas que visualizaram hoje (valor dinâmico e suavizado)." position="top">
                     <span v-pre style="cursor: help; padding: 2px 8px; border: 1px dashed var(--glass-border-subtle); border-radius: 999px;">&#123;&#123;viewsToday&#125;&#125;</span>
@@ -440,8 +434,8 @@
                 </div>
               </div>
 
-              <div class="form-group" style="margin-bottom: 0; padding: 12px; border: 1px solid var(--glass-border-subtle); border-radius: 10px;">
-                <label class="form-label" style="display:flex; align-items:center; gap:8px; margin-bottom: 10px;">
+              <div class="space-y-4" style="margin-bottom: 0; padding: 12px; border: 1px solid var(--glass-border-subtle); border-radius: 10px;">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="display:flex; align-items:center; gap:8px; margin-bottom: 10px;">
                   <span><i class="bi bi-pin-map" aria-hidden="true"></i></span>
                   <span>Mensagens da página do lote</span>
                 </label>
@@ -453,12 +447,12 @@
 
                 <div v-if="!editForm.salesMotionConfig.lot.showOnce" class="grid grid-cols-2 gap-3" style="margin-bottom: 10px;">
                   <div>
-                    <label class="form-label">Intervalo mínimo (s)</label>
-                    <input v-model.number="editForm.salesMotionConfig.lot.intervalSeconds" type="number" min="5" max="120" class="form-input" />
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Intervalo mínimo (s)</label>
+                    <input v-model.number="editForm.salesMotionConfig.lot.intervalSeconds" type="number" min="5" max="120" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                   </div>
                   <div>
-                    <label class="form-label">Máx. avisos/sessão</label>
-                    <input v-model.number="editForm.salesMotionConfig.lot.maxNotices" type="number" min="1" max="20" class="form-input" />
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Máx. avisos/sessão</label>
+                    <input v-model.number="editForm.salesMotionConfig.lot.maxNotices" type="number" min="1" max="20" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                   </div>
                 </div>
 
@@ -467,13 +461,13 @@
                   <span style="font-size: 0.8rem; font-weight: 600;">Exibição única por página</span>
                 </label>
 
-                <div class="form-group" style="margin-bottom: 8px;">
+                <div class="space-y-4" style="margin-bottom: 8px;">
                   <div class="flex justify-between items-center" style="margin-bottom: 8px;">
-                    <label class="form-label" style="margin-bottom: 0;">Textos configurados</label>
-                    <button type="button" class="btn btn-ghost btn-sm" @click="addSalesMotionTemplate('lot')">+ Adicionar texto</button>
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="margin-bottom: 0;">Textos configurados</label>
+                    <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="addSalesMotionTemplate('lot')">+ Adicionar texto</button>
                   </div>
 
-                  <div v-if="!editForm.salesMotionConfig.lot.templates.length" class="text-muted" style="font-size: 0.8rem; padding: 10px 12px; border: 1px dashed var(--glass-border-subtle); border-radius: 8px;">
+                  <div v-if="!editForm.salesMotionConfig.lot.templates.length" class="text-sm text-p-text-muted" style="font-size: 0.8rem; padding: 10px 12px; border: 1px dashed var(--glass-border-subtle); border-radius: 8px;">
                     Nenhum texto cadastrado. Adicione um texto para começar.
                   </div>
 
@@ -487,12 +481,12 @@
                         <input v-model="tpl.enabled" type="checkbox" style="width: 14px; height: 14px;" />
                         <span>{{ tpl.enabled ? 'Exibir este texto' : 'Oculto' }}</span>
                       </label>
-                      <button type="button" class="btn btn-danger btn-sm" @click="removeSalesMotionTemplate('lot', Number(idx))">Remover</button>
+                      <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-danger text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="removeSalesMotionTemplate('lot', Number(idx))">Remover</button>
                     </div>
                     <textarea
                       v-model="tpl.text"
                       @input="ensureSalesMotionTemplateRanges(tpl)"
-                      class="form-textarea"
+                      class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
                       rows="2"
                       placeholder="Ex: {{viewsToday}} pessoas visualizaram este lote hoje"
                     ></textarea>
@@ -501,18 +495,18 @@
                         <input v-model="tpl.manualRangeEnabled" type="checkbox" style="width: 14px; height: 14px;" />
                         <span>Usar faixa manual</span>
                       </label>
-                      <p class="text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">
+                      <p class="text-sm text-p-text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">
                         {{ tpl.manualRangeEnabled ? 'Manual ativo: o sistema usará os valores entre mínimo e máximo.' : 'Manual inativo: o sistema usa contagem automática (real/estimada pelos dados atuais).' }}
                       </p>
                     </div>
                     <div v-if="tpl.manualRangeEnabled && salesMotionTemplateTokenList(tpl).length > 0" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--glass-border-subtle);">
-                      <p class="text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">Faixa dos números dinâmicos deste texto</p>
+                      <p class="text-sm text-p-text-muted" style="margin: 0 0 6px; font-size: 0.72rem;">Faixa dos números dinâmicos deste texto</p>
                       <div class="grid grid-cols-3 gap-2">
                         <div v-for="token in salesMotionTemplateTokenList(tpl)" :key="`lot-${tpl.id || idx}-${token}`">
-                          <label class="form-label" style="font-size: 0.7rem; margin-bottom: 4px;">{{ salesMotionTokenLabel(token) }}</label>
+                          <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="font-size: 0.7rem; margin-bottom: 4px;">{{ salesMotionTokenLabel(token) }}</label>
                           <div style="display:flex; gap: 6px;">
                             <input
-                              class="form-input"
+                              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
                               type="number"
                               :min="0"
                               :value="salesMotionTemplateRangeValue(tpl, token, 'min')"
@@ -521,7 +515,7 @@
                               style="height: 32px; font-size: 0.78rem;"
                             />
                             <input
-                              class="form-input"
+                              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
                               type="number"
                               :min="0"
                               :value="salesMotionTemplateRangeValue(tpl, token, 'max')"
@@ -535,7 +529,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="text-muted" style="display:flex; flex-wrap:wrap; gap:8px; margin-top: 8px; font-size: 0.78rem;">
+                <div class="text-sm text-p-text-muted" style="display:flex; flex-wrap:wrap; gap:8px; margin-top: 8px; font-size: 0.78rem;">
                   <span style="opacity: 0.9;">Placeholders:</span>
                   <CommonAppTooltip text="Quantidade estimada de visualizações do lote no dia." position="top">
                     <span v-pre style="cursor: help; padding: 2px 8px; border: 1px dashed var(--glass-border-subtle); border-radius: 999px;">{{viewsToday}}</span>
@@ -557,43 +551,43 @@
               </div>
               </div>
             </div>
-            <div v-if="settingsError" class="alert alert-error">{{ settingsError }}</div>
-            <div v-if="settingsSaved" class="alert alert-success">Salvo com sucesso!</div>
-            <button type="submit" class="btn btn-primary" :disabled="!authStore.canEdit || savingSettings || editSlugTaken" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined">{{ savingSettings ? 'Salvando...' : 'Salvar' }}</button>
+            <div v-if="settingsError" class="rounded-lg border border-p-danger/30 bg-p-danger-subtle/30 px-4 py-3 text-sm text-p-danger">{{ settingsError }}</div>
+            <div v-if="settingsSaved" class="rounded-lg border border-p-success/30 bg-p-success-subtle/30 px-4 py-3 text-sm text-p-success">Salvo com sucesso!</div>
+            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!authStore.canEdit || savingSettings || editSlugTaken" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined">{{ savingSettings ? 'Salvando...' : 'Salvar' }}</button>
             </fieldset>
           </form>
         </div>
       </section>
 
       <!-- Pré-lançamento -->
-      <section v-if="activeSection === 'pre-lancamento'" id="pre-lancamento" class="content-section">
-        <div class="card" style="max-width: 800px;">
+      <section v-if="activeSection === 'pre-lancamento'" id="pre-lancamento" class="animate-[fadeIn_0.15s_ease]">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="max-width: 800px;">
           <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
             <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
               <span><i class="bi bi-stars" aria-hidden="true"></i></span> Pré-lançamento
             </h3>
-            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">
+            <p class="text-sm text-p-text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">
               Centralize aqui a operação de pré-lançamento do projeto, definindo se o site público capta interessados em fila ou já permite reserva direta nos lotes disponíveis.
             </p>
 
-            <div class="form-group" style="display:flex; align-items:flex-start; gap: 12px; margin-bottom: 20px; background: rgba(59, 130, 246, 0.08); padding: 16px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.18);">
+            <div class="space-y-4" style="display:flex; align-items:flex-start; gap: 12px; margin-bottom: 20px; background: rgba(59, 130, 246, 0.08); padding: 16px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.18);">
               <input type="checkbox" v-model="editForm.preLaunchEnabled" id="chkPreLaunchEnabled" style="width:20px; height:20px; cursor:pointer; margin-top: 2px;" />
               <div>
                 <label for="chkPreLaunchEnabled" style="font-weight: 700; cursor:pointer; color: var(--color-surface-100); display: block; margin-bottom: 6px;">Ativar modo de pré-lançamento</label>
-                <p class="text-muted" style="margin: 0; font-size: 0.8rem; line-height: 1.5;">
+                <p class="text-sm text-p-text-muted" style="margin: 0; font-size: 0.8rem; line-height: 1.5;">
                   Quando ativo, o site público passa a operar com comunicação de exclusividade. Você pode escolher entre fila de preferência ou reserva direta para lotes disponíveis.
                 </p>
               </div>
             </div>
 
             <div v-if="editForm.preLaunchEnabled" class="grid grid-cols-2 gap-6" style="margin-bottom: 20px;">
-              <div class="form-group">
-                <label class="form-label">Captura no pré-lançamento</label>
-                <select v-model="editForm.preLaunchCaptureMode" class="form-input">
+              <div class="space-y-4">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Captura no pré-lançamento</label>
+                <select v-model="editForm.preLaunchCaptureMode" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none">
                   <option value="QUEUE">Fila de preferência</option>
                   <option value="RESERVATION">Reserva direta em lotes disponíveis</option>
                 </select>
-                <small class="text-muted">
+                <small class="text-sm text-p-text-muted">
                   Em reserva direta, lotes disponíveis seguem para pagamento/reserva e lotes já reservados abrem fila de preferência.
                 </small>
               </div>
@@ -621,7 +615,7 @@
             </div>
 
             <div class="flex justify-end" style="margin-top: 20px;">
-              <button class="btn btn-primary" @click="saveSettings" :disabled="!authStore.canEdit || savingSettings" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" style="min-width: 220px;">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="saveSettings" :disabled="!authStore.canEdit || savingSettings" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" style="min-width: 220px;">
                 <span v-if="savingSettings">Salvando...</span>
                 <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
                   <i class="bi bi-floppy-fill" aria-hidden="true"></i>
@@ -634,20 +628,20 @@
       </section>
 
       <!-- Pagamentos & Taxas -->
-      <section v-if="activeSection === 'pagamentos'" id="pagamentos" class="content-section">
-        <div class="card" style="max-width: 800px;">
+      <section v-if="activeSection === 'pagamentos'" id="pagamentos" class="animate-[fadeIn_0.15s_ease]">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="max-width: 800px;">
           <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
           <h3><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i> Ativar Gateways de Pagamento</h3>
-          <p class="text-muted">Selecione abaixo quais perfis de pagamento globais você deseja habilitar para este projeto.</p>
+          <p class="text-sm text-p-text-muted">Selecione abaixo quais perfis de pagamento globais você deseja habilitar para este projeto.</p>
           
           <div v-if="loadingPaymentOptions" class="flex justify-center p-8">
-             <div class="loader"></div>
+             <div class="h-8 w-8 animate-spin rounded-full border-4 border-p-border border-t-p-accent"></div>
           </div>
 
-          <div v-else-if="allConfigs.length === 0" class="empty-state" style="padding: 24px;">
-            <div class="icon-blob mx-auto mb-4"><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i></div>
-            <p>Nenhum perfil de pagamento configurado globalmente.</p>
-            <NuxtLink to="/painel/pagamentos" class="btn btn-primary btn-sm rounded-pill px-4">Criar Primeiro Perfil</NuxtLink>
+          <div v-else-if="allConfigs.length === 0" class="flex flex-col items-center justify-center py-6 text-center" style="padding: 24px;">
+            <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-p-overlay text-2xl text-p-text-muted"><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i></div>
+            <p class="text-sm text-p-text-muted">Nenhum perfil de pagamento configurado globalmente.</p>
+            <NuxtLink to="/painel/pagamentos" class="inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors">Criar Primeiro Perfil</NuxtLink>
           </div>
 
           <div v-else class="grid gap-4" style="margin-top: 24px;">
@@ -655,7 +649,8 @@
                  class="flex items-center justify-between p-4 border rounded-lg"
                  :style="{ borderColor: isConfigActive(config.id) ? 'var(--color-primary-500)' : 'var(--glass-border-subtle)', background: isConfigActive(config.id) ? 'rgba(16, 185, 129, 0.1)' : 'var(--glass-bg)' }">
               <div class="flex items-center gap-3">
-                <div class="provider-badge-sm" :class="config.provider.toLowerCase()">{{ config.provider }}</div>
+                <div class="px-2 py-0.5 rounded text-[0.65rem] font-extrabold text-white uppercase"
+                     :style="{ background: ({ stripe: '#635bff', asaas: '#0062ff', mercado_pago: '#009ee3', pagar_me: '#3c5af4', pagseguro: '#3fb43f' } as Record<string, string>)[config.provider.toLowerCase()] || '#6b7280' }">{{ config.provider }}</div>
                 <div>
                   <div style="font-weight: 600;">{{ config.name }}</div>
                   <div style="font-size: 0.75rem; color: var(--color-surface-400);">ID: {{ config.id.split('-')[0] }}...</div>
@@ -687,7 +682,7 @@
             <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
               <span><i class="bi bi-ticket-perforated-fill" aria-hidden="true"></i></span> Taxa de Reserva Online
             </h3>
-            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure o valor que o cliente deve pagar para reservar um lote online via cartão ou PIX.</p>
+            <p class="text-sm text-p-text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure o valor que o cliente deve pagar para reservar um lote online via cartão ou PIX.</p>
 
             <div v-if="editForm.preLaunchEnabled && editForm.preLaunchCaptureMode !== 'RESERVATION'" style="padding: 12px 16px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.18); border-radius: 10px; margin-bottom: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;">
               <span><i class="bi bi-lock-fill" aria-hidden="true"></i></span>
@@ -701,18 +696,18 @@
             </div>
             
             <div class="grid grid-cols-2 gap-6">
-              <div class="form-group">
-                <label class="form-label">Tipo de Cobrança</label>
-                <select v-model="editForm.reservationFeeType" class="form-input" :disabled="editForm.preLaunchEnabled && editForm.preLaunchCaptureMode !== 'RESERVATION'">
+              <div class="space-y-4">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Tipo de Cobrança</label>
+                <select v-model="editForm.reservationFeeType" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" :disabled="editForm.preLaunchEnabled && editForm.preLaunchCaptureMode !== 'RESERVATION'">
                   <option value="FIXED">Valor Fixo (R$)</option>
                   <option value="PERCENTAGE">Porcentagem do Valor do Lote (%)</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label class="form-label">
+              <div class="space-y-4">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">
                   {{ editForm.reservationFeeType === 'FIXED' ? 'Valor da Reserva (R$)' : 'Porcentagem da Reserva (%)' }}
                 </label>
-                <input v-model.number="editForm.reservationFeeValue" type="number" step="0.01" class="form-input" :disabled="editForm.preLaunchEnabled && editForm.preLaunchCaptureMode !== 'RESERVATION'"
+                <input v-model.number="editForm.reservationFeeValue" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" :disabled="editForm.preLaunchEnabled && editForm.preLaunchCaptureMode !== 'RESERVATION'"
                        :placeholder="editForm.reservationFeeType === 'FIXED' ? 'Ex: 500.00' : 'Ex: 0.5'" />
                 <small v-if="editForm.reservationFeeType === 'PERCENTAGE'" style="color: var(--color-surface-400); font-size: 0.75rem;">
                   Ex: 0.5 = 0,5% do valor total do lote.
@@ -721,15 +716,15 @@
             </div>
 
             <div class="grid grid-cols-2 gap-6" style="margin-top: 16px;">
-              <div class="form-group">
-                <label class="form-label">Tempo de Expiração da Reserva (Horas)</label>
-                <input v-model.number="editForm.reservationExpiryHours" type="number" class="form-input" :disabled="editForm.preLaunchEnabled && editForm.preLaunchCaptureMode !== 'RESERVATION'" placeholder="Ex: 24" />
-                <small class="text-muted">Tempo que o lote ficará reservado aguardando confirmação (manual ou pagamento). Padrão: 24h.</small>
+              <div class="space-y-4">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Tempo de Expiração da Reserva (Horas)</label>
+                <input v-model.number="editForm.reservationExpiryHours" type="number" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" :disabled="editForm.preLaunchEnabled && editForm.preLaunchCaptureMode !== 'RESERVATION'" placeholder="Ex: 24" />
+                <small class="text-sm text-p-text-muted">Tempo que o lote ficará reservado aguardando confirmação (manual ou pagamento). Padrão: 24h.</small>
               </div>
             </div>
             
             <div class="flex justify-end" style="margin-top: 20px;">
-              <button class="btn btn-primary" @click="saveSettings" :disabled="!authStore.canEdit || savingSettings" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" style="min-width: 200px;">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="saveSettings" :disabled="!authStore.canEdit || savingSettings" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" style="min-width: 200px;">
                 <span v-if="savingSettings">Salvando...</span>
                 <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
                   <i class="bi bi-floppy-fill" aria-hidden="true"></i>
@@ -743,28 +738,28 @@
       </section>
 
       <!-- Assistente IA -->
-      <section v-if="activeSection === 'assistente-ia'" id="assistente-ia" class="content-section">
-        <div class="card" style="max-width: 600px;">
+      <section v-if="activeSection === 'assistente-ia'" id="assistente-ia" class="animate-[fadeIn_0.15s_ease]">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="max-width: 600px;">
           <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
           <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
             <span><i class="bi bi-robot" aria-hidden="true"></i></span> Assistente de IA
           </h3>
-          <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">
+          <p class="text-sm text-p-text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">
             Habilite um assistente virtual para ajudar clientes interessados. A IA responderá perguntas sobre lotes, disponibilidade e preços de acordo com os dados deste projeto.
           </p>
 
-          <div class="form-group" style="display:flex; align-items:center; gap: 8px; margin-bottom: 24px;">
+          <div class="space-y-4" style="display:flex; align-items:center; gap: 8px; margin-bottom: 24px;">
             <input type="checkbox" v-model="editForm.aiEnabled" id="chkAiEnabled" style="width:20px; height:20px; cursor:pointer;" />
             <label for="chkAiEnabled" style="font-weight: 600; cursor:pointer;">Ativar assistente de IA para este projeto</label>
           </div>
 
           <div v-if="editForm.aiEnabled">
-            <div class="form-group">
-              <label class="form-label">Configuração de IA</label>
-              <div class="form-input" style="display:flex; align-items:center; min-height: 42px; color: var(--color-surface-200);">
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Configuração de IA</label>
+              <div class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" style="display:flex; align-items:center; min-height: 42px; color: var(--color-surface-200);">
                 {{ activeAiConfigLabel || 'A configuração será vinculada automaticamente ao salvar.' }}
               </div>
-              <small class="text-muted">As configurações de modelos e chaves de API são feitas na página <NuxtLink to="/painel/ai">Assistente IA</NuxtLink>.</small>
+              <small class="text-sm text-p-text-muted">As configurações de modelos e chaves de API são feitas na página <NuxtLink to="/painel/ai">Assistente IA</NuxtLink>.</small>
             </div>
             
             <div v-if="aiConfigs.length === 0" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-top: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
@@ -777,7 +772,7 @@
           </div>
 
           <div class="flex justify-end" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--glass-border-subtle);">
-            <button class="btn btn-primary" @click="saveSettings" :disabled="!authStore.canEdit || savingSettings" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="saveSettings" :disabled="!authStore.canEdit || savingSettings" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined">
               <span v-if="savingSettings">Salvando...</span>
               <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
                 <i class="bi bi-floppy-fill" aria-hidden="true"></i>
@@ -790,15 +785,15 @@
       </section>
 
       <!-- Agendamento de Visitas -->
-      <section v-if="activeSection === 'pub-scheduling'" id="agendamento" class="content-section">
-        <div class="card" style="max-width: 900px;">
+      <section v-if="activeSection === 'pub-scheduling'" id="agendamento" class="animate-[fadeIn_0.15s_ease]">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="max-width: 900px;">
           <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
           <div class="flex justify-between items-center" style="margin-bottom: 24px;">
             <div>
               <h3 style="margin:0; display: flex; align-items: center; gap: 8px;">
                 <span><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></span> Configurações de Agendamento de Visitas
               </h3>
-              <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">Defina os horários e regras para que clientes agendem visitas ao empreendimento.</p>
+              <p class="text-sm text-p-text-muted" style="font-size: 0.85rem; margin-top: 4px;">Defina os horários e regras para que clientes agendem visitas ao empreendimento.</p>
             </div>
             <div class="toggle-switch">
               <input type="checkbox" v-model="schedulingForm.enabled" id="chkSchedEnabled" />
@@ -807,7 +802,7 @@
           </div>
 
           <div v-if="loadingScheduling" class="flex justify-center p-8">
-            <div class="loader"></div>
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-p-border border-t-p-accent"></div>
           </div>
 
           <template v-else>
@@ -817,19 +812,19 @@
                 <h4 style="margin-bottom: 20px; font-size: 0.9rem; text-transform: uppercase; color: var(--color-surface-400); letter-spacing: 0.5px;">Atendimento Base</h4>
                 
                 <div class="grid grid-cols-2 gap-4">
-                  <div class="form-group">
-                    <label class="form-label">Início do Expediente</label>
-                    <input v-model="schedulingForm.startTime" type="time" class="form-input" />
+                  <div class="space-y-4">
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Início do Expediente</label>
+                    <input v-model="schedulingForm.startTime" type="time" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Fim do Expediente</label>
-                    <input v-model="schedulingForm.endTime" type="time" class="form-input" />
+                  <div class="space-y-4">
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Fim do Expediente</label>
+                    <input v-model="schedulingForm.endTime" type="time" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                   </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label">Intervalo entre Visitas (minutos)</label>
-                  <select v-model.number="schedulingForm.scheduleInterval" class="form-input">
+                <div class="space-y-4" style="margin-top: 12px;">
+                  <label class="mb-1 block text-sm font-medium text-p-text-secondary">Intervalo entre Visitas (minutos)</label>
+                  <select v-model.number="schedulingForm.scheduleInterval" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none">
                     <option :value="15">15 minutos</option>
                     <option :value="30">30 minutos</option>
                     <option :value="45">45 minutos</option>
@@ -839,10 +834,10 @@
                   </select>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px;">
-                  <label class="form-label">Visitas Simultâneas (Limite por horário)</label>
-                  <input v-model.number="schedulingForm.maxSimultaneous" type="number" min="1" class="form-input" placeholder="Ex: 1" />
-                  <small class="text-muted">Quantos corretores podem atender no mesmo horário.</small>
+                <div class="space-y-4" style="margin-top: 12px;">
+                  <label class="mb-1 block text-sm font-medium text-p-text-secondary">Visitas Simultâneas (Limite por horário)</label>
+                  <input v-model.number="schedulingForm.maxSimultaneous" type="number" min="1" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 1" />
+                  <small class="text-sm text-p-text-muted">Quantos corretores podem atender no mesmo horário.</small>
                 </div>
               </div>
 
@@ -875,23 +870,23 @@
                 <div style="padding: 20px; border: 1px dashed var(--color-surface-600); border-radius: 12px;">
                   <h5 style="margin-bottom: 12px; font-weight: 600;"><i class="bi bi-fork-knife" aria-hidden="true"></i> Intervalo de Almoço</h5>
                   <div class="grid grid-cols-2 gap-4">
-                    <div class="form-group">
-                      <label class="form-label" style="font-size: 0.75rem;">Início</label>
-                      <input v-model="schedulingForm.lunchStart" type="time" class="form-input" />
+                    <div class="space-y-4">
+                      <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="font-size: 0.75rem;">Início</label>
+                      <input v-model="schedulingForm.lunchStart" type="time" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                     </div>
-                    <div class="form-group">
-                      <label class="form-label" style="font-size: 0.75rem;">Fim</label>
-                      <input v-model="schedulingForm.lunchEnd" type="time" class="form-input" />
+                    <div class="space-y-4">
+                      <label class="mb-1 block text-sm font-medium text-p-text-secondary" style="font-size: 0.75rem;">Fim</label>
+                      <input v-model="schedulingForm.lunchEnd" type="time" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" />
                     </div>
                   </div>
-                  <small class="text-muted">Horários bloqueados diariamente.</small>
+                  <small class="text-sm text-p-text-muted">Horários bloqueados diariamente.</small>
                 </div>
 
                 <!-- Custom Breaks -->
                 <div style="padding: 20px; border: 1px dashed var(--color-surface-600); border-radius: 12px;">
                   <div class="flex justify-between items-center" style="margin-bottom: 12px;">
                     <h5 style="margin:0; font-weight: 600;"><i class="bi bi-cup-hot-fill" aria-hidden="true"></i> Outras Pausas Curtas</h5>
-                    <button @click="addBreak" class="btn btn-xs btn-ghost">+ Adicionar</button>
+                    <button @click="addBreak" class="inline-flex items-center justify-center gap-2 rounded-lg px-2.5 py-1 text-xs font-semibold text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors">+ Adicionar</button>
                   </div>
                   
                   <div v-if="schedulingForm.breaks.length === 0" class="text-center py-4 text-muted" style="font-size: 0.8rem;">
@@ -900,11 +895,11 @@
 
                   <div v-for="(b, idx) in schedulingForm.breaks" :key="idx" 
                        style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; background: var(--glass-bg-heavy); padding: 8px; border-radius: 8px;">
-                    <input v-model="b.name" placeholder="Motivo" class="form-input btn-xs" style="flex: 2" />
-                    <input v-model="b.start" type="time" class="form-input btn-xs" style="flex: 1" />
+                    <input v-model="b.name" placeholder="Motivo" class="rounded-lg border border-p-border bg-p-raised px-2 py-1 text-xs text-p-text focus:border-p-accent focus:outline-none" style="flex: 2" />
+                    <input v-model="b.start" type="time" class="rounded-lg border border-p-border bg-p-raised px-2 py-1 text-xs text-p-text focus:border-p-accent focus:outline-none" style="flex: 1" />
                     <span style="font-size: 10px; color: var(--color-surface-500);">até</span>
-                    <input v-model="b.end" type="time" class="form-input btn-xs" style="flex: 1" />
-                    <button @click="removeBreak(idx)" class="btn btn-xs btn-ghost btn-danger" style="padding: 0 4px;"><i class="bi bi-x" aria-hidden="true"></i></button>
+                    <input v-model="b.end" type="time" class="rounded-lg border border-p-border bg-p-raised px-2 py-1 text-xs text-p-text focus:border-p-accent focus:outline-none" style="flex: 1" />
+                    <button @click="removeBreak(idx)" class="inline-flex items-center justify-center rounded-lg text-xs font-semibold text-p-danger hover:bg-p-danger/10 transition-colors" style="padding: 0 4px;"><i class="bi bi-x" aria-hidden="true"></i></button>
                   </div>
                 </div>
               </div>
@@ -916,7 +911,7 @@
                 <span><i class="bi bi-x-circle-fill" aria-hidden="true"></i></span>
                 <span style="color: #f87171;">Selecione ao menos um dia da semana para habilitar o agendamento.</span>
               </div>
-              <button class="btn btn-primary" @click="saveSchedulingSettings" :disabled="!authStore.canEdit || savingScheduling || (schedulingForm.enabled && schedulingForm.availableDays.length === 0)" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" style="min-width: 200px; height: 48px; border-radius: 12px;">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="saveSchedulingSettings" :disabled="!authStore.canEdit || savingScheduling || (schedulingForm.enabled && schedulingForm.availableDays.length === 0)" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" style="min-width: 200px; height: 48px; border-radius: 12px;">
                 <span v-if="savingScheduling">Salvando...</span>
                 <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
                   <i class="bi bi-floppy-fill" aria-hidden="true"></i>
@@ -930,44 +925,44 @@
       </section>
 
       <!-- Simulação Financeira -->
-      <section v-if="activeSection === 'financeiro'" id="financeiro" class="content-section">
+      <section v-if="activeSection === 'financeiro'" id="financeiro" class="animate-[fadeIn_0.15s_ease]">
       <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
-      <div class="financing-layout-v4">
-        <div class="card" style="flex: 1; max-width: 800px;">
+      <div class="flex gap-10 items-start max-[1200px]:flex-col">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="flex: 1; max-width: 800px;">
           <h3 style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
             <span><i class="bi bi-calculator-fill" aria-hidden="true"></i></span> Regras de Simulação Financeira
           </h3>
-          <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure as regras padrão para o simulador que aparece na página dos lotes.</p>
+          <p class="text-sm text-p-text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">Configure as regras padrão para o simulador que aparece na página dos lotes.</p>
 
-          <div class="form-group" style="display:flex; align-items:center; gap: 8px; margin-bottom: 32px; background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3);">
+          <div class="space-y-4" style="display:flex; align-items:center; gap: 8px; margin-bottom: 32px; background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3);">
             <input type="checkbox" v-model="editForm.showPaymentConditions" id="chkShowSimOnFinancing" style="width:20px; height:20px; cursor:pointer;" />
             <label for="chkShowSimOnFinancing" style="font-weight: 700; cursor:pointer; color: #fbbf24;"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Habilitar Simulador nas Páginas Públicas</label>
           </div>
 
           <div class="grid grid-cols-2 gap-6">
-            <div class="form-group">
-              <label class="form-label">Entrada Mínima (%)</label>
-              <input v-model.number="editForm.minDownPaymentPercent" type="number" class="form-input" placeholder="Ex: 10" />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Entrada Mínima (%)</label>
+              <input v-model.number="editForm.minDownPaymentPercent" type="number" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 10" />
             </div>
-            <div class="form-group">
-              <label class="form-label">Entrada Mínima Fixa (R$)</label>
-              <input v-model.number="editForm.minDownPaymentValue" type="number" class="form-input" placeholder="Ex: 15000" />
-              <small class="text-muted">Se preenchido, o sistema usará o maior entre % e Valor Fixo.</small>
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Entrada Mínima Fixa (R$)</label>
+              <input v-model.number="editForm.minDownPaymentValue" type="number" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 15000" />
+              <small class="text-sm text-p-text-muted">Se preenchido, o sistema usará o maior entre % e Valor Fixo.</small>
             </div>
-            <div class="form-group">
-              <label class="form-label">Número Máximo de Parcelas</label>
-              <input v-model.number="editForm.maxInstallments" type="number" class="form-input" placeholder="Ex: 180" />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Número Máximo de Parcelas</label>
+              <input v-model.number="editForm.maxInstallments" type="number" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 180" />
             </div>
-            <div class="form-group">
-              <label class="form-label">Taxa de Juros Mensal (%)</label>
-              <input v-model.number="editForm.monthlyInterestRate" type="number" step="0.01" class="form-input" placeholder="Ex: 0.9" />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Taxa de Juros Mensal (%)</label>
+              <input v-model.number="editForm.monthlyInterestRate" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 0.9" />
             </div>
-            <div class="form-group">
-              <label class="form-label">Indexador de Correção</label>
-              <input v-model="editForm.indexer" class="form-input" placeholder="Ex: IGP-M, IPCA..." />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Indexador de Correção</label>
+              <input v-model="editForm.indexer" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: IGP-M, IPCA..." />
             </div>
-            <div class="form-group">
-              <label class="form-label">Parcelas Intermediárias (Balões)</label>
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Parcelas Intermediárias (Balões)</label>
               <div style="display:flex; align-items:center; gap: 8px; height: 42px;">
                 <input type="checkbox" v-model="editForm.allowIntermediary" id="chkInter" style="width:18px; height:18px; cursor:pointer;" />
                 <label for="chkInter" style="margin:0; cursor:pointer; font-weight:600;">Permitir cálculo de balões anuais</label>
@@ -975,14 +970,14 @@
             </div>
           </div>
 
-          <div class="form-group" style="margin-top: 16px;">
-            <label class="form-label">Aviso Legal (Disclaimer)</label>
-            <textarea v-model="editForm.financingDisclaimer" class="form-textarea" rows="2"></textarea>
-            <small class="text-muted">Aparecerá abaixo do resultado da simulação.</small>
+          <div class="space-y-4" style="margin-top: 16px;">
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Aviso Legal (Disclaimer)</label>
+            <textarea v-model="editForm.financingDisclaimer" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" rows="2"></textarea>
+            <small class="text-sm text-p-text-muted">Aparecerá abaixo do resultado da simulação.</small>
           </div>
 
           <div class="flex justify-end" style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--glass-border-subtle);">
-            <button class="btn btn-primary" @click="saveSettings" :disabled="savingSettings" style="min-width: 200px;">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="saveSettings" :disabled="savingSettings" style="min-width: 200px;">
               <span v-if="savingSettings">Salvando...</span>
               <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
                 <i class="bi bi-floppy-fill" aria-hidden="true"></i>
@@ -993,16 +988,16 @@
         </div>
 
         <!-- LIVE PREVIEW SIDEBAR -->
-        <div class="financing-preview-sidebar">
-          <div class="preview-header">
-            <h4><i class="bi bi-eye-fill" aria-hidden="true"></i> Preview em Tempo Real</h4>
-            <p>Assim é como o simulador aparece na página pública</p>
+        <div class="shrink-0 basis-[380px] sticky top-5 max-[1200px]:w-full max-[1200px]:static max-[1200px]:basis-auto">
+          <div class="mb-5">
+            <h4 class="m-0 text-lg font-bold text-p-text"><i class="bi bi-eye-fill" aria-hidden="true"></i> Preview em Tempo Real</h4>
+            <p class="mt-1 text-sm text-p-text-muted">Assim é como o simulador aparece na página pública</p>
           </div>
 
-          <div class="simulator-card-v4">
-            <div class="sim-header" style="background: rgba(96, 165, 250, 0.08);">
-              <div class="h-item">
-                <span class="l" style="font-weight: 700; color: var(--v4-primary);">Valor do Lote (Simulado)</span>
+          <div class="rounded-3xl border border-white/[0.12] bg-p-raised overflow-hidden shadow-lg">
+            <div class="p-6 bg-p-overlay border-b border-white/[0.12]" style="background: rgba(96, 165, 250, 0.08);">
+              <div class="flex flex-col gap-1">
+                <span class="text-xs font-bold text-blue-400 uppercase tracking-wider" style="font-weight: 700; color: var(--v4-primary);">Valor do Lote (Simulado)</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span style="font-size: 1.5rem; font-weight: 800; color: var(--v4-primary);">R$</span>
                   <input v-model.number="previewLotPrice" type="number" step="1000" style="font-size: 1.5rem; font-weight: 800; color: var(--v4-primary); border: none; background: transparent; padding: 0; outline: none; width: 100%;" />
@@ -1011,27 +1006,27 @@
               </div>
             </div>
 
-            <div class="sim-body">
+            <div class="p-6">
               <!-- Down Payment Selection -->
-              <div class="input-group-v4">
-                <div class="ig-label">Quanto deseja dar de entrada?</div>
-                <div class="ig-flex">
-                  <div class="ig-field" style="flex: 2;">
-                    <span class="ig-curr">R$</span>
-                    <input v-model.number="previewDownPayment" type="number" step="0.01" @input="updatePercentFromDownPaymentPreview" class="ig-input" :min="minDownPaymentValueForPreview" />
+              <div class="flex flex-col gap-2">
+                <div class="text-sm font-semibold text-white">Quanto deseja dar de entrada?</div>
+                <div class="flex gap-2">
+                  <div class="flex items-center rounded-[10px] border border-white/10 bg-p-overlay px-3" style="flex: 2;">
+                    <span class="text-xs font-bold text-white/55">R$</span>
+                    <input v-model.number="previewDownPayment" type="number" step="0.01" @input="updatePercentFromDownPaymentPreview" class="ig-input border-none !bg-transparent w-full !py-2.5 !px-1.5 !text-base !font-bold text-white outline-none !shadow-none !h-auto" :min="minDownPaymentValueForPreview" />
                   </div>
-                  <div class="ig-field" style="flex: 1;">
-                    <input v-model.number="previewDownPaymentPercent" type="number" step="0.1" class="ig-input" />
-                    <span class="ig-curr">%</span>
+                  <div class="flex items-center rounded-[10px] border border-white/10 bg-p-overlay px-3" style="flex: 1;">
+                    <input v-model.number="previewDownPaymentPercent" type="number" step="0.1" class="ig-input border-none !bg-transparent w-full !py-2.5 !px-1.5 !text-base !font-bold text-white outline-none !shadow-none !h-auto" />
+                    <span class="text-xs font-bold text-white/55">%</span>
                   </div>
                 </div>
-                <small class="ig-hint">Entrada mínima: {{ formatCurrencyToBrasilia(minDownPaymentValueForPreview) }} ({{ editForm?.minDownPaymentPercent || 10 }}%)</small>
+                <small class="text-xs text-white/55 mt-0.5">Entrada mínima: {{ formatCurrencyToBrasilia(minDownPaymentValueForPreview) }} ({{ editForm?.minDownPaymentPercent || 10 }}%)</small>
               </div>
 
               <!-- Installments Slider -->
-              <div class="input-group-v4" style="margin-top: 32px;">
-                <div class="ig-label">Número de Parcelas: <strong>{{ previewMonths }} meses</strong></div>
-                <div class="slider-wrapper">
+              <div class="flex flex-col gap-2" style="margin-top: 32px;">
+                <div class="text-sm font-semibold text-white">Número de Parcelas: <strong>{{ previewMonths }} meses</strong></div>
+                <div>
                   <input 
                     type="range" 
                     v-model.number="previewMonths" 
@@ -1040,7 +1035,7 @@
                     step="12"
                     class="range-slider-v4"
                   />
-                  <div class="slider-labels">
+                  <div class="flex justify-between text-[11px] text-white/55 font-semibold">
                     <span>12x</span>
                     <span>{{ Math.round((editForm.maxInstallments || 180) / 2) }}x</span>
                     <span>{{ editForm.maxInstallments || 180 }}x</span>
@@ -1049,10 +1044,10 @@
               </div>
 
               <!-- Result -->
-              <div class="sim-result-v4">
-                <div class="r-label">Primeira Parcela Estimada</div>
-                <div class="r-value" style="font-size: 2rem;">{{ formatCurrencyToBrasilia(previewResult) }}</div>
-                <div class="r-detail">
+              <div class="mt-8 rounded-2xl border border-blue-400/15 bg-blue-400/[0.08] p-6 text-center">
+                <div class="text-[13px] font-semibold text-blue-400 uppercase tracking-wider mb-1">Primeira Parcela Estimada</div>
+                <div class="font-extrabold text-blue-400 tracking-tight" style="font-size: 2rem;">{{ formatCurrencyToBrasilia(previewResult) }}</div>
+                <div class="text-xs text-blue-400/80 font-semibold mt-1">
                   <span v-if="editForm?.monthlyInterestRate > 0">
                     Juros: {{ editForm.monthlyInterestRate }}% am ({{ annualInterestRateEffective.toFixed(2) }}% aa) + {{ editForm.indexer || 'IGP-M' }}
                   </span>
@@ -1071,7 +1066,7 @@
                 </div>
               </div>
 
-              <div class="sim-disclaimer-v4">
+              <div class="mt-5 text-xs text-white/55 leading-relaxed text-center">
                 <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ editForm?.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.' }}
               </div>
             </div>
@@ -1082,18 +1077,18 @@
       </section>
 
       <!-- Lotes -->
-      <section v-if="activeSection === 'lotes'" id="lotes" class="content-section">
-        <div class="card" style="padding: 28px; border-radius: 18px; background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.72)); border: 1px solid rgba(148, 163, 184, 0.16);">
-          <span class="badge badge-neutral" style="margin-bottom: 12px;">Fluxo centralizado</span>
+      <section v-if="activeSection === 'lotes'" id="lotes" class="animate-[fadeIn_0.15s_ease]">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="padding: 28px; border-radius: 18px; background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.72)); border: 1px solid rgba(148, 163, 184, 0.16);">
+          <UiBadge variant="neutral" size="sm" style="margin-bottom: 12px;">Fluxo centralizado</UiBadge>
           <h3 style="margin: 0 0 10px; font-size: 1.2rem;">A gestão de lotes foi movida para a Planta Interativa</h3>
           <p style="margin: 0 0 18px; color: var(--color-surface-400); max-width: 70ch;">
             Agora os lotes ficam logo abaixo do editor da planta, com a mesma paginação e o mesmo modal de edição. Assim o desenho dos spots e a configuração comercial acontecem na mesma tela.
           </p>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="btn btn-primary">
+            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Abrir Planta Interativa
             </NuxtLink>
-            <button class="btn btn-outline" type="button" @click="setActiveSection('configuracoes')">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold border border-p-border text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors" type="button" @click="setActiveSection('configuracoes')">
               Voltar para configurações
             </button>
           </div>
@@ -1101,117 +1096,99 @@
       </section>
 
       <!-- Reservation Details Modal -->
-      <div v-if="viewingReservation" class="modal-overlay">
-        <div class="modal" style="max-width: 520px;">
-          <div class="modal-header" style="margin-bottom: 16px;">
-            <h3>Reserva — {{ viewingReservation.mapElement?.code }}</h3>
-            <button class="modal-close" @click="viewingReservation = null">✕</button>
-          </div>
-          <div class="modal-body">
+      <UiModal :model-value="!!viewingReservation" @update:model-value="viewingReservation = null" :title="`Reserva — ${viewingReservation?.mapElement?.code || ''}`" size="md" dismissible>
             <div v-if="reservationLoading" class="text-center py-4">Carregando...</div>
             <div v-else-if="reservationData">
-              <div class="reservation-section">
-                <p class="reservation-section-label">Lead</p>
-                <p><strong>Nome:</strong> {{ reservationData.name }}</p>
-                <p><strong>E-mail:</strong> {{ reservationData.email || '—' }}</p>
-                <p><strong>Telefone:</strong> {{ reservationData.phone || '—' }}</p>
-                <p><strong>CPF:</strong> {{ reservationData.cpf || '—' }}</p>
+              <div class="mb-4">
+                <p class="mb-2 text-[0.6875rem] font-semibold uppercase tracking-wide text-p-text-muted">Lead</p>
+                <p class="mb-1 text-sm"><strong>Nome:</strong> {{ reservationData.name }}</p>
+                <p class="mb-1 text-sm"><strong>E-mail:</strong> {{ reservationData.email || '—' }}</p>
+                <p class="mb-1 text-sm"><strong>Telefone:</strong> {{ reservationData.phone || '—' }}</p>
+                <p class="mb-1 text-sm"><strong>CPF:</strong> {{ reservationData.cpf || '—' }}</p>
               </div>
-              <div class="reservation-section">
-                <p class="reservation-section-label">Corretor</p>
-                <p><strong>Nome:</strong> {{ reservationData.realtorLink?.name || '—' }}</p>
-                <p><strong>Código:</strong> {{ reservationData.realtorLink?.code || '—' }}</p>
-                <p v-if="reservationData.realtorLink?.imobiliaria"><strong>Imobiliária:</strong> {{ reservationData.realtorLink.imobiliaria }}</p>
+              <div class="mb-4">
+                <p class="mb-2 text-[0.6875rem] font-semibold uppercase tracking-wide text-p-text-muted">Corretor</p>
+                <p class="mb-1 text-sm"><strong>Nome:</strong> {{ reservationData.realtorLink?.name || '—' }}</p>
+                <p class="mb-1 text-sm"><strong>Código:</strong> {{ reservationData.realtorLink?.code || '—' }}</p>
+                <p v-if="reservationData.realtorLink?.imobiliaria" class="mb-1 text-sm"><strong>Imobiliária:</strong> {{ reservationData.realtorLink.imobiliaria }}</p>
               </div>
-              <div class="reservation-section">
-                <p class="reservation-section-label">Datas & Condições</p>
-                <p><strong>Reservado em:</strong> {{ reservationData.createdAt ? formatDateTimeToBrasilia(reservationData.createdAt) : '—' }}</p>
-                <p v-if="project?.reservationExpiryHours && reservationData.createdAt">
+              <div class="mb-4">
+                <p class="mb-2 text-[0.6875rem] font-semibold uppercase tracking-wide text-p-text-muted">Datas & Condições</p>
+                <p class="mb-1 text-sm"><strong>Reservado em:</strong> {{ reservationData.createdAt ? formatDateTimeToBrasilia(reservationData.createdAt) : '—' }}</p>
+                <p v-if="project?.reservationExpiryHours && reservationData.createdAt" class="mb-1 text-sm">
                   <strong>Expira em:</strong> {{ reservationExpiry(reservationData.createdAt) }}
                 </p>
-                <p v-if="project?.reservationFeeValue">
+                <p v-if="project?.reservationFeeValue" class="mb-1 text-sm">
                   <strong>Taxa de Reserva:</strong>
                   {{ project.reservationFeeType === 'PERCENTAGE'
                     ? `${project.reservationFeeValue}%`
                     : formatCurrencyToBrasilia(project.reservationFeeValue) }}
                 </p>
               </div>
-              <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top: 1px solid var(--glass-border-subtle);">
-                <button class="btn btn-ghost btn-sm" @click="viewingReservation = null">Fechar</button>
-                <NuxtLink class="btn btn-primary btn-sm" :to="`/painel/projetos/${projectId}/pos-reserva`">
-                  Ir para Reservas
-                </NuxtLink>
+              <div class="flex justify-end gap-2 mt-5 pt-4 border-t border-p-border">
+                <UiButton variant="ghost" @click="viewingReservation = null">Fechar</UiButton>
+                <UiButton variant="primary" :to="`/painel/projetos/${projectId}/pos-reserva`">Ir para Reservas</UiButton>
               </div>
             </div>
-            <div v-else class="text-center py-4 text-muted">Nenhum dado de reserva encontrado.</div>
-          </div>
-        </div>
-      </div>
+            <div v-else class="text-center py-4 text-p-text-muted">Nenhum dado de reserva encontrado.</div>
+      </UiModal>
 
-      <div v-if="lotQrModal" class="modal-overlay">
-        <div class="modal" style="max-width: 480px;">
-          <div class="modal-header" style="margin-bottom: 12px;">
-            <h3>QR Code do Lote {{ lotQrModal.code }}</h3>
-            <button class="modal-close" @click="lotQrModal = null">✕</button>
-          </div>
-          <div class="modal-body" style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <img :src="lotQrModal.qrCodeUrl" alt="QR Code do lote" style="width: min(320px, 85vw); border-radius: 10px; border: 1px solid var(--glass-border-subtle); background: #fff;" />
-            <div style="font-size: 0.82rem; color: var(--color-surface-400); text-align: center;">
-              {{ lotQrModal.shareText }}
+      <UiModal :model-value="!!lotQrModal" @update:model-value="lotQrModal = null" :title="`QR Code do Lote ${lotQrModal?.code || ''}`" size="md" dismissible>
+          <div class="flex flex-col items-center gap-3">
+            <img v-if="lotQrModal" :src="lotQrModal.qrCodeUrl" alt="QR Code do lote" style="width: min(320px, 85vw); border-radius: 10px; border: 1px solid var(--glass-border-subtle); background: #fff;" />
+            <div class="text-sm text-p-text-muted text-center">
+              {{ lotQrModal?.shareText }}
             </div>
-            <a :href="lotQrModal.publicPageUrl" target="_blank" style="font-size: 0.82rem; color: var(--color-primary-400); word-break: break-all; text-align: center;">
+            <a v-if="lotQrModal" :href="lotQrModal.publicPageUrl" target="_blank" class="text-sm text-p-accent break-all text-center">
               {{ lotQrModal.publicPageUrl }}
             </a>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px;">
-              <button class="btn btn-sm btn-outline" @click="copyLink(lotQrModal.publicPageUrl)">Copiar Link</button>
-              <button class="btn btn-sm btn-outline" @click="downloadLotQr(lotQrModal)">Baixar QR</button>
-              <button class="btn btn-sm btn-outline" @click="printLotQr(lotQrModal)">Imprimir QR</button>
-              <a class="btn btn-sm btn-primary" :href="lotQrModal.publicPageUrl" target="_blank">Abrir Página</a>
+            <div v-if="lotQrModal" class="flex gap-2 flex-wrap justify-center mt-2">
+              <UiButton variant="outline" size="sm" @click="copyLink(lotQrModal.publicPageUrl)">Copiar Link</UiButton>
+              <UiButton variant="outline" size="sm" @click="downloadLotQr(lotQrModal)">Baixar QR</UiButton>
+              <UiButton variant="outline" size="sm" @click="printLotQr(lotQrModal)">Imprimir QR</UiButton>
+              <UiButton variant="primary" size="sm" :to="lotQrModal.publicPageUrl" target="_blank">Abrir Página</UiButton>
             </div>
           </div>
-        </div>
-      </div>
+      </UiModal>
 
       <!-- Lot Edit Modal -->
-      <div v-if="editingLot" class="modal-overlay lot-edit-overlay">
-        <div class="modal lot-edit-modal" style="max-width: 960px;">
-          <div class="modal-header lot-edit-modal__header" style="margin-bottom: 16px;">
-            <div>
-              <span class="lot-edit-modal__eyebrow">Editor de lote</span>
-              <h3>Editar Lote: {{ editingLot.mapElement?.code || editingLot.id }}</h3>
-              <p class="lot-edit-modal__subtitle">Ajuste dados comerciais, galeria e panorama 360 com visual mais limpo e leitura mais forte.</p>
+      <UiModal :model-value="!!editingLot" @update:model-value="closeEditingLot" size="xl" dismissible>
+        <template #header>
+            <div class="pr-12">
+              <span class="inline-flex mb-2 px-2.5 py-1.5 rounded-full bg-blue-500/[0.16] border border-blue-400/[0.28] text-blue-200 text-[0.68rem] font-bold tracking-wide uppercase">Editor de lote</span>
+              <h3 class="text-lg font-semibold text-p-text">Editar Lote: {{ editingLot?.mapElement?.code || editingLot?.id }}</h3>
+              <p class="mt-2 text-sm text-p-text-muted leading-snug max-w-[56ch]">Ajuste dados comerciais, galeria e panorama 360 com visual mais limpo e leitura mais forte.</p>
             </div>
-            <button class="modal-close lot-edit-modal__close" @click="closeEditingLot">✕</button>
-          </div>
-          <fieldset class="lot-edit-modal__fieldset" :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
+        </template>
+          <fieldset class="flex flex-col" :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
           
           <div class="grid grid-cols-2" style="gap: 16px; margin-top: 16px;">
-            <div class="form-group">
-              <label class="form-label">Quadra</label>
-              <input v-model="lotForm.block" class="form-input" placeholder="Ex: Quadra B" />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Quadra</label>
+              <input v-model="lotForm.block" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: Quadra B" />
             </div>
-            <div class="form-group">
-              <label class="form-label">Lote nº</label>
-              <input v-model="lotForm.lotNumber" class="form-input" placeholder="Ex: 31" />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Lote nº</label>
+              <input v-model="lotForm.lotNumber" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 31" />
             </div>
           </div>
 
           <div class="grid grid-cols-3" style="gap: 16px; margin-top: 16px;">
-            <div class="form-group">
-              <label class="form-label">Status</label>
-              <select v-model="lotForm.status" class="form-input">
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Status</label>
+              <select v-model="lotForm.status" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none">
                 <option value="AVAILABLE">Disponível</option>
                 <option value="RESERVED">Reservado</option>
                 <option value="SOLD">Vendido</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Valor do M² (R$)</label>
-              <input v-model.number="lotForm.pricePerM2" type="number" step="0.01" class="form-input" placeholder="0.00" @input="calculatePriceFromM2" />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Valor do M² (R$)</label>
+              <input v-model.number="lotForm.pricePerM2" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="0.00" @input="calculatePriceFromM2" />
             </div>
-            <div class="form-group">
-              <label class="form-label">Preço Total (R$)</label>
-              <input v-model.number="lotForm.price" type="number" step="0.01" class="form-input" placeholder="0.00" @input="calculateM2FromPrice" />
+            <div class="space-y-4">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Preço Total (R$)</label>
+              <input v-model.number="lotForm.price" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="0.00" @input="calculateM2FromPrice" />
             </div>
           </div>
 
@@ -1234,25 +1211,25 @@
               <p style="font-size:0.7rem; color:var(--color-surface-500); margin-top:8px;">A frente do lote agora é definida no editor da planta, arrastando a seta no hotspot.</p>
             </div>
             <div class="grid grid-cols-2" style="gap: 12px;">
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Frente (m)</label>
-                <input v-model.number="lotForm.frontage" type="number" step="0.01" class="form-input" placeholder="Ex: 10.00" />
+              <div class="space-y-4" style="margin:0">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Frente (m)</label>
+                <input v-model.number="lotForm.frontage" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 10.00" />
               </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Lado Esquerdo (m)</label>
-                <input v-model.number="lotForm.sideLeft" type="number" step="0.01" class="form-input" placeholder="Ex: 25.00" />
+              <div class="space-y-4" style="margin:0">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Lado Esquerdo (m)</label>
+                <input v-model.number="lotForm.sideLeft" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 25.00" />
               </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Fundo (m) <small style="color:var(--color-surface-500)">se diferente da frente</small></label>
-                <input v-model.number="lotForm.depth" type="number" step="0.01" class="form-input" placeholder="= Frente" />
+              <div class="space-y-4" style="margin:0">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Fundo (m) <small style="color:var(--color-surface-500)">se diferente da frente</small></label>
+                <input v-model.number="lotForm.depth" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="= Frente" />
               </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Lado Direito (m) <small style="color:var(--color-surface-500)">se diferente</small></label>
-                <input v-model.number="lotForm.sideRight" type="number" step="0.01" class="form-input" placeholder="= Lado Esq." />
+              <div class="space-y-4" style="margin:0">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Lado Direito (m) <small style="color:var(--color-surface-500)">se diferente</small></label>
+                <input v-model.number="lotForm.sideRight" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="= Lado Esq." />
               </div>
-              <div class="form-group" style="margin:0">
-                <label class="form-label">Inclinação</label>
-                <select v-model="lotForm.slope" class="form-input">
+              <div class="space-y-4" style="margin:0">
+                <label class="mb-1 block text-sm font-medium text-p-text-secondary">Inclinação</label>
+                <select v-model="lotForm.slope" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none">
                   <option value="FLAT">Plano</option>
                   <option value="UPHILL">Aclive</option>
                   <option value="DOWNHILL">Declive</option>
@@ -1273,52 +1250,52 @@
             </div>
             
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-              <input v-model="newTag" @keyup.enter="addTag" type="text" class="form-input btn-sm" style="flex: 1; height: 32px; font-size: 0.85rem;" placeholder="Novo selo (ex: sol da manhã)..." />
-              <button @click="addTag" class="btn btn-sm btn-secondary" style="height: 32px; padding: 0 12px; font-size: 0.85rem;">Adicionar</button>
+              <input v-model="newTag" @keyup.enter="addTag" type="text" class="rounded-lg border border-p-border bg-p-raised px-3 py-1.5 text-sm text-p-text focus:border-p-accent focus:outline-none" style="flex: 1; height: 32px; font-size: 0.85rem;" placeholder="Novo selo (ex: sol da manhã)..." />
+              <button @click="addTag" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors border border-p-border" style="height: 32px; padding: 0 12px; font-size: 0.85rem;">Adicionar</button>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               <button v-for="suggestion in ['sol da manhã', 'esquina', 'vista livre', 'próximo à portaria', 'fundo para área verde']" 
                       :key="suggestion"
                       @click="addSuggestedTag(suggestion)"
-                      class="btn btn-xs btn-outline"
+                      class="inline-flex items-center justify-center gap-2 rounded-lg px-2.5 py-1 text-xs font-semibold border border-p-accent text-p-accent hover:bg-p-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       style="font-size: 9px; padding: 2px 6px; color: var(--color-surface-400); border-color: var(--glass-border);">
                 + {{ suggestion }}
               </button>
             </div>
           </div>
 
-          <div class="form-group" style="margin-top: 24px;">
-            <label class="form-label">Notas / Descrição</label>
-            <textarea v-model="lotForm.notes" class="form-textarea" rows="3" placeholder="Informações adicionais do lote..."></textarea>
+          <div class="space-y-4" style="margin-top: 24px;">
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Notas / Descrição</label>
+            <textarea v-model="lotForm.notes" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" rows="3" placeholder="Informações adicionais do lote..."></textarea>
           </div>
 
           <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--glass-border-subtle);" />
 
-          <section class="lot-edit-section">
-          <div class="lot-edit-section__head">
+          <section class="rounded-2xl border border-slate-600/[0.18] bg-gradient-to-b from-slate-900/70 to-slate-900/50 p-4">
+          <div class="flex justify-between gap-3 items-start mb-3.5">
             <div>
               <h4 style="margin-bottom: 12px;">Fotos do Lote</h4>
-              <p class="lot-edit-section__hint">Envie uma ou várias imagens da galeria deste lote de uma vez.</p>
+              <p class="-mt-1 text-sm text-slate-400/70 leading-snug">Envie uma ou várias imagens da galeria deste lote de uma vez.</p>
             </div>
-            <span class="lot-edit-section__badge">{{ lotMedias.length }} {{ lotMedias.length === 1 ? 'imagem' : 'imagens' }}</span>
+            <span class="inline-flex items-center justify-center min-h-[34px] px-3 rounded-full bg-slate-900/85 border border-slate-600/20 text-slate-200 text-xs font-bold whitespace-nowrap">{{ lotMedias.length }} {{ lotMedias.length === 1 ? 'imagem' : 'imagens' }}</span>
           </div>
-          <div v-if="lotMedias.length === 0" class="empty-state lot-edit-empty" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px;">
+          <div v-if="lotMedias.length === 0" class="flex flex-col items-center justify-center py-4 text-center border border-dashed border-slate-600/20 bg-slate-900/55 rounded-xl" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px;">
             <p>Nenhuma foto específica deste lote.</p>
           </div>
-          <div v-else class="grid grid-cols-4 lot-edit-gallery-grid" style="gap: 12px; margin-bottom: 16px;">
-            <div v-for="m in lotMedias" :key="m.id" class="media-card-v4">
+          <div v-else class="grid grid-cols-4 items-start" style="gap: 12px; margin-bottom: 16px;">
+            <div v-for="m in lotMedias" :key="m.id" class="relative rounded-xl overflow-hidden border border-p-border bg-p-overlay transition-all hover:border-p-accent hover:-translate-y-0.5 hover:shadow-lg" style="aspect-ratio: 16/10;">
               <img
                 :src="m.url"
-                class="media-thumb-v4"
+                class="w-full h-full object-cover block"
                 loading="eager"
                 decoding="async"
                 @error="retryMediaPreviewLoad"
               />
-              <button class="media-delete-btn-v4" @click="removeLotMedia(m.id)">✕</button>
+              <button class="absolute top-2 right-2 w-6 h-6 rounded-full border-none bg-red-500/10 text-red-500 text-sm cursor-pointer flex items-center justify-center backdrop-blur-sm hover:bg-red-500 hover:text-white hover:scale-110 transition-all" @click="removeLotMedia(m.id)">✕</button>
             </div>
           </div>
           
-          <label class="btn btn-secondary btn-sm lot-edit-upload-btn" style="cursor:pointer; width: fit-content;">
+          <label class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-slate-800/90 text-slate-50 border border-slate-600/20 shadow-lg cursor-pointer hover:bg-blue-600/90 hover:border-blue-400/30 transition-colors" style="cursor:pointer; width: fit-content;">
             {{ lotMediaUploadLabel }}
             <input type="file" accept="image/*" multiple style="display:none" @change="uploadLotMediaFile" :disabled="uploadingLotMedia" />
           </label>
@@ -1326,107 +1303,106 @@
 
           <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--glass-border-subtle);" />
 
-          <section class="lot-edit-section lot-edit-section--panorama">
-          <div class="lot-edit-section__head">
+          <section class="rounded-2xl border border-slate-600/[0.18] bg-gradient-to-b from-sky-900/40 to-slate-900/55 p-4">
+          <div class="flex justify-between gap-3 items-start mb-3.5">
             <div>
               <h4 style="margin-bottom: 12px;"><i class="bi bi-image-fill" aria-hidden="true"></i> Panorama 360° do Lote</h4>
-              <p class="lot-edit-section__hint">A imagem 360 fica isolada da galeria comum para não misturar fotos estáticas com a vista panorâmica.</p>
+              <p class="-mt-1 text-sm text-slate-400/70 leading-snug">A imagem 360 fica isolada da galeria comum para não misturar fotos estáticas com a vista panorâmica.</p>
             </div>
-            <span class="lot-edit-section__badge">{{ lotForm.panoramaUrl ? '360 ativo' : 'sem 360' }}</span>
+            <span class="inline-flex items-center justify-center min-h-[34px] px-3 rounded-full bg-slate-900/85 border border-slate-600/20 text-slate-200 text-xs font-bold whitespace-nowrap">{{ lotForm.panoramaUrl ? '360 ativo' : 'sem 360' }}</span>
           </div>
-          <div v-if="lotForm.panoramaUrl" class="media-card-v4 lot-edit-panorama-card" style="max-width: 240px; margin-bottom: 16px;">
+          <div v-if="lotForm.panoramaUrl" class="relative rounded-xl overflow-hidden border border-blue-400/25 bg-p-overlay shadow-lg" style="max-width: 240px; margin-bottom: 16px; aspect-ratio: 16/10;">
             <div class="relative group">
               <img
                 :src="lotForm.panoramaUrl"
-                class="media-thumb-v4"
+                class="w-full h-full object-cover block"
                 style="aspect-ratio: 2/1;"
                 loading="eager"
                 decoding="async"
                 @error="retryMediaPreviewLoad"
               />
-              <button class="media-delete-btn-v4" @click="clearLotPanoramaSelection">✕</button>
+              <button class="absolute top-2 right-2 w-6 h-6 rounded-full border-none bg-red-500/10 text-red-500 text-sm cursor-pointer flex items-center justify-center backdrop-blur-sm hover:bg-red-500 hover:text-white hover:scale-110 transition-all" @click="clearLotPanoramaSelection">✕</button>
               <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
                 <span class="text-white text-xs font-bold">Vista 360° Ativa</span>
               </div>
             </div>
           </div>
-          <div v-else class="empty-state lot-edit-empty" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px; margin-bottom: 16px;">
+          <div v-else class="flex flex-col items-center justify-center py-4 text-center border border-dashed border-slate-600/20 bg-slate-900/55 rounded-xl" style="padding: 16px; background: var(--glass-bg-heavy); border-radius: 12px; margin-bottom: 16px;">
             <p>Nenhuma imagem 360° enviada para este lote.</p>
           </div>
           
-          <label class="btn btn-secondary btn-sm lot-edit-upload-btn" style="cursor:pointer; width: fit-content;">
+          <label class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-slate-800/90 text-slate-50 border border-slate-600/20 shadow-lg cursor-pointer hover:bg-blue-600/90 hover:border-blue-400/30 transition-colors" style="cursor:pointer; width: fit-content;">
             {{ panoramaUploadLabel }}
             <input type="file" accept="image/*" style="display:none" @change="uploadLotPanoramaFile" :disabled="uploadingPanorama" />
           </label>
           </section>
 
-          <div class="modal-actions lot-edit-modal__actions" style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
-            <button class="btn btn-secondary lot-edit-btn-secondary" style="background: var(--glass-bg-heavy); color: var(--color-surface-200); border: 1px solid var(--glass-border-subtle);" @click="closeEditingLot">Cancelar</button>
-            <button class="btn btn-primary lot-edit-btn-primary" style="background: var(--color-primary-600); color: #fff; border: none; font-weight: 600;" :disabled="!authStore.canEdit || savingLot" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="saveLotDetails">
+          <div class="flex justify-end gap-3 mt-6 pt-5 border-t border-p-border">
+            <UiButton variant="ghost" @click="closeEditingLot">Cancelar</UiButton>
+            <UiButton variant="primary" :disabled="!authStore.canEdit || savingLot" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="saveLotDetails">
               {{ savingLot ? 'Salvando...' : 'Salvar Detalhes' }}
-            </button>
+            </UiButton>
           </div>
           </fieldset>
-        </div>
-      </div>
+      </UiModal>
 
 
       <!-- Página Pública -->
-      <section v-if="activeSection.startsWith('pub-')" id="pagina-publica" class="content-section pub-page">
+      <section v-if="activeSection.startsWith('pub-')" id="pagina-publica" class="flex flex-col gap-5 animate-[fadeIn_0.15s_ease]">
         <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
 
         <!-- ── Banner & Vídeo (lado a lado) ── -->
-        <div v-if="activeSection === 'pub-banner' || activeSection === 'pub-video'" class="pub-row pub-row--2col">
-          <div v-if="activeSection === 'pub-banner'" class="pub-card">
-            <h4 class="pub-card__title">Banner</h4>
+        <div v-if="activeSection === 'pub-banner' || activeSection === 'pub-video'" class="grid grid-cols-2 gap-5 max-md:grid-cols-1">
+          <div v-if="activeSection === 'pub-banner'" class="rounded-xl border border-p-border bg-p-raised p-5">
+            <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Banner</h4>
             <p style="margin: 0 0 12px 0; color: var(--color-surface-500); font-size: 0.75rem;">
               Cada faixa de resolução usa um banner dedicado na página pública.
             </p>
 
-            <div class="pub-banner-grid">
-              <div class="pub-banner-item">
-                <div class="pub-banner-item__head">
+            <div class="grid grid-cols-1 gap-3.5 max-w-[820px]">
+              <div class="rounded-[10px] border border-p-border bg-p-overlay p-3">
+                <div class="flex items-center justify-between mb-2">
                   <strong>Desktop</strong>
                   <span>&gt; 1024px</span>
                 </div>
-                <div v-if="bannerUrlByDevice('desktop')" class="pub-banner-preview">
+                <div v-if="bannerUrlByDevice('desktop')" class="relative rounded-lg overflow-hidden border border-p-border mb-2.5" style="aspect-ratio: 16/5;">
                   <img :src="bannerUrlByDevice('desktop')" alt="Banner desktop" />
-                  <button v-if="authStore.canEdit" class="pub-card__overlay-btn" @click="removeBannerImage('desktop')">Remover</button>
+                  <button v-if="authStore.canEdit" class="absolute bottom-2.5 right-2.5 rounded-md border border-red-500/30 bg-black/75 px-3 py-1 text-[0.72rem] text-red-500 cursor-pointer backdrop-blur-sm hover:bg-red-500/20" @click="removeBannerImage('desktop')">Remover</button>
                 </div>
-                <div v-else class="pub-banner-empty">Nenhum banner desktop</div>
-                <label v-if="authStore.canEdit" class="pub-card__upload-btn">
+                <div v-else class="rounded-lg border border-dashed border-p-border bg-p-raised px-3 py-4 mb-2.5 text-center text-p-text-muted text-[0.74rem]">Nenhum banner desktop</div>
+                <label v-if="authStore.canEdit" class="inline-block mt-3 px-4 py-1.5 rounded-lg border border-p-border bg-p-overlay text-p-text-secondary text-sm cursor-pointer transition-all hover:bg-white/[0.08]">
                   {{ uploadingBannerDevice === 'desktop' ? 'Enviando...' : 'Enviar Desktop' }}
                   <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage($event, 'desktop')" :disabled="!!uploadingBannerDevice" />
                 </label>
               </div>
 
-              <div class="pub-banner-item">
-                <div class="pub-banner-item__head">
+              <div class="rounded-[10px] border border-p-border bg-p-overlay p-3">
+                <div class="flex items-center justify-between mb-2">
                   <strong>Tablet</strong>
                   <span>769px a 1024px</span>
                 </div>
-                <div v-if="bannerUrlByDevice('tablet')" class="pub-banner-preview">
+                <div v-if="bannerUrlByDevice('tablet')" class="relative rounded-lg overflow-hidden border border-p-border mb-2.5" style="aspect-ratio: 16/5;">
                   <img :src="bannerUrlByDevice('tablet')" alt="Banner tablet" />
-                  <button v-if="authStore.canEdit && project.bannerImageTabletUrl" class="pub-card__overlay-btn" @click="removeBannerImage('tablet')">Remover</button>
+                  <button v-if="authStore.canEdit && project.bannerImageTabletUrl" class="absolute bottom-2.5 right-2.5 rounded-md border border-red-500/30 bg-black/75 px-3 py-1 text-[0.72rem] text-red-500 cursor-pointer backdrop-blur-sm hover:bg-red-500/20" @click="removeBannerImage('tablet')">Remover</button>
                 </div>
-                <div v-else class="pub-banner-empty">Usará banner desktop</div>
-                <label v-if="authStore.canEdit" class="pub-card__upload-btn">
+                <div v-else class="rounded-lg border border-dashed border-p-border bg-p-raised px-3 py-4 mb-2.5 text-center text-p-text-muted text-[0.74rem]">Usará banner desktop</div>
+                <label v-if="authStore.canEdit" class="inline-block mt-3 px-4 py-1.5 rounded-lg border border-p-border bg-p-overlay text-p-text-secondary text-sm cursor-pointer transition-all hover:bg-white/[0.08]">
                   {{ uploadingBannerDevice === 'tablet' ? 'Enviando...' : 'Enviar Tablet' }}
                   <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage($event, 'tablet')" :disabled="!!uploadingBannerDevice" />
                 </label>
               </div>
 
-              <div class="pub-banner-item">
-                <div class="pub-banner-item__head">
+              <div class="rounded-[10px] border border-p-border bg-p-overlay p-3">
+                <div class="flex items-center justify-between mb-2">
                   <strong>Celular</strong>
                   <span>&lt;= 768px</span>
                 </div>
-                <div v-if="bannerUrlByDevice('mobile')" class="pub-banner-preview">
+                <div v-if="bannerUrlByDevice('mobile')" class="relative rounded-lg overflow-hidden border border-p-border mb-2.5" style="aspect-ratio: 16/5;">
                   <img :src="bannerUrlByDevice('mobile')" alt="Banner mobile" />
-                  <button v-if="authStore.canEdit && project.bannerImageMobileUrl" class="pub-card__overlay-btn" @click="removeBannerImage('mobile')">Remover</button>
+                  <button v-if="authStore.canEdit && project.bannerImageMobileUrl" class="absolute bottom-2.5 right-2.5 rounded-md border border-red-500/30 bg-black/75 px-3 py-1 text-[0.72rem] text-red-500 cursor-pointer backdrop-blur-sm hover:bg-red-500/20" @click="removeBannerImage('mobile')">Remover</button>
                 </div>
-                <div v-else class="pub-banner-empty">Usará banner tablet/desktop</div>
-                <label v-if="authStore.canEdit" class="pub-card__upload-btn">
+                <div v-else class="rounded-lg border border-dashed border-p-border bg-p-raised px-3 py-4 mb-2.5 text-center text-p-text-muted text-[0.74rem]">Usará banner tablet/desktop</div>
+                <label v-if="authStore.canEdit" class="inline-block mt-3 px-4 py-1.5 rounded-lg border border-p-border bg-p-overlay text-p-text-secondary text-sm cursor-pointer transition-all hover:bg-white/[0.08]">
                   {{ uploadingBannerDevice === 'mobile' ? 'Enviando...' : 'Enviar Celular' }}
                   <input type="file" accept="image/*" style="display:none" @change="uploadBannerImage($event, 'mobile')" :disabled="!!uploadingBannerDevice" />
                 </label>
@@ -1434,11 +1410,11 @@
             </div>
           </div>
 
-          <div v-if="activeSection === 'pub-video'" class="pub-card">
-            <h4 class="pub-card__title">Vídeo de Apresentação</h4>
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label">Link do YouTube</label>
-              <input v-model="pubInfoForm.youtubeVideoUrl" class="form-input" placeholder="https://www.youtube.com/embed/..." :disabled="!authStore.canEdit" />
+          <div v-if="activeSection === 'pub-video'" class="rounded-xl border border-p-border bg-p-raised p-5">
+            <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Vídeo de Apresentação</h4>
+            <div class="space-y-4" style="margin: 0;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Link do YouTube</label>
+              <input v-model="pubInfoForm.youtubeVideoUrl" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="https://www.youtube.com/embed/..." :disabled="!authStore.canEdit" />
               <small style="color: var(--color-surface-500); font-size: 0.7rem;">Cole a URL embed do YouTube.</small>
             </div>
             <div v-if="pubInfoForm.youtubeVideoUrl" style="margin-top: 16px; border-radius: 10px; overflow: hidden; border: 1px solid var(--glass-border-subtle); aspect-ratio: 16/9;">
@@ -1448,46 +1424,46 @@
               </div>
             </div>
             <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-              <button class="btn btn-primary btn-sm" :disabled="savingPublicVideo" @click="savePublicVideoBlock">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicVideo" @click="savePublicVideoBlock">
                 {{ savingPublicVideo ? 'Salvando...' : 'Salvar Vídeo' }}
               </button>
             </div>
           </div>
         </div>
 
-        <div v-if="activeSection === 'pub-plant'" class="pub-card pub-card--compact">
-          <h4 class="pub-card__title">Planta Interativa</h4>
+        <div v-if="activeSection === 'pub-plant'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Planta Interativa</h4>
           <p style="margin: 0 0 12px; color: var(--color-surface-400); font-size: 0.78rem;">
             A ordem desta seção na página pública pode ser alterada pelo menu lateral. O conteúdo é gerenciado no editor da planta.
           </p>
           <div style="display:flex; flex-wrap: wrap; gap: 8px;">
-            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="btn btn-primary btn-sm">
+            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Abrir Editor da Planta
             </NuxtLink>
           </div>
         </div>
 
-        <div v-if="activeSection === 'pub-panorama'" class="pub-card pub-card--compact">
-          <h4 class="pub-card__title">Panorama 360°</h4>
+        <div v-if="activeSection === 'pub-panorama'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Panorama 360°</h4>
           <p style="margin: 0 0 12px; color: var(--color-surface-400); font-size: 0.78rem;">
             A posição do bloco 360° na página pública segue a ordem definida no menu. O conteúdo é gerenciado no editor de panorama.
           </p>
           <div style="display:flex; flex-wrap: wrap; gap: 8px;">
-            <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="btn btn-primary btn-sm">
+            <NuxtLink :to="`/painel/projetos/${projectId}/panorama`" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Abrir Editor de Panorama
             </NuxtLink>
           </div>
         </div>
 
         <!-- ── Logos de Rodapé ── -->
-        <div v-if="activeSection === 'pub-logos'" class="pub-card pub-card--compact">
+        <div v-if="activeSection === 'pub-logos'" class="rounded-xl border border-p-border bg-p-raised p-5">
           <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
             <div>
-              <h4 class="pub-card__title" style="margin: 0;">Logos de Rodapé</h4>
+              <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight" style="margin: 0;">Logos de Rodapé</h4>
               <p style="margin: 4px 0 0 0; color: var(--color-surface-500); font-size: 0.75rem;">Realização e Propriedade exibidos neste projeto.</p>
             </div>
 
-            <label v-if="authStore.canEdit" class="btn btn-primary btn-sm" style="cursor: pointer;">
+            <label v-if="authStore.canEdit" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">
               {{ uploadingFooterLogo ? 'Enviando...' : '+ Adicionar Logo' }}
               <input
                 type="file"
@@ -1509,7 +1485,7 @@
               <button
                 v-if="authStore.canEdit"
                 type="button"
-                class="pub-remove-btn"
+                class="border-none bg-transparent text-p-text-muted text-xs px-1.5 py-0.5 rounded cursor-pointer hover:text-p-danger hover:bg-p-danger/10"
                 style="position: absolute; top: 6px; right: 6px;"
                 :disabled="deletingFooterLogoId === logo.id"
                 @click="deleteFooterLogo(logo.id)"
@@ -1519,95 +1495,95 @@
             </div>
           </div>
 
-          <div v-else class="pub-empty">Nenhum logo de rodapé cadastrado para este projeto.</div>
+          <div v-else class="rounded-lg bg-p-overlay px-4 py-6 text-center text-sm text-p-text-muted">Nenhum logo de rodapé cadastrado para este projeto.</div>
         </div>
 
         <!-- ── Preços & Condições ── -->
-        <div v-if="activeSection === 'pub-pricing'" class="pub-card pub-card--compact">
-          <h4 class="pub-card__title">Preços e Condições</h4>
-          <div class="pub-row pub-row--3col" style="margin-bottom: 0;">
-            <div class="form-group" style="margin:0;">
-              <label class="form-label">A partir de (R$)</label>
-              <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="form-input" placeholder="144000" :disabled="!authStore.canEdit" />
+        <div v-if="activeSection === 'pub-pricing'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Preços e Condições</h4>
+          <div class="grid grid-cols-3 gap-5 max-md:grid-cols-1" style="margin-bottom: 0;">
+            <div class="space-y-4" style="margin:0;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">A partir de (R$)</label>
+              <input v-model="pubInfoForm.startingPrice" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="144000" :disabled="!authStore.canEdit" />
             </div>
-            <div class="form-group" style="margin:0;">
-              <label class="form-label">Parcelamento (Vezes)</label>
-              <input v-model="pubInfoForm.maxInstallments" type="number" class="form-input" placeholder="180" :disabled="!authStore.canEdit" />
+            <div class="space-y-4" style="margin:0;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Parcelamento (Vezes)</label>
+              <input v-model="pubInfoForm.maxInstallments" type="number" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="180" :disabled="!authStore.canEdit" />
             </div>
-            <div class="form-group" style="margin:0;">
-              <label class="form-label">Resumo das Condições</label>
-              <input v-model="pubInfoForm.paymentConditionsSummary" class="form-input" placeholder="Entrada facilitada em 6x e saldo em 120 meses." :disabled="!authStore.canEdit" />
+            <div class="space-y-4" style="margin:0;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Resumo das Condições</label>
+              <input v-model="pubInfoForm.paymentConditionsSummary" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Entrada facilitada em 6x e saldo em 120 meses." :disabled="!authStore.canEdit" />
             </div>
           </div>
           <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-            <button class="btn btn-primary btn-sm" :disabled="savingPublicPricing" @click="savePublicPricingBlock">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicPricing" @click="savePublicPricingBlock">
               {{ savingPublicPricing ? 'Salvando...' : 'Salvar Preços e Condições' }}
             </button>
           </div>
         </div>
 
         <!-- ── Carrossel de Lotes ── -->
-        <div v-if="activeSection === 'pub-lots-carousel'" class="pub-card pub-card--compact">
-          <h4 class="pub-card__title">Carrossel de Lotes</h4>
+        <div v-if="activeSection === 'pub-lots-carousel'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Carrossel de Lotes</h4>
           <p style="margin: 0 0 12px; color: var(--color-surface-400); font-size: 0.78rem;">
             Esta seção pública exibe um carrossel automático com lotes disponíveis. No editor de páginas ela é apenas ativável, desativável e reordenável.
           </p>
 
           <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;">
-            <div class="stat-chip">
-              <span class="stat-chip-value">{{ lotStats.total }}</span>
-              <span class="stat-chip-label">Total</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.total }}</span>
+              <span class="text-p-text-muted font-medium">Total</span>
             </div>
-            <div class="stat-chip stat-chip-success">
-              <span class="stat-chip-value">{{ lotStats.available }}</span>
-              <span class="stat-chip-label">Disponíveis</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.available }}</span>
+              <span class="text-p-text-muted font-medium">Disponíveis</span>
             </div>
-            <div class="stat-chip stat-chip-warning">
-              <span class="stat-chip-value">{{ lotStats.reserved }}</span>
-              <span class="stat-chip-label">Reservados</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.reserved }}</span>
+              <span class="text-p-text-muted font-medium">Reservados</span>
             </div>
           </div>
 
           <div style="display:flex; flex-wrap: wrap; gap: 8px;">
-            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="btn btn-primary btn-sm">
+            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Abrir Gestão de Lotes na Planta
             </NuxtLink>
           </div>
         </div>
 
-        <div v-if="activeSection === PUBLIC_CATEGORY_CAROUSEL_SECTION_ID" class="pub-card pub-card--compact">
-          <h4 class="pub-card__title">Carrossel de Categorias</h4>
+        <div v-if="activeSection === PUBLIC_CATEGORY_CAROUSEL_SECTION_ID" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Carrossel de Categorias</h4>
           <p style="margin: 0 0 12px; color: var(--color-surface-400); font-size: 0.78rem;">
             Esta seção pública cria um carrossel com cards de categorias e leva o visitante direto para a página filtrada da categoria escolhida.
           </p>
 
           <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px;">
-            <div class="stat-chip stat-chip-primary">
-              <span class="stat-chip-value">{{ lotCategories.length }}</span>
-              <span class="stat-chip-label">Categorias</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotCategories.length }}</span>
+              <span class="text-p-text-muted font-medium">Categorias</span>
             </div>
-            <div class="stat-chip stat-chip-success">
-              <span class="stat-chip-value">{{ lotCategoriesWithLotsCount }}</span>
-              <span class="stat-chip-label">Com lotes</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotCategoriesWithLotsCount }}</span>
+              <span class="text-p-text-muted font-medium">Com lotes</span>
             </div>
-            <div class="stat-chip">
-              <span class="stat-chip-value">{{ lotCategoriesWithImagesCount }}</span>
-              <span class="stat-chip-label">Com imagem</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotCategoriesWithImagesCount }}</span>
+              <span class="text-p-text-muted font-medium">Com imagem</span>
             </div>
           </div>
 
-          <div v-if="!hasCategoryCarouselConfigured" class="pub-notice pub-notice--warn" style="margin-bottom: 16px;">
+          <div v-if="!hasCategoryCarouselConfigured" class="flex items-center gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.08] px-3 py-2 text-[0.78rem] leading-snug text-amber-600" style="margin-bottom: 16px;">
             Cadastre categorias com lotes vinculados para liberar esta seção na página pública.
           </div>
 
-          <div class="pub-row pub-row--2col" style="margin-bottom: 16px;">
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label">Título da seção</label>
-              <input v-model="categoryCarouselForm.title" class="form-input" :disabled="!authStore.canEdit || !hasCategoryCarouselConfigured" placeholder="Explore por categoria" />
+          <div class="grid grid-cols-2 gap-5 max-md:grid-cols-1" style="margin-bottom: 16px;">
+            <div class="space-y-4" style="margin: 0;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Título da seção</label>
+              <input v-model="categoryCarouselForm.title" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" :disabled="!authStore.canEdit || !hasCategoryCarouselConfigured" placeholder="Explore por categoria" />
             </div>
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label">Subtítulo</label>
-              <input v-model="categoryCarouselForm.subtitle" class="form-input" :disabled="!authStore.canEdit || !hasCategoryCarouselConfigured" placeholder="Apresente os grupos disponíveis antes da listagem de lotes." />
+            <div class="space-y-4" style="margin: 0;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Subtítulo</label>
+              <input v-model="categoryCarouselForm.subtitle" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" :disabled="!authStore.canEdit || !hasCategoryCarouselConfigured" placeholder="Apresente os grupos disponíveis antes da listagem de lotes." />
             </div>
           </div>
 
@@ -1623,39 +1599,39 @@
           </div>
 
           <div style="display:flex; flex-wrap: wrap; gap: 8px;">
-            <NuxtLink :to="`/painel/projetos/${projectId}/categorias`" class="btn btn-primary btn-sm">
+            <NuxtLink :to="`/painel/projetos/${projectId}/categorias`" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Abrir Gestão de Categorias
             </NuxtLink>
-            <a v-if="project?.status === 'PUBLISHED'" :href="`/${project.slug}/categorias`" target="_blank" class="btn btn-secondary btn-sm">
+            <a v-if="project?.status === 'PUBLISHED'" :href="`/${project.slug}/categorias`" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold border border-p-border text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Ver Página de Categorias
             </a>
           </div>
 
           <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-            <button class="btn btn-primary btn-sm" :disabled="!hasCategoryCarouselConfigured" @click="savePublicCategoryCarouselBlock">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasCategoryCarouselConfigured" @click="savePublicCategoryCarouselBlock">
               Salvar Carrossel de Categorias
             </button>
           </div>
         </div>
 
-        <div v-if="activeSection === 'pub-featured-lots-carousel'" class="pub-card pub-card--compact">
-          <h4 class="pub-card__title">Carrossel de Lotes em Destaque</h4>
+        <div v-if="activeSection === 'pub-featured-lots-carousel'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Carrossel de Lotes em Destaque</h4>
           <p style="margin: 0 0 12px; color: var(--color-surface-400); font-size: 0.78rem;">
             Esta é uma nova seção separada do carrossel atual. A seleção dos lotes destacados é feita no editor de lotes da planta. Aqui você controla apenas a ordem de exibição e o comportamento do carrossel.
           </p>
 
           <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px;">
-            <div class="stat-chip stat-chip-primary">
-              <span class="stat-chip-value">{{ featuredLotsCarouselForm.lotCodes.length }}</span>
-              <span class="stat-chip-label">Selecionados</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ featuredLotsCarouselForm.lotCodes.length }}</span>
+              <span class="text-p-text-muted font-medium">Selecionados</span>
             </div>
-            <div class="stat-chip stat-chip-success">
-              <span class="stat-chip-value">{{ featuredLotsSelectionPool.length }}</span>
-              <span class="stat-chip-label">Carregados</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ featuredLotsSelectionPool.length }}</span>
+              <span class="text-p-text-muted font-medium">Carregados</span>
             </div>
-            <div class="stat-chip">
-              <span class="stat-chip-value">{{ lotStats.total }}</span>
-              <span class="stat-chip-label">Total</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.total }}</span>
+              <span class="text-p-text-muted font-medium">Total</span>
             </div>
           </div>
 
@@ -1668,7 +1644,7 @@
               <input v-model="featuredLotsCarouselForm.infinite" type="checkbox" :disabled="!authStore.canEdit" />
               <span>Loop infinito</span>
             </label>
-            <NuxtLink :to="`/painel/projetos/${projectId}/planta#plant-lots-manager`" class="btn btn-secondary btn-sm">
+            <NuxtLink :to="`/painel/projetos/${projectId}/planta#plant-lots-manager`" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold border border-p-border text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Ir para Editor de Lotes
             </NuxtLink>
           </div>
@@ -1686,7 +1662,7 @@
                 </div>
               </div>
 
-              <div v-if="!selectedFeaturedLots.length" class="pub-empty" style="margin: 0;">
+              <div v-if="!selectedFeaturedLots.length" class="rounded-lg bg-p-overlay px-4 py-6 text-center text-sm text-p-text-muted" style="margin: 0;">
                 Nenhum lote destacado selecionado.
               </div>
 
@@ -1699,7 +1675,11 @@
                   <div style="min-width:0;">
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
                       <strong style="font-size:0.86rem; color: var(--color-surface-100);">{{ lot.code }}</strong>
-                      <span class="badge" :class="featuredLotStatusBadgeClass(lot.status)" style="font-size: 0.62rem;">{{ featuredLotStatusLabel(lot.status) }}</span>
+                      <UiBadge
+                        :variant="({ 'badge-success': 'success', 'badge-warning': 'warning', 'badge-danger': 'danger', 'badge-neutral': 'neutral' } as Record<string, 'success'|'warning'|'danger'|'neutral'>)[featuredLotStatusBadgeClass(lot.status)] || 'neutral'"
+                        size="sm"
+                        style="font-size: 0.62rem;"
+                      >{{ featuredLotStatusLabel(lot.status) }}</UiBadge>
                     </div>
                     <div style="font-size:0.78rem; color: var(--color-surface-300); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                       {{ lot.name || 'Lote sem nome' }}
@@ -1710,10 +1690,10 @@
                   </div>
 
                   <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                    <button type="button" class="btn btn-xs btn-outline" :disabled="!authStore.canEdit || index === 0" @click="moveFeaturedLot(index, 'up')">
+                    <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-2.5 py-1 text-xs font-semibold border border-p-accent text-p-accent hover:bg-p-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!authStore.canEdit || index === 0" @click="moveFeaturedLot(index, 'up')">
                       <i class="bi bi-chevron-up" aria-hidden="true"></i>
                     </button>
-                    <button type="button" class="btn btn-xs btn-outline" :disabled="!authStore.canEdit || index === selectedFeaturedLots.length - 1" @click="moveFeaturedLot(index, 'down')">
+                    <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg px-2.5 py-1 text-xs font-semibold border border-p-accent text-p-accent hover:bg-p-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!authStore.canEdit || index === selectedFeaturedLots.length - 1" @click="moveFeaturedLot(index, 'down')">
                       <i class="bi bi-chevron-down" aria-hidden="true"></i>
                     </button>
                   </div>
@@ -1723,56 +1703,56 @@
           </div>
 
           <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-            <button class="btn btn-primary btn-sm" :disabled="savingPublicFeaturedLotsCarousel" @click="savePublicFeaturedLotsCarouselBlock">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicFeaturedLotsCarousel" @click="savePublicFeaturedLotsCarouselBlock">
               {{ savingPublicFeaturedLotsCarousel ? 'Salvando...' : 'Salvar Lotes em Destaque' }}
             </button>
           </div>
         </div>
 
         <!-- ── Lotes Disponíveis ── -->
-        <div v-if="activeSection === 'pub-lots'" class="pub-card pub-card--compact">
-          <h4 class="pub-card__title">Lotes Disponíveis</h4>
+        <div v-if="activeSection === 'pub-lots'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Lotes Disponíveis</h4>
           <p style="margin: 0 0 12px; color: var(--color-surface-400); font-size: 0.78rem;">
             Esta seção pública é alimentada pelos lotes cadastrados e status da planta. Aqui você controla o conteúdo que aparece para o cliente.
           </p>
 
           <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;">
-            <div class="stat-chip">
-              <span class="stat-chip-value">{{ lotStats.total }}</span>
-              <span class="stat-chip-label">Total</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.total }}</span>
+              <span class="text-p-text-muted font-medium">Total</span>
             </div>
-            <div class="stat-chip stat-chip-success">
-              <span class="stat-chip-value">{{ lotStats.available }}</span>
-              <span class="stat-chip-label">Disponíveis</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.available }}</span>
+              <span class="text-p-text-muted font-medium">Disponíveis</span>
             </div>
-            <div class="stat-chip stat-chip-warning">
-              <span class="stat-chip-value">{{ lotStats.reserved }}</span>
-              <span class="stat-chip-label">Reservados</span>
+            <div class="flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-3 py-1 text-xs">
+              <span class="font-extrabold text-p-text">{{ lotStats.reserved }}</span>
+              <span class="text-p-text-muted font-medium">Reservados</span>
             </div>
           </div>
 
           <div style="display:flex; flex-wrap: wrap; gap: 8px;">
-            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="btn btn-primary btn-sm">
+            <NuxtLink :to="`/painel/projetos/${projectId}/planta`" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Abrir Gestão de Lotes na Planta
             </NuxtLink>
           </div>
         </div>
 
         <!-- ── Acompanhamento de Obras ── -->
-        <div v-if="activeSection === 'pub-construction'" class="pub-card">
-          <h4 class="pub-card__title">Acompanhamento de Obras</h4>
+        <div v-if="activeSection === 'pub-construction'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Acompanhamento de Obras</h4>
 
-          <div v-if="pubInfoForm.constructionStatus.length === 0" class="pub-empty">
+          <div v-if="pubInfoForm.constructionStatus.length === 0" class="rounded-lg bg-p-overlay px-4 py-6 text-center text-sm text-p-text-muted">
             Nenhuma etapa cadastrada. Adicione etapas para exibir o progresso da obra na página pública.
           </div>
 
-          <div v-else class="pub-works-grid">
-            <div v-for="(item, i) in pubInfoForm.constructionStatus" :key="i" class="pub-work-item">
+          <div v-else class="flex flex-col gap-3">
+            <div v-for="(item, i) in pubInfoForm.constructionStatus" :key="i" class="rounded-lg border border-p-border bg-p-overlay px-3.5 py-3">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <span style="font-weight: 600; font-size: 0.8rem;">{{ item.label }}</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span style="font-weight: 700; color: var(--color-success); font-size: 0.8rem;">{{ item.percentage }}%</span>
-                  <button v-if="authStore.canEdit" class="pub-remove-btn" @click="removeWorkStage(i)">✕</button>
+                  <button v-if="authStore.canEdit" class="border-none bg-transparent text-p-text-muted text-xs px-1.5 py-0.5 rounded cursor-pointer hover:text-p-danger hover:bg-p-danger/10" @click="removeWorkStage(i)">✕</button>
                 </div>
               </div>
               <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
@@ -1781,68 +1761,68 @@
             </div>
           </div>
 
-          <div v-if="authStore.canEdit" class="pub-inline-form" style="margin-top: 16px;">
-            <input v-model="newWorkStage.label" class="form-input" placeholder="Nome da etapa..." style="flex: 1;" />
-            <input v-model.number="newWorkStage.percentage" type="number" min="0" max="100" class="form-input" placeholder="%" style="width: 80px;" />
-            <button class="btn btn-primary btn-sm" @click="addWorkStage">Adicionar</button>
+          <div v-if="authStore.canEdit" class="flex items-center gap-2" style="margin-top: 16px;">
+            <input v-model="newWorkStage.label" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Nome da etapa..." style="flex: 1;" />
+            <input v-model.number="newWorkStage.percentage" type="number" min="0" max="100" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="%" style="width: 80px;" />
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="addWorkStage">Adicionar</button>
           </div>
 
           <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-            <button class="btn btn-primary btn-sm" :disabled="savingPublicConstruction" @click="savePublicConstructionBlock">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicConstruction" @click="savePublicConstructionBlock">
               {{ savingPublicConstruction ? 'Salvando...' : 'Salvar Acompanhamento' }}
             </button>
           </div>
         </div>
 
         <!-- ── Localização & Proximidades ── -->
-        <div v-if="activeSection === 'pub-location' || activeSection === 'pub-nearby'" class="pub-row pub-row--2col">
-          <div v-if="activeSection === 'pub-location'" class="pub-card">
-            <h4 class="pub-card__title">Localização</h4>
-            <div class="form-group" style="margin-bottom: 16px;">
-              <label class="form-label">Endereço</label>
-              <input v-model="pubInfoForm.address" class="form-input" placeholder="Av. Brasil, 1000 - Centro" :disabled="!authStore.canEdit" />
+        <div v-if="activeSection === 'pub-location' || activeSection === 'pub-nearby'" class="grid grid-cols-2 gap-5 max-md:grid-cols-1">
+          <div v-if="activeSection === 'pub-location'" class="rounded-xl border border-p-border bg-p-raised p-5">
+            <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Localização</h4>
+            <div class="space-y-4" style="margin-bottom: 16px;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Endereço</label>
+              <input v-model="pubInfoForm.address" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Av. Brasil, 1000 - Centro" :disabled="!authStore.canEdit" />
             </div>
-            <div class="form-group" style="margin: 0;">
-              <label class="form-label">Link Google Maps</label>
-              <input v-model="pubInfoForm.googleMapsUrl" class="form-input" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
+            <div class="space-y-4" style="margin: 0;">
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Link Google Maps</label>
+              <input v-model="pubInfoForm.googleMapsUrl" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Link ou Embed URL" :disabled="!authStore.canEdit" />
             </div>
 
             <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-              <button class="btn btn-primary btn-sm" :disabled="savingPublicLocation" @click="savePublicLocationBlock">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicLocation" @click="savePublicLocationBlock">
                 {{ savingPublicLocation ? 'Salvando...' : 'Salvar Localização' }}
               </button>
             </div>
           </div>
 
-          <div v-if="activeSection === 'pub-nearby'" class="pub-card">
+          <div v-if="activeSection === 'pub-nearby'" class="rounded-xl border border-p-border bg-p-raised p-5">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <h4 class="pub-card__title" style="margin: 0;">Proximidades</h4>
+              <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight" style="margin: 0;">Proximidades</h4>
               <div v-if="hasSavedAddress" class="toggle-switch" title="Exibir na página pública">
                 <input type="checkbox" id="nearby-toggle" v-model="nearbyEnabled" @change="toggleNearby" :disabled="!authStore.canEdit" />
                 <label for="nearby-toggle"></label>
               </div>
             </div>
 
-            <div v-if="!hasSavedAddress" class="pub-notice pub-notice--warn">
+            <div v-if="!hasSavedAddress" class="flex items-center gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.08] px-3 py-2 text-[0.78rem] leading-snug text-amber-600">
               Salve um endereço no bloco de Localização para habilitar as proximidades.
             </div>
 
             <template v-else>
               <div v-if="nearbyStatus" style="margin-bottom: 12px;">
-                <div v-if="nearbyStatus.status === 'ok' && nearbyStatus.itemCount > 0" class="pub-notice pub-notice--ok">
+                <div v-if="nearbyStatus.status === 'ok' && nearbyStatus.itemCount > 0" class="flex items-center gap-2 rounded-lg bg-p-success/[0.08] px-3 py-2 text-[0.78rem] leading-snug text-p-text-muted">
                   {{ nearbyStatus.itemCount }} locais encontrados
                   <span v-if="nearbyEnabled"> · visível no site</span>
                   <span v-else> · oculto</span>
                 </div>
-                <div v-else-if="nearbyStatus.status === 'error'" class="pub-notice pub-notice--error">
+                <div v-else-if="nearbyStatus.status === 'error'" class="flex items-center gap-2 rounded-lg bg-p-danger/[0.08] px-3 py-2 text-[0.78rem] leading-snug text-p-danger">
                   {{ nearbyStatus.errorMessage || 'Erro ao gerar' }}
                 </div>
-                <div v-else class="pub-notice pub-notice--neutral">
+                <div v-else class="flex items-center gap-2 rounded-lg bg-gray-500/[0.08] px-3 py-2 text-[0.78rem] leading-snug text-p-text-muted">
                   Proximidades ainda não geradas
                 </div>
               </div>
 
-              <button class="btn btn-secondary btn-sm" style="width: 100%;" @click="regenerateNearby" :disabled="!authStore.canEdit || nearbyRegenerating">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold border border-p-border text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="width: 100%;" @click="regenerateNearby" :disabled="!authStore.canEdit || nearbyRegenerating">
                 <span v-if="nearbyRegenerating">Gerando...</span>
                 <span v-else-if="nearbyStatus?.status === 'ok' && nearbyStatus?.itemCount > 0">Regerar Proximidades</span>
                 <span v-else>Gerar Proximidades</span>
@@ -1850,23 +1830,23 @@
 
               <!-- Collapsible nearby list -->
               <div v-if="nearbyStatus?.items?.length" style="margin-top: 12px;">
-                <button class="pub-collapse-toggle" @click="nearbyListExpanded = !nearbyListExpanded">
+                <button class="border-none bg-transparent text-p-text-muted text-xs cursor-pointer py-1 hover:text-p-text-secondary transition-colors" @click="nearbyListExpanded = !nearbyListExpanded">
                   {{ nearbyListExpanded ? '▾ Ocultar detalhes' : '▸ Ver ' + nearbyStatus.itemCount + ' locais encontrados' }}
                 </button>
-                <div v-if="nearbyListExpanded" class="pub-nearby-list">
+                <div v-if="nearbyListExpanded" class="mt-2 max-h-[300px] overflow-y-auto rounded-lg border border-p-border bg-p-overlay p-2.5">
                   <div v-for="group in nearbyGrouped" :key="group.category" style="margin-bottom: 10px;">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 4px 0;">
                       <span style="font-size: 0.85rem;"><i :class="['bi', nearbyCategoryIcon(group.category)]" aria-hidden="true"></i></span>
                       <span style="font-size: 0.72rem; font-weight: 700; color: var(--color-surface-200);">{{ group.categoryLabel }}</span>
                       <span style="font-size: 0.6rem; color: var(--color-surface-500);">({{ group.items.length }})</span>
                     </div>
-                    <div v-for="item in group.items" :key="item.id || item.name" class="pub-nearby-item" :style="{ opacity: item.visible === false ? 0.45 : 1, background: item.visible === false ? 'rgba(255,0,0,0.04)' : 'rgba(255,255,255,0.02)' }">
+                    <div v-for="item in group.items" :key="item.id || item.name" class="flex items-center gap-2 rounded px-2.5 py-1.5 text-[0.72rem]" :style="{ opacity: item.visible === false ? 0.45 : 1, background: item.visible === false ? 'rgba(255,0,0,0.04)' : 'rgba(255,255,255,0.02)' }">
                       <div v-if="authStore.canEdit" style="flex-shrink: 0; margin-right: 6px;">
                         <input type="checkbox" :checked="item.visible !== false" @change="toggleNearbyItemVisibility(item)" style="cursor: pointer; accent-color: var(--color-success);" title="Mostrar/ocultar na página pública" />
                       </div>
-                      <span class="pub-nearby-item__name">{{ item.name }}</span>
-                      <span class="pub-nearby-item__dist">{{ item.distanceLabel }}</span>
-                      <a :href="item.routeUrl" target="_blank" rel="noopener" class="pub-nearby-item__link">Rota ↗</a>
+                      <span class="flex-1 min-w-0 truncate text-p-text-secondary">{{ item.name }}</span>
+                      <span class="whitespace-nowrap text-[0.68rem] text-p-text-muted">{{ item.distanceLabel }}</span>
+                      <a :href="item.routeUrl" target="_blank" rel="noopener" class="whitespace-nowrap text-[0.66rem] text-blue-400 no-underline hover:underline">Rota ↗</a>
                     </div>
                   </div>
 
@@ -1877,91 +1857,91 @@
         </div>
 
         <!-- ── Infraestrutura & Destaques ── -->
-        <div v-if="activeSection === 'pub-infra' || activeSection === 'pub-highlights'" class="pub-row pub-row--2col">
+        <div v-if="activeSection === 'pub-infra' || activeSection === 'pub-highlights'" class="grid grid-cols-2 gap-5 max-md:grid-cols-1">
           <!-- Infraestrutura -->
-          <div v-if="activeSection === 'pub-infra'" class="pub-card">
-            <h4 class="pub-card__title">Infraestrutura</h4>
+          <div v-if="activeSection === 'pub-infra'" class="rounded-xl border border-p-border bg-p-raised p-5">
+            <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Infraestrutura</h4>
 
-            <div class="pub-sub-section">
-              <span class="pub-sub-label">Títulos da seção no site</span>
-              <div class="form-group" style="margin-bottom: 8px;">
-                <input v-model="pubInfoForm.highlightsTitle" class="form-input" placeholder="Sua família merece o melhor." />
+            <div class="mb-4 rounded-lg border border-p-border bg-p-overlay p-3.5">
+              <span class="mb-2.5 block text-[0.68rem] font-bold uppercase tracking-wide text-p-text-muted">Títulos da seção no site</span>
+              <div class="space-y-4" style="margin-bottom: 8px;">
+                <input v-model="pubInfoForm.highlightsTitle" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Sua família merece o melhor." />
               </div>
-              <div class="form-group" style="margin: 0;">
-                <input v-model="pubInfoForm.highlightsSubtitle" class="form-input" placeholder="Qualidade de vida, segurança..." />
+              <div class="space-y-4" style="margin: 0;">
+                <input v-model="pubInfoForm.highlightsSubtitle" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Qualidade de vida, segurança..." />
               </div>
             </div>
 
             <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'category').length">
-              <div v-for="(cat, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="cat.type === 'category'" class="pub-infra-cat">
+              <div v-for="(cat, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="cat.type === 'category'" class="mb-3 rounded-lg border border-p-border bg-p-overlay p-3.5">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                   <strong style="font-size: 0.85rem; color: var(--color-surface-100);">{{ cat.title }}</strong>
-                  <button v-if="authStore.canEdit" class="pub-remove-btn" @click="removeHighlight(idx)">✕</button>
+                  <button v-if="authStore.canEdit" class="border-none bg-transparent text-p-text-muted text-xs px-1.5 py-0.5 rounded cursor-pointer hover:text-p-danger hover:bg-p-danger/10" @click="removeHighlight(idx)">✕</button>
                 </div>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
-                  <div v-for="(it, itIdx) in cat.items" :key="itIdx" class="infra-badge-v4">
+                  <div v-for="(it, itIdx) in cat.items" :key="itIdx" class="flex items-center gap-2.5 rounded-[10px] border border-white/[0.12] bg-p-overlay px-3.5 py-2 text-[0.8125rem] font-medium">
                     {{ it }}
-                    <span v-if="authStore.canEdit" class="infra-badge-remove" @click="removeInfraItem(idx, itIdx)">✕</span>
+                    <span v-if="authStore.canEdit" class="cursor-pointer w-[18px] h-[18px] bg-white/15 rounded-full flex items-center justify-center text-[10px] transition-all hover:bg-red-500 hover:text-white" @click="removeInfraItem(idx, itIdx)">✕</span>
                   </div>
                 </div>
-                <div v-if="authStore.canEdit" class="pub-inline-form">
-                  <input v-model="infraItemInputs[idx]" @keyup.enter="addInfraItem(idx)" class="form-input" placeholder="Adicionar item..." style="flex: 1;" />
-                  <button class="btn btn-dark btn-sm" style="padding: 0 14px;" @click="addInfraItem(idx)">+</button>
+                <div v-if="authStore.canEdit" class="flex items-center gap-2">
+                  <input v-model="infraItemInputs[idx]" @keyup.enter="addInfraItem(idx)" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Adicionar item..." style="flex: 1;" />
+                  <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-semibold bg-p-overlay text-p-text border border-p-border hover:bg-p-raised transition-colors" style="padding: 0 14px;" @click="addInfraItem(idx)">+</button>
                 </div>
               </div>
             </div>
 
-            <div v-if="authStore.canEdit" class="pub-sub-section" style="margin-top: 16px;">
-              <span class="pub-sub-label">Nova Categoria</span>
-              <div class="pub-inline-form">
-                <input v-model="newInfraCategory" class="form-input" placeholder="Ex: Equipamentos" style="flex: 1;" />
-                <button class="btn btn-primary btn-sm" @click="addInfraCategory">Criar</button>
+            <div v-if="authStore.canEdit" class="mb-4 rounded-lg border border-p-border bg-p-overlay p-3.5" style="margin-top: 16px;">
+              <span class="mb-2.5 block text-[0.68rem] font-bold uppercase tracking-wide text-p-text-muted">Nova Categoria</span>
+              <div class="flex items-center gap-2">
+                <input v-model="newInfraCategory" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: Equipamentos" style="flex: 1;" />
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="addInfraCategory">Criar</button>
               </div>
             </div>
 
             <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-              <button class="btn btn-primary btn-sm" :disabled="savingPublicHighlights" @click="savePublicHighlightsBlock">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicHighlights" @click="savePublicHighlightsBlock">
                 {{ savingPublicHighlights ? 'Salvando...' : 'Salvar Infraestrutura' }}
               </button>
             </div>
           </div>
 
           <!-- Destaques -->
-          <div v-if="activeSection === 'pub-highlights'" class="pub-card">
-            <h4 class="pub-card__title">Destaques</h4>
+          <div v-if="activeSection === 'pub-highlights'" class="rounded-xl border border-p-border bg-p-raised p-5">
+            <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Destaques</h4>
 
-            <div class="pub-sub-section">
-              <span class="pub-sub-label">Títulos da seção no site</span>
-              <div class="form-group" style="margin-bottom: 8px;">
-                <input v-model="pubInfoForm.traditionalHighlightsTitle" class="form-input" placeholder="Destaques" />
+            <div class="mb-4 rounded-lg border border-p-border bg-p-overlay p-3.5">
+              <span class="mb-2.5 block text-[0.68rem] font-bold uppercase tracking-wide text-p-text-muted">Títulos da seção no site</span>
+              <div class="space-y-4" style="margin-bottom: 8px;">
+                <input v-model="pubInfoForm.traditionalHighlightsTitle" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Destaques" />
               </div>
-              <div class="form-group" style="margin: 0;">
-                <input v-model="pubInfoForm.traditionalHighlightsSubtitle" class="form-input" placeholder="Diferenciais pensados para..." />
+              <div class="space-y-4" style="margin: 0;">
+                <input v-model="pubInfoForm.traditionalHighlightsSubtitle" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Diferenciais pensados para..." />
               </div>
             </div>
 
             <div v-if="pubInfoForm.highlightsJson.filter(h => h.type === 'highlight' || !h.type).length" style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
-              <div v-for="(h, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="h.type === 'highlight' || !h.type" class="pub-highlight-item">
+              <div v-for="(h, idx) in pubInfoForm.highlightsJson" :key="idx" v-show="h.type === 'highlight' || !h.type" class="flex items-center gap-2.5 rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5">
                 <span style="color: #059669; font-size: 0.9rem;"><i :class="resolveHighlightIcon(h.icon)" aria-hidden="true"></i></span>
                 <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                   <strong style="font-size: 0.8rem;">{{ h.label }}</strong>
                   <span style="font-size: 0.72rem; color: var(--color-surface-400); margin-left: 4px;">{{ h.value }}</span>
                 </div>
-                <button v-if="authStore.canEdit" class="pub-remove-btn" @click="removeHighlight(idx)">✕</button>
+                <button v-if="authStore.canEdit" class="border-none bg-transparent text-p-text-muted text-xs px-1.5 py-0.5 rounded cursor-pointer hover:text-p-danger hover:bg-p-danger/10" @click="removeHighlight(idx)">✕</button>
               </div>
             </div>
 
-            <div v-if="authStore.canEdit" class="pub-sub-section" style="margin-top: 16px;">
-              <span class="pub-sub-label">Novo Diferencial</span>
-              <div class="pub-inline-form">
-                <input v-model="newHighlight.label" class="form-input" placeholder="Rótulo (ex: Segurança)" style="flex: 1;" />
-                <input v-model="newHighlight.value" class="form-input" placeholder="Detalhe (ex: 24h)" style="flex: 1;" />
-                <button class="btn btn-primary btn-sm" @click="addHighlight">Adicionar</button>
+            <div v-if="authStore.canEdit" class="mb-4 rounded-lg border border-p-border bg-p-overlay p-3.5" style="margin-top: 16px;">
+              <span class="mb-2.5 block text-[0.68rem] font-bold uppercase tracking-wide text-p-text-muted">Novo Diferencial</span>
+              <div class="flex items-center gap-2">
+                <input v-model="newHighlight.label" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Rótulo (ex: Segurança)" style="flex: 1;" />
+                <input v-model="newHighlight.value" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Detalhe (ex: 24h)" style="flex: 1;" />
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="addHighlight">Adicionar</button>
               </div>
             </div>
 
             <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-              <button class="btn btn-primary btn-sm" :disabled="savingPublicHighlights" @click="savePublicHighlightsBlock">
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicHighlights" @click="savePublicHighlightsBlock">
                 {{ savingPublicHighlights ? 'Salvando...' : 'Salvar Destaques' }}
               </button>
             </div>
@@ -1969,28 +1949,28 @@
         </div>
 
         <!-- ── Texto Descritivo ── -->
-        <div v-if="activeSection === 'pub-description'" class="pub-card">
-          <h4 class="pub-card__title">Texto Descritivo</h4>
-          <div class="pub-sub-section" style="margin-bottom: 12px;">
-            <span class="pub-sub-label">Título e subtítulo (opcionais)</span>
-            <div class="form-group" style="margin-bottom: 8px;">
-              <input v-model="pubInfoForm.locationTitle" class="form-input" placeholder="Ex: Sobre o empreendimento" />
+        <div v-if="activeSection === 'pub-description'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Texto Descritivo</h4>
+          <div class="mb-4 rounded-lg border border-p-border bg-p-overlay p-3.5" style="margin-bottom: 12px;">
+            <span class="mb-2.5 block text-[0.68rem] font-bold uppercase tracking-wide text-p-text-muted">Título e subtítulo (opcionais)</span>
+            <div class="space-y-4" style="margin-bottom: 8px;">
+              <input v-model="pubInfoForm.locationTitle" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: Sobre o empreendimento" />
             </div>
-            <div class="form-group" style="margin: 0;">
-              <input v-model="pubInfoForm.locationSubtitle" class="form-input" placeholder="Ex: Localização estratégica e excelente infraestrutura" />
+            <div class="space-y-4" style="margin: 0;">
+              <input v-model="pubInfoForm.locationSubtitle" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: Localização estratégica e excelente infraestrutura" />
             </div>
           </div>
 
-          <div class="form-group" style="margin: 0;">
+          <div class="space-y-4" style="margin: 0;">
             <div v-if="authStore.canEdit" class="flex gap-2" style="margin-bottom: 8px;">
-              <button class="btn btn-xs btn-outline" @click.prevent="execCommand('bold')"><b>B</b></button>
-              <button class="btn btn-xs btn-outline" @click.prevent="execCommand('italic')"><i>I</i></button>
-              <button class="btn btn-xs btn-outline" @click.prevent="execCommand('insertUnorderedList')">• Lista</button>
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-2.5 py-1 text-xs font-semibold border border-p-accent text-p-accent hover:bg-p-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click.prevent="execCommand('bold')"><b>B</b></button>
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-2.5 py-1 text-xs font-semibold border border-p-accent text-p-accent hover:bg-p-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click.prevent="execCommand('italic')"><i>I</i></button>
+              <button class="inline-flex items-center justify-center gap-2 rounded-lg px-2.5 py-1 text-xs font-semibold border border-p-accent text-p-accent hover:bg-p-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click.prevent="execCommand('insertUnorderedList')">• Lista</button>
             </div>
             <div
               ref="richEditor"
               contenteditable="true"
-              class="form-textarea rich-editor-v4"
+              class="rich-editor-v4"
               :class="{ 'disabled': !authStore.canEdit }"
               @input="updateFromEditor"
               @blur="updateFromEditor"
@@ -2000,53 +1980,53 @@
           </div>
 
           <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-            <button class="btn btn-primary btn-sm" :disabled="savingPublicDescription" @click="savePublicDescriptionBlock">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicDescription" @click="savePublicDescriptionBlock">
               {{ savingPublicDescription ? 'Salvando...' : 'Salvar Texto Descritivo' }}
             </button>
           </div>
         </div>
 
         <!-- ── Galeria de Mídia ── -->
-        <div v-if="activeSection === 'pub-gallery'" class="pub-card">
+        <div v-if="activeSection === 'pub-gallery'" class="rounded-xl border border-p-border bg-p-raised p-5">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h4 class="pub-card__title" style="margin: 0;">Galeria de Mídia</h4>
-            <label v-if="authStore.canEdit" class="btn btn-primary btn-sm" style="cursor: pointer;">
+            <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight" style="margin: 0;">Galeria de Mídia</h4>
+            <label v-if="authStore.canEdit" class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">
               {{ uploadingMedia ? 'Enviando...' : '+ Adicionar' }}
               <input type="file" accept="image/*,video/*" style="display:none" @change="uploadMediaFile" :disabled="uploadingMedia" />
             </label>
           </div>
 
-          <div v-if="media.length === 0" class="pub-empty">
+          <div v-if="media.length === 0" class="rounded-lg bg-p-overlay px-4 py-6 text-center text-sm text-p-text-muted">
             Nenhuma foto ou vídeo na galeria.
           </div>
           <div v-else style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
-            <div v-for="(m, i) in media" :key="m.id" class="media-card-v4" style="aspect-ratio: 1/1; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border-subtle);">
+            <div v-for="(m, i) in media" :key="m.id" class="relative rounded-xl overflow-hidden border border-p-border bg-p-overlay transition-all hover:border-p-accent hover:-translate-y-0.5 hover:shadow-lg group" style="aspect-ratio: 1/1; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border-subtle);">
               <img
                 v-if="m.type === 'PHOTO'"
                 :src="m.url"
-                class="media-thumb-v4"
+                class="w-full h-full object-cover block"
                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
                 :loading="i < 8 ? 'eager' : 'lazy'"
                 :fetchpriority="i < 4 ? 'high' : 'auto'"
                 decoding="async"
                 @error="retryMediaPreviewLoad"
               />
-              <video v-else :src="m.url" class="media-thumb-v4" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-              <div class="media-overlay-v4">
-                <button v-if="authStore.canEdit" class="delete-btn-circ" title="Remover" @click="deleteMedia(m.id)">✕</button>
+              <video v-else :src="m.url" class="w-full h-full object-cover block" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+              <div class="absolute inset-0 p-3 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/40 to-transparent">
+                <button v-if="authStore.canEdit" class="w-8 h-8 rounded-full border-none bg-p-raised text-red-500 text-sm cursor-pointer flex items-center justify-center ml-auto shadow-lg transition-all hover:bg-red-500 hover:text-white hover:rotate-90" title="Remover" @click="deleteMedia(m.id)">✕</button>
               </div>
             </div>
           </div>
         </div>
 
         <!-- ── Informações Legais ── -->
-        <div v-if="activeSection === 'pub-legal'" class="pub-card">
-          <h4 class="pub-card__title">Informações Legais</h4>
+        <div v-if="activeSection === 'pub-legal'" class="rounded-xl border border-p-border bg-p-raised p-5">
+          <h4 class="mb-4 text-sm font-bold text-p-text-secondary tracking-tight">Informações Legais</h4>
           <p style="font-size: 0.75rem; color: var(--color-surface-400); margin: 0 0 12px;">Texto exibido no final da página pública. Ideal para dados de registro, aprovações e licenças.</p>
-          <textarea v-model="pubInfoForm.legalNotice" class="form-textarea" rows="4" placeholder="Ex: Loteamento aprovado pela Prefeitura Municipal, através do Decreto n.º..." :disabled="!authStore.canEdit" style="font-size: 0.85rem; line-height: 1.5;"></textarea>
+          <textarea v-model="pubInfoForm.legalNotice" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" rows="4" placeholder="Ex: Loteamento aprovado pela Prefeitura Municipal, através do Decreto n.º..." :disabled="!authStore.canEdit" style="font-size: 0.85rem; line-height: 1.5;"></textarea>
 
           <div v-if="authStore.canEdit" style="margin-top: 16px; display: flex; justify-content: flex-end;">
-            <button class="btn btn-primary btn-sm" :disabled="savingPublicLegal" @click="savePublicLegalBlock">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="savingPublicLegal" @click="savePublicLegalBlock">
               {{ savingPublicLegal ? 'Salvando...' : 'Salvar Informações Legais' }}
             </button>
           </div>
@@ -2060,11 +2040,13 @@
       </div>
     </template>
 
-    <div v-else class="error-state">Projeto não encontrado.</div>
+    <div v-else class="flex flex-col items-center justify-center py-12 text-center text-p-text-muted">Projeto não encontrado.</div>
   </div>
 </template>
 
 <script setup lang="ts">
+definePageMeta({ layout: 'painel' })
+
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import {
   normalizePublicCategoryCarouselConfig,
@@ -4942,481 +4924,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ─── Project Layout: Sidebar + Content ──────────────── */
-.project-layout {
-  display: grid;
-  grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
-  gap: 24px;
-  align-items: flex-start;
-  min-height: calc(100vh - 180px);
-}
-
-.archived-project-warning {
-  margin: -12px 0 16px;
-}
-
-.project-layout.archived-readonly {
-  opacity: 0.78;
-}
-
-/* Archived mode: keep navigation available, disable only mutations */
-.project-layout.archived-readonly .project-content :is(
-  input,
-  textarea,
-  select,
-  button,
-  .btn,
-  .toggle-switch label,
-  [contenteditable="true"]
-) {
-  pointer-events: none !important;
-  user-select: none;
-}
-
-.project-layout.archived-readonly .project-content :is(input, textarea, select) {
-  opacity: 0.72;
-}
-
-.project-layout.archived-readonly .sidebar-public-actions,
-.project-layout.archived-readonly .sidebar-public-actions button {
-  pointer-events: none !important;
-  opacity: 0.5;
-}
-
-.lot-import-card {
-  margin-bottom: 16px;
-  padding: 14px;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 10px;
-  background: var(--glass-bg-heavy);
-}
-
-.lot-import-card__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.lot-import-card__head h4 {
-  margin: 0;
-  font-size: 0.92rem;
-  color: var(--color-surface-100);
-}
-
-.lot-import-card__head p {
-  margin: 4px 0 0;
-  font-size: 0.78rem;
-  color: var(--color-surface-400);
-}
-
-.lot-import-card__actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.lot-import-help {
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px dashed var(--glass-border-subtle);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.lot-import-help p {
-  margin: 0;
-  font-size: 0.74rem;
-  color: var(--color-surface-300);
-}
-
-.lot-import-help p + p {
-  margin-top: 6px;
-}
-
-.lot-import-status {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--glass-border-subtle);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.lot-import-status__row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 0.76rem;
-  color: var(--color-surface-300);
-  margin-bottom: 4px;
-}
-
-.lot-import-status__message {
-  margin: 8px 0 0;
-  font-size: 0.75rem;
-  color: var(--color-surface-400);
-}
-
-.project-sidebar {
-  position: sticky;
-  top: 16px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 14px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-  max-height: calc(100vh - 28px);
-  overflow-y: auto;
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sidebar-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sidebar-group-title {
-  margin: 0;
-  padding: 2px 2px 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-surface-400);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.sidebar-group-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sidebar-public-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.sidebar-link--public {
-  min-width: 0;
-  width: 100%;
-  padding-right: 10px;
-}
-
-.sidebar-link--public .sidebar-label {
-  white-space: normal;
-  overflow: visible;
-  line-height: 1.2;
-}
-
-.sidebar-fixed-chip {
-  margin-left: 6px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--color-surface-400);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 999px;
-  padding: 2px 7px;
-}
-
-.sidebar-public-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 4px;
-  justify-content: flex-end;
-  padding: 0;
-}
-
-.sidebar-toggle-btn {
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  background: rgba(16, 185, 129, 0.08);
-  color: var(--color-primary-300, #6ee7b7);
-  border-radius: 999px;
-  padding: 2px 8px;
-  height: 21px;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.sidebar-toggle-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.sidebar-order-btn {
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--glass-border-subtle);
-  background: var(--glass-bg-heavy);
-  color: var(--color-surface-300);
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  transition: all 0.15s ease;
-}
-
-.sidebar-order-btn:hover:not(:disabled) {
-  border-color: var(--color-primary-500);
-  color: var(--color-primary-400, #34d399);
-}
-
-.sidebar-order-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  color: var(--color-surface-400);
-  text-decoration: none;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  transition: all 0.2s;
-  cursor: pointer;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-}
-
-.sidebar-link:hover {
-  background: var(--glass-bg-heavy);
-  color: var(--color-surface-200);
-}
-
-.sidebar-link.active {
-  background: rgba(16, 185, 129, 0.14);
-  color: var(--color-primary-400, #34d399);
-  font-weight: 700;
-}
-
-.sidebar-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-  width: 20px;
-  text-align: center;
-}
-
-.sidebar-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-tools {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sidebar-tools-title {
-  margin: 0;
-  padding: 2px 2px 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-surface-300);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.sidebar-tool-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  color: var(--color-surface-400);
-  text-decoration: none;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  transition: all 0.2s;
-  background: none;
-  border: none;
-}
-
-.sidebar-tool-link--primary {
-  border: none;
-  background: none;
-  color: inherit;
-  font-weight: inherit;
-}
-
-.sidebar-tool-link:hover {
-  background: var(--glass-bg-heavy);
-  color: var(--color-surface-200);
-}
-
-.sidebar-tool-link.active {
-  border: none;
-  color: var(--color-primary-400, #34d399);
-  background: rgba(16, 185, 129, 0.14);
-  font-weight: 700;
-}
-
-.sidebar-tool-link .sidebar-icon {
-  width: 20px;
-  height: auto;
-  border-radius: 0;
-  display: inline-block;
-  background: none;
-  color: inherit;
-}
-
-.sidebar-tool-link:hover .sidebar-icon,
-.sidebar-tool-link.active .sidebar-icon {
-  background: none;
-  color: inherit;
-}
-
-.project-content {
-  flex: 1;
-  min-width: 0;
-  width: 100%;
-}
-
-.content-section {
-  animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 1024px) {
-  .project-layout {
-    grid-template-columns: 1fr;
-  }
-  .project-sidebar {
-    position: static;
-    max-height: none;
-    overflow: visible;
-    gap: 10px;
-    padding: 12px;
-    border-radius: 12px;
-  }
-  .sidebar-nav {
-    gap: 10px;
-  }
-  .sidebar-group-title {
-    padding: 2px 2px 6px;
-    font-size: 0.64rem;
-  }
-  .sidebar-tools-title {
-    padding: 2px 2px 6px;
-    font-size: 0.64rem;
-  }
-  .sidebar-group-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 4px;
-  }
-  .sidebar-public-row {
-    display: block;
-  }
-  .sidebar-public-actions {
-    display: none;
-  }
-  .sidebar-link {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-  }
-  .sidebar-tools {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 4px;
-  }
-  .sidebar-tool-link {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-  }
-}
-
-/* ─── Existing Styles ──────────────────────────────────── */
-.media-card-v4 {
-  position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border-subtle); background: var(--glass-bg-heavy); transition: all 0.2s; aspect-ratio: 16/10;
-}
-.media-card-v4:hover { border-color: var(--color-primary-500); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-.media-thumb-v4 { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.media-delete-btn-v4 { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(255, 30, 0, 0.1); color: #ff3b30; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-.media-delete-btn-v4:hover { background: #ff3b30; color: white; transform: scale(1.1); }
-
-/* Overlays para a Galeria */
-.media-overlay-v4 { position: absolute; inset: 0; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; opacity: 0; transition: opacity 0.2s; background: linear-gradient(to top, rgba(0,0,0,0.4), transparent); }
-.media-card-v4:hover .media-overlay-v4 { opacity: 1; }
-.media-type-pill { background: var(--glass-bg-heavy); color: var(--color-surface-50); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; width: fit-content; }
-.delete-btn-circ { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--glass-bg); color: #ff3b30; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-left: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-.delete-btn-circ:hover { background: #ff3b30; color: white; transform: rotate(90deg); }
-
-.media-card {
-  border: 1px solid var(--glass-border-subtle); border-radius: 8px; overflow: hidden; background: var(--glass-bg);
-}
-.media-thumb { width: 100%; height: 160px; object-fit: cover; display: block; }
-.media-info { padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: var(--color-surface-200); }
-
-.rich-editor-v4 {
-  background: var(--glass-bg) !important;
-  color: var(--color-surface-100);
-  border: 1px solid var(--glass-border) !important;
-  transition: all 0.2s;
-  outline: none;
-}
-.rich-editor-v4:focus {
-  border-color: var(--color-primary-500) !important;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
-}
-.rich-editor-v4.disabled {
-  background: var(--glass-bg-heavy) !important;
-  pointer-events: none;
-  opacity: 0.7;
-}
-.rich-editor-v4 :deep(p), .rich-editor-v4 p, .rich-editor-v4 :deep(div), .rich-editor-v4 div { margin-bottom: 0.75rem; }
-.rich-editor-v4 :deep(ul), .rich-editor-v4 ul { padding-left: 1.5rem; margin-bottom: 1rem; list-style-type: disc; }
-.rich-editor-v4 :deep(li), .rich-editor-v4 li { margin-bottom: 0.25rem; }
-.rich-editor-v4 :deep(b), .rich-editor-v4 b, .rich-editor-v4 :deep(strong), .rich-editor-v4 strong { font-weight: 700; color: var(--color-surface-50); }
-
-.provider-badge-sm {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: white;
-  text-transform: uppercase;
-}
-.provider-badge-sm.stripe { background: #635bff; }
-.provider-badge-sm.asaas { background: #0062ff; }
-.provider-badge-sm.mercado_pago { background: #009ee3; }
-.provider-badge-sm.pagar_me { background: #3c5af4; }
-.provider-badge-sm.pagseguro { background: #3fb43f; }
-
+/* Toggle Switch - requires pseudo-elements */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -5432,7 +4940,7 @@ onMounted(async () => {
   position: absolute;
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: var(--color-surface-600);
+  background-color: var(--color-surface-600, #475569);
   transition: .4s;
   border-radius: 24px;
 }
@@ -5443,113 +4951,18 @@ onMounted(async () => {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background: var(--glass-bg);
+  background: var(--glass-bg, #1e293b);
   transition: .4s;
   border-radius: 50%;
 }
 .toggle-switch input:checked + label {
-  background-color: var(--color-primary-500);
+  background-color: var(--color-primary-500, #10b981);
 }
 .toggle-switch input:checked + label:before {
   transform: translateX(20px);
 }
 
-.form-input.is-valid {
-  border-color: #10b981 !important;
-  padding-right: 32px;
-}
-.form-input.is-valid:focus {
-  border-color: #10b981 !important;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
-}
-.form-input.is-invalid {
-  border-color: #ef4444 !important;
-}
-
-/* Financing Layout */
-.financing-layout-v4 {
-  display: flex;
-  gap: 40px;
-  align-items: flex-start;
-}
-@media (max-width: 1200px) {
-  .financing-layout-v4 { flex-direction: column; }
-  .financing-preview-sidebar { width: 100% !important; flex: none !important; position: static !important; }
-}
-.financing-preview-sidebar {
-  flex: 0 0 380px;
-  position: sticky;
-  top: 20px;
-}
-.preview-header {
-  margin-bottom: 20px;
-}
-.preview-header h4 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-surface-100);
-}
-.preview-header p {
-  margin: 4px 0 0;
-  font-size: 0.85rem;
-  color: var(--color-surface-400);
-}
-
-/* Simulator V4 Styles (Panel dark theme) */
-:root {
-  --v4-primary: #60a5fa;
-  --v4-primary-light: rgba(96, 165, 250, 0.08);
-  --v4-border: rgba(255, 255, 255, 0.12);
-  --v4-text: #f5f5f7;
-  --v4-text-muted: rgba(255, 255, 255, 0.55);
-}
-
-.simulator-card-v4 {
-  background: var(--glass-bg);
-  border-radius: 24px;
-  border: 1px solid var(--v4-border);
-  overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-}
-.sim-header {
-  padding: 24px;
-  background: var(--glass-bg-heavy);
-  border-bottom: 1px solid var(--v4-border);
-}
-.sim-header .h-item { display: flex; flex-direction: column; gap: 4px; padding: 0; }
-.sim-header .l { font-size: 12px; color: var(--v4-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-.sim-header .v { font-weight: 700; color: var(--v4-primary); }
-
-.sim-body { padding: 24px; }
-
-.input-group-v4 { display: flex; flex-direction: column; gap: 8px; }
-.ig-label { font-size: 14px; font-weight: 600; color: var(--v4-text); }
-.ig-flex { display: flex; gap: 8px; }
-.ig-field { 
-  display: flex; 
-  align-items: center; 
-  background: var(--glass-bg-heavy); 
-  border: 1px solid rgba(255, 255, 255, 0.1); 
-  border-radius: 10px; 
-  padding: 0 12px;
-  flex: 1;
-}
-.ig-curr { font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.55); }
-.ig-input { 
-  border: none !important; 
-  background: transparent !important; 
-  width: 100% !important; 
-  padding: 10px 6px !important; 
-  font-size: 16px !important; 
-  font-weight: 700 !important; 
-  color: var(--v4-text) !important; 
-  outline: none !important;
-  box-shadow: none !important;
-  height: auto !important;
-}
-.ig-hint { font-size: 12px; color: rgba(255, 255, 255, 0.55); margin-top: 2px; }
-
+/* Range Slider - requires pseudo-elements */
 .range-slider-v4 {
   appearance: none;
   -webkit-appearance: none;
@@ -5565,603 +4978,38 @@ onMounted(async () => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--v4-primary);
+  background: #60a5fa;
   cursor: pointer;
   border: 3px solid white;
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
-.slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255, 255, 255, 0.55); font-weight: 600; }
-
-.sim-result-v4 {
-  margin-top: 30px;
-  background: var(--v4-primary-light);
-  padding: 24px;
-  border-radius: 16px;
-  text-align: center;
-  border: 1px solid rgba(96, 165, 250, 0.15);
-}
-.r-label { font-size: 13px; font-weight: 600; color: var(--v4-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-.r-value { font-weight: 800; color: var(--v4-primary); letter-spacing: -1px; }
-.r-detail { font-size: 12px; color: var(--v4-primary); opacity: 0.8; font-weight: 600; margin-top: 4px; }
-
-.sim-disclaimer-v4 {
-  margin-top: 20px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.5;
-  text-align: center;
-}
-
-/* Standardized Remove Buttons */
-.btn-remove-v4 {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ff3b30; /* Apple Red */
-  border: 2px solid white;
-  color: white;
-  cursor: pointer;
-  padding: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  font-size: 12px;
+/* Rich Editor - requires :deep() selectors */
+.rich-editor-v4 {
+  background: var(--glass-bg, #1e293b) !important;
+  color: var(--color-surface-100, #f1f5f9);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.18)) !important;
   transition: all 0.2s;
-  z-index: 10;
+  outline: none;
 }
-.btn-remove-v4:hover {
-  transform: scale(1.1);
-  background: #d70015;
+.rich-editor-v4:focus {
+  border-color: var(--color-primary-500, #10b981) !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
 }
+.rich-editor-v4.disabled {
+  background: var(--glass-bg-heavy, #0f172a) !important;
+  pointer-events: none;
+  opacity: 0.7;
+}
+.rich-editor-v4 :deep(p), .rich-editor-v4 p, .rich-editor-v4 :deep(div), .rich-editor-v4 div { margin-bottom: 0.75rem; }
+.rich-editor-v4 :deep(ul), .rich-editor-v4 ul { padding-left: 1.5rem; margin-bottom: 1rem; list-style-type: disc; }
+.rich-editor-v4 :deep(li), .rich-editor-v4 li { margin-bottom: 0.25rem; }
+.rich-editor-v4 :deep(b), .rich-editor-v4 b, .rich-editor-v4 :deep(strong), .rich-editor-v4 strong { font-weight: 700; color: var(--color-surface-50, #f8fafc); }
 
-/* Infrastructure Badges */
-.infra-badge-v4 {
-  background: var(--glass-bg-heavy);
-  color: var(--color-surface-50);
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+/* Fade-in keyframe for section animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-.infra-badge-remove {
-  cursor: pointer;
-  width: 18px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--color-surface-50);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  transition: all 0.2s;
-}
-.infra-badge-remove:hover {
-  background: #ff3b30;
-  color: white;
-}
-
-/* Fix for button contrast issues */
-.btn-sm.btn-secondary {
-  background: var(--glass-bg-heavy) !important;
-  color: #fff !important;
-  border: none !important;
-}
-
-.modal-actions .btn-secondary {
-  background: var(--glass-bg-heavy) !important;
-  color: var(--color-surface-100) !important;
-  border: 1px solid var(--glass-border) !important;
-}
-
-.modal-actions .btn-primary {
-  background: #3b82f6 !important;
-  color: #fff !important;
-  border: none !important;
-}
-
-.lot-edit-overlay {
-  background:
-    radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 34%),
-    linear-gradient(180deg, rgba(3, 7, 18, 0.82), rgba(3, 7, 18, 0.9));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.lot-edit-modal {
-  background: linear-gradient(180deg, rgba(12, 19, 33, 0.96), rgba(8, 14, 27, 0.98));
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.52);
-}
-
-.lot-edit-modal__header {
-  align-items: flex-start;
-  padding-right: 48px;
-}
-
-.lot-edit-modal__eyebrow {
-  display: inline-flex;
-  margin-bottom: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.16);
-  border: 1px solid rgba(96, 165, 250, 0.28);
-  color: #bfdbfe;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.lot-edit-modal__subtitle {
-  margin: 8px 0 0;
-  color: rgba(226, 232, 240, 0.72);
-  font-size: 0.85rem;
-  line-height: 1.45;
-  max-width: 56ch;
-}
-
-.lot-edit-modal__close {
-  background: rgba(15, 23, 42, 0.9);
-}
-
-.lot-edit-modal__fieldset {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.lot-edit-section {
-  padding: 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.54));
-}
-
-.lot-edit-section--panorama {
-  background: linear-gradient(180deg, rgba(8, 47, 73, 0.42), rgba(15, 23, 42, 0.58));
-}
-
-.lot-edit-section__head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.lot-edit-section__hint {
-  margin: -4px 0 0;
-  color: rgba(203, 213, 225, 0.72);
-  font-size: 0.8rem;
-  line-height: 1.45;
-}
-
-.lot-edit-section__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.86);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  color: #e2e8f0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.lot-edit-empty {
-  border: 1px dashed rgba(148, 163, 184, 0.22);
-  background: rgba(15, 23, 42, 0.58) !important;
-}
-
-.lot-edit-empty p {
-  color: rgba(226, 232, 240, 0.8);
-}
-
-.lot-edit-gallery-grid {
-  align-items: start;
-}
-
-.lot-edit-panorama-card {
-  border: 1px solid rgba(96, 165, 250, 0.24);
-  box-shadow: 0 16px 34px rgba(2, 6, 23, 0.32);
-}
-
-.lot-edit-upload-btn {
-  background: rgba(30, 41, 59, 0.92) !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(148, 163, 184, 0.2) !important;
-  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.24);
-}
-
-.lot-edit-upload-btn:hover {
-  background: rgba(37, 99, 235, 0.9) !important;
-  border-color: rgba(96, 165, 250, 0.34) !important;
-}
-
-.lot-edit-modal__actions {
-  margin-top: 28px !important;
-  padding-top: 22px;
-}
-
-.lot-edit-btn-secondary {
-  background: rgba(15, 23, 42, 0.9) !important;
-  color: #e2e8f0 !important;
-  border: 1px solid rgba(148, 163, 184, 0.22) !important;
-}
-
-.lot-edit-btn-primary {
-  background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.28);
-}
-
-@media (max-width: 900px) {
-  .lot-edit-section__head {
-    flex-direction: column;
-  }
-
-  .lot-edit-modal__subtitle {
-    max-width: none;
-  }
-}
-
-/* Project Stats Bar */
-.project-stats-bar {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.stat-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: var(--glass-bg-heavy);
-  border-radius: 8px;
-  border: 1px solid var(--glass-border-subtle);
-  font-size: 0.75rem;
-}
-
-.stat-chip-value {
-  font-weight: 800;
-  color: var(--color-surface-100);
-}
-
-.stat-chip-label {
-  color: var(--color-surface-400);
-  font-weight: 500;
-}
-
-.stat-chip-success .stat-chip-value { color: #10b981; }
-.stat-chip-warning .stat-chip-value { color: #f59e0b; }
-.stat-chip-danger .stat-chip-value { color: #ef4444; }
-
-/* ── Página Pública layout ── */
-.pub-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.pub-row {
-  display: grid;
-  gap: 20px;
-}
-.pub-row--2col {
-  grid-template-columns: 1fr 1fr;
-}
-.pub-row--3col {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.pub-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 12px;
-  padding: 20px;
-}
-.pub-card--compact {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.pub-card__title {
-  margin: 0 0 16px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-surface-200);
-  letter-spacing: -0.01em;
-}
-
-.pub-card__overlay-btn {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.75);
-  color: #ef4444;
-  border: 1px solid rgba(239,68,68,0.3);
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-}
-.pub-card__overlay-btn:hover {
-  background: rgba(239,68,68,0.2);
-}
-
-.pub-card__upload-btn {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 6px 16px;
-  background: var(--glass-bg-heavy);
-  border: 1px solid var(--glass-border-subtle);
-  color: var(--color-surface-200);
-  font-size: 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.pub-card__upload-btn:hover {
-  background: rgba(255,255,255,0.08);
-}
-
-/* Empty / notices */
-.pub-empty {
-  padding: 24px 16px;
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--color-surface-500);
-  background: var(--glass-bg-heavy);
-  border-radius: 8px;
-}
-
-.pub-notice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
-.pub-notice--warn {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.15);
-  color: #d97706;
-}
-.pub-notice--ok {
-  background: rgba(16, 185, 129, 0.08);
-  color: var(--color-surface-400);
-}
-.pub-notice--error {
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
-}
-.pub-notice--neutral {
-  background: rgba(107, 114, 128, 0.08);
-  color: var(--color-surface-400);
-}
-
-/* Work stages */
-.pub-works-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.pub-work-item {
-  background: var(--glass-bg-heavy);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 8px;
-  padding: 12px 14px;
-}
-
-/* Inline forms */
-.pub-inline-form {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Sub-sections */
-.pub-sub-section {
-  background: var(--glass-bg-heavy);
-  border-radius: 8px;
-  padding: 14px;
-  border: 1px solid var(--glass-border-subtle);
-  margin-bottom: 16px;
-}
-.pub-sub-label {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-surface-500);
-  letter-spacing: 0.04em;
-  margin-bottom: 10px;
-}
-
-/* Infra categories */
-.pub-infra-cat {
-  background: var(--glass-bg-heavy);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 8px;
-  padding: 14px;
-  margin-bottom: 12px;
-}
-
-/* Highlights list */
-.pub-highlight-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 8px;
-  background: var(--glass-bg);
-}
-
-/* Remove button */
-.pub-remove-btn {
-  background: transparent;
-  border: none;
-  color: var(--color-surface-500);
-  cursor: pointer;
-  font-size: 0.75rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  line-height: 1;
-}
-.pub-remove-btn:hover {
-  color: #ef4444;
-  background: rgba(239,68,68,0.1);
-}
-
-/* Collapsible nearby */
-.pub-collapse-toggle {
-  background: none;
-  border: none;
-  color: var(--color-surface-400);
-  font-size: 0.75rem;
-  cursor: pointer;
-  padding: 4px 0;
-  transition: color 0.15s;
-}
-.pub-collapse-toggle:hover {
-  color: var(--color-surface-200);
-}
-.pub-nearby-list {
-  margin-top: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 8px;
-  padding: 10px;
-  background: var(--glass-bg-heavy);
-}
-.pub-nearby-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
-  font-size: 0.72rem;
-  border-radius: 4px;
-}
-.pub-nearby-item__name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-surface-300);
-}
-.pub-nearby-item__dist {
-  color: var(--color-surface-500);
-  white-space: nowrap;
-  font-size: 0.68rem;
-}
-.pub-nearby-item__link {
-  color: #60a5fa;
-  font-size: 0.66rem;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.pub-nearby-item__link:hover {
-  text-decoration: underline;
-}
-
-.pub-banner-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  max-width: 820px;
-}
-
-.pub-banner-item {
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: 10px;
-  padding: 12px;
-  background: var(--glass-bg-heavy);
-}
-
-.pub-banner-item__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.pub-banner-item__head strong {
-  font-size: 0.84rem;
-  color: var(--color-surface-200);
-}
-
-.pub-banner-item__head span {
-  font-size: 0.72rem;
-  color: var(--color-surface-500);
-}
-
-.pub-banner-preview {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--glass-border-subtle);
-  aspect-ratio: 16 / 5;
-  margin-bottom: 10px;
-}
-
-.pub-banner-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.pub-banner-empty {
-  border: 1px dashed var(--glass-border-subtle);
-  background: var(--glass-bg);
-  border-radius: 8px;
-  padding: 16px 12px;
-  margin-bottom: 10px;
-  text-align: center;
-  color: var(--color-surface-500);
-  font-size: 0.74rem;
-}
-
-/* Save bar */
-.pub-save-bar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 16px;
-  padding-top: 20px;
-  border-top: 1px solid var(--glass-border-subtle);
-}
-
-/* Responsive */
-@media (max-width: 900px) {
-  .pub-row--2col,
-  .pub-row--3col {
-    grid-template-columns: 1fr;
-  }
-}
-
-.reservation-section { margin-bottom: 16px; }
-.reservation-section p { font-size: 0.875rem; margin-bottom: 4px; }
-.reservation-section-label { font-size: 0.6875rem; text-transform: uppercase; color: var(--color-surface-400); font-weight: 600; margin-bottom: 8px !important; letter-spacing: 0.05em; }
 </style>
+

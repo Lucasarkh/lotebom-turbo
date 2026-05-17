@@ -3,8 +3,10 @@
     <button
       v-for="snap in snapshots"
       :key="snap.id"
-      class="timeline-btn"
-      :class="{ 'timeline-btn--active': snap.id === activeSnapshotId }"
+      :class="[
+        'timeline-btn',
+        snap.id === activeSnapshotId && 'timeline-btn--active'
+      ]"
       @click="$emit('select', snap)"
     >
       {{ snap.label }}

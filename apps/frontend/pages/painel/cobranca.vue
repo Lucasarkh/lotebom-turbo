@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'painel' })
 
 const { get, post, put, delete: del } = useApi()
 const toast = useToast()
@@ -386,182 +386,151 @@ function computeVolumeTiers(table: any) {
   }))
 }
 
-const billingStatusLabel: Record<string, { label: string; cls: string }> = {
-  OK: { label: 'Em dia', cls: 'badge-success' },
-  GRACE_PERIOD: { label: 'Pendente', cls: 'badge-warning' },
-  INADIMPLENTE: { label: 'Inadimplente', cls: 'badge-error' },
-  CANCELLED: { label: 'Cancelado', cls: 'badge-error' },
+const billingStatusLabel: Record<string, { label: string; variant: string }> = {
+  OK: { label: 'Em dia', variant: 'success' },
+  GRACE_PERIOD: { label: 'Pendente', variant: 'warning' },
+  INADIMPLENTE: { label: 'Inadimplente', variant: 'danger' },
+  CANCELLED: { label: 'Cancelado', variant: 'danger' },
 }
 
 onMounted(fetchData)
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="space-y-6">
     <!-- Header -->
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Cobrança por Projeto</h1>
-        <p class="page-subtitle">Gerencie tabelas de preço e assinaturas de cada loteadora.</p>
-      </div>
-      <button class="btn btn-primary" @click="openPricingTableModal()">
-        + Nova Tabela de Preço
-      </button>
-    </div>
+    <UiPageHeader title="Cobrança por Projeto" description="Gerencie tabelas de preço e assinaturas de cada loteadora.">
+      <template #actions>
+        <UiButton variant="primary" @click="openPricingTableModal()">+ Nova Tabela de Preço</UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="loading" class="flex justify-center p-12">
-      <div class="loader"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
     <template v-else>
       <!-- Pricing Tables Section -->
-      <section class="mb-8">
-        <h2 class="section-title">Tabelas de Preço (Desconto por Volume)</h2>
+      <section class="space-y-4">
+        <h2 class="border-b border-p-border pb-2 text-lg font-semibold text-p-text">Tabelas de Preço (Desconto por Volume)</h2>
         <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));">
-          <div v-for="table in pricingTables" :key="table.id" class="card pricing-table-card">
-            <div class="flex justify-between items-start mb-3">
+          <div v-for="table in pricingTables" :key="table.id" class="rounded-xl border-l-4 border-l-violet-500 border border-p-border bg-p-elevated p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+            <div class="mb-3 flex items-start justify-between">
               <div>
-                <h4 class="fw-bold mb-1"><i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ table.name }}</h4>
-                <span v-if="table.isDefault" class="badge badge-accent">Padrão</span>
+                <h4 class="font-bold text-p-text">{{ table.name }}</h4>
+                <UiBadge v-if="table.isDefault" variant="primary">Padrão</UiBadge>
               </div>
               <div class="flex gap-2">
-                <button class="btn btn-sm btn-outline" @click="openPricingTableModal(table)"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-                <button class="btn btn-sm btn-ghost" style="color: #ef4444;" @click="deletePricingTable(table.id)"><i class="bi bi-trash3-fill" aria-hidden="true"></i></button>
+                <UiButton variant="secondary" size="sm" @click="openPricingTableModal(table)">Editar</UiButton>
+                <UiButton variant="ghost" size="sm" class="text-p-danger" @click="deletePricingTable(table.id)">Excluir</UiButton>
               </div>
             </div>
-            <p v-if="table.description" class="text-sm mb-3" style="color: var(--color-surface-400);">{{ table.description }}</p>
+            <p v-if="table.description" class="mb-3 text-sm text-p-text-muted">{{ table.description }}</p>
 
             <!-- Volume pricing table -->
-            <div class="volume-table">
-              <div class="volume-row volume-header">
-                <span class="vol-col-qty">Quantidade</span>
-                <span class="vol-col-unit">Valor/Projeto</span>
-                <span class="vol-col-total">Total Mensal</span>
-                <span class="vol-col-disc">Desconto</span>
+            <div class="overflow-hidden rounded-lg border border-p-border">
+              <div class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-2 bg-violet-500/10 px-3.5 py-2.5 text-xs font-bold uppercase tracking-wide text-p-text-muted">
+                <span>Quantidade</span>
+                <span class="text-right">Valor/Projeto</span>
+                <span class="text-right">Total Mensal</span>
+                <span class="text-right">Desconto</span>
               </div>
               <div
                 v-for="tier in computeVolumeTiers(table)"
                 :key="tier.projectNumber"
-                class="volume-row"
+                class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-2 border-t border-p-border px-3.5 py-2.5 text-sm"
               >
-                <span class="vol-col-qty fw-bold">{{ tier.projectNumber }}{{ tier.isLast ? ' ou mais' : '' }}</span>
-                <span class="vol-col-unit">{{ formatCents(tier.unitPriceCents) }}</span>
-                <span class="vol-col-total">{{ formatCents(tier.totalCents) }}{{ tier.isLast ? '+' : '' }}</span>
-                <span class="vol-col-disc" :class="{ 'discount-active': tier.discountPercent > 0 }">
+                <span class="font-semibold text-p-text">{{ tier.projectNumber }}{{ tier.isLast ? ' ou mais' : '' }}</span>
+                <span class="text-right text-p-text-secondary">{{ formatCents(tier.unitPriceCents) }}</span>
+                <span class="text-right font-semibold text-p-accent">{{ formatCents(tier.totalCents) }}{{ tier.isLast ? '+' : '' }}</span>
+                <span class="text-right" :class="tier.discountPercent > 0 ? 'font-bold text-p-success' : 'text-p-text-muted'">
                   {{ tier.discountPercent > 0 ? `${tier.discountPercent}%` : '—' }}
                 </span>
               </div>
             </div>
 
-            <div class="text-sm mt-2" style="color: var(--color-surface-500);">
+            <div class="mt-2 text-sm text-p-text-muted">
               {{ (table._count?.tenants || 0) }} loteadora(s) usando
             </div>
           </div>
         </div>
-        <div v-if="pricingTables.length === 0" class="empty-hint">
+        <div v-if="pricingTables.length === 0" class="py-8 text-center text-sm text-p-text-muted">
           Nenhuma tabela de preço cadastrada. Clique em "+ Nova Tabela de Preço" para começar.
         </div>
       </section>
 
       <!-- Tenants Billing Table -->
-      <section>
-        <h2 class="section-title">Assinaturas por Loteadora</h2>
-        <div class="table-wrapper">
-          <table>
+      <section class="space-y-4">
+        <h2 class="border-b border-p-border pb-2 text-lg font-semibold text-p-text">Assinaturas por Loteadora</h2>
+        <div class="overflow-x-auto rounded-xl border border-p-border">
+          <table class="w-full text-sm">
             <thead>
-              <tr>
-                <th>Loteadora</th>
-                <th>Tabela de Preço</th>
-                <th>Desc. Adicional / Grátis</th>
-                <th>Período de Teste</th>
-                <th>Status</th>
-                <th>Stripe</th>
-                <th>Ações</th>
+              <tr class="border-b border-p-border bg-p-raised text-left text-xs font-semibold uppercase tracking-wider text-p-text-muted">
+                <th class="px-4 py-3">Loteadora</th>
+                <th class="px-4 py-3">Tabela de Preço</th>
+                <th class="px-4 py-3">Desc. Adicional / Grátis</th>
+                <th class="px-4 py-3">Período de Teste</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Stripe</th>
+                <th class="px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="t in tenants" :key="t.id">
-                <td>
-                  <div style="font-weight: 600;">{{ t.name }}</div>
-                  <div class="text-sm" style="color: var(--color-surface-400);">{{ t.slug }}</div>
+              <tr v-for="t in tenants" :key="t.id" class="border-b border-p-border last:border-b-0">
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-p-text">{{ t.name }}</div>
+                  <div class="text-xs text-p-text-muted">{{ t.slug }}</div>
                 </td>
-                <td>
-                  <span v-if="t.pricingTableId" class="badge badge-accent">
-                    {{ getTenantPricingTableName(t) }}
-                  </span>
-                  <span v-else class="text-sm" style="color: var(--color-surface-400);">Auto (padrão)</span>
+                <td class="px-4 py-3">
+                  <UiBadge v-if="t.pricingTableId" variant="primary">{{ getTenantPricingTableName(t) }}</UiBadge>
+                  <span v-else class="text-xs text-p-text-muted">Auto (padrão)</span>
                 </td>
-                <td>
-                  <div class="flex gap-2 flex-wrap">
-                    <span v-if="t.discountPercent > 0" class="badge badge-success">
-                      -{{ t.discountPercent }}% add.
-                    </span>
-                    <span v-if="t.freeProjects > 0" class="badge badge-outline">
-                      {{ t.freeProjects }} grátis
-                    </span>
-                    <span v-if="!t.discountPercent && !t.freeProjects" class="text-sm" style="color: var(--color-surface-400);">—</span>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-2">
+                    <UiBadge v-if="t.discountPercent > 0" variant="success">-{{ t.discountPercent }}% add.</UiBadge>
+                    <UiBadge v-if="t.freeProjects > 0" variant="neutral">{{ t.freeProjects }} grátis</UiBadge>
+                    <span v-if="!t.discountPercent && !t.freeProjects" class="text-xs text-p-text-muted">—</span>
                   </div>
                 </td>
-                <td>
-                  <div class="flex gap-2 flex-wrap" style="align-items: center;">
-                    <span v-if="getTrialMeta(t).active" class="badge badge-success">
-                      Ativo ({{ t.trialMonths || 1 }}m)
-                    </span>
-                    <span v-else-if="t.trialInterruptedAt" class="badge badge-warning">
-                      Interrompido
-                    </span>
-                    <span v-else-if="t.trialStartedAt" class="badge badge-outline">
-                      Encerrado
-                    </span>
-                    <span v-else class="text-sm" style="color: var(--color-surface-400);">Não iniciado</span>
-                    <div v-if="t.trialStartedAt" class="text-xs" style="color: var(--color-surface-500); width: 100%;">
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <UiBadge v-if="getTrialMeta(t).active" variant="success">Ativo ({{ t.trialMonths || 1 }}m)</UiBadge>
+                    <UiBadge v-else-if="t.trialInterruptedAt" variant="warning">Interrompido</UiBadge>
+                    <UiBadge v-else-if="t.trialStartedAt" variant="neutral">Encerrado</UiBadge>
+                    <span v-else class="text-xs text-p-text-muted">Não iniciado</span>
+                    <div v-if="t.trialStartedAt" class="w-full text-xs text-p-text-muted">
                       Fim previsto: {{ formatTrialEndDate(t) }}
                     </div>
                   </div>
                 </td>
-                <td>
-                  <span class="badge" :class="billingStatusLabel[t.billingStatus]?.cls || 'badge-outline'">
+                <td class="px-4 py-3">
+                  <UiBadge :variant="(billingStatusLabel[t.billingStatus]?.variant as any) || 'default'">
                     {{ billingStatusLabel[t.billingStatus]?.label || t.billingStatus || 'OK' }}
-                  </span>
+                  </UiBadge>
                 </td>
-                <td>
-                  <code v-if="t.stripeCustomerId" class="text-sm">{{ t.stripeCustomerId }}</code>
-                  <span v-else class="text-sm" style="color: var(--color-surface-400);">—</span>
+                <td class="px-4 py-3">
+                  <code v-if="t.stripeCustomerId" class="text-xs text-p-text-secondary">{{ t.stripeCustomerId }}</code>
+                  <span v-else class="text-xs text-p-text-muted">—</span>
                 </td>
-                <td>
-                  <div class="flex gap-2 flex-wrap">
-                    <button class="btn btn-sm btn-primary" @click="openAssignModal(t)" title="Atribuir tabela de preço">
-                      <i class="bi bi-clipboard-check" aria-hidden="true"></i> Tabela
-                    </button>
-                    <button class="btn btn-sm btn-outline" @click="openLimitsModal(t)" title="Ver limites de projeto">
-                      <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i> Limites
-                    </button>
-                    <button class="btn btn-sm btn-outline" @click="openAnchorModal(t)" title="Definir vencimento">
-                      <i class="bi bi-calendar-event-fill" aria-hidden="true"></i> Vencimento
-                    </button>
-                    <button class="btn btn-sm btn-outline" @click="openTrialModal(t)" title="Definir período de teste">
-                      <i class="bi bi-hourglass-split" aria-hidden="true"></i> Teste
-                    </button>
-                    <button
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-2">
+                    <UiButton variant="primary" size="sm" @click="openAssignModal(t)" title="Atribuir tabela de preço">Tabela</UiButton>
+                    <UiButton variant="secondary" size="sm" @click="openLimitsModal(t)" title="Ver limites de projeto">Limites</UiButton>
+                    <UiButton variant="secondary" size="sm" @click="openAnchorModal(t)" title="Definir vencimento">Vencimento</UiButton>
+                    <UiButton variant="secondary" size="sm" @click="openTrialModal(t)" title="Definir período de teste">Teste</UiButton>
+                    <UiButton
                       v-if="getTrialMeta(t).active"
-                      class="btn btn-sm btn-ghost"
-                      style="color: #f59e0b;"
+                      variant="ghost"
+                      size="sm"
+                      class="text-p-warning"
                       @click="interruptTrial(t)"
                       title="Interromper período de teste imediatamente"
-                    >
-                      <i class="bi bi-stop-circle-fill" aria-hidden="true"></i> Interromper
-                    </button>
-                    <button class="btn btn-sm btn-accent" @click="syncSubscription(t)" title="Sincronizar assinatura no Stripe">
-                      <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Sync
-                    </button>
-                    <button class="btn btn-sm btn-ghost" @click="fixPaymentMethods(t)" title="Habilitar boleto na assinatura existente">
-                      <i class="bi bi-wrench-adjustable-circle-fill" aria-hidden="true"></i> Boleto
-                    </button>
+                    >Interromper</UiButton>
+                    <UiButton variant="primary" size="sm" @click="syncSubscription(t)" title="Sincronizar assinatura no Stripe">Sync</UiButton>
+                    <UiButton variant="ghost" size="sm" @click="fixPaymentMethods(t)" title="Habilitar boleto na assinatura existente">Boleto</UiButton>
                   </div>
                 </td>
               </tr>
               <tr v-if="tenants.length === 0">
-                <td colspan="7" class="text-center py-4" style="color: var(--color-surface-400);">
+                <td colspan="7" class="px-4 py-8 text-center text-p-text-muted">
                   Nenhuma loteadora cadastrada.
                 </td>
               </tr>
@@ -572,487 +541,300 @@ onMounted(fetchData)
     </template>
 
     <!-- ─── Pricing Table Modal (Volume Pricing) ───────── -->
-    <div v-if="showPricingTableModal" class="modal-overlay">
-      <div class="modal modal-lg" @click.stop>
-        <div class="modal-header">
-          <div>
-            <h3>{{ pricingTableForm.id ? 'Editar' : 'Nova' }} Tabela de Preço</h3>
-            <p class="text-sm" style="color: var(--color-surface-400); margin: 0;">
-              Defina o preço base por projeto e os descontos por volume.
-            </p>
-          </div>
-          <button class="modal-close" @click="showPricingTableModal = false">&times;</button>
-        </div>
-        <form @submit.prevent="savePricingTable" class="modal-body">
-          <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
-            <div class="form-group">
-              <label class="form-label">Nome da Tabela</label>
-              <input v-model="pricingTableForm.name" class="form-input" placeholder="Ex: Tabela Padrão" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Descrição</label>
-              <input v-model="pricingTableForm.description" class="form-input" placeholder="Opcional" />
-            </div>
-          </div>
-
-          <!-- Base price -->
-          <div class="form-group mt-4">
-            <label class="form-label">Preço base por projeto (1 empreendimento)</label>
-            <div class="input-with-prefix">
-              <span class="input-prefix">R$</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                v-model="pricingTableForm.basePriceReais"
-                class="form-input"
-                placeholder="1200.00"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Volume discount tiers -->
-          <div class="form-group mt-4">
-            <label class="form-label mb-2">Descontos por Volume</label>
-            <p class="text-sm mb-3" style="color: var(--color-surface-400);">
-              Quando o cliente tem mais projetos, todos recebem o mesmo desconto de volume.
-              O último nível se repete para quantidades maiores.
-            </p>
-
-            <div class="tiers-editor">
-              <!-- Tier 1 is always 0% (base price) -->
-              <div class="tier-edit-row tier-base">
-                <div class="tier-num-badge">#1</div>
-                <div class="flex-1 tier-base-label">
-                  1 empreendimento — preço cheio (sem desconto)
-                </div>
-              </div>
-
-              <!-- Volume tiers 2+ -->
-              <div v-for="(vt, idx) in pricingTableForm.volumeTiers" :key="idx" class="tier-edit-row">
-                <div class="tier-num-badge">#{{ vt.projectNumber }}</div>
-                <div class="flex-row-inputs">
-                  <div class="input-group">
-                    <label class="input-group-label">Empreendimentos</label>
-                    <input
-                      type="number"
-                      min="2"
-                      v-model.number="vt.projectNumber"
-                      class="form-input input-sm"
-                      style="width: 80px;"
-                    />
-                  </div>
-                  <div class="input-group">
-                    <label class="input-group-label">Desconto (%)</label>
-                    <div class="input-with-suffix">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        v-model.number="vt.discountPercent"
-                        class="form-input input-sm"
-                        style="width: 80px;"
-                        required
-                      />
-                      <span class="input-suffix">%</span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-ghost"
-                  style="color: #ef4444;"
-                  @click="removeVolumeTier(idx)"
-                >✕</button>
-              </div>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline mt-3" @click="addVolumeTier">
-              + Adicionar Nível de Volume
-            </button>
-          </div>
-
-          <!-- Preview table -->
-          <div v-if="volumePreview.length > 0" class="form-group mt-4">
-            <label class="form-label mb-2">Pré-visualização</label>
-            <div class="volume-table">
-              <div class="volume-row volume-header">
-                <span class="vol-col-qty">Quantidade</span>
-                <span class="vol-col-unit">Valor/Empreendimento</span>
-                <span class="vol-col-total">Valor Total Mensal</span>
-                <span class="vol-col-disc">Desconto Aplicado</span>
-              </div>
-              <div v-for="row in volumePreview" :key="row.projectNumber" class="volume-row">
-                <span class="vol-col-qty fw-bold">
-                  {{ row.projectNumber }}{{ row.isLast ? ' ou mais' : '' }}
-                  {{ row.projectNumber === 1 ? 'empreendimento' : 'empreendimentos' }}
-                </span>
-                <span class="vol-col-unit">{{ formatCents(row.unitPriceCents) }}</span>
-                <span class="vol-col-total">{{ formatCents(row.totalCents) }}{{ row.isLast ? '+' : '' }}</span>
-                <span class="vol-col-disc" :class="{ 'discount-active': row.discountPercent > 0 }">
-                  {{ row.discountPercent > 0 ? `${row.discountPercent}%` : '0%' }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="btn btn-ghost" @click="showPricingTableModal = false">Cancelar</button>
-            <button type="submit" class="btn btn-primary" :disabled="saving">
-              {{ saving ? 'Salvando...' : 'Salvar Tabela' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- ─── Assign Pricing Table Modal ─────────────────── -->
-    <div v-if="showAssignModal" class="modal-overlay">
-      <div class="modal modal-lg" @click.stop>
-        <div class="modal-header">
-          <div>
-            <h3>Atribuir Tabela — {{ selectedTenant?.name }}</h3>
-            <p class="text-sm" style="color: var(--color-surface-400); margin: 0;">
-              Selecione a tabela de preços e configurações adicionais opcionais.
-            </p>
-          </div>
-          <button class="modal-close" @click="showAssignModal = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="grid gap-4" style="grid-template-columns: 1fr 1fr 1fr;">
-            <div class="form-group">
-              <label class="form-label">Tabela de Preço</label>
-              <select v-model="assignForm.pricingTableId" class="form-input" required>
-                <option value="" disabled>Selecione...</option>
-                <option v-for="t in pricingTables" :key="t.id" :value="t.id">{{ t.name }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Desconto Adicional (%)</label>
-              <input v-model.number="assignForm.discountPercent" type="number" min="0" max="100" step="0.5" class="form-input" placeholder="0" />
-              <span class="text-xs" style="color: var(--color-surface-500);">Aplicado sobre o preço da tabela</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Projetos Grátis</label>
-              <input v-model.number="assignForm.freeProjects" type="number" min="0" max="100" step="1" class="form-input" placeholder="0" />
-            </div>
-          </div>
-
-          <!-- Volume pricing preview for this tenant -->
-          <div v-if="assignVolumePreview.length > 0" class="mt-4">
-            <label class="form-label mb-2">Simulação para este cliente</label>
-            <div class="volume-table">
-              <div class="volume-row volume-header">
-                <span class="vol-col-qty">Qtd</span>
-                <span class="vol-col-unit">Valor/Projeto</span>
-                <span class="vol-col-total">Total</span>
-                <span class="vol-col-disc">Desc. Volume</span>
-              </div>
-              <div v-for="tier in assignVolumePreview" :key="tier.projectNumber" class="volume-row">
-                <span class="vol-col-qty fw-bold">{{ tier.projectNumber }}{{ tier.isLast ? '+' : '' }}</span>
-                <span v-if="tier.isFree" class="vol-col-unit badge badge-success" style="font-size: 0.75rem;">Grátis</span>
-                <span v-else class="vol-col-unit">{{ formatCents(tier.unitPriceCents) }}</span>
-                <span class="vol-col-total">{{ tier.isFree ? 'R$ 0' : formatCents(tier.totalCents) }}</span>
-                <span class="vol-col-disc" :class="{ 'discount-active': tier.volumeDiscount > 0 }">
-                  {{ tier.volumeDiscount > 0 ? `${tier.volumeDiscount}%` : '—' }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-ghost" @click="showAssignModal = false">Cancelar</button>
-          <button class="btn btn-primary" :disabled="saving || !assignForm.pricingTableId" @click="saveAssign">
-            {{ saving ? 'Salvando...' : 'Atribuir Tabela' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─── Limits Modal ───────────────────────────────── -->
-    <div v-if="showLimitsModal" class="modal-overlay">
-      <div class="modal" style="max-width: 450px;" @click.stop>
-        <div class="modal-header">
-          <h3>Limites — {{ selectedTenant?.name }}</h3>
-          <button class="modal-close" @click="showLimitsModal = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div v-if="!tenantLimits" class="flex justify-center p-6">
-            <div class="loader"></div>
-          </div>
-          <template v-else>
-            <div class="limits-grid">
-              <div class="limit-item">
-                <div class="limit-label">Projetos Ativos</div>
-                <div class="limit-value">{{ tenantLimits.activeProjectCount }}</div>
-              </div>
-              <div class="limit-item">
-                <div class="limit-label">Limite Máximo</div>
-                <div class="limit-value">{{ tenantLimits.maxProjects }}</div>
-              </div>
-              <div class="limit-item">
-                <div class="limit-label">Pode Criar</div>
-                <div class="limit-value">
-                  <span :class="tenantLimits.canCreateProject ? 'text-green' : 'text-red'">
-                    {{ tenantLimits.canCreateProject ? 'Sim' : 'Não' }}
-                  </span>
-                </div>
-              </div>
-              <div class="limit-item">
-                <div class="limit-label">Próximo Projeto</div>
-                <div class="limit-value">
-                  <template v-if="tenantLimits.nextProjectPriceCents === 0">Grátis</template>
-                  <template v-else-if="tenantLimits.nextProjectPriceCents != null">{{ formatCents(tenantLimits.nextProjectPriceCents) }}/mês</template>
-                  <template v-else>—</template>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-ghost" @click="showLimitsModal = false">Fechar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─── Anchor Modal ───────────────────────────────── -->
-    <div v-if="showAnchorModal" class="modal-overlay">
-      <div class="modal" style="max-width: 400px;" @click.stop>
-        <div class="modal-header">
-          <h3>Data de Vencimento — {{ selectedTenant?.name }}</h3>
-          <button class="modal-close" @click="showAnchorModal = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="text-sm mb-4" style="color: var(--color-surface-400);">
-            Defina o dia do mês para vencimento (1 a 28). A primeira cobrança será sempre no mês seguinte.
-            O cliente terá 15 dias de tolerância após o vencimento antes de qualquer restrição.
+    <UiModal v-model="showPricingTableModal" :title="(pricingTableForm.id ? 'Editar' : 'Nova') + ' Tabela de Preço'" size="lg">
+      <template #header>
+        <div>
+          <h2 class="text-lg font-semibold text-p-text">{{ pricingTableForm.id ? 'Editar' : 'Nova' }} Tabela de Preço</h2>
+          <p class="mt-1 text-sm text-p-text-muted">
+            Defina o preço base por projeto e os descontos por volume.
           </p>
-          <div class="form-group">
-            <label class="form-label">Dia do Vencimento</label>
-            <select v-model.number="billingDay" class="form-input" required>
-              <option :value="null" disabled>Selecione o dia...</option>
-              <option v-for="d in 28" :key="d" :value="d">Dia {{ d }}</option>
-            </select>
+        </div>
+      </template>
+
+      <form @submit.prevent="savePricingTable" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Nome da Tabela</label>
+            <input v-model="pricingTableForm.name" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: Tabela Padrão" required />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Descrição</label>
+            <input v-model="pricingTableForm.description" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Opcional" />
           </div>
         </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-ghost" @click="showAnchorModal = false">Cancelar</button>
-          <button class="btn btn-primary" :disabled="saving || !billingDay" @click="saveAnchor">
-            {{ saving ? 'Salvando...' : 'Salvar' }}
-          </button>
-        </div>
-      </div>
-    </div>
 
-    <!-- ─── Trial Modal ────────────────────────────────── -->
-    <div v-if="showTrialModal" class="modal-overlay">
-      <div class="modal" style="max-width: 430px;" @click.stop>
-        <div class="modal-header">
-          <h3>Período de Teste — {{ selectedTenant?.name }}</h3>
-          <button class="modal-close" @click="showTrialModal = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="text-sm mb-4" style="color: var(--color-surface-400);">
-            Defina por quantos meses a loteadora ficará em teste. Durante esse período,
-            o sistema não deve exibir nem vincular cobranças para esse cliente.
-          </p>
-
-          <div class="form-group">
-            <label class="form-label">Duração do Teste (meses)</label>
+        <!-- Base price -->
+        <div>
+          <label class="mb-1 block text-sm font-medium text-p-text-secondary">Preço base por projeto (1 empreendimento)</label>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-p-text-muted">R$</span>
             <input
-              v-model.number="trialForm.trialMonths"
               type="number"
-              min="1"
-              max="24"
-              step="1"
-              class="form-input"
-              placeholder="Ex: 3"
+              step="0.01"
+              min="0"
+              v-model="pricingTableForm.basePriceReais"
+              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
+              placeholder="1200.00"
               required
             />
           </div>
+        </div>
 
-          <div class="text-sm mt-3" style="color: var(--color-surface-500);">
-            Esta ação reinicia o período de teste a partir de agora e desativa cobrança enquanto durar.
+        <!-- Volume discount tiers -->
+        <div>
+          <label class="mb-2 block text-sm font-medium text-p-text-secondary">Descontos por Volume</label>
+          <p class="mb-3 text-sm text-p-text-muted">
+            Quando o cliente tem mais projetos, todos recebem o mesmo desconto de volume.
+            O último nível se repete para quantidades maiores.
+          </p>
+
+          <div class="space-y-3">
+            <!-- Tier 1 is always 0% (base price) -->
+            <div class="flex items-center gap-3 opacity-70">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-p-raised text-sm font-bold text-p-accent">#1</div>
+              <div class="flex-1 text-sm italic text-p-text-muted">
+                1 empreendimento -- preço cheio (sem desconto)
+              </div>
+            </div>
+
+            <!-- Volume tiers 2+ -->
+            <div v-for="(vt, idx) in pricingTableForm.volumeTiers" :key="idx" class="flex items-center gap-3">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-p-raised text-sm font-bold text-p-accent">#{{ vt.projectNumber }}</div>
+              <div class="flex flex-1 items-end gap-4">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[0.7rem] uppercase tracking-wide text-p-text-muted">Empreendimentos</label>
+                  <input
+                    type="number"
+                    min="2"
+                    v-model.number="vt.projectNumber"
+                    class="w-20 rounded-lg border border-p-border bg-p-raised px-2 py-1.5 text-sm text-p-text focus:border-p-accent focus:outline-none"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[0.7rem] uppercase tracking-wide text-p-text-muted">Desconto (%)</label>
+                  <div class="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      v-model.number="vt.discountPercent"
+                      class="w-20 rounded-lg border border-p-border bg-p-raised px-2 py-1.5 text-sm text-p-text focus:border-p-accent focus:outline-none"
+                      required
+                    />
+                    <span class="text-sm font-semibold text-p-text-muted">%</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="rounded-lg p-1.5 text-p-danger hover:bg-p-danger/10 transition-colors"
+                @click="removeVolumeTier(idx)"
+              >X</button>
+            </div>
+          </div>
+          <UiButton variant="secondary" size="sm" class="mt-3" type="button" @click="addVolumeTier">
+            + Adicionar Nível de Volume
+          </UiButton>
+        </div>
+
+        <!-- Preview table -->
+        <div v-if="volumePreview.length > 0">
+          <label class="mb-2 block text-sm font-medium text-p-text-secondary">Pré-visualização</label>
+          <div class="overflow-hidden rounded-lg border border-p-border">
+            <div class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-2 bg-violet-500/10 px-3.5 py-2.5 text-xs font-bold uppercase tracking-wide text-p-text-muted">
+              <span>Quantidade</span>
+              <span class="text-right">Valor/Empreendimento</span>
+              <span class="text-right">Valor Total Mensal</span>
+              <span class="text-right">Desconto Aplicado</span>
+            </div>
+            <div v-for="row in volumePreview" :key="row.projectNumber" class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-2 border-t border-p-border px-3.5 py-2.5 text-sm">
+              <span class="font-semibold text-p-text">
+                {{ row.projectNumber }}{{ row.isLast ? ' ou mais' : '' }}
+                {{ row.projectNumber === 1 ? 'empreendimento' : 'empreendimentos' }}
+              </span>
+              <span class="text-right text-p-text-secondary">{{ formatCents(row.unitPriceCents) }}</span>
+              <span class="text-right font-semibold text-p-accent">{{ formatCents(row.totalCents) }}{{ row.isLast ? '+' : '' }}</span>
+              <span class="text-right" :class="row.discountPercent > 0 ? 'font-bold text-p-success' : 'text-p-text-muted'">
+                {{ row.discountPercent > 0 ? `${row.discountPercent}%` : '0%' }}
+              </span>
+            </div>
           </div>
         </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-ghost" @click="showTrialModal = false">Cancelar</button>
-          <button class="btn btn-primary" :disabled="saving || !trialForm.trialMonths" @click="saveTrial">
-            {{ saving ? 'Salvando...' : 'Salvar Período de Teste' }}
-          </button>
+      </form>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showPricingTableModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="saving" @click="savePricingTable">
+            {{ saving ? 'Salvando...' : 'Salvar Tabela' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
+
+    <!-- ─── Assign Pricing Table Modal ─────────────────── -->
+    <UiModal v-model="showAssignModal" size="lg">
+      <template #header>
+        <div>
+          <h2 class="text-lg font-semibold text-p-text">Atribuir Tabela -- {{ selectedTenant?.name }}</h2>
+          <p class="mt-1 text-sm text-p-text-muted">
+            Selecione a tabela de preços e configurações adicionais opcionais.
+          </p>
+        </div>
+      </template>
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Tabela de Preço</label>
+            <select v-model="assignForm.pricingTableId" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" required>
+              <option value="" disabled>Selecione...</option>
+              <option v-for="t in pricingTables" :key="t.id" :value="t.id">{{ t.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Desconto Adicional (%)</label>
+            <input v-model.number="assignForm.discountPercent" type="number" min="0" max="100" step="0.5" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="0" />
+            <span class="mt-1 block text-xs text-p-text-muted">Aplicado sobre o preço da tabela</span>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Projetos Grátis</label>
+            <input v-model.number="assignForm.freeProjects" type="number" min="0" max="100" step="1" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="0" />
+          </div>
+        </div>
+
+        <!-- Volume pricing preview for this tenant -->
+        <div v-if="assignVolumePreview.length > 0">
+          <label class="mb-2 block text-sm font-medium text-p-text-secondary">Simulação para este cliente</label>
+          <div class="overflow-hidden rounded-lg border border-p-border">
+            <div class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-2 bg-violet-500/10 px-3.5 py-2.5 text-xs font-bold uppercase tracking-wide text-p-text-muted">
+              <span>Qtd</span>
+              <span class="text-right">Valor/Projeto</span>
+              <span class="text-right">Total</span>
+              <span class="text-right">Desc. Volume</span>
+            </div>
+            <div v-for="tier in assignVolumePreview" :key="tier.projectNumber" class="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-2 border-t border-p-border px-3.5 py-2.5 text-sm">
+              <span class="font-semibold text-p-text">{{ tier.projectNumber }}{{ tier.isLast ? '+' : '' }}</span>
+              <span v-if="tier.isFree" class="text-right text-xs font-bold text-p-success">Grátis</span>
+              <span v-else class="text-right text-p-text-secondary">{{ formatCents(tier.unitPriceCents) }}</span>
+              <span class="text-right text-p-text-secondary">{{ tier.isFree ? 'R$ 0' : formatCents(tier.totalCents) }}</span>
+              <span class="text-right" :class="tier.volumeDiscount > 0 ? 'font-bold text-p-success' : 'text-p-text-muted'">
+                {{ tier.volumeDiscount > 0 ? `${tier.volumeDiscount}%` : '—' }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showAssignModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="saving || !assignForm.pricingTableId" @click="saveAssign">
+            {{ saving ? 'Salvando...' : 'Atribuir Tabela' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
+
+    <!-- ─── Limits Modal ───────────────────────────────── -->
+    <UiModal v-model="showLimitsModal" :title="'Limites — ' + (selectedTenant?.name || '')" size="sm">
+      <UiLoadingState v-if="!tenantLimits" />
+      <template v-else>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="rounded-lg border border-p-border bg-p-raised p-4 text-center">
+            <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">Projetos Ativos</div>
+            <div class="mt-1 text-xl font-bold text-p-text">{{ tenantLimits.activeProjectCount }}</div>
+          </div>
+          <div class="rounded-lg border border-p-border bg-p-raised p-4 text-center">
+            <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">Limite Máximo</div>
+            <div class="mt-1 text-xl font-bold text-p-text">{{ tenantLimits.maxProjects }}</div>
+          </div>
+          <div class="rounded-lg border border-p-border bg-p-raised p-4 text-center">
+            <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">Pode Criar</div>
+            <div class="mt-1 text-xl font-bold" :class="tenantLimits.canCreateProject ? 'text-p-success' : 'text-p-danger'">
+              {{ tenantLimits.canCreateProject ? 'Sim' : 'Não' }}
+            </div>
+          </div>
+          <div class="rounded-lg border border-p-border bg-p-raised p-4 text-center">
+            <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">Próximo Projeto</div>
+            <div class="mt-1 text-xl font-bold text-p-text">
+              <template v-if="tenantLimits.nextProjectPriceCents === 0">Grátis</template>
+              <template v-else-if="tenantLimits.nextProjectPriceCents != null">{{ formatCents(tenantLimits.nextProjectPriceCents) }}/mês</template>
+              <template v-else>—</template>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end">
+          <UiButton variant="ghost" @click="showLimitsModal = false">Fechar</UiButton>
+        </div>
+      </template>
+    </UiModal>
+
+    <!-- ─── Anchor Modal ───────────────────────────────── -->
+    <UiModal v-model="showAnchorModal" :title="'Data de Vencimento — ' + (selectedTenant?.name || '')" size="sm">
+      <div class="space-y-4">
+        <p class="text-sm text-p-text-muted">
+          Defina o dia do mês para vencimento (1 a 28). A primeira cobrança será sempre no mês seguinte.
+          O cliente terá 15 dias de tolerância após o vencimento antes de qualquer restrição.
+        </p>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-p-text-secondary">Dia do Vencimento</label>
+          <select v-model.number="billingDay" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" required>
+            <option :value="null" disabled>Selecione o dia...</option>
+            <option v-for="d in 28" :key="d" :value="d">Dia {{ d }}</option>
+          </select>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showAnchorModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="saving || !billingDay" @click="saveAnchor">
+            {{ saving ? 'Salvando...' : 'Salvar' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
+
+    <!-- ─── Trial Modal ────────────────────────────────── -->
+    <UiModal v-model="showTrialModal" :title="'Período de Teste — ' + (selectedTenant?.name || '')" size="sm">
+      <div class="space-y-4">
+        <p class="text-sm text-p-text-muted">
+          Defina por quantos meses a loteadora ficará em teste. Durante esse período,
+          o sistema não deve exibir nem vincular cobranças para esse cliente.
+        </p>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-p-text-secondary">Duração do Teste (meses)</label>
+          <input
+            v-model.number="trialForm.trialMonths"
+            type="number"
+            min="1"
+            max="24"
+            step="1"
+            class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
+            placeholder="Ex: 3"
+            required
+          />
+        </div>
+
+        <p class="text-xs text-p-text-muted">
+          Esta ação reinicia o período de teste a partir de agora e desativa cobrança enquanto durar.
+        </p>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showTrialModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="saving || !trialForm.trialMonths" @click="saveTrial">
+            {{ saving ? 'Salvando...' : 'Salvar Período de Teste' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
-
-<style scoped>
-.page-container { padding: 24px; }
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
-.page-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
-.page-subtitle { font-size: 0.9rem; color: var(--color-surface-400); margin: 4px 0 0; }
-.section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border-subtle); }
-
-.pricing-table-card {
-  padding: 16px;
-  border-left: 4px solid #8b5cf6;
-  transition: all 0.2s;
-}
-.pricing-table-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-/* ─── Volume pricing table ────────────── */
-.volume-table {
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--glass-border-subtle);
-}
-.volume-row {
-  display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr 1fr;
-  gap: 8px;
-  padding: 10px 14px;
-  align-items: center;
-  font-size: 0.85rem;
-  border-bottom: 1px solid var(--glass-border-subtle);
-}
-.volume-row:last-child { border-bottom: none; }
-.volume-header {
-  background: rgba(139, 92, 246, 0.08);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-surface-400);
-}
-.vol-col-qty { }
-.vol-col-unit { text-align: right; }
-.vol-col-total { text-align: right; color: var(--color-primary-300, #a5b4fc); font-weight: 600; }
-.vol-col-disc { text-align: right; }
-.discount-active { color: #10b981; font-weight: 700; }
-
-/* ─── Tier editor (modal form) ──────── */
-.tiers-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.tier-edit-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.tier-base {
-  opacity: 0.7;
-  padding: 8px 0;
-}
-.tier-base-label {
-  font-size: 0.85rem;
-  color: var(--color-surface-400);
-  font-style: italic;
-}
-.tier-num-badge {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--color-primary-900, #1a1a2e);
-  color: var(--color-primary-300, #a5b4fc);
-  font-weight: 700;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-}
-.flex-row-inputs {
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
-  flex: 1;
-}
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.input-group-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  color: var(--color-surface-500);
-}
-.input-sm { height: 36px; font-size: 0.85rem; }
-.input-with-prefix {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.input-prefix {
-  font-weight: 600;
-  color: var(--color-surface-400);
-  font-size: 0.9rem;
-}
-.input-with-suffix {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.input-suffix {
-  font-weight: 600;
-  color: var(--color-surface-400);
-  font-size: 0.85rem;
-}
-
-/* ─── Limits ──────────────────────────── */
-.limits-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.limit-item {
-  text-align: center;
-  padding: 16px;
-  border-radius: 8px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-}
-.limit-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--color-surface-400);
-  margin-bottom: 4px;
-  letter-spacing: 0.5px;
-}
-.limit-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-.text-green { color: #10b981; }
-.text-red { color: #ef4444; }
-
-.badge-accent { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
-.badge-success { background: #10b981; color: white; }
-.badge-warning { background: #f59e0b; color: #1a1a2e; }
-.badge-error { background: #ef4444; color: white; }
-.badge-outline { border: 1px solid var(--glass-border); background: transparent; }
-.empty-hint {
-  text-align: center;
-  padding: 32px;
-  color: var(--color-surface-400);
-  font-size: 0.9rem;
-}
-.mb-3 { margin-bottom: 12px; }
-.mb-8 { margin-bottom: 32px; }
-.mt-2 { margin-top: 8px; }
-.mt-3 { margin-top: 12px; }
-.mt-4 { margin-top: 16px; }
-.text-sm { font-size: 0.85rem; }
-.text-xs { font-size: 0.75rem; }
-.fw-bold { font-weight: 600; }
-.flex-1 { flex: 1; }
-</style>

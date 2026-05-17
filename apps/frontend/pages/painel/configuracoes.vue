@@ -1,125 +1,108 @@
 <template>
-  <div class="configuracoes-page">
-    <div class="page-header">
-      <div>
-        <h1>Configurações do Sistema</h1>
-        <p>Gerencie contatos do site e preferências da plataforma.</p>
-      </div>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Configurações do Sistema" description="Gerencie contatos do site e preferências da plataforma." />
 
-    <div class="grid grid-cols-3" style="gap: 24px;">
+    <div class="grid gap-6 md:grid-cols-2">
       <!-- Settings Card -->
-      <div class="card col-span-1">
-        <h2 class="card-title" style="margin-bottom: 20px;">
-          <i class="pi pi-cog mr-2 text-primary"></i>
+      <UiCard>
+        <h2 class="mb-5 flex items-center gap-2 text-lg font-semibold text-p-text">
+          <i class="pi pi-cog text-p-accent"></i>
           Landing Page
         </h2>
 
-        <div v-if="loading" class="loading-state">
-          <div class="loading-spinner"></div>
-        </div>
-        <form v-else @submit.prevent="saveSettings">
-          <div class="form-group">
-            <label class="form-label">WhatsApp de Contato</label>
+        <UiLoadingState v-if="loading" />
+        <form v-else @submit.prevent="saveSettings" class="space-y-4">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">WhatsApp de Contato</label>
             <input
               :value="settings.contactWhatsapp"
               @input="settings.contactWhatsapp = applyPhoneMask($event.target.value)"
               type="text"
-              class="form-input"
+              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
               placeholder="(00) 00000-0000"
             >
-            <p class="text-xs text-gray-400 mt-1" style="color: var(--color-surface-400); font-size: 0.75rem; margin-top: 4px;">Se preenchido, o site mostrará o botão de WhatsApp.</p>
+            <p class="mt-1 text-xs text-p-text-muted">Se preenchido, o site mostrará o botão de WhatsApp.</p>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">E-mail de Contato</label>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">E-mail de Contato</label>
             <input
               v-model="settings.contactEmail"
               type="email"
-              class="form-input"
+              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
               placeholder="contato@empresa.com"
             >
           </div>
 
-          <div class="form-group flex items-center gap-2" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-            <input v-model="settings.leadFormEnabled" type="checkbox" id="form-en" style="width: 16px; height: 16px;">
-            <label for="form-en" class="form-label" style="margin-bottom: 0;">Ativar formulário de lead no site</label>
+          <div class="flex items-center gap-2">
+            <input v-model="settings.leadFormEnabled" type="checkbox" id="form-en" class="h-4 w-4">
+            <label for="form-en" class="text-sm font-medium text-p-text-secondary">Ativar formulário de lead no site</label>
           </div>
 
-          <button
-            type="submit"
-            class="btn btn-primary w-full"
-            style="width: 100%;"
-            :disabled="saving"
-          >
+          <UiButton variant="primary" type="submit" class="w-full" :disabled="saving">
             {{ saving ? 'Salvando...' : 'Salvar Alterações' }}
-          </button>
+          </UiButton>
         </form>
-      </div>
+      </UiCard>
 
       <!-- Maintenance Mode Card -->
-      <div class="card col-span-1">
-        <h2 class="card-title" style="margin-bottom: 20px;">
-          <i class="pi pi-wrench mr-2" style="color: #f59e0b;"></i>
+      <UiCard>
+        <h2 class="mb-5 flex items-center gap-2 text-lg font-semibold text-p-text">
+          <i class="pi pi-wrench text-amber-500"></i>
           Modo Manutenção
         </h2>
 
-        <div v-if="maintenanceLoading" class="loading-state">
-          <div class="loading-spinner"></div>
-        </div>
-        <div v-else>
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-            <span
-              class="badge"
-              :class="maintenance.enabled ? 'badge-danger' : 'badge-success'"
-              style="font-size: 0.8rem; padding: 4px 12px;"
-            >
+        <UiLoadingState v-if="maintenanceLoading" />
+        <div v-else class="space-y-5">
+          <div class="flex items-center gap-3">
+            <UiBadge :variant="maintenance.enabled ? 'danger' : 'success'" size="md">
               {{ maintenance.enabled ? 'ATIVO' : 'INATIVO' }}
-            </span>
-            <span v-if="maintenance.enabled && maintenance.enabledAt" style="color: var(--color-surface-400); font-size: 0.8rem;">
+            </UiBadge>
+            <span v-if="maintenance.enabled && maintenance.enabledAt" class="text-xs text-p-text-muted">
               Desde {{ formatDate(maintenance.enabledAt) }}
             </span>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Mensagem de Manutenção</label>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Mensagem de Manutenção</label>
             <textarea
               v-model="maintenance.message"
-              class="form-input"
+              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none resize-y"
               rows="3"
               placeholder="Sistema em manutenção. Voltaremos em breve."
-              style="resize: vertical;"
             ></textarea>
-            <p style="color: var(--color-surface-400); font-size: 0.75rem; margin-top: 4px;">
+            <p class="mt-1 text-xs text-p-text-muted">
               Mensagem exibida aos visitantes durante a manutenção.
             </p>
           </div>
 
-          <button
+          <UiButton
             v-if="!maintenance.enabled"
-            class="btn w-full"
-            style="width: 100%; background: #f59e0b; color: #000; font-weight: 600;"
+            variant="warning"
+            class="w-full"
             :disabled="maintenanceSaving"
             @click="toggleMaintenance(true)"
           >
             {{ maintenanceSaving ? 'Ativando...' : 'Ativar Manutenção' }}
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             v-else
-            class="btn btn-primary w-full"
-            style="width: 100%;"
+            variant="primary"
+            class="w-full"
             :disabled="maintenanceSaving"
             @click="toggleMaintenance(false)"
           >
             {{ maintenanceSaving ? 'Desativando...' : 'Desativar Manutenção' }}
-          </button>
+          </UiButton>
         </div>
-      </div>
+      </UiCard>
     </div>
   </div>
 </template>
 
 <script setup>
+definePageMeta({ layout: 'painel' })
+
 const authStore = useAuthStore()
 if (!authStore.isSysAdmin) {
   navigateTo(authStore.getDashboardRoute())

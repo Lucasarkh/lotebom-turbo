@@ -1,36 +1,41 @@
 <template>
-  <div class="batch-panel">
-    <h4 class="panel-title">Dados dos Lotes</h4>
-    <p class="panel-desc">Preencha os dados de todos os lotes de uma vez.</p>
+  <div class="p-2 text-xs">
+    <h4 class="text-[0.85rem] font-bold text-p-text mb-1">Dados dos Lotes</h4>
+    <p class="text-[0.72rem] text-p-text-secondary mb-2.5">Preencha os dados de todos os lotes de uma vez.</p>
 
-    <div v-if="lots.length === 0" class="empty">
+    <div v-if="lots.length === 0" class="text-center text-p-text-muted p-5 text-[0.75rem]">
       <p>Nenhum lote no mapa.</p>
     </div>
 
-    <div class="lot-table" v-else>
-      <div class="lot-row header">
-        <span class="col code">Cód.</span>
-        <span class="col status">Status</span>
-        <span class="col price">Preço</span>
-        <span class="col area">Área</span>
+    <div v-else class="border border-p-border rounded-md overflow-hidden">
+      <div class="grid grid-cols-[80px_100px_80px_60px] border-b border-p-border bg-p-overlay font-semibold text-[0.68rem] text-p-text-secondary uppercase">
+        <span class="px-1.5 py-1">Cód.</span>
+        <span class="px-1.5 py-1">Status</span>
+        <span class="px-1.5 py-1">Preço</span>
+        <span class="px-1.5 py-1">Área</span>
       </div>
       <div
         v-for="lot in lots"
         :key="lot.id"
-        :class="['lot-row', { selected: lot.id === selectedId }]"
+        :class="[
+          'grid grid-cols-[80px_100px_80px_60px] items-center border-b border-p-border last:border-b-0 cursor-pointer',
+          lot.id === selectedId ? 'bg-p-accent/10' : ''
+        ]"
         @click="lot.id && $emit('select', lot.id)"
       >
-        <span class="col code">
+        <span class="px-1.5 py-1">
           <input
             type="text"
             :value="lot.code || ''"
             placeholder="Q1-L01"
+            class="w-full border border-transparent bg-transparent text-[0.72rem] px-1 py-0.5 rounded focus:border-p-accent focus:outline-none focus:bg-p-elevated"
             @change="updateLot(lot.id!, 'code', ($event.target as HTMLInputElement).value)"
           />
         </span>
-        <span class="col status">
+        <span class="px-1.5 py-1">
           <select
             :value="lot.metaJson?.lotStatus ?? 'AVAILABLE'"
+            class="w-full border border-transparent bg-transparent text-[0.72rem] px-1 py-0.5 rounded focus:border-p-accent focus:outline-none focus:bg-p-elevated"
             @change="updateLotMeta(lot.id!, 'lotStatus', ($event.target as HTMLSelectElement).value)"
           >
             <option value="AVAILABLE">Disponível</option>
@@ -38,29 +43,31 @@
             <option value="SOLD">Vendido</option>
           </select>
         </span>
-        <span class="col price">
+        <span class="px-1.5 py-1">
           <input
             type="number"
             :value="lot.metaJson?.price ?? ''"
             placeholder="0"
+            class="w-full border border-transparent bg-transparent text-[0.72rem] px-1 py-0.5 rounded focus:border-p-accent focus:outline-none focus:bg-p-elevated"
             @change="updateLotMeta(lot.id!, 'price', Number(($event.target as HTMLInputElement).value))"
           />
         </span>
-        <span class="col area">
+        <span class="px-1.5 py-1">
           <input
             type="number"
             :value="lot.metaJson?.area ?? ''"
             placeholder="m²"
+            class="w-full border border-transparent bg-transparent text-[0.72rem] px-1 py-0.5 rounded focus:border-p-accent focus:outline-none focus:bg-p-elevated"
             @change="updateLotMeta(lot.id!, 'area', Number(($event.target as HTMLInputElement).value))"
           />
         </span>
       </div>
     </div>
 
-    <div class="batch-actions">
-      <button class="batch-btn" @click="$emit('autoName')">
+    <div class="mt-2.5">
+      <UiButton variant="secondary" size="sm" class="w-full" @click="$emit('autoName')">
         Numerar automaticamente
-      </button>
+      </UiButton>
     </div>
   </div>
 </template>
@@ -92,37 +99,3 @@ function updateLotMeta(id: string, key: string, value: any) {
   emit('update', id, { metaJson: { ...lot.metaJson, [key]: value } })
 }
 </script>
-
-<style scoped>
-.batch-panel { padding: 8px; font-size: 0.78rem; }
-.panel-title { font-size: 0.85rem; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
-.panel-desc { font-size: 0.72rem; color: var(--gray-500); margin-bottom: 10px; }
-.empty { text-align: center; color: var(--gray-400); padding: 20px; font-size: 0.75rem; }
-.lot-table { border: 1px solid var(--gray-200); border-radius: 6px; overflow: hidden; }
-.lot-row {
-  display: grid; grid-template-columns: 80px 100px 80px 60px;
-  border-bottom: 1px solid var(--gray-100); align-items: center;
-}
-.lot-row:last-child { border-bottom: none; }
-.lot-row.header {
-  background: var(--gray-50); font-weight: 600; font-size: 0.68rem;
-  color: var(--gray-500); text-transform: uppercase;
-}
-.lot-row.selected { background: var(--blue-50); }
-.col { padding: 4px 6px; }
-.col input, .col select {
-  width: 100%; border: 1px solid transparent; background: transparent;
-  font-size: 0.72rem; padding: 2px 4px; border-radius: 3px;
-}
-.col input:focus, .col select:focus {
-  border-color: var(--color-primary); outline: none;
-  background: white;
-}
-.batch-actions { margin-top: 10px; }
-.batch-btn {
-  width: 100%; padding: 7px; border: 1px solid var(--gray-200);
-  border-radius: 6px; background: white; cursor: pointer; font-size: 0.75rem;
-  color: var(--gray-700);
-}
-.batch-btn:hover { background: var(--gray-50); }
-</style>

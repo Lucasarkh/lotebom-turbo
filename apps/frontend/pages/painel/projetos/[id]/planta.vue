@@ -1,32 +1,19 @@
 <template>
-  <div>
-    <!-- Header -->
-    <div class="page-header" style="border-bottom: 1px solid var(--glass-border-subtle); padding-bottom: 24px; margin-bottom: 24px;">
-      <div style="flex: 1;">
-        <div class="flex items-center gap-2" style="margin-bottom: 4px;">
-          <NuxtLink :to="`/painel/projetos/${projectId}`" class="btn btn-ghost btn-sm page-back-btn">
-            <i class="bi bi-arrow-left-short back-nav-icon" aria-hidden="true"></i>
-            <span class="back-nav-label">{{ projectName || 'Projeto' }}</span>
-          </NuxtLink>
-        </div>
-        <h1 style="margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;"><i class="bi bi-map" aria-hidden="true"></i> Planta Interativa</h1>
-        <p style="margin: 0; color: var(--color-surface-400); font-weight: 500;">Gerencie a planta do loteamento com hotspots interativos.</p>
-      </div>
+  <div class="space-y-6">
+    <div>
+      <NuxtLink :to="`/painel/projetos/${projectId}`" class="mb-3 inline-flex items-center gap-1.5 text-sm text-p-text-muted transition-colors hover:text-p-text">
+        <i class="bi bi-arrow-left-short text-lg" aria-hidden="true"></i>
+        <span>{{ projectName || 'Projeto' }}</span>
+      </NuxtLink>
+      <UiPageHeader title="Planta Interativa" description="Gerencie a planta do loteamento com hotspots interativos." />
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="loading-state" style="height: 400px; display:flex; align-items:center; justify-content:center;">
-      <div class="loading-spinner"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
-    <!-- Error -->
-    <div v-else-if="loadError" class="card" style="max-width: 500px; color: var(--color-danger);">
-      {{ loadError }}
-    </div>
+    <UiAlert v-else-if="loadError" variant="error" :title="loadError" />
 
-    <!-- Editor -->
-    <div v-else class="plant-page-layout">
-      <div class="plant-editor-shell">
+    <div v-else class="flex flex-col gap-6">
+      <div class="min-h-[58vh] md:min-h-[70vh]">
         <PlantMapEditor
           :project-id="projectId"
           :initial-plant-map="plantMap"
@@ -55,7 +42,7 @@ import PlantMapEditor from '~/components/plantMap/PlantMapEditor.vue'
 import PlantLotsManager from '~/components/plantMap/PlantLotsManager.vue'
 import { useApi } from '~/composables/useApi'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'painel' })
 
 const route = useRoute()
 const projectId = route.params.id as string
@@ -92,7 +79,6 @@ const openLotFromEditor = async (mapElementId: string) => {
 
 onMounted(async () => {
   try {
-    // Load project info + plant map in parallel
     const [projectData, pm] = await Promise.all([
       fetchApi(`/projects/${projectId}`).catch(() => null),
       plantMapApi.getPlantMap(projectId).catch(() => null),
@@ -112,48 +98,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.page-back-btn {
-  padding: 6px 14px !important;
-  border-radius: 12px;
-  color: #d1d5db !important;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  text-decoration: none;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.page-back-btn:hover {
-  color: #f8fafc !important;
-  border-color: rgba(148, 163, 184, 0.7);
-  background: rgba(15, 23, 42, 0.62);
-}
-
-@media (max-width: 768px) {
-  .page-back-btn {
-    padding: 9px 14px !important;
-    min-height: 38px;
-    display: inline-flex;
-    align-items: center;
-  }
-}
-
-.plant-page-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.plant-editor-shell {
-  min-height: 70vh;
-}
-
-@media (max-width: 768px) {
-  .plant-editor-shell {
-    min-height: 58vh;
-  }
-}
-</style>

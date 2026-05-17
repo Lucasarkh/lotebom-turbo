@@ -108,14 +108,14 @@ function openEdit(campaign: any) {
 function generateLink(campaign: any) {
   if (!campaign.project) return ''
   const projectSlug = campaign.project.slug
-  
+
   // Build URL with query params
   let url = `${window.location.origin}/${projectSlug}?utm_source=${campaign.utmSource}&utm_campaign=${campaign.utmCampaign}`
-  
+
   if (campaign.utmMedium) url += `&utm_medium=${campaign.utmMedium}`
   if (campaign.utmContent) url += `&utm_content=${campaign.utmContent}`
   if (campaign.utmTerm) url += `&utm_term=${campaign.utmTerm}`
-  
+
   return url
 }
 
@@ -129,314 +129,134 @@ function copyLink(campaign: any) {
 onMounted(fetchData)
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="header">
-      <div>
-        <h1>Gestão de Campanhas</h1>
-        <p class="subtitle">Crie e gerencie links UTM para seus empreendimentos</p>
-      </div>
-      <button class="btn btn-primary" :disabled="!canWriteCampaigns" :title="!canWriteCampaigns ? writePermissionHint : undefined" @click="openCreate">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        Nova Campanha
-      </button>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Gestão de Campanhas" description="Crie e gerencie links UTM para seus empreendimentos">
+      <template #actions>
+        <UiButton variant="primary" :disabled="!canWriteCampaigns" :title="!canWriteCampaigns ? writePermissionHint : undefined" @click="openCreate">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Nova Campanha
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="loading" class="loading">Carregando...</div>
-    
-    <div v-else class="card">
-      <div v-if="campaigns.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-        <div class="text-center p-5 max-w-500">
-          <div class="icon-blob mx-auto mb-4"><i class="bi bi-megaphone-fill" aria-hidden="true"></i></div>
-          <h3 class="fw-bold mb-3">Nenhuma campanha cadastrada</h3>
-          <p class="mb-4 px-4">Crie campanhas UTM para rastrear a origem dos seus leads.</p>
-        </div>
-      </div>
-      
-      <table v-else class="table">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Empreendimento</th>
-            <th>Parâmetros UTM</th>
-            <th>Status</th>
-            <th class="text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="campaign in campaigns" :key="campaign.id">
-            <td>
-              <div class="campaign-info">
-                <strong>{{ campaign.name }}</strong>
-              </div>
-            </td>
-            <td>{{ campaign.project?.name || '-' }}</td>
-            <td>
-              <div class="utm-preview">
-                <span class="badge">src: {{ campaign.utmSource }}</span>
-                <span class="badge">cmp: {{ campaign.utmCampaign }}</span>
-              </div>
-            </td>
-            <td>
-              <span :class="['status-badge', campaign.active ? 'active' : 'inactive']">
-                {{ campaign.active ? 'Ativa' : 'Inativa' }}
-              </span>
-            </td>
-            <td class="text-right actions">
-              <NuxtLink :to="`/painel/campanhas/${campaign.id}`" class="btn btn-sm btn-outline">
-                Performance
-              </NuxtLink>
-              <button class="btn btn-sm btn-outline" @click="copyLink(campaign)">
-                Copiar Link
+    <UiLoadingState v-if="loading" text="Carregando..." />
+
+    <UiCard v-else padding="none">
+      <UiEmptyState
+        v-if="campaigns.length === 0"
+        title="Nenhuma campanha cadastrada"
+        description="Crie campanhas UTM para rastrear a origem dos seus leads."
+        icon="📢"
+      />
+
+      <UiTable v-else>
+        <template #head>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Nome</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Empreendimento</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Parâmetros UTM</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Status</th>
+          <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-p-text-secondary">Ações</th>
+        </template>
+        <tr v-for="campaign in campaigns" :key="campaign.id" class="border-b border-p-border">
+          <td class="px-4 py-3 text-sm font-semibold text-p-text">{{ campaign.name }}</td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ campaign.project?.name || '-' }}</td>
+          <td class="px-4 py-3 text-sm">
+            <div class="flex flex-wrap gap-1.5">
+              <UiBadge variant="neutral">src: {{ campaign.utmSource }}</UiBadge>
+              <UiBadge variant="neutral">cmp: {{ campaign.utmCampaign }}</UiBadge>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm">
+            <UiBadge :variant="campaign.active ? 'success' : 'danger'">
+              {{ campaign.active ? 'Ativa' : 'Inativa' }}
+            </UiBadge>
+          </td>
+          <td class="px-4 py-3 text-sm">
+            <div class="flex items-center justify-end gap-2">
+              <UiButton variant="outline" size="sm" :to="`/painel/campanhas/${campaign.id}`">Performance</UiButton>
+              <UiButton variant="outline" size="sm" @click="copyLink(campaign)">Copiar Link</UiButton>
+              <button class="rounded-lg p-1.5 text-p-text-muted hover:bg-p-overlay hover:text-p-text transition-colors" :disabled="!canWriteCampaigns" @click="openEdit(campaign)" :title="!canWriteCampaigns ? writePermissionHint : 'Editar'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button class="btn-icon" :disabled="!canWriteCampaigns" @click="openEdit(campaign)" :title="!canWriteCampaigns ? writePermissionHint : 'Editar'">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <button class="rounded-lg p-1.5 text-p-danger hover:bg-p-danger/10 transition-colors" :disabled="!canWriteCampaigns" @click="removeCampaign(campaign.id)" :title="!canWriteCampaigns ? writePermissionHint : 'Remover'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
               </button>
-              <button class="btn-icon text-danger" :disabled="!canWriteCampaigns" @click="removeCampaign(campaign.id)" :title="!canWriteCampaigns ? writePermissionHint : 'Remover'">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            </div>
+          </td>
+        </tr>
+      </UiTable>
+    </UiCard>
 
     <!-- Modal Form -->
-    <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay">
-        <div class="modal modal-lg" @click.stop>
-          <div class="modal-header">
-            <h2>{{ editingCampaign ? 'Editar Campanha' : 'Nova Campanha' }}</h2>
-            <button class="modal-close" @click="showModal = false">&times;</button>
+    <UiModal v-model="showModal" :title="editingCampaign ? 'Editar Campanha' : 'Nova Campanha'" size="lg">
+      <form @submit.prevent="saveCampaign" class="space-y-4">
+        <div class="space-y-1">
+          <label class="block text-sm font-medium text-p-text-secondary">Nome da Campanha (Interno)</label>
+          <input v-model="form.name" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: Campanha Facebook Março" required />
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-sm font-medium text-p-text-secondary">Empreendimento</label>
+          <select v-model="form.projectId" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none appearance-none" required>
+            <option value="" disabled>Selecione um projeto</option>
+            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">UTM Source</label>
+            <input v-model="form.utmSource" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: facebook, google" required />
           </div>
-          <div class="modal-body">
-          <form @submit.prevent="saveCampaign">
-            <div class="form-group">
-              <label class="form-label">Nome da Campanha (Interno)</label>
-              <input v-model="form.name" type="text" class="form-input" placeholder="Ex: Campanha Facebook Março" required />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Empreendimento</label>
-              <select v-model="form.projectId" class="form-select" required>
-                <option value="" disabled>Selecione um projeto</option>
-                <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-              </select>
-            </div>
-
-            <div class="row">
-              <div class="form-group">
-                <label class="form-label">UTM Source</label>
-                <input v-model="form.utmSource" type="text" class="form-input" placeholder="Ex: facebook, google" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">UTM Medium</label>
-                <input v-model="form.utmMedium" type="text" class="form-input" placeholder="Ex: cpc, organic" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">UTM Campaign</label>
-              <input v-model="form.utmCampaign" type="text" class="form-input" placeholder="Ex: lancamento_fase1" required />
-            </div>
-
-            <div class="row">
-              <div class="form-group">
-                <label class="form-label">UTM Content</label>
-                <input v-model="form.utmContent" type="text" class="form-input" placeholder="Ex: anuncio_A" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">UTM Term</label>
-                <input v-model="form.utmTerm" type="text" class="form-input" placeholder="Ex: palavra_chave" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Verba Mensal Estimada (Opcional)</label>
-              <div class="input-with-prefix">
-                <span class="prefix">R$</span>
-                <input v-model.number="form.budget" type="number" step="0.01" class="form-input" placeholder="0,00" />
-              </div>
-            </div>
-
-            <div class="form-group flex items-center gap-2">
-              <input type="checkbox" v-model="form.active" id="active-check" />
-              <label for="active-check" class="form-label mb-0">Campanha Ativa</label>
-            </div>
-
-            <div class="modal-actions mt-8">
-              <button type="button" class="btn btn-ghost" @click="showModal = false">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {{ editingCampaign ? 'Salvar Alterações' : 'Criar Campanha' }}
-              </button>
-            </div>
-          </form>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">UTM Medium</label>
+            <input v-model="form.utmMedium" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: cpc, organic" />
           </div>
         </div>
-      </div>
-    </Teleport>
+
+        <div class="space-y-1">
+          <label class="block text-sm font-medium text-p-text-secondary">UTM Campaign</label>
+          <input v-model="form.utmCampaign" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: lancamento_fase1" required />
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">UTM Content</label>
+            <input v-model="form.utmContent" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: anuncio_A" />
+          </div>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">UTM Term</label>
+            <input v-model="form.utmTerm" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: palavra_chave" />
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-sm font-medium text-p-text-secondary">Verba Mensal Estimada (Opcional)</label>
+          <div class="flex items-center">
+            <span class="pointer-events-none absolute pl-3 text-sm text-p-text-muted">R$</span>
+            <input v-model.number="form.budget" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised py-2.5 pl-9 pr-3.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="0,00" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="checkbox" v-model="form.active" id="active-check" class="h-4 w-4" />
+          <label for="active-check" class="text-sm font-medium text-p-text-secondary">Campanha Ativa</label>
+        </div>
+
+      </form>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" @click="saveCampaign">
+            {{ editingCampaign ? 'Salvar Alterações' : 'Criar Campanha' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
-
-<style scoped>
-.page-container {
-  padding: 32px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-}
-
-.subtitle {
-  color: var(--color-surface-400);
-  margin-top: 4px;
-}
-
-.card {
-  background: var(--glass-bg);
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  border: 1px solid var(--glass-border-subtle);
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th {
-  text-align: left;
-  padding: 16px;
-  background: var(--glass-bg-heavy);
-  color: var(--color-surface-400);
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--glass-border-subtle);
-}
-
-.table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--glass-border-subtle);
-  color: var(--color-surface-200);
-  vertical-align: middle;
-}
-
-.utm-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.badge {
-  padding: 2px 8px;
-  background: var(--glass-bg);
-  border-radius: 6px;
-  font-size: 0.6875rem;
-  color: var(--color-surface-200);
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.status-badge.active {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--color-success);
-}
-
-.status-badge.inactive {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-danger);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-}
-
-.text-danger {
-  color: var(--color-danger);
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: var(--glass-bg);
-  padding: 32px;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 600px;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.5);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.empty-state, .loading {
-  padding: 48px;
-  text-align: center;
-  color: var(--color-surface-500);
-}
-
-.mt-6 { margin-top: 1.5rem; }
-.mt-8 { margin-top: 2rem; }
-.mb-0 { margin-bottom: 0; }
-.flex { display: flex; }
-.items-center { align-items: center; }
-.gap-2 { gap: 0.5rem; }
-
-@media (max-width: 767px) {
-  .page-container { padding: 16px; }
-  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .header .actions { width: 100%; justify-content: flex-end; }
-  .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table { min-width: 600px; }
-  .row { grid-template-columns: 1fr !important; }
-}
-</style>

@@ -1,118 +1,79 @@
 <template>
-  <div class="backups-page">
-    <div class="page-header">
-      <div>
-        <h1>Gerenciamento de Backups</h1>
-        <p>Gerencie backups do banco de dados no AWS S3.</p>
-      </div>
-      <div style="display: flex; gap: 8px;">
-        <button
-          class="btn btn-ghost"
-          :disabled="cleaningUp"
-          @click="handleCleanup"
-        >
-          <i class="pi pi-trash mr-1"></i>
+  <div class="space-y-6">
+    <UiPageHeader title="Gerenciamento de Backups" description="Gerencie backups do banco de dados no AWS S3.">
+      <template #actions>
+        <UiButton variant="ghost" :disabled="cleaningUp" @click="handleCleanup">
+          <i class="pi pi-trash"></i>
           {{ cleaningUp ? 'Limpando...' : 'Limpeza Manual' }}
-        </button>
-        <button
-          class="btn btn-primary"
-          :disabled="creating"
-          @click="handleCreate"
-        >
-          <i class="pi pi-plus mr-1"></i>
+        </UiButton>
+        <UiButton variant="primary" :disabled="creating" @click="handleCreate">
+          <i class="pi pi-plus"></i>
           {{ creating ? 'Criando...' : 'Criar Backup Agora' }}
-        </button>
-      </div>
-    </div>
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div class="card">
-      <div v-if="loading" class="loading-state">
-        <div class="loading-spinner"></div>
-      </div>
-      <div v-else-if="backups.length === 0" class="loading-state">
-        <p style="color: var(--color-surface-400);">Nenhum backup encontrado.</p>
-      </div>
-      <div v-else class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Tamanho</th>
-              <th>Arquivo</th>
-              <th style="text-align: right;">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="backup in backups" :key="backup.key">
-              <td>{{ formatDate(backup.lastModified) }}</td>
-              <td>
-                <span class="badge" :class="backup.label === 'manual' ? 'badge-info' : 'badge-success'">
-                  {{ backup.label === 'manual' ? 'Manual' : 'Automático' }}
-                </span>
-              </td>
-              <td>{{ formatSize(backup.size) }}</td>
-              <td style="font-size: 0.8rem; color: var(--color-surface-400); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                {{ backup.key.split('/').pop() }}
-              </td>
-              <td style="text-align: right;">
-                <button
-                  class="btn btn-sm btn-ghost"
-                  style="color: #f59e0b;"
-                  :disabled="restoring"
-                  @click="confirmRestore(backup)"
-                >
-                  <i class="pi pi-replay mr-1"></i>
-                  Restaurar
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <UiCard padding="none">
+      <UiLoadingState v-if="loading" />
+      <UiEmptyState v-else-if="backups.length === 0" title="Nenhum backup encontrado" description="Crie seu primeiro backup clicando no botão acima." />
+      <UiTable v-else>
+        <template #head>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Data</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Tipo</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Tamanho</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Arquivo</th>
+          <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-p-text-secondary">Ações</th>
+        </template>
+        <tr v-for="backup in backups" :key="backup.key" class="border-b border-p-border">
+          <td class="px-4 py-3 text-sm text-p-text">{{ formatDate(backup.lastModified) }}</td>
+          <td class="px-4 py-3 text-sm">
+            <UiBadge :variant="backup.label === 'manual' ? 'info' : 'success'">
+              {{ backup.label === 'manual' ? 'Manual' : 'Automático' }}
+            </UiBadge>
+          </td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ formatSize(backup.size) }}</td>
+          <td class="max-w-[300px] truncate px-4 py-3 text-xs text-p-text-muted">
+            {{ backup.key.split('/').pop() }}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <UiButton variant="warning" size="sm" :disabled="restoring" @click="confirmRestore(backup)">
+              <i class="pi pi-replay"></i>
+              Restaurar
+            </UiButton>
+          </td>
+        </tr>
+      </UiTable>
+    </UiCard>
 
     <!-- Restore Confirmation Modal -->
-    <div v-if="showRestoreModal" class="modal-overlay">
-      <div class="modal" style="max-width: 500px;">
-        <div class="modal-header">
-          <h2 style="color: #ef4444;">
-            <i class="pi pi-exclamation-triangle mr-2"></i>
-            Confirmar Restauração
-          </h2>
-        </div>
-        <div class="modal-body">
-          <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-            <p style="color: #fca5a5; font-weight: 600; margin-bottom: 8px;">
-              ATENÇÃO: Esta operação é destrutiva!
-            </p>
-            <p style="color: var(--color-surface-300); font-size: 0.875rem;">
-              A restauração irá sobrescrever TODOS os dados atuais do banco de dados com o conteúdo deste backup. Esta ação não pode ser desfeita.
-            </p>
-          </div>
-          <p v-if="selectedBackup" style="color: var(--color-surface-300); font-size: 0.875rem;">
-            <strong>Backup:</strong> {{ selectedBackup.key.split('/').pop() }}<br>
-            <strong>Data:</strong> {{ formatDate(selectedBackup.lastModified) }}<br>
-            <strong>Tamanho:</strong> {{ formatSize(selectedBackup.size) }}
+    <UiModal v-model="showRestoreModal" title="Confirmar Restauração" size="md">
+      <div class="space-y-4">
+        <UiAlert variant="error" title="ATENÇÃO: Esta operação é destrutiva!">
+          <p class="text-sm">
+            A restauração irá sobrescrever TODOS os dados atuais do banco de dados com o conteúdo deste backup. Esta ação não pode ser desfeita.
           </p>
-        </div>
-        <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 16px;">
-          <button class="btn btn-ghost" @click="showRestoreModal = false">Cancelar</button>
-          <button
-            class="btn"
-            style="background: #ef4444; color: #fff;"
-            :disabled="restoring"
-            @click="handleRestore"
-          >
-            {{ restoring ? 'Restaurando...' : 'Sim, Restaurar' }}
-          </button>
+        </UiAlert>
+        <div v-if="selectedBackup" class="text-sm text-p-text-secondary">
+          <p><strong>Backup:</strong> {{ selectedBackup.key.split('/').pop() }}</p>
+          <p><strong>Data:</strong> {{ formatDate(selectedBackup.lastModified) }}</p>
+          <p><strong>Tamanho:</strong> {{ formatSize(selectedBackup.size) }}</p>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showRestoreModal = false">Cancelar</UiButton>
+          <UiButton variant="danger" :disabled="restoring" @click="handleRestore">
+            {{ restoring ? 'Restaurando...' : 'Sim, Restaurar' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script setup>
+definePageMeta({ layout: 'painel' })
+
 const authStore = useAuthStore()
 if (!authStore.isSysAdmin) {
   navigateTo(authStore.getDashboardRoute())

@@ -16,7 +16,7 @@ interface AiConfig {
 }
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 
 const { get, post, put, delete: del } = useApi()
@@ -152,427 +152,147 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Configurações de IA</h1>
-        <p class="page-subtitle">Gerencie modelos e chaves de API para os assistentes virtuais dos seus projetos.</p>
-      </div>
-      <button class="btn btn-primary" @click="openCreate">
-        <span>+ Nova Configuração</span>
-      </button>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Configurações de IA" description="Gerencie modelos e chaves de API para os assistentes virtuais dos seus projetos.">
+      <template #actions>
+        <UiButton variant="primary" @click="openCreate">
+          <span>+ Nova Configuração</span>
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="loading" class="flex justify-center p-12">
-      <div class="loading-spinner"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="configs.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-robot" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Nenhuma configuração de IA</h3>
-        <p class="mb-4 px-4">Crie sua primeira configuração para habilitar o assistente nos seus projetos.</p>
-        <button class="btn btn-primary btn-lg rounded-pill px-5" @click="openCreate">Começar agora</button>
-      </div>
-    </div>
+    <UiEmptyState
+      v-else-if="configs.length === 0"
+      title="Nenhuma configuração de IA"
+      description="Crie sua primeira configuração para habilitar o assistente nos seus projetos."
+    >
+      <template #icon>
+        <i class="bi bi-robot text-2xl text-p-text-muted"></i>
+      </template>
+      <template #action>
+        <UiButton variant="primary" size="lg" @click="openCreate">Começar agora</UiButton>
+      </template>
+    </UiEmptyState>
 
-    <div v-else class="ai-config-grid">
-      <div v-for="config in configs" :key="config.id" class="card ai-config-card">
-        <div class="ai-card-header">
-          <div class="ai-card-info">
-            <h3 class="config-name">{{ config.name }}</h3>
-            <span class="badge" :class="config.isActive ? 'badge-success' : 'badge-neutral'">
+    <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+      <div
+        v-for="config in configs"
+        :key="config.id"
+        class="flex flex-col rounded-xl border border-p-border bg-p-elevated p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-p-accent/20 min-h-[240px]"
+      >
+        <div class="flex justify-between items-start mb-6">
+          <div class="flex flex-col gap-2">
+            <h3 class="text-[17px] font-bold text-p-text leading-tight">{{ config.name }}</h3>
+            <UiBadge :variant="config.isActive ? 'success' : 'neutral'">
               {{ config.isActive ? 'Ativo' : 'Inativo' }}
-            </span>
+            </UiBadge>
           </div>
-          <div class="provider-badge">{{ config.provider.toUpperCase() }}</div>
-        </div>
-        
-        <div class="ai-config-details">
-          <div class="detail-item">
-            <span class="detail-label">Modelo</span>
-            <span class="detail-value">{{ config.model }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">API Key</span>
-            <span class="detail-value font-mono">{{ config.apiKey ? '••••••••••••' : 'Não configurada' }}</span>
-          </div>
-          <div v-if="config.systemPrompt" class="detail-item">
-            <span class="detail-label">Prompt custom</span>
-            <span class="detail-value detail-value-accent">Configurado</span>
+          <div class="flex items-center justify-center text-[0.68rem] font-extrabold tracking-wider bg-p-overlay min-w-[82px] h-[30px] rounded-md text-p-text-secondary border border-p-border px-2.5 uppercase">
+            {{ config.provider.toUpperCase() }}
           </div>
         </div>
 
-        <div class="ai-card-actions mt-auto">
-          <button class="btn btn-outline btn-sm btn-action-main" @click="openEdit(config)">
-             <i class="pi pi-pencil mr-1"></i> Editar
-          </button>
-          <button class="btn btn-danger btn-sm btn-action-danger" @click="removeConfig(config.id)">
-             <i class="pi pi-trash mr-1"></i> Excluir
-          </button>
+        <div class="flex flex-col gap-2.5 mb-5 py-3.5 border-t border-b border-p-border">
+          <div class="flex justify-between items-center gap-3 py-0.5">
+            <span class="text-[0.72rem] font-bold uppercase tracking-wide text-p-text-muted">Modelo</span>
+            <span class="font-semibold text-sm text-p-text-secondary text-right">{{ config.model }}</span>
+          </div>
+          <div class="flex justify-between items-center gap-3 py-0.5">
+            <span class="text-[0.72rem] font-bold uppercase tracking-wide text-p-text-muted">API Key</span>
+            <span class="font-semibold text-sm text-p-text-secondary text-right font-mono">{{ config.apiKey ? '••••••••••••' : 'Não configurada' }}</span>
+          </div>
+          <div v-if="config.systemPrompt" class="flex justify-between items-center gap-3 py-0.5">
+            <span class="text-[0.72rem] font-bold uppercase tracking-wide text-p-text-muted">Prompt custom</span>
+            <span class="font-semibold text-sm text-p-accent text-right">Configurado</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 pt-3.5 mt-auto">
+          <UiButton variant="outline" size="sm" class="flex-1" @click="openEdit(config)">
+            <i class="pi pi-pencil mr-1"></i> Editar
+          </UiButton>
+          <UiButton variant="danger" size="sm" class="min-w-[112px]" @click="removeConfig(config.id)">
+            <i class="pi pi-trash mr-1"></i> Excluir
+          </UiButton>
         </div>
       </div>
     </div>
 
     <!-- Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-card max-w-2xl">
-        <div class="modal-header">
-          <h2>{{ editingConfig ? 'Editar Configuração' : 'Nova Configuração' }}</h2>
-          <button class="close-btn" @click="showModal = false">&times;</button>
-        </div>
-        
-        <form @submit.prevent="saveConfig" class="modal-body">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="form-group">
-              <label class="form-label">Nome da Configuração</label>
-              <input v-model="form.name" class="form-input" placeholder="Ex: Assistente Padrão" required />
-            </div>
+    <UiModal v-model="showModal" :title="editingConfig ? 'Editar Configuração' : 'Nova Configuração'" size="lg">
+      <form @submit.prevent="saveConfig">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <UiInput v-model="form.name" label="Nome da Configuração" placeholder="Ex: Assistente Padrão" required />
 
-            <div class="form-group">
-              <label class="form-label">Provedor</label>
-              <select v-model="form.provider" class="form-input" @change="form.model = suggestedModels[0]?.value || ''">
-                <option value="openai">OpenAI (ChatGPT)</option>
-                <option value="anthropic">Anthropic (Claude)</option>
-                <option value="google">Google (Gemini)</option>
-              </select>
-            </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Provedor</label>
+            <select v-model="form.provider" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text transition-colors focus:outline-none focus:ring-2 focus:ring-p-accent/30 focus:border-p-accent" @change="form.model = suggestedModels[0]?.value || ''">
+              <option value="openai">OpenAI (ChatGPT)</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="google">Google (Gemini)</option>
+            </select>
+          </div>
 
-            <div class="form-group">
-              <label class="form-label">Modelo</label>
-              <div class="model-selection-wrapper">
-                <input v-model="form.model" class="form-input" list="model-suggestions" placeholder="Ex: gpt-4o, gpt-3.5-turbo" required />
-                <datalist id="model-suggestions">
-                   <option v-for="m in suggestedModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-                </datalist>
-                <div class="model-hint" v-if="suggestedModels.length">
-                   Sugestões: 
-                   <button type="button" @click="form.model = m.value" v-for="m in suggestedModels.slice(0, 3)" :key="m.value" class="hint-btn">
-                     {{ m.value }}
-                   </button>
-                </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Modelo</label>
+            <div>
+              <input v-model="form.model" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-p-accent/30 focus:border-p-accent" list="model-suggestions" placeholder="Ex: gpt-4o, gpt-3.5-turbo" required />
+              <datalist id="model-suggestions">
+                 <option v-for="m in suggestedModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </datalist>
+              <div class="text-[0.7rem] text-p-text-muted mt-1" v-if="suggestedModels.length">
+                 Sugestões:
+                 <button type="button" @click="form.model = m.value" v-for="m in suggestedModels.slice(0, 3)" :key="m.value" class="bg-p-overlay border-none rounded px-1.5 py-px ml-1 cursor-pointer text-p-text-secondary hover:bg-p-raised">
+                   {{ m.value }}
+                 </button>
               </div>
             </div>
-
-            <div class="form-group">
-              <label class="form-label">Chave de API (API Key)</label>
-              <AppPasswordInput
-                v-model="form.apiKey"
-                :placeholder="editingConfig ? 'Deixe em branco para manter a chave atual' : apiKeyPlaceholder"
-                :class="{ 'input-error': validateApiKey }"
-                :required="!editingConfig"
-              />
-              <small v-if="validateApiKey" class="error-msg">{{ validateApiKey }}</small>
-              <small v-else class="text-muted">Sua chave é salva com segurança.</small>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Temperatura (0.0 a 1.0)</label>
-              <input v-model.number="form.temperature" type="number" step="0.1" min="0" max="1" class="form-input" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Máximo de Tokens</label>
-              <input v-model.number="form.maxTokens" type="number" class="form-input" />
-            </div>
           </div>
 
-          <div class="form-group mt-4 flex items-center gap-2">
-            <input type="checkbox" v-model="form.isActive" id="config-active" />
-            <label for="config-active">Configuração Ativa</label>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Chave de API (API Key)</label>
+            <AppPasswordInput
+              v-model="form.apiKey"
+              :placeholder="editingConfig ? 'Deixe em branco para manter a chave atual' : apiKeyPlaceholder"
+              :class="{ 'border-p-danger': validateApiKey }"
+              :required="!editingConfig"
+            />
+            <small v-if="validateApiKey" class="text-p-danger text-xs block mt-1">{{ validateApiKey }}</small>
+            <small v-else class="text-p-text-muted text-xs block mt-1">Sua chave é salva com segurança.</small>
           </div>
 
-          <div class="form-group mt-4">
-            <label class="form-label">Prompt Personalizado (opcional)</label>
-            <textarea
-              v-model="form.systemPrompt"
-              class="form-input"
-              rows="5"
-              maxlength="2000"
-              placeholder="Ex: Seja sempre muito simpático e trate os clientes pelo nome. Mencione que nosso loteamento fica próximo ao Shopping XYZ."
-              style="resize: vertical; min-height: 100px;"
-            ></textarea>
-            <small class="text-muted" style="display:block; margin-top:4px;">
-              Instruções adicionais de personalidade e contexto para o assistente. São sempre acrescentadas <em>após</em> as regras de segurança obrigatórias da plataforma — você não pode desativá-las.
-              <span :style="{ color: form.systemPrompt.length > 1800 ? 'var(--color-danger)' : 'inherit' }">{{ form.systemPrompt.length }}/2000</span>
-            </small>
-          </div>
+          <UiInput v-model.number="form.temperature" label="Temperatura (0.0 a 1.0)" type="number" step="0.1" min="0" max="1" />
 
-          <div class="modal-footer mt-6">
-            <button type="button" class="btn btn-ghost" @click="showModal = false">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Salvar</button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <UiInput v-model.number="form.maxTokens" label="Máximo de Tokens" type="number" />
+        </div>
+
+        <div class="mt-4 flex items-center gap-2">
+          <input type="checkbox" v-model="form.isActive" id="config-active" class="rounded border-p-border" />
+          <label for="config-active" class="text-sm text-p-text-secondary">Configuração Ativa</label>
+        </div>
+
+        <div class="mt-4">
+          <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Prompt Personalizado (opcional)</label>
+          <textarea
+            v-model="form.systemPrompt"
+            class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-p-accent/30 focus:border-p-accent resize-y min-h-[100px]"
+            rows="5"
+            maxlength="2000"
+            placeholder="Ex: Seja sempre muito simpático e trate os clientes pelo nome. Mencione que nosso loteamento fica próximo ao Shopping XYZ."
+          ></textarea>
+          <small class="text-p-text-muted text-xs block mt-1">
+            Instruções adicionais de personalidade e contexto para o assistente. São sempre acrescentadas <em>após</em> as regras de segurança obrigatórias da plataforma — você não pode desativá-las.
+            <span :class="form.systemPrompt.length > 1800 ? 'text-p-danger' : ''">{{ form.systemPrompt.length }}/2000</span>
+          </small>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-p-border">
+          <UiButton type="button" variant="ghost" @click="showModal = false">Cancelar</UiButton>
+          <UiButton type="submit" variant="primary">Salvar</UiButton>
+        </div>
+      </form>
+    </UiModal>
   </div>
 </template>
-
-<style scoped>
-.page-container {
-  padding: 24px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-}
-
-.page-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.page-subtitle {
-  color: var(--color-surface-400);
-}
-
-.ai-config-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 400px));
-  gap: 24px;
-}
-
-.ai-config-card {
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  min-height: 240px;
-  background: var(--glass-bg);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--glass-border);
-  padding: 24px;
-}
-
-.ai-config-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-  border-color: rgba(52, 211, 153, 0.22);
-}
-
-.ai-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
-}
-
-.ai-card-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.config-name {
-  font-size: 1.0625rem;
-  font-weight: 700;
-  color: var(--color-surface-50);
-  margin: 0;
-  line-height: 1.3;
-}
-
-.provider-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.04);
-  min-width: 82px;
-  height: 30px;
-  border-radius: 6px;
-  color: var(--color-surface-200);
-  border: 1px solid var(--glass-border);
-  padding: 0 10px;
-  text-transform: uppercase;
-}
-
-.ai-config-card:hover .provider-badge {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.35);
-  color: var(--color-primary-300);
-}
-
-.ai-config-details {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding: 14px 0;
-  border-top: 1px solid var(--glass-border-subtle);
-  border-bottom: 1px solid var(--glass-border-subtle);
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 2px 0;
-}
-
-.detail-label {
-  color: var(--color-surface-300);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.detail-value {
-  font-weight: 600;
-  font-size: 0.86rem;
-  color: var(--color-surface-100);
-  text-align: right;
-}
-
-.detail-value-accent {
-  font-size: 0.76rem;
-  color: var(--color-primary-300);
-}
-
-.font-mono {
-  font-family: var(--font-mono);
-}
-
-.ai-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 14px;
-}
-
-.btn-action-main {
-  flex: 1;
-}
-
-.btn-action-danger {
-  min-width: 112px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 48px;
-}
-
-.empty-state-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 16px;
-}
-
-.modal-card {
-  background: var(--glass-bg);
-  border-radius: 12px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-}
-
-.modal-header {
-  padding: 24px;
-  border-bottom: 1px solid var(--glass-border-subtle);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--glass-border-subtle);
-}
-
-.model-selection-wrapper {
-  position: relative;
-}
-
-.model-hint {
-  font-size: 0.7rem;
-  color: var(--color-surface-400);
-  margin-top: 4px;
-}
-
-.hint-btn {
-  background: var(--glass-bg);
-  border: none;
-  border-radius: 4px;
-  padding: 1px 6px;
-  margin-left: 4px;
-  cursor: pointer;
-}
-
-.hint-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.input-error {
-  border-color: var(--color-danger) !important;
-}
-
-.error-msg {
-  color: var(--color-danger);
-  font-size: 0.75rem;
-  display: block;
-  margin-top: 4px;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--color-surface-500);
-}
-
-@media (max-width: 768px) {
-  .page-header {
-    gap: 12px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .ai-config-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .ai-config-card {
-    padding: 18px;
-    min-height: auto;
-  }
-
-  .ai-card-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .btn-action-danger {
-    min-width: 0;
-  }
-}
-</style>

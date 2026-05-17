@@ -1,18 +1,13 @@
 <template>
-  <div>
-    <div class="page-header">
-      <div>
-        <h1>Meu Perfil</h1>
-        <p>Gerencie suas informações e senha</p>
-      </div>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Meu Perfil" description="Gerencie suas informações e senha" />
 
-    <div class="profile-grid">
-      <div class="card">
-        <h2 style="margin-bottom: 16px;">Dados Pessoais</h2>
-        
-        <form v-if="authStore.user?.role === 'CORRETOR'" @submit.prevent="handleUpdateRealtor">
-          <div class="realtor-photo-section">
+    <div class="grid gap-6 md:grid-cols-2">
+      <UiCard>
+        <h2 class="mb-4 text-lg font-semibold text-p-text">Dados Pessoais</h2>
+
+        <form v-if="authStore.user?.role === 'CORRETOR'" @submit.prevent="handleUpdateRealtor" class="space-y-4">
+          <div class="flex items-center gap-5 rounded-xl border border-p-border bg-p-raised p-4">
             <input
               ref="realtorPhotoInput"
               type="file"
@@ -21,162 +16,154 @@
               @change="handleRealtorPhotoSelected"
             />
 
-            <div class="realtor-photo-avatar">
-              <img v-if="realtorPhotoUrl" :src="realtorPhotoUrl" alt="Foto do corretor" />
+            <div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-p-accent/20 bg-p-accent/10 text-2xl font-bold text-p-accent">
+              <img v-if="realtorPhotoUrl" :src="realtorPhotoUrl" alt="Foto do corretor" class="h-full w-full object-cover" />
               <span v-else>{{ realtorPhotoInitial }}</span>
             </div>
 
-            <div class="realtor-photo-actions">
+            <div class="flex flex-1 flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 class="realtor-photo-title">Foto de Perfil</h3>
-                <p class="realtor-photo-help">Essa foto aparece quando o cliente acessa seu link de corretor.</p>
+                <h3 class="text-sm font-semibold text-p-text">Foto de Perfil</h3>
+                <p class="text-xs text-p-text-muted">Essa foto aparece quando o cliente acessa seu link de corretor.</p>
               </div>
-
-              <div class="realtor-photo-buttons">
-                <button type="button" class="btn btn-secondary" :disabled="photoUploading || photoRemoving" @click="openRealtorPhotoPicker">
+              <div class="flex gap-2">
+                <UiButton variant="secondary" size="sm" :disabled="photoUploading || photoRemoving" @click="openRealtorPhotoPicker">
                   {{ photoUploading ? 'Enviando...' : (realtorPhotoUrl ? 'Trocar Foto' : 'Enviar Foto') }}
-                </button>
-                <button v-if="realtorPhotoUrl" type="button" class="btn btn-ghost" :disabled="photoUploading || photoRemoving" @click="removeRealtorPhoto">
+                </UiButton>
+                <UiButton v-if="realtorPhotoUrl" variant="ghost" size="sm" :disabled="photoUploading || photoRemoving" @click="removeRealtorPhoto">
                   {{ photoRemoving ? 'Removendo...' : 'Remover' }}
-                </button>
+                </UiButton>
               </div>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Nome</label>
-            <input v-model="realtorForm.name" class="form-input" required />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Nome</label>
+            <input v-model="realtorForm.name" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">WhatsApp (com DDD)</label>
-            <input v-model="realtorForm.phone" class="form-input" placeholder="(00) 00000-0000" />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">WhatsApp (com DDD)</label>
+            <input v-model="realtorForm.phone" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="(00) 00000-0000" />
           </div>
-          <div class="form-group">
-            <label class="form-label">Código de Compartilhamento (?c=...)</label>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <span style="color: var(--color-surface-400); font-size: 0.9em;">.../?c=</span>
-              <input v-model="realtorForm.code" class="form-input" required pattern="^[a-zA-Z0-9-_]+$" title="Apenas letras, números, hífen e underline" />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Código de Compartilhamento (?c=...)</label>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-p-text-muted">.../?c=</span>
+              <input v-model="realtorForm.code" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" required pattern="^[a-zA-Z0-9-_]+$" title="Apenas letras, números, hífen e underline" />
             </div>
-            <p class="form-help">Este código identifica você nos links de compartilhamento.</p>
+            <p class="text-xs text-p-text-muted">Este código identifica você nos links de compartilhamento.</p>
           </div>
-          <div class="form-group">
-            <label class="form-label">E-mail de Contato</label>
-            <input v-model="realtorForm.email" class="form-input" type="email" />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">E-mail de Contato</label>
+            <input v-model="realtorForm.email" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" type="email" />
           </div>
-          <div class="form-group">
-            <label class="form-label">CRECI</label>
-            <input v-model="realtorForm.creci" class="form-input" />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">CRECI</label>
+            <input v-model="realtorForm.creci" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" />
           </div>
 
-          <div v-if="realtorError" class="alert alert-error">{{ realtorError }}</div>
+          <UiAlert v-if="realtorError" variant="error">{{ realtorError }}</UiAlert>
 
-          <button type="submit" class="btn btn-primary" :disabled="realtorLoading">
+          <UiButton variant="primary" type="submit" :disabled="realtorLoading">
             {{ realtorLoading ? 'Salvando...' : 'Salvar Alterações' }}
-          </button>
+          </UiButton>
         </form>
 
-        <div v-else>
-          <div class="form-group">
-            <label class="form-label">Nome</label>
-            <input :value="authStore.user?.name" class="form-input" disabled />
+        <div v-else class="space-y-4">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Nome</label>
+            <input :value="authStore.user?.name" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text-muted" disabled />
           </div>
-          <div class="form-group">
-            <label class="form-label">E-mail</label>
-            <input :value="authStore.user?.email" class="form-input" disabled />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">E-mail</label>
+            <input :value="authStore.user?.email" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text-muted" disabled />
           </div>
         </div>
-      </div>
+      </UiCard>
 
-      <div class="card">
-        <h2 style="margin-bottom: 16px;">Alterar Senha</h2>
-        <form @submit.prevent="handleChangePassword">
-          <div class="form-group">
-            <label class="form-label">Senha Atual</label>
+      <UiCard>
+        <h2 class="mb-4 text-lg font-semibold text-p-text">Alterar Senha</h2>
+        <form @submit.prevent="handleChangePassword" class="space-y-4">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Senha Atual</label>
             <AppPasswordInput v-model="passForm.currentPassword" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">Nova Senha</label>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Nova Senha</label>
             <AppPasswordInput v-model="passForm.newPassword" :placeholder="PASSWORD_POLICY_HINT" required />
-            <div v-if="passwordPolicyError" class="form-error">
-              {{ passwordPolicyError }}
-            </div>
+            <p v-if="passwordPolicyError" class="text-xs text-p-danger">{{ passwordPolicyError }}</p>
           </div>
-          <div class="form-group">
-            <label class="form-label">Confirmar Nova Senha</label>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Confirmar Nova Senha</label>
             <AppPasswordInput v-model="passForm.confirmPassword" required />
-            <div v-if="passForm.confirmPassword && passForm.confirmPassword !== passForm.newPassword" class="form-error">
-              As senhas não coincidem
-            </div>
+            <p v-if="passForm.confirmPassword && passForm.confirmPassword !== passForm.newPassword" class="text-xs text-p-danger">As senhas não coincidem</p>
           </div>
-          
-          <div v-if="error" class="alert alert-error">{{ error }}</div>
-          
-          <button type="submit" class="btn btn-primary" :disabled="loading || !!passwordPolicyError || (passForm.newPassword !== passForm.confirmPassword)">
+
+          <UiAlert v-if="error" variant="error">{{ error }}</UiAlert>
+
+          <UiButton variant="primary" type="submit" :disabled="loading || !!passwordPolicyError || (passForm.newPassword !== passForm.confirmPassword)">
             {{ loading ? 'Alterando...' : 'Atualizar Senha' }}
-          </button>
+          </UiButton>
         </form>
 
-        <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--gray-200);" />
+        <hr class="my-6 border-p-border" />
 
-        <h2 style="margin-bottom: 16px;">Autenticação em Duas Etapas (2FA)</h2>
-        <p style="font-size: 0.875rem; color: var(--gray-500); margin-bottom: 16px;">
+        <h2 class="mb-4 text-lg font-semibold text-p-text">Autenticação em Duas Etapas (2FA)</h2>
+        <p class="mb-4 text-sm text-p-text-muted">
           Adicione uma camada extra de segurança à sua conta. Ao ativar, um código será enviado para seu e-mail a cada login.
         </p>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <label class="toggle-switch">
-            <input type="checkbox" :checked="twoFactorEnabled" @change="handleToggle2FA" :disabled="twoFactorLoading" />
-            <span class="toggle-slider"></span>
+        <div class="flex items-center gap-3">
+          <label class="relative inline-block h-[26px] w-[48px]">
+            <input type="checkbox" :checked="twoFactorEnabled" @change="handleToggle2FA" :disabled="twoFactorLoading" class="peer sr-only" />
+            <span class="absolute inset-0 cursor-pointer rounded-full bg-p-overlay transition-colors before:absolute before:bottom-[3px] before:left-[3px] before:h-5 before:w-5 before:rounded-full before:bg-white before:transition-transform peer-checked:bg-p-accent peer-checked:before:translate-x-[22px]"></span>
           </label>
-          <span style="font-size: 0.875rem; font-weight: 500;">
+          <span class="text-sm font-medium text-p-text-secondary">
             {{ twoFactorEnabled ? 'Ativado' : 'Desativado' }}
           </span>
-          <span v-if="twoFactorLoading" style="font-size: 0.8125rem; color: var(--gray-400);">Salvando...</span>
+          <span v-if="twoFactorLoading" class="text-xs text-p-text-muted">Salvando...</span>
         </div>
-      </div>
+      </UiCard>
     </div>
 
     <!-- Loteadora public profile section -->
-    <div v-if="authStore.isLoteadora" class="card empresa-card">
-      <h2 style="margin-bottom: 4px;">Dados Públicos da Empresa</h2>
-      <p style="font-size: 0.875rem; color: var(--color-surface-400); margin-bottom: 20px;">
+    <UiCard v-if="authStore.isLoteadora">
+      <h2 class="text-lg font-semibold text-p-text">Dados Públicos da Empresa</h2>
+      <p class="mb-5 text-sm text-p-text-muted">
         Essas informações aparecem no rodapé das páginas de loteamento.
       </p>
 
-      <form @submit.prevent="handleUpdateEmpresa">
-        <div class="empresa-grid">
-          <div class="form-group">
-            <label class="form-label">CRECI</label>
-            <input v-model="empresaForm.creci" class="form-input" placeholder="Ex.: CRECI-GO 12345 J" />
+      <form @submit.prevent="handleUpdateEmpresa" class="space-y-4">
+        <div class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">CRECI</label>
+            <input v-model="empresaForm.creci" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex.: CRECI-GO 12345 J" />
           </div>
-
-          <div class="form-group">
-            <label class="form-label">Telefone / WhatsApp</label>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Telefone / WhatsApp</label>
             <input
               :value="empresaForm.phone"
               @input="empresaForm.phone = maskPhone($event.target.value)"
-              class="form-input"
+              class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none"
               placeholder="(00) 00000-0000"
             />
           </div>
-
-          <div class="form-group">
-            <label class="form-label">E-mail público</label>
-            <input v-model="empresaForm.publicEmail" class="form-input" type="email" placeholder="contato@empresa.com.br" />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">E-mail público</label>
+            <input v-model="empresaForm.publicEmail" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" type="email" placeholder="contato@empresa.com.br" />
           </div>
-
-          <div class="form-group">
-            <label class="form-label">Site</label>
-            <input v-model="empresaForm.website" class="form-input" placeholder="https://empresa.com.br" />
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Site</label>
+            <input v-model="empresaForm.website" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="https://empresa.com.br" />
           </div>
         </div>
 
-        <div v-if="empresaError" class="alert alert-error" style="margin-top: 12px;">{{ empresaError }}</div>
+        <UiAlert v-if="empresaError" variant="error">{{ empresaError }}</UiAlert>
 
-        <button type="submit" class="btn btn-primary" :disabled="empresaLoading" style="margin-top: 16px;">
+        <UiButton variant="primary" type="submit" :disabled="empresaLoading">
           {{ empresaLoading ? 'Salvando...' : 'Salvar Dados da Empresa' }}
-        </button>
+        </UiButton>
       </form>
-    </div>
+    </UiCard>
   </div>
 </template>
 
@@ -187,6 +174,8 @@ import {
   getPasswordPolicyError,
   PASSWORD_POLICY_HINT
 } from '~/utils/passwordPolicy'
+
+definePageMeta({ layout: 'painel' })
 
 const authStore = useAuthStore()
 const { fetchApi, uploadApi } = useApi()
@@ -319,17 +308,17 @@ async function handleUpdateRealtor() {
       ...realtorForm.value,
       phone: unmask(realtorForm.value.phone)
     }
-    
+
     await fetchApi('/realtor-links/me', {
       method: 'PATCH',
       body
     })
-    
+
     // Update name in auth store if changed
     if (authStore.user) {
       authStore.user.name = body.name
     }
-    
+
     toast.success('Perfil atualizado com sucesso!')
   } catch (err) {
     realtorError.value = err.data?.message || 'Erro ao atualizar perfil.'
@@ -426,129 +415,3 @@ async function handleUpdateEmpresa() {
   }
 }
 </script>
-
-<style scoped>
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 26px;
-}
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: var(--gray-300, #cbd5e1);
-  transition: 0.3s;
-  border-radius: 26px;
-}
-.toggle-slider::before {
-  content: "";
-  position: absolute;
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-.toggle-switch input:checked + .toggle-slider {
-  background-color: var(--primary, #2563eb);
-}
-.toggle-switch input:checked + .toggle-slider::before {
-  transform: translateX(22px);
-}
-
-.profile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-@media (max-width: 767px) {
-  .profile-grid { grid-template-columns: 1fr; gap: 1rem; }
-}
-
-.empresa-card { margin-top: 1.5rem; }
-
-.realtor-photo-section {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 16px;
-  margin-bottom: 20px;
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg, 16px);
-  background: var(--glass-bg, rgba(255, 255, 255, 0.04));
-}
-
-.realtor-photo-avatar {
-  width: 88px;
-  height: 88px;
-  border-radius: 999px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: rgba(37, 99, 235, 0.12);
-  color: var(--color-primary-400, #60a5fa);
-  font-size: 2rem;
-  font-weight: 700;
-  border: 1px solid rgba(37, 99, 235, 0.2);
-}
-
-.realtor-photo-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.realtor-photo-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-}
-
-.realtor-photo-title {
-  margin: 0 0 4px;
-  font-size: 1rem;
-}
-
-.realtor-photo-help {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--color-surface-400);
-}
-
-.realtor-photo-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.empresa-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 24px;
-}
-@media (max-width: 640px) {
-  .empresa-grid { grid-template-columns: 1fr; }
-  .realtor-photo-section {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .realtor-photo-actions {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-</style>

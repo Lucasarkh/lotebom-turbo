@@ -1,65 +1,42 @@
 <template>
-  <div class="dashboard-sysadmin">
-    <div class="page-header">
-      <div>
-        <h1>Dashboard Sistema</h1>
-        <p>Visão geral de todos os clientes registrados</p>
-      </div>
-    </div>
+  <div>
+    <UiPageHeader title="Dashboard Sistema" description="Visão geral de todos os clientes registrados" />
 
-    <div v-if="loading" class="loading-state">
-      <div class="loading-spinner"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else class="grid grid-cols-4">
-      <div class="stat-card">
-        <div class="stat-value">{{ globalMetrics.totalTenants }}</div>
-        <div class="stat-label">Loteadoras Ativas</div>
+    <template v-else>
+      <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <UiStatCard :value="globalMetrics.totalTenants" label="Loteadoras Ativas" />
+        <UiStatCard :value="globalMetrics.totalProjects" label="Projetos Totais" />
+        <UiStatCard :value="globalMetrics.totalBrokers" label="Corretores" />
+        <UiStatCard :value="globalMetrics.totalLeads" label="Leads Gerados" />
       </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ globalMetrics.totalProjects }}</div>
-        <div class="stat-label">Projetos Totais</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ globalMetrics.totalBrokers }}</div>
-        <div class="stat-label">Corretores</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ globalMetrics.totalLeads }}</div>
-        <div class="stat-label">Leads Gerados</div>
-      </div>
-    </div>
 
-    <div v-if="!loading" style="margin-top: 32px;">
-      <h2 style="margin-bottom: 20px;">Top Loteadoras (Leads)</h2>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Loteadora</th>
-              <th>Projetos</th>
-              <th>Corretores</th>
-              <th>Leads Gerados</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="t in topTenants" :key="t.id">
-              <td>{{ t.name }}</td>
-              <td>{{ t.metrics.projects }}</td>
-              <td>{{ t.metrics.brokers }}</td>
-              <td>{{ t.metrics.leads }}</td>
-              <td>
-                <span class="badge" :class="t.isActive ? 'badge-success' : 'badge-error'">{{ t.isActive ? 'Ativa' : 'Desativada' }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="mt-8">
+        <h2 class="mb-5 text-lg font-semibold text-p-text">Top Loteadoras (Leads)</h2>
+        <UiTable>
+          <template #head>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Loteadora</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Projetos</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Corretores</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Leads Gerados</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Status</th>
+          </template>
+          <tr v-for="t in topTenants" :key="t.id">
+            <td class="px-4 py-3 text-sm text-p-text">{{ t.name }}</td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ t.metrics.projects }}</td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ t.metrics.brokers }}</td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ t.metrics.leads }}</td>
+            <td class="px-4 py-3">
+              <UiBadge :variant="t.isActive ? 'success' : 'danger'">{{ t.isActive ? 'Ativa' : 'Desativada' }}</UiBadge>
+            </td>
+          </tr>
+        </UiTable>
+        <div class="mt-4 text-right">
+          <UiButton variant="outline" to="/painel/tenants">Ver Todas as Loteadoras</UiButton>
+        </div>
       </div>
-      <div style="margin-top: 16px; text-align: right;">
-        <NuxtLink to="/painel/tenants" class="btn btn-outline">Ver Todas as Loteadoras</NuxtLink>
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 

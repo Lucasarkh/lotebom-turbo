@@ -1,134 +1,119 @@
 <template>
-  <div class="modal-overlay">
-    <div class="modal-content modal-md">
-      <div class="modal-header">
-        <h2>Configurações de Agendamento</h2>
-        <button class="close-btn" @click="$emit('close')">&times;</button>
+  <div class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm flex items-center justify-center z-[2000] p-5">
+    <div class="bg-p-elevated w-full max-w-[520px] rounded-xl shadow-2xl flex flex-col border border-p-border">
+      <div class="px-8 py-6 border-b border-p-border flex justify-between items-center">
+        <h2 class="text-lg font-semibold text-p-text m-0">Configurações de Agendamento</h2>
+        <button class="bg-transparent border-none text-2xl text-p-text-muted cursor-pointer p-1 leading-none transition-colors duration-200 hover:text-p-text" @click="$emit('close')">&times;</button>
       </div>
 
-      <div class="modal-body">
-        <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-          <p>Sincronizando configurações...</p>
-        </div>
-        
-        <div v-else class="config-container">
-          <fieldset :disabled="!canWriteScheduling" class="config-fieldset">
+      <div class="flex flex-col gap-8 px-8 py-6 overflow-y-auto max-h-[calc(100vh-14rem)]">
+        <UiLoadingState v-if="loading" text="Sincronizando configurações..." />
+
+        <div v-else class="flex flex-col gap-8">
+          <fieldset :disabled="!canWriteScheduling" class="contents">
           <!-- Seção: Ativação -->
-          <section class="config-card toggle-card">
-            <div class="card-info">
-              <h3 class="card-title">Agendamentos Públicos</h3>
-              <p class="card-description">Habilite a reserva de horários diretamente pelos clientes no seu portal.</p>
+          <section class="bg-p-overlay border border-p-border p-6 rounded-lg flex justify-between items-center gap-5">
+            <div>
+              <h3 class="text-base font-semibold text-p-text m-0 mb-1">Agendamentos Públicos</h3>
+              <p class="text-sm text-p-text-muted m-0 leading-relaxed">Habilite a reserva de horários diretamente pelos clientes no seu portal.</p>
             </div>
-            <label class="modern-toggle">
-              <input v-model="config.enabled" type="checkbox">
-              <span class="toggle-track"></span>
+            <label class="relative inline-block w-12 h-[26px] shrink-0">
+              <input v-model="config.enabled" type="checkbox" class="opacity-0 w-0 h-0 peer">
+              <span class="absolute cursor-pointer inset-0 bg-white/15 rounded-full transition-all duration-300 peer-checked:bg-blue-600 before:content-[''] before:absolute before:h-5 before:w-5 before:left-[3px] before:bottom-[3px] before:bg-white before:rounded-full before:transition-all before:duration-300 before:shadow-sm peer-checked:before:translate-x-[22px]"></span>
             </label>
           </section>
 
           <!-- Seção: Horários -->
-          <section class="config-section">
-            <header class="section-header">
-              <h4 class="section-title">Janela de Atendimento</h4>
+          <section class="flex flex-col gap-4">
+            <header>
+              <h4 class="text-[0.825rem] font-semibold text-p-text-muted uppercase tracking-wide m-0">Janela de Atendimento</h4>
             </header>
-            
-            <div class="grid-fields duo">
-              <div class="field-group">
-                <label class="field-label">Início</label>
-                <div class="field-wrapper">
-                  <input v-model="config.startTime" type="time" class="base-input">
-                </div>
+
+            <div class="grid grid-cols-2 gap-5">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-p-text">Início</label>
+                <input v-model="config.startTime" type="time" class="w-full h-11 px-4 bg-p-raised border border-p-border rounded-lg text-[0.95rem] text-p-text transition-all duration-200 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
               </div>
-              <div class="field-group">
-                <label class="field-label">Término</label>
-                <div class="field-wrapper">
-                  <input v-model="config.endTime" type="time" class="base-input">
-                </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-p-text">Término</label>
+                <input v-model="config.endTime" type="time" class="w-full h-11 px-4 bg-p-raised border border-p-border rounded-lg text-[0.95rem] text-p-text transition-all duration-200 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
               </div>
             </div>
           </section>
 
           <!-- Seção: Regras -->
-          <section class="config-section">
-            <header class="section-header">
-              <h4 class="section-title">Regras de Reserva</h4>
+          <section class="flex flex-col gap-4">
+            <header>
+              <h4 class="text-[0.825rem] font-semibold text-p-text-muted uppercase tracking-wide m-0">Regras de Reserva</h4>
             </header>
 
-            <div class="grid-fields duo">
-              <div class="field-group">
-                <label class="field-label">Intervalo entre Visitas</label>
-                <div class="field-wrapper">
-                  <select v-model="config.scheduleInterval" class="base-select">
-                    <option :value="15">15 minutos</option>
-                    <option :value="30">30 minutos</option>
-                    <option :value="45">45 minutos</option>
-                    <option :value="60">1 hora</option>
-                    <option :value="90">1 hora e 30 min</option>
-                    <option :value="120">2 horas</option>
-                  </select>
-                </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-p-text">Intervalo entre Visitas</label>
+                <select v-model="config.scheduleInterval" class="w-full h-11 px-4 bg-p-raised border border-p-border rounded-lg text-[0.95rem] text-p-text transition-all duration-200 outline-none appearance-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
+                  <option :value="15">15 minutos</option>
+                  <option :value="30">30 minutos</option>
+                  <option :value="45">45 minutos</option>
+                  <option :value="60">1 hora</option>
+                  <option :value="90">1 hora e 30 min</option>
+                  <option :value="120">2 horas</option>
+                </select>
               </div>
-              <div class="field-group">
-                <label class="field-label">Atendimentos Simultâneos</label>
-                <div class="field-wrapper">
-                  <input v-model.number="config.maxSimultaneous" type="number" class="base-input" min="1">
-                </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-p-text">Atendimentos Simultâneos</label>
+                <input v-model.number="config.maxSimultaneous" type="number" class="w-full h-11 px-4 bg-p-raised border border-p-border rounded-lg text-[0.95rem] text-p-text transition-all duration-200 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25" min="1">
               </div>
             </div>
           </section>
 
           <!-- Seção: Intervalos e Pausas -->
-          <section class="config-section">
-            <header class="section-header">
-              <h4 class="section-title">Intervalos e Pausas</h4>
+          <section class="flex flex-col gap-4">
+            <header>
+              <h4 class="text-[0.825rem] font-semibold text-p-text-muted uppercase tracking-wide m-0">Intervalos e Pausas</h4>
             </header>
 
-            <div class="grid-fields duo">
-              <div class="field-group">
-                <label class="field-label">Almoço (Início)</label>
-                <div class="field-wrapper">
-                  <input v-model="config.lunchStart" type="time" class="base-input">
-                </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-p-text">Almoço (Início)</label>
+                <input v-model="config.lunchStart" type="time" class="w-full h-11 px-4 bg-p-raised border border-p-border rounded-lg text-[0.95rem] text-p-text transition-all duration-200 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
               </div>
-              <div class="field-group">
-                <label class="field-label">Almoço (Fim)</label>
-                <div class="field-wrapper">
-                  <input v-model="config.lunchEnd" type="time" class="base-input">
-                </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-p-text">Almoço (Fim)</label>
+                <input v-model="config.lunchEnd" type="time" class="w-full h-11 px-4 bg-p-raised border border-p-border rounded-lg text-[0.95rem] text-p-text transition-all duration-200 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
               </div>
             </div>
 
             <!-- Custom Breaks -->
-            <div class="custom-breaks-list" style="margin-top: 16px;">
+            <div class="mt-4">
               <header class="flex justify-between items-center mb-3">
-                <span style="font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.55);"><i class="bi bi-cup-hot-fill" aria-hidden="true"></i> Outras Pausas</span>
-                <button class="btn-text-sm" @click="addBreak">+ Adicionar</button>
+                <span class="text-[0.8rem] font-semibold text-p-text-muted">Outras Pausas</span>
+                <button class="bg-transparent border-none text-blue-600 text-xs font-semibold cursor-pointer p-0" @click="addBreak">+ Adicionar</button>
               </header>
 
-              <div v-for="(b, idx) in (config.breaks || [])" :key="idx" 
-                   class="break-item-row">
-                <input v-model="b.name" placeholder="Motivo" class="base-input sm-input" style="flex: 2">
-                <input v-model="b.start" type="time" class="base-input sm-input" style="flex: 1">
-                <span style="font-size: 10px; color: rgba(255,255,255,0.5);">até</span>
-                <input v-model="b.end" type="time" class="base-input sm-input" style="flex: 1">
-                <button class="btn-delete-sm" @click="removeBreak(idx)">&times;</button>
+              <div v-for="(b, idx) in (config.breaks || [])" :key="idx"
+                   class="flex items-center gap-2 bg-p-overlay p-2 rounded-lg mb-2 border border-p-border">
+                <input v-model="b.name" placeholder="Motivo" class="flex-[2] h-8 text-[0.8rem] px-2 bg-p-raised border border-p-border rounded-lg text-p-text outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
+                <input v-model="b.start" type="time" class="flex-1 h-8 text-[0.8rem] px-2 bg-p-raised border border-p-border rounded-lg text-p-text outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
+                <span class="text-[10px] text-p-text-muted">até</span>
+                <input v-model="b.end" type="time" class="flex-1 h-8 text-[0.8rem] px-2 bg-p-raised border border-p-border rounded-lg text-p-text outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/25">
+                <button class="bg-transparent border-none text-red-500 text-xl cursor-pointer px-1 leading-none" @click="removeBreak(idx)">&times;</button>
               </div>
             </div>
           </section>
 
           <!-- Seção: Calendário -->
-          <section class="config-section">
-            <header class="section-header">
-              <h4 class="section-title">Dias de Operação</h4>
+          <section class="flex flex-col gap-4">
+            <header>
+              <h4 class="text-[0.825rem] font-semibold text-p-text-muted uppercase tracking-wide m-0">Dias de Operação</h4>
             </header>
 
-            <div class="days-selector">
-              <label v-for="day in dayOptions" :key="day.value" class="day-input">
-                <input v-model="config.availableDays" type="checkbox" :value="day.value" class="hidden-check">
-                <div class="day-box">{{ day.label }}</div>
+            <div class="flex gap-2 justify-between">
+              <label v-for="day in dayOptions" :key="day.value" class="flex-1 cursor-pointer">
+                <input v-model="config.availableDays" type="checkbox" :value="day.value" class="hidden peer">
+                <div class="h-10 flex items-center justify-center bg-p-raised border border-p-border rounded-lg text-xs font-medium text-p-text-muted transition-all duration-200 hover:border-p-border-hover peer-checked:bg-blue-600 peer-checked:border-blue-600 peer-checked:text-white peer-checked:font-semibold">{{ day.label }}</div>
               </label>
             </div>
-            <footer class="section-hint">
+            <footer class="text-xs text-p-text-muted mt-1">
               Os horários serão gerados automaticamente para os dias selecionados.
             </footer>
           </section>
@@ -136,12 +121,11 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" @click="$emit('close')">Cancelar</button>
-        <button class="btn btn-primary" :disabled="saving || !canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="save">
-          <span v-if="saving" class="spinner-sm"></span>
+      <div class="px-8 py-5 bg-p-elevated border-t border-p-border flex gap-3 justify-end">
+        <UiButton variant="secondary" @click="$emit('close')">Cancelar</UiButton>
+        <UiButton variant="primary" :loading="saving" :disabled="saving || !canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="save">
           Salvar Configurações
-        </button>
+        </UiButton>
       </div>
     </div>
   </div>
@@ -215,7 +199,7 @@ const save = async () => {
   try {
     // Destructuring to remove read-only/metadata fields that backend might reject
     const { id, projectId, createdAt, updatedAt, ...updateData } = config.value as any;
-    
+
     await api.patch(`/scheduling/config/${props.projectId}`, updateData);
     toast.success('Configurações salvas com sucesso');
     emit('updated');
@@ -227,306 +211,3 @@ const save = async () => {
   }
 };
 </script>
-
-<style scoped>
-/* RESET & FOUNDATION */
-.modal-content {
-  background: var(--glass-bg);
-  border-radius: 12px; /* Smooth but professional */
-  width: 100%;
-  max-width: 520px;
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15), 0 18px 36px -18px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  padding: 24px 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h2 {
-  font-size: 1.15rem;
-  font-weight: 600; /* Regular semi-bold for senior UI */
-  color: var(--color-surface-50);
-  margin: 0;
-}
-
-.close-btn {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  padding: 4px;
-  line-height: 1;
-  transition: color 0.2s;
-}
-
-.close-btn:hover { color: var(--color-surface-100); }
-
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 32px; /* Uniform section spacing */
-}
-
-/* SECTIONING */
-.config-container {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.config-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.section-title {
-  font-size: 0.825rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0;
-}
-
-/* CARDS */
-.toggle-card {
-  background: var(--glass-bg-heavy);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 24px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-
-.card-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-surface-50);
-  margin: 0 0 4px 0;
-}
-
-.card-description {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.55);
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* GRID & FIELDS */
-.grid-fields {
-  display: grid;
-  gap: 20px;
-}
-
-.grid-fields.duo { grid-template-columns: 1fr 1fr; }
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-surface-100);
-}
-
-/* INPUTS & SELECTS */
-.base-input, .base-select {
-  width: 100%;
-  height: 44px;
-  padding: 0 16px;
-  background: var(--glass-bg);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  color: var(--color-surface-100);
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-.base-input:focus, .base-select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
-}
-
-/* TOGGLE TRACK */
-.modern-toggle {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 26px;
-  flex-shrink: 0;
-}
-
-.modern-toggle input { opacity: 0; width: 0; height: 0; }
-
-.toggle-track {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(255, 255, 255, 0.15);
-  transition: .3s;
-  border-radius: 30px;
-}
-
-.toggle-track:before {
-  position: absolute;
-  content: "";
-  height: 20px; width: 20px;
-  left: 3px; bottom: 3px;
-  background-color: white;
-  transition: .3s;
-  border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-}
-
-input:checked + .toggle-track { background-color: #2563eb; }
-input:checked + .toggle-track:before { transform: translateX(22px); }
-
-/* DAY PICKER */
-.days-selector {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-}
-
-.day-input { flex: 1; cursor: pointer; }
-
-.hidden-check {
-  display: none;
-}
-
-.day-box {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--glass-bg);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.55);
-  transition: all 0.2s;
-}
-
-.day-input:hover .day-box { border-color: rgba(255, 255, 255, 0.5); }
-
-.hidden-check:checked + .day-box {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: white;
-  font-weight: 600;
-}
-
-.section-hint {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.4);
-  margin-top: 4px;
-}
-
-.break-item-row {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  background: var(--glass-bg-heavy) !important;
-  padding: 8px !important;
-  border-radius: 8px !important;
-  margin-bottom: 8px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-.sm-input {
-  height: 32px !important;
-  font-size: 0.8rem !important;
-  padding: 0 8px !important;
-}
-
-.btn-text-sm {
-  background: none !important;
-  border: none !important;
-  color: #2563eb !important;
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  padding: 0 !important;
-}
-
-.btn-delete-sm {
-  background: none !important;
-  border: none !important;
-  color: #ef4444 !important;
-  font-size: 1.2rem !important;
-  cursor: pointer !important;
-  padding: 0 4px !important;
-  line-height: 1 !important;
-}
-
-/* FOOTER */
-.modal-footer {
-  padding: 20px 32px;
-  background: var(--glass-bg);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.btn {
-  height: 42px;
-  padding: 0 24px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-secondary {
-  background: var(--glass-bg);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--color-surface-100);
-}
-
-.btn-secondary:hover { background: var(--glass-bg-heavy); }
-
-.btn-primary {
-  background: #1a1a1a; /* Professional dark primary */
-  color: white;
-}
-
-.btn-primary:hover { background: #000; }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* LOADING */
-.loading-state {
-  padding: 40px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid var(--glass-border-subtle);
-  border-top: 3px solid #2563eb;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 12px;
-}
-
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-</style>

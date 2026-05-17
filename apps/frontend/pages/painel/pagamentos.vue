@@ -4,7 +4,7 @@ import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 
 const { get, post, patch, delete: del } = useApi()
@@ -155,7 +155,7 @@ function buildKeysPayload(provider: PaymentProvider, keys: PaymentKeys, isEditin
 
 function validateForm(): boolean {
   formErrors.value = []
-  
+
   if (!form.value.name?.trim()) {
     formErrors.value.push('Nome do perfil é obrigatório.')
   }
@@ -259,7 +259,7 @@ function openCreate() {
 function openEdit(config: PaymentConfigRecord) {
   editingConfig.value = config
   formErrors.value = []
-  
+
   // Ensure keysJson is initialized even if empty in DB
   const baseKeys = {
     secretKey: '',
@@ -310,269 +310,166 @@ onMounted(fetchData)
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Configurações de Pagamento</h1>
-        <p class="page-subtitle">Gerencie suas chaves de API e gateways de forma centralizada.</p>
-      </div>
-      <button class="btn btn-primary" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="openCreate">
-        <span>+ Novo Gateway</span>
-      </button>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Configurações de Pagamento" description="Gerencie suas chaves de API e gateways de forma centralizada.">
+      <template #actions>
+        <UiButton variant="primary" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="openCreate">
+          + Novo Gateway
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="loading" class="flex justify-center p-12">
-      <div class="loader"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="configs.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Nenhum gateway configurado</h3>
-        <p class="mb-4 px-4">Configure um gateway (Stripe, Asaas, etc) para permitir reservas online nos seus projetos.</p>
-        <button class="btn btn-primary btn-lg rounded-pill px-5" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="openCreate">Configurar Primeiro Gateway</button>
-      </div>
-    </div>
+    <UiEmptyState
+      v-else-if="configs.length === 0"
+      title="Nenhum gateway configurado"
+      description="Configure um gateway (Stripe, Asaas, etc) para permitir reservas online nos seus projetos."
+    >
+      <UiButton variant="primary" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="openCreate">
+        Configurar Primeiro Gateway
+      </UiButton>
+    </UiEmptyState>
 
     <div v-else class="grid gap-6">
-      <div v-for="config in configs" :key="config.id" class="card payment-config-card">
-        <div class="flex justify-between items-start">
+      <div v-for="config in configs" :key="config.id" class="rounded-xl border-l-4 border border-p-border bg-p-elevated p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg" :class="{ 'border-l-p-accent': true }">
+        <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="flex items-center gap-4">
-            <div class="provider-badge" :class="config.provider.toLowerCase()">
+            <span class="rounded-full px-3 py-1 text-xs font-bold uppercase text-white"
+              :class="{
+                'bg-[#635bff]': config.provider === 'STRIPE',
+                'bg-[#0062ff]': config.provider === 'ASAAS',
+                'bg-[#009ee3]': config.provider === 'MERCADO_PAGO',
+                'bg-[#3c5af4]': config.provider === 'PAGAR_ME',
+                'bg-[#3fb43f]': config.provider === 'PAGSEGURO',
+              }">
               {{ config.provider }}
-            </div>
+            </span>
             <div>
-              <h3 class="config-name">{{ config.name }}</h3>
-              <p class="config-status" :class="{ 'status-active': config.isActive }">
+              <h3 class="text-lg font-semibold text-p-text">{{ config.name }}</h3>
+              <p class="mt-1 text-sm" :class="config.isActive ? 'text-p-success' : 'text-p-text-muted'">
                 {{ config.isActive ? '● Ativo Globalmente' : '○ Desativado' }}
               </p>
             </div>
           </div>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-outline" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="openEdit(config)">Editar</button>
-            <button class="btn btn-sm btn-outline btn-danger" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="removeConfig(config.id)">Remover</button>
+            <UiButton variant="secondary" size="sm" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="openEdit(config)">Editar</UiButton>
+            <UiButton variant="danger" size="sm" :disabled="!canWritePayments" :title="!canWritePayments ? writePermissionHint : undefined" @click="removeConfig(config.id)">Remover</UiButton>
           </div>
         </div>
 
-        <div class="config-details mt-4">
-          <div class="detail-item">
-            <span class="label">Projetos vinculados:</span>
-            <span class="value">{{ config.projects?.length || 0 }}</span>
+        <div class="mt-4 space-y-2">
+          <div class="text-sm">
+            <span class="text-p-text-muted">Projetos vinculados:</span>
+            <span class="ml-2 font-semibold text-p-text-secondary">{{ config.projects?.length || 0 }}</span>
           </div>
-          <div class="detail-item mt-2">
-            <span class="label">Webhook URL:</span>
-            <div class="webhook-box">
-              <code>{{ getWebhookUrl(config.provider, config.projects?.length === 1 ? config.projects[0]?.id : undefined) }}</code>
-              <button @click="copyWebhookUrl(config.provider, config.projects?.length === 1 ? config.projects[0]?.id : undefined)" class="btn-copy">Copiar</button>
+          <div class="text-sm">
+            <span class="text-p-text-muted">Webhook URL:</span>
+            <div class="mt-1 flex items-center gap-2 rounded-lg bg-p-raised px-3 py-2">
+              <code class="flex-1 truncate text-xs text-p-text-secondary">{{ getWebhookUrl(config.provider, config.projects?.length === 1 ? config.projects[0]?.id : undefined) }}</code>
+              <button @click="copyWebhookUrl(config.provider, config.projects?.length === 1 ? config.projects[0]?.id : undefined)" class="shrink-0 rounded border border-p-border bg-p-overlay px-2 py-0.5 text-xs text-p-text-muted hover:bg-p-raised transition-colors">Copiar</button>
             </div>
-            <small v-if="config.projects?.length !== 1" class="webhook-hint">Use o ID do projeto no lugar de :projectId ao configurar o provedor.</small>
+            <small v-if="config.projects?.length !== 1" class="mt-2 block text-xs text-p-text-muted">Use o ID do projeto no lugar de :projectId ao configurar o provedor.</small>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Modal Form -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal" style="max-width: 600px;">
-        <div class="modal-header">
-          <h3>{{ editingConfig ? 'Editar' : 'Novo' }} Gateway de Pagamento</h3>
-          <button class="close-btn" @click="showModal = false">&times;</button>
+    <UiModal v-model="showModal" :title="(editingConfig ? 'Editar' : 'Novo') + ' Gateway de Pagamento'" size="lg">
+      <form @submit.prevent="saveConfig" class="space-y-4">
+        <!-- Validation errors -->
+        <div v-if="formErrors.length > 0" class="rounded-lg border border-p-danger/30 bg-p-danger-subtle p-3">
+          <p v-for="err in formErrors" :key="err" class="text-sm text-p-danger">{{ err }}</p>
         </div>
 
-        <form @submit.prevent="saveConfig" class="modal-body">
-          <!-- Validation errors -->
-          <div v-if="formErrors.length > 0" class="form-errors mb-4">
-            <p v-for="err in formErrors" :key="err" class="form-error-msg"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ err }}</p>
-          </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-p-text-secondary">Nome do Perfil (Ex: Stripe Principal)</label>
+          <input v-model="form.name" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Identificador para uso interno" required />
+        </div>
 
-          <div class="form-group">
-            <label class="form-label">Nome do Perfil (Ex: Stripe Principal)</label>
-            <input v-model="form.name" type="text" class="form-input" placeholder="Identificador para uso interno" required />
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Gateway Operador</label>
+            <select v-model="form.provider" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none">
+              <option value="STRIPE">Stripe</option>
+              <option value="ASAAS">Asaas</option>
+              <option value="MERCADO_PAGO">Mercado Pago</option>
+              <option value="PAGAR_ME">Pagar.me</option>
+              <option value="PAGSEGURO">PagSeguro</option>
+            </select>
           </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="form-group">
-              <label class="form-label">Gateway Operador</label>
-              <select v-model="form.provider" class="form-input">
-                <option value="STRIPE">Stripe</option>
-                <option value="ASAAS">Asaas</option>
-                <option value="MERCADO_PAGO">Mercado Pago</option>
-                <option value="PAGAR_ME">Pagar.me</option>
-                <option value="PAGSEGURO">PagSeguro</option>
-              </select>
-            </div>
-            <div class="form-group flex items-end">
-              <div class="flex items-center gap-2 mb-2">
-                <input type="checkbox" v-model="form.isActive" id="chkActive" />
-                <label for="chkActive" class="form-label mb-0">Ativo</label>
-              </div>
+          <div class="flex items-end">
+            <div class="mb-2 flex items-center gap-2">
+              <input type="checkbox" v-model="form.isActive" id="chkActive" />
+              <label for="chkActive" class="text-sm font-medium text-p-text-secondary">Ativo</label>
             </div>
           </div>
+        </div>
 
-          <hr class="my-6" />
+        <hr class="border-p-border" />
 
-          <!-- Provider Specific Fields -->
-          <div v-if="form.provider === 'STRIPE'">
-            <div class="form-group">
-              <label class="form-label">Secret Key (sk_...)</label>
-              <AppPasswordInput v-model="form.keysJson.secretKey" :placeholder="getSecretPlaceholder('secretKey', 'Insira sua Secret Key do Stripe')" required autocomplete="new-password" />
-              <small v-if="editingConfig && hasStoredSecret('secretKey')" class="field-status">Secret Key já salva. Deixe em branco para manter.</small>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Webhook Signing Secret (whsec_...)</label>
-              <AppPasswordInput v-model="form.webhookSecret" :placeholder="editingConfig && editingConfig.webhookSecretConfigured ? 'Já configurado. Preencha apenas para substituir.' : 'Opcional'" autocomplete="new-password" />
-              <small v-if="editingConfig && editingConfig.webhookSecretConfigured" class="field-status">Webhook secret já salvo. Deixe em branco para manter.</small>
-            </div>
+        <!-- Provider Specific Fields -->
+        <div v-if="form.provider === 'STRIPE'" class="space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Secret Key (sk_...)</label>
+            <AppPasswordInput v-model="form.keysJson.secretKey" :placeholder="getSecretPlaceholder('secretKey', 'Insira sua Secret Key do Stripe')" required autocomplete="new-password" />
+            <small v-if="editingConfig && hasStoredSecret('secretKey')" class="mt-2 block text-xs text-p-text-muted">Secret Key já salva. Deixe em branco para manter.</small>
           </div>
-
-          <div v-if="form.provider === 'ASAAS'">
-            <div class="form-group">
-              <label class="form-label">API Key ($...)</label>
-              <AppPasswordInput v-model="form.keysJson.apiKey" :placeholder="getSecretPlaceholder('apiKey', 'Access Token do Asaas')" required autocomplete="new-password" />
-              <small v-if="editingConfig && hasStoredSecret('apiKey')" class="field-status">API Key já salva. Deixe em branco para manter.</small>
-            </div>
-            <div class="flex items-center gap-2 mt-2">
-              <input type="checkbox" v-model="form.keysJson.isSandbox" id="chkAsaasSandbox" />
-              <label for="chkAsaasSandbox">Ambiente Sandbox</label>
-            </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Webhook Signing Secret (whsec_...)</label>
+            <AppPasswordInput v-model="form.webhookSecret" :placeholder="editingConfig && editingConfig.webhookSecretConfigured ? 'Já configurado. Preencha apenas para substituir.' : 'Opcional'" autocomplete="new-password" />
+            <small v-if="editingConfig && editingConfig.webhookSecretConfigured" class="mt-2 block text-xs text-p-text-muted">Webhook secret já salvo. Deixe em branco para manter.</small>
           </div>
+        </div>
 
-          <div v-if="form.provider === 'MERCADO_PAGO'">
-            <div class="form-group">
-              <label class="form-label">Access Token (APP_USR-...)</label>
-              <AppPasswordInput v-model="form.keysJson.accessToken" :placeholder="getSecretPlaceholder('accessToken', 'Insira seu Access Token do Mercado Pago')" required autocomplete="new-password" />
-              <small v-if="editingConfig && hasStoredSecret('accessToken')" class="field-status">Access Token já salvo. Deixe em branco para manter.</small>
-            </div>
+        <div v-if="form.provider === 'ASAAS'" class="space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">API Key ($...)</label>
+            <AppPasswordInput v-model="form.keysJson.apiKey" :placeholder="getSecretPlaceholder('apiKey', 'Access Token do Asaas')" required autocomplete="new-password" />
+            <small v-if="editingConfig && hasStoredSecret('apiKey')" class="mt-2 block text-xs text-p-text-muted">API Key já salva. Deixe em branco para manter.</small>
           </div>
+          <div class="mt-2 flex items-center gap-2">
+            <input type="checkbox" v-model="form.keysJson.isSandbox" id="chkAsaasSandbox" />
+            <label for="chkAsaasSandbox" class="text-sm text-p-text-secondary">Ambiente Sandbox</label>
+          </div>
+        </div>
 
-          <div v-if="form.provider === 'PAGAR_ME'">
-            <div class="form-group">
-              <label class="form-label">Secret Key (ak_...)</label>
-              <AppPasswordInput v-model="form.keysJson.secretKey" :placeholder="getSecretPlaceholder('secretKey', 'Insira sua Secret Key do Pagar.me')" required autocomplete="new-password" />
-              <small v-if="editingConfig && hasStoredSecret('secretKey')" class="field-status">Secret Key já salva. Deixe em branco para manter.</small>
-            </div>
+        <div v-if="form.provider === 'MERCADO_PAGO'">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Access Token (APP_USR-...)</label>
+            <AppPasswordInput v-model="form.keysJson.accessToken" :placeholder="getSecretPlaceholder('accessToken', 'Insira seu Access Token do Mercado Pago')" required autocomplete="new-password" />
+            <small v-if="editingConfig && hasStoredSecret('accessToken')" class="mt-2 block text-xs text-p-text-muted">Access Token já salvo. Deixe em branco para manter.</small>
           </div>
+        </div>
 
-          <div v-if="form.provider === 'PAGSEGURO'">
-            <div class="form-group">
-              <label class="form-label">Token de Acesso</label>
-              <AppPasswordInput v-model="form.keysJson.token" :placeholder="getSecretPlaceholder('token', 'Insira seu token do PagSeguro')" required autocomplete="new-password" />
-              <small v-if="editingConfig && hasStoredSecret('token')" class="field-status">Token já salvo. Deixe em branco para manter.</small>
-            </div>
-            <div class="flex items-center gap-2 mt-2">
-              <input type="checkbox" v-model="form.keysJson.isSandbox" id="chkPagSeguroSandbox" />
-              <label for="chkPagSeguroSandbox">Ambiente Sandbox</label>
-            </div>
+        <div v-if="form.provider === 'PAGAR_ME'">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Secret Key (ak_...)</label>
+            <AppPasswordInput v-model="form.keysJson.secretKey" :placeholder="getSecretPlaceholder('secretKey', 'Insira sua Secret Key do Pagar.me')" required autocomplete="new-password" />
+            <small v-if="editingConfig && hasStoredSecret('secretKey')" class="mt-2 block text-xs text-p-text-muted">Secret Key já salva. Deixe em branco para manter.</small>
           </div>
+        </div>
 
-          <div class="modal-footer mt-6">
-            <button type="button" class="btn btn-outline" @click="showModal = false">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Salvar Perfil</button>
+        <div v-if="form.provider === 'PAGSEGURO'" class="space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-p-text-secondary">Token de Acesso</label>
+            <AppPasswordInput v-model="form.keysJson.token" :placeholder="getSecretPlaceholder('token', 'Insira seu token do PagSeguro')" required autocomplete="new-password" />
+            <small v-if="editingConfig && hasStoredSecret('token')" class="mt-2 block text-xs text-p-text-muted">Token já salvo. Deixe em branco para manter.</small>
           </div>
-        </form>
-      </div>
-    </div>
+          <div class="mt-2 flex items-center gap-2">
+            <input type="checkbox" v-model="form.keysJson.isSandbox" id="chkPagSeguroSandbox" />
+            <label for="chkPagSeguroSandbox" class="text-sm text-p-text-secondary">Ambiente Sandbox</label>
+          </div>
+        </div>
+      </form>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" @click="saveConfig">Salvar Perfil</UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
-
-<style scoped>
-.page-container {
-  padding: 24px;
-}
-.payment-config-card {
-  border-left: 4px solid var(--color-surface-600);
-  transition: all 0.2s;
-}
-.payment-config-card:hover {
-  border-left-color: var(--color-primary-500);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-
-.provider-badge {
-  padding: 4px 12px;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: white;
-  text-transform: uppercase;
-}
-.stripe { background: #635bff; }
-.asaas { background: #0062ff; }
-.mercado_pago { background: #009ee3; }
-.pagar_me { background: #3c5af4; }
-.pagseguro { background: #3fb43f; }
-.field-status {
-  display: block;
-  margin-top: 8px;
-  font-size: 0.82rem;
-  color: var(--color-surface-300);
-}
-
-.webhook-hint {
-  display: block;
-  margin-top: 8px;
-  font-size: 0.78rem;
-  color: var(--color-surface-300);
-}
-
-.config-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.config-status {
-  font-size: 0.8rem;
-  margin: 4px 0 0 0;
-  color: var(--color-surface-400);
-}
-.status-active { color: #10b981; }
-
-.webhook-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--glass-bg);
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-top: 4px;
-}
-.webhook-box code {
-  font-size: 0.8rem;
-  color: var(--color-surface-200);
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.btn-copy {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  cursor: pointer;
-}
-.btn-copy:hover { background: var(--glass-bg-heavy); }
-
-.detail-item .label {
-  font-size: 0.85rem;
-  color: var(--color-surface-400);
-}
-.detail-item .value {
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-left: 8px;
-}
-.form-errors {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 8px;
-  padding: 10px 14px;
-}
-.form-error-msg {
-  color: #ef4444;
-  font-size: 0.85rem;
-  margin: 2px 0;
-}
-</style>

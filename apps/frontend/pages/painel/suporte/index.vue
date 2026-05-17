@@ -1,164 +1,157 @@
 <template>
-  <div class="suporte-page">
-    <div class="page-header">
-      <div>
-        <h1>Suporte</h1>
-        <p v-if="authStore.isSysAdmin">Gerencie todos os tickets de suporte da plataforma.</p>
-        <p v-else>Abra um ticket para solicitar ajuda. Nossa equipe responderá em breve.</p>
-      </div>
-      <button v-if="!authStore.isSysAdmin" class="btn btn-primary" @click="showCreateModal = true">
-        <i class="pi pi-plus mr-2"></i>
-        Novo Ticket
-      </button>
-    </div>
+  <div class="flex flex-col gap-6">
+    <UiPageHeader
+      title="Suporte"
+      :description="authStore.isSysAdmin ? 'Gerencie todos os tickets de suporte da plataforma.' : 'Abra um ticket para solicitar ajuda. Nossa equipe responderá em breve.'"
+    >
+      <template #actions>
+        <UiButton v-if="!authStore.isSysAdmin" variant="primary" @click="showCreateModal = true">
+          <i class="pi pi-plus mr-2"></i>
+          Novo Ticket
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
     <!-- Status filter tabs -->
-    <div class="filter-tabs">
+    <div class="inline-flex items-center gap-1 rounded-lg border border-p-border bg-p-raised p-1 flex-wrap">
       <button
         v-for="tab in statusTabs"
         :key="tab.value"
-        class="filter-tab"
-        :class="{ active: activeTab === tab.value }"
+        type="button"
+        class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors inline-flex items-center gap-1.5"
+        :class="activeTab === tab.value
+          ? 'bg-p-accent text-white'
+          : 'text-p-text-secondary hover:text-p-text hover:bg-p-overlay'"
         @click="activeTab = tab.value; fetchTickets()"
       >
         {{ tab.label }}
-        <span v-if="tab.count !== undefined" class="tab-badge" :class="tab.value === 'OPEN' ? 'tab-badge-alert' : ''">{{ tab.count }}</span>
+        <span
+          v-if="tab.count !== undefined"
+          class="inline-flex items-center justify-center min-w-[20px] rounded-full px-1.5 text-xs font-semibold"
+          :class="tab.value === 'OPEN' ? 'bg-p-warning/20 text-p-warning' : 'bg-white/10 text-current'"
+        >{{ tab.count }}</span>
       </button>
     </div>
 
-    <div v-if="loading" class="loading-state">
-      <div class="loading-spinner"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="tickets.length === 0" class="empty-state">
-      <div class="empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+    <UiEmptyState
+      v-else-if="tickets.length === 0"
+      title="Nenhum ticket encontrado"
+      :description="!authStore.isSysAdmin ? 'Clique em &quot;Novo Ticket&quot; para abrir uma solicitação de suporte.' : 'Nenhum ticket com este status no momento.'"
+    >
+      <template #icon>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" class="text-p-text-muted">
           <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
           <rect x="9" y="3" width="6" height="4" rx="2"/>
           <line x1="9" y1="12" x2="15" y2="12"/>
           <line x1="9" y1="16" x2="13" y2="16"/>
         </svg>
-      </div>
-      <h3>Nenhum ticket encontrado</h3>
-      <p v-if="!authStore.isSysAdmin">Clique em "Novo Ticket" para abrir uma solicitação de suporte.</p>
-      <p v-else>Nenhum ticket com este status no momento.</p>
-    </div>
+      </template>
+    </UiEmptyState>
 
-    <div v-else class="tickets-list">
+    <div v-else class="flex flex-col gap-3">
       <NuxtLink
         v-for="ticket in tickets"
         :key="ticket.id"
         :to="`/painel/suporte/${ticket.id}`"
-        class="ticket-card"
+        class="flex items-center gap-4 rounded-xl border border-p-border bg-p-elevated p-4 md:px-5 cursor-pointer transition-all hover:bg-p-overlay hover:border-p-accent/25 hover:-translate-y-px no-underline"
       >
-        <div class="ticket-card-left">
-          <div class="ticket-status-dot" :class="`status-${ticket.status.toLowerCase()}`"></div>
+        <div class="shrink-0">
+          <div class="h-2.5 w-2.5 rounded-full" :class="statusDotClass(ticket.status)"></div>
         </div>
-        <div class="ticket-card-content">
-          <div class="ticket-card-header">
-            <span class="ticket-title">{{ ticket.title }}</span>
-            <div class="ticket-badges">
-              <span class="badge" :class="priorityClass(ticket.priority)">{{ priorityLabel(ticket.priority) }}</span>
-              <span class="badge badge-neutral">{{ categoryLabel(ticket.category) }}</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-3 mb-2 flex-wrap">
+            <span class="text-[15px] font-semibold text-p-text whitespace-nowrap overflow-hidden text-ellipsis">{{ ticket.title }}</span>
+            <div class="flex gap-1.5 shrink-0">
+              <UiBadge :variant="priorityBadgeVariant(ticket.priority)">{{ priorityLabel(ticket.priority) }}</UiBadge>
+              <UiBadge variant="neutral">{{ categoryLabel(ticket.category) }}</UiBadge>
             </div>
           </div>
-          <div class="ticket-card-meta">
-            <span v-if="authStore.isSysAdmin" class="ticket-author">
+          <div class="flex gap-4 flex-wrap">
+            <span v-if="authStore.isSysAdmin" class="flex items-center gap-1 text-xs text-p-text-muted">
               <i class="pi pi-user"></i>
               {{ ticket.user?.name }} ({{ roleLabel(ticket.user?.role) }})
             </span>
-            <span class="ticket-date">
+            <span class="flex items-center gap-1 text-xs text-p-text-muted">
               <i class="pi pi-clock"></i>
               {{ formatDateToBrasilia(ticket.createdAt) }}
             </span>
-            <span class="ticket-msg-count">
+            <span class="flex items-center gap-1 text-xs text-p-text-muted">
               <i class="pi pi-comments"></i>
               {{ ticket._count?.messages ?? 0 }}
             </span>
           </div>
         </div>
-        <div class="ticket-card-right">
-          <span class="ticket-status-badge" :class="`status-badge-${ticket.status.toLowerCase()}`">
+        <div class="shrink-0 flex items-center gap-3">
+          <span class="text-xs font-semibold px-2 py-1 rounded whitespace-nowrap" :class="statusBadgeClass(ticket.status)">
             {{ statusLabel(ticket.status) }}
           </span>
-          <i class="pi pi-chevron-right ticket-arrow"></i>
+          <i class="pi pi-chevron-right text-p-text-muted text-xs"></i>
         </div>
       </NuxtLink>
     </div>
 
     <!-- Pagination -->
-    <div v-if="meta.totalPages > 1" class="pagination">
-      <button :disabled="meta.page <= 1" @click="goToPage(meta.page - 1)" class="btn btn-ghost btn-sm">
+    <div v-if="meta.totalPages > 1" class="flex items-center justify-center gap-4">
+      <UiButton variant="ghost" size="sm" :disabled="meta.page <= 1" @click="goToPage(meta.page - 1)">
         <i class="pi pi-chevron-left"></i>
-      </button>
-      <span class="page-info">{{ meta.page }} / {{ meta.totalPages }}</span>
-      <button :disabled="meta.page >= meta.totalPages" @click="goToPage(meta.page + 1)" class="btn btn-ghost btn-sm">
+      </UiButton>
+      <span class="text-sm text-p-text-muted">{{ meta.page }} / {{ meta.totalPages }}</span>
+      <UiButton variant="ghost" size="sm" :disabled="meta.page >= meta.totalPages" @click="goToPage(meta.page + 1)">
         <i class="pi pi-chevron-right"></i>
-      </button>
+      </UiButton>
     </div>
 
     <!-- Create Ticket Modal -->
-    <div v-if="showCreateModal" class="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h3>Novo Ticket de Suporte</h3>
-          <button class="modal-close" @click="showCreateModal = false">
-            <i class="pi pi-times"></i>
-          </button>
+    <UiModal v-model="showCreateModal" title="Novo Ticket de Suporte">
+      <form id="create-ticket-form" @submit.prevent="submitTicket" class="flex flex-col gap-4">
+        <UiInput v-model="form.title" label="Título *" placeholder="Descreva o problema brevemente" />
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <UiSelect v-model="form.category" label="Categoria">
+            <option value="GENERAL">Geral</option>
+            <option value="TECHNICAL">Técnico</option>
+            <option value="BILLING">Financeiro</option>
+            <option value="FEATURE_REQUEST">Sugestão de Melhoria</option>
+            <option value="BUG">Bug</option>
+          </UiSelect>
+          <UiSelect v-model="form.priority" label="Prioridade">
+            <option value="LOW">Baixa</option>
+            <option value="MEDIUM">Média</option>
+            <option value="HIGH">Alta</option>
+            <option value="URGENT">Urgente</option>
+          </UiSelect>
         </div>
-        <form @submit.prevent="submitTicket" class="modal-body">
-          <div class="form-group">
-            <label>Título *</label>
-            <input v-model="form.title" type="text" class="form-control" placeholder="Descreva o problema brevemente" maxlength="200" required />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Categoria</label>
-              <select v-model="form.category" class="form-control">
-                <option value="GENERAL">Geral</option>
-                <option value="TECHNICAL">Técnico</option>
-                <option value="BILLING">Financeiro</option>
-                <option value="FEATURE_REQUEST">Sugestão de Melhoria</option>
-                <option value="BUG">Bug</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Prioridade</label>
-              <select v-model="form.priority" class="form-control">
-                <option value="LOW">Baixa</option>
-                <option value="MEDIUM">Média</option>
-                <option value="HIGH">Alta</option>
-                <option value="URGENT">Urgente</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Descrição *</label>
-            <textarea
-              v-model="form.description"
-              class="form-control"
-              rows="5"
-              placeholder="Descreva seu problema em detalhes: o que aconteceu, o que esperava que acontecesse, passos para reproduzir..."
-              required
-              minlength="10"
-              maxlength="5000"
-            ></textarea>
-            <span class="char-count">{{ form.description.length }}/5000</span>
-          </div>
-          <div v-if="createError" class="form-error">{{ createError }}</div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="showCreateModal = false">Cancelar</button>
-            <button type="submit" class="btn btn-primary" :disabled="createLoading">
-              {{ createLoading ? 'Enviando...' : 'Abrir Ticket' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+        <div class="flex flex-col gap-1.5">
+          <UiTextarea
+            v-model="form.description"
+            label="Descrição *"
+            :rows="5"
+            placeholder="Descreva seu problema em detalhes: o que aconteceu, o que esperava que acontecesse, passos para reproduzir..."
+          />
+          <span class="text-xs text-p-text-muted text-right">{{ form.description.length }}/5000</span>
+        </div>
+
+        <UiAlert v-if="createError" variant="error">{{ createError }}</UiAlert>
+      </form>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="secondary" type="button" @click="showCreateModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" type="submit" form="create-ticket-form" :disabled="createLoading" :loading="createLoading">
+            {{ createLoading ? 'Enviando...' : 'Abrir Ticket' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
 <script setup>
+definePageMeta({ layout: 'painel' })
+
 const api = useApi()
 const toast = useToast()
 const authStore = useAuthStore()
@@ -247,8 +240,8 @@ function priorityLabel(p) {
   const m = { LOW: 'Baixa', MEDIUM: 'Média', HIGH: 'Alta', URGENT: 'Urgente' }
   return m[p] ?? p
 }
-function priorityClass(p) {
-  return { LOW: 'badge-neutral', MEDIUM: 'badge-info', HIGH: 'badge-warning', URGENT: 'badge-danger' }[p] ?? 'badge-neutral'
+function priorityBadgeVariant(p) {
+  return { LOW: 'neutral', MEDIUM: 'info', HIGH: 'warning', URGENT: 'danger' }[p] ?? 'neutral'
 }
 function categoryLabel(c) {
   const m = { GENERAL: 'Geral', TECHNICAL: 'Técnico', BILLING: 'Financeiro', FEATURE_REQUEST: 'Melhoria', BUG: 'Bug' }
@@ -258,130 +251,27 @@ function roleLabel(r) {
   return { SYSADMIN: 'Admin', LOTEADORA: 'Loteadora', IMOBILIARIA: 'Imobiliária', CORRETOR: 'Corretor' }[r] ?? r
 }
 
+function statusDotClass(s) {
+  return {
+    OPEN: 'bg-emerald-400',
+    IN_PROGRESS: 'bg-blue-400',
+    WAITING_USER: 'bg-amber-400',
+    RESOLVED: 'bg-purple-400',
+    CLOSED: 'bg-gray-500',
+  }[s] ?? 'bg-gray-500'
+}
+
+function statusBadgeClass(s) {
+  return {
+    OPEN: 'bg-emerald-400/15 text-emerald-400',
+    IN_PROGRESS: 'bg-blue-400/15 text-blue-400',
+    WAITING_USER: 'bg-amber-400/15 text-amber-400',
+    RESOLVED: 'bg-purple-400/15 text-purple-400',
+    CLOSED: 'bg-gray-500/15 text-gray-400',
+  }[s] ?? 'bg-gray-500/15 text-gray-400'
+}
+
 onMounted(async () => {
   await Promise.all([fetchTickets(), fetchCounts()])
 })
 </script>
-
-<style scoped>
-.suporte-page { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
-.page-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-surface-50); margin: 0 0 0.25rem; }
-.page-header p { color: var(--color-surface-400); font-size: 0.875rem; margin: 0; }
-
-.filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.filter-tab {
-  padding: 0.5rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border);
-  background: var(--glass-bg-light); color: var(--color-surface-300); font-size: 0.875rem;
-  cursor: pointer; transition: all 150ms ease; display: flex; align-items: center; gap: 6px;
-  font-family: inherit;
-}
-.filter-tab:hover { background: var(--glass-bg-hover); color: var(--color-surface-50); }
-.filter-tab.active { background: rgba(16,185,129,0.12); color: var(--color-primary-400); border-color: rgba(16,185,129,0.3); font-weight: 600; }
-.tab-badge { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 0 6px; font-size: 0.75rem; min-width: 20px; text-align: center; }
-.tab-badge-alert { background: rgba(234,179,8,0.2); color: #fbbf24; }
-
-.loading-state { display: flex; justify-content: center; padding: 3rem; }
-.loading-spinner { width: 36px; height: 36px; border: 3px solid rgba(52,211,153,0.15); border-top-color: var(--color-primary-400); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state { text-align: center; padding: 4rem 2rem; }
-.empty-icon { color: var(--color-surface-600); margin: 0 auto 1rem; display: inline-block; }
-.empty-state h3 { font-size: 1.125rem; font-weight: 600; color: var(--color-surface-200); margin: 0 0 0.5rem; }
-.empty-state p { color: var(--color-surface-400); font-size: 0.875rem; margin: 0; }
-
-.tickets-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
-
-.ticket-card {
-  display: flex; align-items: center; gap: 1rem;
-  background: var(--glass-bg); border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg); padding: 1rem 1.25rem; cursor: pointer;
-  transition: all 150ms ease; text-decoration: none;
-}
-.ticket-card:hover { background: var(--glass-bg-hover); border-color: rgba(52,211,153,0.22); transform: translateY(-1px); }
-
-.ticket-card-left { flex-shrink: 0; }
-.ticket-status-dot { width: 10px; height: 10px; border-radius: 50%; }
-.status-open { background: #34d399; }
-.status-in_progress { background: #60a5fa; }
-.status-waiting_user { background: #fbbf24; }
-.status-resolved { background: #a78bfa; }
-.status-closed { background: #6b7280; }
-
-.ticket-card-content { flex: 1; min-width: 0; }
-.ticket-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
-.ticket-title { font-size: 0.9375rem; font-weight: 600; color: var(--color-surface-100); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.ticket-badges { display: flex; gap: 0.4rem; flex-shrink: 0; }
-.ticket-card-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
-.ticket-author, .ticket-date, .ticket-msg-count {
-  display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--color-surface-400);
-}
-
-.ticket-card-right { flex-shrink: 0; display: flex; align-items: center; gap: 0.75rem; }
-.ticket-status-badge { font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: var(--radius-sm); white-space: nowrap; }
-.status-badge-open { background: rgba(52,211,153,0.12); color: #34d399; }
-.status-badge-in_progress { background: rgba(96,165,250,0.12); color: #60a5fa; }
-.status-badge-waiting_user { background: rgba(251,191,36,0.12); color: #fbbf24; }
-.status-badge-resolved { background: rgba(167,139,250,0.12); color: #a78bfa; }
-.status-badge-closed { background: rgba(107,114,128,0.12); color: #9ca3af; }
-.ticket-arrow { color: var(--color-surface-600); font-size: 0.75rem; }
-
-.pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; }
-.page-info { font-size: 0.875rem; color: var(--color-surface-400); }
-
-/* badges */
-.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600; }
-.badge-neutral { background: rgba(107,114,128,0.15); color: #9ca3af; }
-.badge-info { background: rgba(96,165,250,0.12); color: #60a5fa; }
-.badge-warning { background: rgba(251,191,36,0.12); color: #fbbf24; }
-.badge-danger { background: rgba(239,68,68,0.12); color: #f87171; }
-
-/* Modal */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
-}
-.modal-box {
-  background: var(--glass-bg-heavy); border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl); width: 100%; max-width: 540px; box-shadow: var(--glass-shadow-lg);
-  max-height: 90vh; overflow-y: auto;
-}
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--glass-border);
-}
-.modal-header h3 { font-size: 1rem; font-weight: 700; color: var(--color-surface-50); margin: 0; }
-.modal-close {
-  background: none; border: none; color: var(--color-surface-400); cursor: pointer;
-  padding: 4px; border-radius: var(--radius-sm); transition: color 150ms ease; font-size: 1rem;
-}
-.modal-close:hover { color: var(--color-surface-100); }
-.modal-body { padding: 1.5rem; }
-.form-group { margin-bottom: 1rem; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-label { display: block; font-size: 0.8125rem; font-weight: 600; color: var(--color-surface-300); margin-bottom: 0.375rem; }
-.form-control {
-  width: 100%; padding: 0.625rem 0.875rem; border-radius: var(--radius-md); font-size: 0.875rem;
-  background: var(--glass-bg); border: 1px solid var(--glass-border);
-  color: var(--color-surface-100); font-family: inherit; transition: border-color 150ms ease;
-  box-sizing: border-box;
-}
-.form-control:focus { outline: none; border-color: rgba(52,211,153,0.4); }
-textarea.form-control { resize: vertical; min-height: 100px; }
-.char-count { font-size: 0.75rem; color: var(--color-surface-500); float: right; margin-top: 4px; }
-.form-error { background: rgba(239,68,68,0.1); color: #f87171; padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.875rem; margin-top: 0.5rem; border: 1px solid rgba(239,68,68,0.2); }
-.modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--glass-border-subtle); }
-
-@media (max-width: 767px) {
-  .suporte-page { padding: 16px; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .page-header > a, .page-header > button { align-self: flex-end; }
-  .ticket-card { flex-wrap: wrap; gap: 8px; }
-  .ticket-card-right { margin-left: auto; }
-  .form-row { grid-template-columns: 1fr !important; }
-  .modal-box { margin: 16px; width: calc(100% - 32px); max-width: 100%; }
-}
-</style>

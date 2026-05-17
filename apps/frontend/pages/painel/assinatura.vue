@@ -4,7 +4,7 @@ import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { formatCents } from '@/composables/useBilling'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'painel' })
 
 const route = useRoute()
 const { get, post } = useApi()
@@ -87,11 +87,11 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString('pt-BR')
 }
 
-const billingStatusMap: Record<string, { label: string; cls: string; icon: string }> = {
-  OK: { label: 'Em dia', cls: 'status-ok', icon: 'bi bi-check-circle-fill' },
-  GRACE_PERIOD: { label: 'Pagamento pendente', cls: 'status-warning', icon: 'bi bi-exclamation-triangle-fill' },
-  INADIMPLENTE: { label: 'Inadimplente', cls: 'status-danger', icon: 'bi bi-slash-circle-fill' },
-  CANCELLED: { label: 'Cancelado', cls: 'status-danger', icon: 'bi bi-x-circle-fill' },
+const billingStatusMap: Record<string, { label: string; cls: string }> = {
+  OK: { label: 'Em dia', cls: 'bg-p-success/15 text-p-success' },
+  GRACE_PERIOD: { label: 'Pagamento pendente', cls: 'bg-p-warning/15 text-p-warning' },
+  INADIMPLENTE: { label: 'Inadimplente', cls: 'bg-p-danger/15 text-p-danger' },
+  CANCELLED: { label: 'Cancelado', cls: 'bg-p-danger/15 text-p-danger' },
 }
 
 const statusInfo = computed(() => {
@@ -107,12 +107,12 @@ const nextDue = computed(() => {
   return formatDate(status.value?.subscription?.currentPeriodEnd)
 })
 
-const invoiceStatusMap: Record<string, { label: string; cls: string }> = {
-  paid: { label: 'Pago', cls: 'badge-success' },
-  open: { label: 'Aberto', cls: 'badge-warning' },
-  draft: { label: 'Rascunho', cls: 'badge-outline' },
-  void: { label: 'Cancelado', cls: 'badge-error' },
-  uncollectible: { label: 'Irrecuperável', cls: 'badge-error' },
+const invoiceStatusMap: Record<string, { label: string; variant: string }> = {
+  paid: { label: 'Pago', variant: 'success' },
+  open: { label: 'Aberto', variant: 'warning' },
+  draft: { label: 'Rascunho', variant: 'neutral' },
+  void: { label: 'Cancelado', variant: 'danger' },
+  uncollectible: { label: 'Irrecuperável', variant: 'danger' },
 }
 
 function getPlanLabel(plan: any) {
@@ -156,7 +156,7 @@ onMounted(async () => {
   const isLimitReached = route.query.limit_reached === 'true'
   const checkoutStatus = route.query.status
 
-  // Clear query params immediately to avoid re-triggering, 
+  // Clear query params immediately to avoid re-triggering,
   // but keep the state in variables for the logic below
   if (isLimitReached || checkoutStatus) {
     navigateTo('/painel/assinatura', { replace: true })
@@ -174,7 +174,7 @@ onMounted(async () => {
     try {
       await post('/billing/sync')
     } catch { /* continue */ }
-    
+
     setTimeout(() => {
       if (checkoutStatus === 'subscribed') {
         toast.success('Assinatura ativada com sucesso! Agora você pode criar seus projetos.')
@@ -189,28 +189,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">Minha Assinatura</h1>
-        <p class="page-subtitle">Escolha o plano ideal e gerencie sua assinatura.</p>
-      </div>
-      <button v-if="!status?.trialActive" class="btn btn-primary" @click="openPortal">
-        <i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i> Gerenciar Pagamento
-      </button>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Minha Assinatura" description="Escolha o plano ideal e gerencie sua assinatura.">
+      <template #actions>
+        <UiButton v-if="!status?.trialActive" variant="primary" @click="openPortal">
+          Gerenciar Pagamento
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="loading" class="flex justify-center p-12">
-      <div class="loader"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
     <template v-else-if="status">
       <!-- Free trial banner (active) -->
-      <div v-if="status.isOnFreeTier" class="alert alert-free mb-6">
-        <span><i class="bi bi-stars" aria-hidden="true"></i></span>
+      <div v-if="status.isOnFreeTier" class="flex items-center gap-3 rounded-xl border border-p-success/30 bg-p-success-subtle p-4 text-p-success">
+        <span class="text-lg">*</span>
         <div>
           <strong>Seu período de teste está ativo ({{ trialMonthsLabel }})!</strong>
-          <p class="mb-0">
+          <p class="mt-1 text-sm">
             Aproveite para configurar seu loteamento. Restam <strong>{{ trialDaysLeft }}</strong> dia{{ trialDaysLeft !== 1 ? 's' : '' }} de teste.
             Para adicionar mais projetos, escolha um plano abaixo.
           </p>
@@ -218,298 +214,295 @@ onMounted(async () => {
       </div>
 
       <!-- Trial expired banner -->
-      <div v-else-if="status.trialExpired && status.requiresSubscription" class="alert alert-expired mb-6">
-        <span><i class="bi bi-alarm-fill" aria-hidden="true"></i></span>
+      <div v-else-if="status.trialExpired && status.requiresSubscription" class="flex items-center gap-3 rounded-xl border border-p-warning/40 bg-p-warning-subtle p-4 text-p-warning">
+        <span class="text-lg">!</span>
         <div>
           <strong>Seu período de teste expirou</strong>
-          <p class="mb-0">Assine um plano para continuar usando a plataforma e gerenciar seus projetos.</p>
+          <p class="mt-1 text-sm">Assine um plano para continuar usando a plataforma e gerenciar seus projetos.</p>
         </div>
       </div>
 
       <!-- Warning Banners -->
-      <div v-if="status.billingStatus === 'GRACE_PERIOD'" class="alert alert-warning mb-6">
-        <span><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></span>
-        <div>
+      <div v-if="status.billingStatus === 'GRACE_PERIOD'" class="flex items-center gap-3 rounded-xl border border-p-warning/30 bg-p-warning-subtle p-4 text-p-warning">
+        <span class="text-lg">!</span>
+        <div class="flex-1">
           <strong>Pagamento pendente</strong>
-          <p class="mb-0">Regularize até <strong>{{ formatDate(status.gracePeriodEnd) }}</strong> para evitar o bloqueio.</p>
+          <p class="mt-1 text-sm">Regularize até <strong>{{ formatDate(status.gracePeriodEnd) }}</strong> para evitar o bloqueio.</p>
         </div>
-        <button class="btn btn-sm btn-warning" @click="openPortal">Resolver agora</button>
+        <UiButton variant="primary" size="sm" @click="openPortal">Resolver agora</UiButton>
       </div>
 
-      <div v-if="status.billingStatus === 'INADIMPLENTE'" class="alert alert-danger mb-6">
-        <span><i class="bi bi-slash-circle-fill" aria-hidden="true"></i></span>
-        <div>
+      <div v-if="status.billingStatus === 'INADIMPLENTE'" class="flex items-center gap-3 rounded-xl border border-p-danger/30 bg-p-danger-subtle p-4 text-p-danger">
+        <span class="text-lg">X</span>
+        <div class="flex-1">
           <strong>Acesso bloqueado por inadimplência</strong>
-          <p class="mb-0">Entre em contato com o suporte ou regularize o pagamento.</p>
+          <p class="mt-1 text-sm">Entre em contato com o suporte ou regularize o pagamento.</p>
         </div>
-        <button class="btn btn-sm btn-danger" @click="openPortal">Regularizar</button>
+        <UiButton variant="danger" size="sm" @click="openPortal">Regularizar</UiButton>
       </div>
 
       <!-- Summary Cards -->
-      <div class="summary-grid mb-8">
-        <div class="summary-card">
-          <div class="summary-label">Plano Atual</div>
-          <div class="summary-value primary">
+      <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5 text-center">
+          <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">Plano Atual</div>
+          <div class="mt-2 text-2xl font-bold text-p-accent">
             <template v-if="status.isOnFreeTier">
-              {{ freeProjectsLabel }} <span class="summary-trial-badge">em teste</span>
+              {{ freeProjectsLabel }} <span class="ml-1 inline-block rounded-md bg-p-success/15 px-2 py-0.5 align-middle text-[0.65rem] font-semibold uppercase text-p-success">em teste</span>
             </template>
             <template v-else>
               {{ status.activeProjectCount }} {{ status.activeProjectCount === 1 ? 'Projeto' : 'Projetos' }}
             </template>
           </div>
         </div>
-        <div class="summary-card">
-          <div class="summary-label">Valor Mensal</div>
-          <div class="summary-value primary">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5 text-center">
+          <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">Valor Mensal</div>
+          <div class="mt-2 text-2xl font-bold text-p-accent">
             <template v-if="status.isOnFreeTier">
-              R$ 0,00 <span class="summary-trial-badge">grátis</span>
+              R$ 0,00 <span class="ml-1 inline-block rounded-md bg-p-success/15 px-2 py-0.5 align-middle text-[0.65rem] font-semibold uppercase text-p-success">grátis</span>
             </template>
             <template v-else>
               {{ totalFormatted }}
             </template>
           </div>
         </div>
-        <div class="summary-card">
-          <div class="summary-label">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5 text-center">
+          <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">
             <template v-if="status.isOnFreeTier">Fim do Teste</template>
             <template v-else>Próximo Vencimento</template>
           </div>
-          <div class="summary-value">
+          <div class="mt-2 text-2xl font-bold text-p-text">
             <template v-if="status.isOnFreeTier && status.trialEndDate">
               {{ formatDate(status.trialEndDate) }}
             </template>
             <template v-else>{{ nextDue }}</template>
           </div>
         </div>
-        <div class="summary-card">
-          <div class="summary-label">Status</div>
-          <div class="summary-value">
-            <span :class="['status-badge', statusInfo?.cls]">
-              <i :class="statusInfo?.icon" aria-hidden="true"></i>
-              <span>{{ statusInfo?.label }}</span>
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5 text-center">
+          <div class="text-xs font-bold uppercase tracking-wide text-p-text-muted">Status</div>
+          <div class="mt-2">
+            <span :class="['inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold', statusInfo?.cls]">
+              {{ statusInfo?.label }}
             </span>
           </div>
         </div>
       </div>
 
       <!-- Tabs -->
-      <div class="tabs mb-6">
-        <button :class="['tab', { active: activeTab === 'planos' }]" @click="activeTab = 'planos'">Planos</button>
-        <button v-if="!status.trialActive" :class="['tab', { active: activeTab === 'faturas' }]" @click="activeTab = 'faturas'">Faturas</button>
-        <button v-if="!status.trialActive" :class="['tab', { active: activeTab === 'metodos' }]" @click="activeTab = 'metodos'">Métodos de Pagamento</button>
+      <div class="flex border-b-2 border-p-border">
+        <button :class="['border-b-2 px-5 py-2.5 text-sm font-medium transition-colors -mb-[2px]', activeTab === 'planos' ? 'border-p-accent text-p-accent' : 'border-transparent text-p-text-muted hover:text-p-text-secondary']" @click="activeTab = 'planos'">Planos</button>
+        <button v-if="!status.trialActive" :class="['border-b-2 px-5 py-2.5 text-sm font-medium transition-colors -mb-[2px]', activeTab === 'faturas' ? 'border-p-accent text-p-accent' : 'border-transparent text-p-text-muted hover:text-p-text-secondary']" @click="activeTab = 'faturas'">Faturas</button>
+        <button v-if="!status.trialActive" :class="['border-b-2 px-5 py-2.5 text-sm font-medium transition-colors -mb-[2px]', activeTab === 'metodos' ? 'border-p-accent text-p-accent' : 'border-transparent text-p-text-muted hover:text-p-text-secondary']" @click="activeTab = 'metodos'">Métodos de Pagamento</button>
       </div>
 
       <!-- Tab: Plans (Volume Pricing) -->
       <div v-if="activeTab === 'planos'">
-        <div v-if="plans && plans.plans.length > 0" class="plans-section">
-          <p class="plans-subtitle">
+        <div v-if="plans && plans.plans.length > 0" class="space-y-6">
+          <p class="text-sm leading-relaxed text-p-text-muted">
             Todos os seus projetos compartilham o mesmo desconto por volume.
             Quanto mais projetos, menor o custo por projeto.
           </p>
 
-          <div class="plans-grid">
+          <div class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
             <div
               v-for="plan in plans.plans"
               :key="plan.projectCount"
-              class="plan-card"
+              class="relative flex flex-col rounded-2xl border-2 p-5 pt-6 transition-all hover:-translate-y-1 hover:shadow-xl"
               :class="{
-                'plan-current': plan.isCurrent,
-                'plan-available': !plan.isCurrent && plan.projectCount > (plans.paidPlanLevel || 0),
-                'plan-used': !plan.isCurrent && plan.projectCount < (plans.paidPlanLevel || 0),
+                'border-p-accent bg-gradient-to-br from-p-accent/10 to-violet-500/5 shadow-[0_0_0_1px_rgba(99,102,241,0.2)]': plan.isCurrent,
+                'border-p-border bg-p-elevated': !plan.isCurrent && plan.projectCount > (plans.paidPlanLevel || 0),
+                'border-p-border bg-p-elevated opacity-70': !plan.isCurrent && plan.projectCount < (plans.paidPlanLevel || 0),
               }"
             >
               <!-- Current badge -->
-              <div v-if="plan.isCurrent" class="plan-badge">Plano Atual</div>
+              <div v-if="plan.isCurrent" class="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-p-accent px-4 py-1 text-[0.7rem] font-bold uppercase tracking-wider text-white">Plano Atual</div>
 
               <!-- Plan header -->
-              <div class="plan-header">
-                <div class="plan-slots">{{ getPlanLabel(plan) }}</div>
+              <div class="mb-4 border-b border-p-border pb-4 text-center">
+                <div class="mb-2 text-lg font-bold text-p-text">{{ getPlanLabel(plan) }}</div>
                 <!-- Free during trial -->
                 <template v-if="status.isOnFreeTier && plan.projectCount <= Math.max(status?.freeProjects || 0, 1)">
-                  <div class="plan-total plan-total-free">Gratuito</div>
-                  <div class="plan-trial-hint">durante o período de teste</div>
-                  <div class="plan-after-trial">Depois: {{ formatCents(plan.unitPriceCents) }}/mês</div>
+                  <div class="text-2xl font-extrabold text-p-success">Gratuito</div>
+                  <div class="mt-0.5 text-xs text-p-success/70">durante o período de teste</div>
+                  <div class="mt-1 text-xs italic text-p-text-muted">Depois: {{ formatCents(plan.unitPriceCents) }}/mês</div>
                 </template>
                 <template v-else-if="!plan.isLastTier">
-                  <div class="plan-total">
+                  <div class="text-2xl font-extrabold text-p-accent">
                     {{ formatCents(plan.totalMonthlyCents) }}
-                    <span class="plan-period">/mês</span>
+                    <span class="text-sm font-normal text-p-text-muted">/mês</span>
                   </div>
                 </template>
                 <template v-else>
-                  <div class="plan-total">
+                  <div class="text-2xl font-extrabold text-p-accent">
                     {{ formatCents(plan.unitPriceCents) }}
-                    <span class="plan-period">/projeto/mês</span>
+                    <span class="text-sm font-normal text-p-text-muted">/projeto/mês</span>
                   </div>
                 </template>
               </div>
 
               <!-- Volume pricing info -->
-              <div class="plan-breakdown">
+              <div class="mb-4 flex flex-1 flex-col gap-2">
                 <!-- During trial: free tier -->
                 <template v-if="status.isOnFreeTier && plan.projectCount <= Math.max(status?.freeProjects || 0, 1)">
-                  <div class="plan-info-row">
-                    <span class="plan-info-label">Valor por projeto</span>
-                    <span class="plan-info-value price-free">R$ 0,00</span>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-p-text-muted">Valor por projeto</span>
+                    <span class="font-semibold text-p-success">R$ 0,00</span>
                   </div>
-                  <div class="plan-info-row">
-                    <span class="plan-info-label">Total mensal</span>
-                    <span class="plan-info-value plan-info-total price-free">R$ 0,00</span>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-p-text-muted">Total mensal</span>
+                    <span class="font-semibold text-p-success">R$ 0,00</span>
                   </div>
-                  <div class="plan-info-row plan-after-trial-row">
-                    <span class="plan-info-label">Após o teste</span>
-                    <span class="plan-info-value">{{ formatCents(plan.unitPriceCents) }}/mês</span>
+                  <div class="flex items-center justify-between text-sm italic text-p-text-muted">
+                    <span>Após o teste</span>
+                    <span>{{ formatCents(plan.unitPriceCents) }}/mês</span>
                   </div>
-                  <div class="plan-discount-badge plan-free-badge">Grátis por {{ trialDaysLeft }} dia{{ trialDaysLeft !== 1 ? 's' : '' }}</div>
+                  <div class="mt-1 rounded-lg bg-p-success/15 px-2.5 py-1 text-center text-xs font-bold text-p-success">Grátis por {{ trialDaysLeft }} dia{{ trialDaysLeft !== 1 ? 's' : '' }}</div>
                 </template>
                 <template v-else>
-                  <div class="plan-info-row">
-                    <span class="plan-info-label">Valor por projeto</span>
-                    <span class="plan-info-value">{{ formatCents(plan.unitPriceCents) }}</span>
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-p-text-muted">Valor por projeto</span>
+                    <span class="font-semibold text-p-text-secondary">{{ formatCents(plan.unitPriceCents) }}</span>
                   </div>
-                  <div v-if="!plan.isLastTier" class="plan-info-row">
-                    <span class="plan-info-label">Total mensal</span>
-                    <span class="plan-info-value plan-info-total">{{ formatCents(plan.totalMonthlyCents) }}</span>
+                  <div v-if="!plan.isLastTier" class="flex items-center justify-between text-sm">
+                    <span class="text-p-text-muted">Total mensal</span>
+                    <span class="font-semibold text-p-accent">{{ formatCents(plan.totalMonthlyCents) }}</span>
                   </div>
-                  <div v-else class="plan-last-tier-qty">
-                    <div class="plan-info-row">
-                      <span class="plan-info-label">Projetos</span>
-                      <div class="qty-controls">
-                        <button class="qty-btn" @click="setLastTierQty(plan, getLastTierQty(plan) - 1)">−</button>
+                  <div v-else class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-p-text-muted">Projetos</span>
+                      <div class="flex items-center gap-1">
+                        <button class="flex h-[26px] w-[26px] items-center justify-center rounded-md border border-p-border bg-p-raised text-sm font-bold text-p-text-secondary transition-colors hover:border-p-accent hover:text-p-accent" @click="setLastTierQty(plan, getLastTierQty(plan) - 1)">-</button>
                         <input
                           type="number"
-                          class="qty-input"
+                          class="w-[52px] rounded-md border border-p-border bg-p-raised px-1 py-0.5 text-center text-sm font-semibold text-p-text focus:border-p-accent focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                           :min="plan.projectCount"
                           :value="getLastTierQty(plan)"
                           @change="setLastTierQty(plan, parseInt(($event.target as HTMLInputElement).value))"
                         />
-                        <button class="qty-btn" @click="setLastTierQty(plan, getLastTierQty(plan) + 1)">+</button>
+                        <button class="flex h-[26px] w-[26px] items-center justify-center rounded-md border border-p-border bg-p-raised text-sm font-bold text-p-text-secondary transition-colors hover:border-p-accent hover:text-p-accent" @click="setLastTierQty(plan, getLastTierQty(plan) + 1)">+</button>
                       </div>
                     </div>
-                    <div class="plan-info-row">
-                      <span class="plan-info-label">Total mensal</span>
-                      <span class="plan-info-value plan-info-total">{{ formatCents(getLastTierQty(plan) * plan.unitPriceCents) }}</span>
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-p-text-muted">Total mensal</span>
+                      <span class="font-semibold text-p-accent">{{ formatCents(getLastTierQty(plan) * plan.unitPriceCents) }}</span>
                     </div>
                   </div>
-                  <div v-if="plan.discountPercent > 0" class="plan-discount-badge">
+                  <div v-if="plan.discountPercent > 0" class="mt-1 rounded-lg bg-p-success/15 px-2.5 py-1 text-center text-xs font-bold text-p-success">
                     {{ plan.discountPercent }}% de desconto
                   </div>
                 </template>
               </div>
 
               <!-- Action -->
-              <div class="plan-action">
+              <div class="text-center">
                 <template v-if="plan.isCurrent && status.isOnFreeTier && plan.projectCount <= Math.max(status?.freeProjects || 0, 1)">
-                  <span class="plan-hint-free"><i class="bi bi-stars" aria-hidden="true"></i> Grátis por {{ trialDaysLeft }}d</span>
+                  <span class="text-sm font-semibold text-p-success">Grátis por {{ trialDaysLeft }}d</span>
                 </template>
                 <template v-else-if="plan.isCurrent">
-                  <span class="plan-hint-current">&#10003; Seu plano atual</span>
+                  <span class="text-sm font-semibold text-p-accent">&#10003; Seu plano atual</span>
                 </template>
                 <template v-else-if="status.trialActive">
-                  <span class="plan-hint-current">Cobrança liberada após o teste</span>
+                  <span class="text-sm font-semibold text-p-accent">Cobrança liberada após o teste</span>
                 </template>
                 <template v-else-if="plan.projectCount > (plans.paidPlanLevel || 0)">
-                  <button class="btn btn-sm btn-primary w-full" @click="subscribeToPlan(plan.isLastTier ? getLastTierQty(plan) : plan.projectCount)">
+                  <UiButton variant="primary" size="sm" class="w-full" @click="subscribeToPlan(plan.isLastTier ? getLastTierQty(plan) : plan.projectCount)">
                     Fazer upgrade
-                  </button>
+                  </UiButton>
                 </template>
                 <template v-else>
-                  <span class="plan-hint-done">&#10003; Incluído</span>
+                  <span class="text-sm font-medium text-p-success">&#10003; Incluído</span>
                 </template>
               </div>
             </div>
           </div>
 
           <!-- Current projects detail -->
-          <div v-if="status.projects.length > 0" class="current-projects mt-8">
-            <h3 class="section-subtitle">Seus projetos ativos</h3>
-            <div class="projects-grid">
+          <div v-if="status.projects.length > 0" class="space-y-4">
+            <h3 class="text-base font-semibold text-p-text-secondary">Seus projetos ativos</h3>
+            <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
               <div
                 v-for="proj in status.projects"
                 :key="proj.projectId"
-                class="project-card"
-                :class="{ 'project-free': proj.isFree }"
+                class="flex items-center justify-between gap-4 rounded-xl border border-p-border bg-p-elevated px-5 py-4 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                :class="proj.isFree ? 'border-l-4 border-l-p-success' : 'border-l-4 border-l-p-accent'"
               >
-                <div class="project-info">
-                  <div class="project-tier">Projeto #{{ proj.tierNumber }}</div>
-                  <h4>{{ proj.projectName }}</h4>
-                  <span v-if="proj.isFree" class="badge badge-success">Gratuito</span>
-                  <span v-else-if="proj.discountPercent > 0" class="badge badge-accent">
+                <div class="flex-1">
+                  <div class="text-[0.7rem] font-bold uppercase tracking-wider text-p-text-muted">Projeto #{{ proj.tierNumber }}</div>
+                  <h4 class="mt-0.5 text-sm font-semibold text-p-text">{{ proj.projectName }}</h4>
+                  <UiBadge v-if="proj.isFree" variant="success" class="mt-1">Gratuito</UiBadge>
+                  <UiBadge v-else-if="proj.discountPercent > 0" variant="primary" class="mt-1">
                     {{ proj.discountPercent }}% desc. volume
-                  </span>
+                  </UiBadge>
                 </div>
-                <div class="project-price">
+                <div class="text-right font-bold text-p-text">
                   <template v-if="proj.isFree">
-                    <span class="price-free">R$ 0</span>
+                    <span class="text-p-success">R$ 0</span>
                   </template>
                   <template v-else>
                     {{ formatCents(proj.effectivePriceCents) }}
                   </template>
-                  <span class="text-sm">/mês</span>
+                  <span class="text-xs font-normal text-p-text-muted">/mês</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-else class="empty-state">
-          <p>Nenhuma tabela de preços configurada. Entre em contato com o suporte.</p>
-        </div>
+        <UiEmptyState v-else title="Sem planos" description="Nenhuma tabela de preços configurada. Entre em contato com o suporte." />
       </div>
 
       <!-- Tab: Invoices -->
       <div v-if="activeTab === 'faturas' && !status.trialActive">
-        <div class="table-wrapper" v-if="invoices.length > 0">
-          <table>
+        <div v-if="invoices.length > 0" class="overflow-x-auto rounded-xl border border-p-border">
+          <table class="w-full text-sm">
             <thead>
-              <tr>
-                <th>Período</th>
-                <th>Valor</th>
-                <th>Status</th>
-                <th>Pago em</th>
-                <th>Ações</th>
+              <tr class="border-b border-p-border bg-p-raised text-left text-xs font-semibold uppercase tracking-wider text-p-text-muted">
+                <th class="px-4 py-3">Período</th>
+                <th class="px-4 py-3">Valor</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Pago em</th>
+                <th class="px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="inv in invoices" :key="inv.id">
-                <td>{{ formatDate(inv.periodStart) }} — {{ formatDate(inv.periodEnd) }}</td>
-                <td>{{ formatCents(inv.amountDue) }}</td>
-                <td>
-                  <span class="badge" :class="invoiceStatusMap[inv.status]?.cls || 'badge-outline'">
+              <tr v-for="inv in invoices" :key="inv.id" class="border-b border-p-border last:border-b-0">
+                <td class="px-4 py-3 text-p-text">{{ formatDate(inv.periodStart) }} -- {{ formatDate(inv.periodEnd) }}</td>
+                <td class="px-4 py-3 text-p-text">{{ formatCents(inv.amountDue) }}</td>
+                <td class="px-4 py-3">
+                  <UiBadge :variant="(invoiceStatusMap[inv.status]?.variant as any) || 'neutral'">
                     {{ invoiceStatusMap[inv.status]?.label || inv.status }}
-                  </span>
+                  </UiBadge>
                 </td>
-                <td>{{ inv.paidAt ? formatDate(inv.paidAt) : '—' }}</td>
-                <td>
-                  <a v-if="inv.invoiceUrl" :href="inv.invoiceUrl" target="_blank" class="btn btn-sm btn-outline">Ver</a>
-                  <a v-if="inv.invoicePdf" :href="inv.invoicePdf" target="_blank" class="btn btn-sm btn-ghost">PDF</a>
+                <td class="px-4 py-3 text-p-text-secondary">{{ inv.paidAt ? formatDate(inv.paidAt) : '—' }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-2">
+                    <a v-if="inv.invoiceUrl" :href="inv.invoiceUrl" target="_blank" class="inline-flex items-center rounded-lg border border-p-border px-2.5 py-1 text-xs font-medium text-p-text-secondary hover:bg-p-raised transition-colors">Ver</a>
+                    <a v-if="inv.invoicePdf" :href="inv.invoicePdf" target="_blank" class="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium text-p-text-muted hover:text-p-text-secondary transition-colors">PDF</a>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div v-else class="empty-state">
-          <p>Nenhuma fatura encontrada.</p>
-        </div>
+        <UiEmptyState v-else title="Sem faturas" description="Nenhuma fatura encontrada." />
       </div>
 
       <!-- Tab: Payment Methods -->
       <div v-if="activeTab === 'metodos' && !status.trialActive">
-        <div class="payment-methods-grid" v-if="paymentMethods.length > 0">
-          <div v-for="pm in paymentMethods" :key="pm.id" class="pm-card">
-            <div class="pm-brand">
-              <template v-if="pm.type === 'boleto'"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i> BOLETO</template>
-              <template v-else><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i> {{ pm.brand?.toUpperCase() || 'CARTÃO' }}</template>
+        <div v-if="paymentMethods.length > 0" class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));">
+          <div v-for="pm in paymentMethods" :key="pm.id" class="rounded-xl border border-p-border bg-gradient-to-br from-p-raised to-p-elevated p-5">
+            <div class="mb-4 text-xs font-bold uppercase text-p-accent">
+              <template v-if="pm.type === 'boleto'">BOLETO</template>
+              <template v-else>{{ pm.brand?.toUpperCase() || 'CARTÃO' }}</template>
             </div>
-            <div class="pm-number" v-if="pm.type === 'card'">•••• •••• •••• {{ pm.last4 }}</div>
-            <div class="pm-number" v-else-if="pm.type === 'boleto'">CPF/CNPJ •••{{ pm.last4 }}</div>
-            <div class="pm-expiry" v-if="pm.expMonth && pm.expYear">{{ String(pm.expMonth).padStart(2, '0') }}/{{ pm.expYear }}</div>
+            <div v-if="pm.type === 'card'" class="text-lg font-semibold tracking-widest text-p-text">**** **** **** {{ pm.last4 }}</div>
+            <div v-else-if="pm.type === 'boleto'" class="text-lg font-semibold tracking-widest text-p-text">CPF/CNPJ ***{{ pm.last4 }}</div>
+            <div v-if="pm.expMonth && pm.expYear" class="mt-2 text-sm text-p-text-muted">{{ String(pm.expMonth).padStart(2, '0') }}/{{ pm.expYear }}</div>
           </div>
         </div>
-        <div v-else class="empty-state">
-          <p>Nenhum método de pagamento salvo.</p>
-          <button class="btn btn-primary mt-4" @click="openCheckout">Adicionar Cartão de Crédito</button>
-          <p class="text-sm mt-2" style="color: var(--color-surface-400);">
+        <div v-else class="space-y-4 py-10 text-center">
+          <p class="text-p-text-muted">Nenhum método de pagamento salvo.</p>
+          <UiButton variant="primary" @click="openCheckout">Adicionar Cartão de Crédito</UiButton>
+          <p class="text-sm text-p-text-muted">
             Boleto estará disponível como opção de pagamento nas suas faturas.
           </p>
         </div>
@@ -517,386 +510,10 @@ onMounted(async () => {
     </template>
 
     <!-- No subscription -->
-    <div v-else class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-credit-card-2-front-fill" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Assinatura não configurada</h3>
-        <p class="mb-4 px-4">Sua assinatura ainda não foi configurada. Entre em contato com o suporte.</p>
-      </div>
-    </div>
+    <UiEmptyState
+      v-else
+      title="Assinatura não configurada"
+      description="Sua assinatura ainda não foi configurada. Entre em contato com o suporte."
+    />
   </div>
 </template>
-
-<style scoped>
-.page-container { padding: 24px; }
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
-.page-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
-.page-subtitle { font-size: 0.9rem; color: var(--color-surface-400); margin: 4px 0 0; }
-
-/* ─── Summary ─────────────────────────── */
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-.summary-card {
-  padding: 20px;
-  border-radius: 12px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  text-align: center;
-}
-.summary-label { font-size: 0.8rem; color: var(--color-surface-400); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-.summary-value { font-size: 1.5rem; font-weight: 700; }
-.summary-value.primary { color: var(--color-primary-400, #818cf8); }
-.summary-trial-badge {
-  display: inline-block;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  padding: 2px 8px;
-  border-radius: 6px;
-  vertical-align: middle;
-  margin-left: 6px;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border-radius: 99px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-.status-ok { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.status-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.status-danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-
-/* ─── Tabs ────────────────────────────── */
-.tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--glass-border-subtle);
-}
-.tab {
-  padding: 10px 20px;
-  background: none;
-  border: none;
-  color: var(--color-surface-400);
-  font-weight: 500;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.2s;
-}
-.tab:hover { color: var(--color-surface-200); }
-.tab.active {
-  color: var(--color-primary-400, #818cf8);
-  border-bottom-color: var(--color-primary-400, #818cf8);
-}
-
-/* ─── Plans ───────────────────────────── */
-.plans-section {}
-.plans-subtitle {
-  font-size: 0.9rem;
-  color: var(--color-surface-300);
-  margin-bottom: 24px;
-  line-height: 1.5;
-}
-
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-}
-
-.plan-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  background: var(--glass-bg);
-  border: 2px solid var(--glass-border-subtle);
-  padding: 24px 20px 20px;
-  transition: all 0.25s ease;
-}
-.plan-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-}
-
-.plan-current {
-  border-color: var(--color-primary-400, #818cf8);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.04) 100%);
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
-}
-
-.plan-used {
-  opacity: 0.7;
-}
-
-/* Plan badge */
-.plan-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-primary-500, #6366f1);
-  color: white;
-  padding: 4px 16px;
-  border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  white-space: nowrap;
-}
-
-/* Plan header */
-.plan-header {
-  text-align: center;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--glass-border-subtle);
-}
-.plan-slots {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.plan-total {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--color-primary-300, #a5b4fc);
-}
-.plan-period {
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--color-surface-400);
-}
-
-/* Plan breakdown — volume info */
-.plan-breakdown {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.plan-info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-}
-.plan-info-label {
-  color: var(--color-surface-400);
-}
-.plan-info-value {
-  font-weight: 600;
-  color: var(--color-surface-200);
-}
-.plan-info-total {
-  color: var(--color-primary-300, #a5b4fc);
-}
-.plan-discount-badge {
-  display: inline-block;
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-align: center;
-  margin-top: 4px;
-}
-
-/* Plan action area */
-.plan-action {
-  text-align: center;
-}
-.plan-hint-current {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-primary-400, #818cf8);
-}
-.plan-hint-done {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #10b981;
-}
-.plan-hint-free {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #10b981;
-}
-.plan-total-free {
-  color: #10b981 !important;
-}
-.plan-trial-hint {
-  font-size: 0.75rem;
-  color: rgba(16, 185, 129, 0.7);
-  margin-top: 2px;
-}
-.plan-after-trial {
-  font-size: 0.75rem;
-  color: var(--color-surface-400);
-  margin-top: 4px;
-  font-style: italic;
-}
-.plan-after-trial-row .plan-info-label,
-.plan-after-trial-row .plan-info-value {
-  color: var(--color-surface-400);
-  font-style: italic;
-  font-size: 0.8rem;
-}
-.plan-free-badge {
-  background: rgba(16, 185, 129, 0.18);
-  color: #10b981;
-}
-.w-full { width: 100%; }
-
-/* ─── Section subtitle ────────────────── */
-.section-subtitle {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--color-surface-200);
-}
-
-/* ─── Current Projects ────────────────── */
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
-.project-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  border-left: 4px solid var(--color-primary-500);
-  transition: all 0.2s;
-}
-.project-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-.project-card.project-free { border-left-color: #10b981; }
-.project-info { flex: 1; }
-.project-tier { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--color-surface-400); margin-bottom: 2px; }
-.project-info h4 { margin: 0 0 4px; font-size: 0.95rem; font-weight: 600; }
-.project-price { font-weight: 700; font-size: 1rem; text-align: right; white-space: nowrap; }
-.project-price .text-sm { font-size: 0.75rem; color: var(--color-surface-400); font-weight: 400; }
-.price-free { color: #10b981; }
-
-/* ─── Payment Methods ─────────────────── */
-.payment-methods-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.pm-card {
-  padding: 20px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-surface-800) 0%, var(--color-surface-700) 100%);
-  border: 1px solid var(--glass-border);
-}
-.pm-brand { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--color-primary-400); margin-bottom: 16px; }
-.pm-number { font-size: 1.1rem; font-weight: 600; letter-spacing: 2px; margin-bottom: 8px; }
-.pm-expiry { font-size: 0.85rem; color: var(--color-surface-400); }
-
-/* ─── Alerts ──────────────────────────── */
-.alert {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  border-radius: 12px;
-}
-.alert p { margin: 4px 0 0; font-size: 0.85rem; }
-.alert-free { background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; }
-.alert-expired { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; }
-.alert-warning { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; }
-.alert-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-.btn-warning { background: #f59e0b; color: #1a1a2e; }
-.btn-danger { background: #ef4444; color: white; }
-
-/* ─── Misc ────────────────────────────── */
-.empty-state { text-align: center; padding: 40px; color: var(--color-surface-400); }
-.badge-accent { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
-.badge-success { background: #10b981; color: white; }
-.badge-warning { background: #f59e0b; color: #1a1a2e; }
-.badge-error { background: #ef4444; color: white; }
-.badge-outline { border: 1px solid var(--glass-border); background: transparent; }
-.mb-0 { margin-bottom: 0; }
-.mb-6 { margin-bottom: 24px; }
-.mb-8 { margin-bottom: 32px; }
-.mt-4 { margin-top: 16px; }
-.mt-8 { margin-top: 32px; }
-.text-sm { font-size: 0.85rem; }
-
-/* ─── Last-tier quantity picker ───────── */
-.plan-last-tier-qty {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.qty-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.qty-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg-light);
-  color: var(--color-surface-200);
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  padding: 0;
-  line-height: 1;
-}
-
-.qty-btn:hover {
-  background: var(--glass-bg-hover);
-  border-color: var(--color-primary-500);
-  color: var(--color-primary-400);
-}
-
-.qty-input {
-  width: 52px;
-  text-align: center;
-  padding: 3px 4px;
-  border-radius: 6px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--color-surface-100);
-  font-size: 0.85rem;
-  font-weight: 600;
-  font-family: inherit;
-}
-
-.qty-input:focus {
-  outline: none;
-  border-color: var(--color-primary-500);
-}
-
-/* Hide number input arrows */
-.qty-input::-webkit-inner-spin-button,
-.qty-input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.qty-input[type=number] { -moz-appearance: textfield; }
-</style>

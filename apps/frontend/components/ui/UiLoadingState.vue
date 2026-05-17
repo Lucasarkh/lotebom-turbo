@@ -1,0 +1,15 @@
+<template>
+  <div class="flex flex-col items-center justify-center py-12">
+    <svg class="h-8 w-8 animate-spin text-p-accent" viewBox="0 0 24 24" fill="none">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+    <p v-if="text" class="mt-3 text-sm text-p-text-muted">{{ text }}</p>
+  </div>
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  text?: string
+}>()
+</script>

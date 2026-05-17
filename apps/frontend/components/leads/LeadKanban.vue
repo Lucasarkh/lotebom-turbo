@@ -1,27 +1,27 @@
 <template>
-  <div class="kanban-board">
-    <div v-for="column in columns" :key="column.status" class="kanban-column">
-      <div class="column-header">
-        <h3>{{ column.label }}</h3>
-        <span class="badge">{{ column.leads.length }}</span>
+  <div class="flex gap-4 overflow-x-auto pb-6 min-h-[60vh] items-start">
+    <div v-for="column in columns" :key="column.status" class="min-w-[250px] w-[280px] shrink-0 bg-p-raised rounded-xl flex flex-col max-h-[80vh]">
+      <div class="p-4 flex justify-between items-center border-b border-p-border sticky top-0 bg-p-raised z-10 rounded-t-xl">
+        <h3 class="text-sm m-0 text-p-text">{{ column.label }}</h3>
+        <UiBadge>{{ column.leads.length }}</UiBadge>
       </div>
-      <div class="column-body">
-        <div 
-          v-for="lead in column.leads" 
-          :key="lead.id" 
-          class="lead-card"
+      <div class="p-3 overflow-y-auto flex-1">
+        <div
+          v-for="lead in column.leads"
+          :key="lead.id"
+          class="bg-p-elevated rounded-lg p-4 mb-3 shadow-md cursor-pointer transition-transform duration-150 border border-p-border relative hover:-translate-y-0.5 hover:border-p-accent"
           @click="$emit('select', lead)"
         >
-          <div class="card-title">{{ lead.name }}</div>
-          <div class="card-meta">
-            <span class="project">{{ lead.project?.name || '—' }}</span>
-            <span class="date">{{ formatDateToBrasilia(lead.createdAt) }}</span>
+          <div class="font-semibold text-[0.9375rem] text-p-text line-clamp-2">{{ lead.name }}</div>
+          <div class="flex justify-between text-xs text-p-text-muted mt-2">
+            <span>{{ lead.project?.name || '—' }}</span>
+            <span>{{ formatDateToBrasilia(lead.createdAt) }}</span>
           </div>
-          <div v-if="lead.realtorLink" class="card-footer">
+          <div v-if="lead.realtorLink" class="mt-3 pt-2 border-t border-p-border text-xs text-p-text-secondary">
             <i class="bi bi-person-fill" aria-hidden="true"></i> {{ lead.realtorLink.name }}
           </div>
-          <div v-if="lead.isRecurrent" class="badge-recurrent">Recorrente</div>
-          <div v-if="lead.aiChatTranscript" class="badge-ai">IA</div>
+          <span v-if="lead.isRecurrent" class="absolute -top-1.5 right-2.5 bg-amber-500 text-white text-[0.625rem] font-bold px-1.5 py-0.5 rounded shadow-sm">Recorrente</span>
+          <span v-if="lead.aiChatTranscript" class="absolute -top-1.5 right-20 bg-indigo-500 text-white text-[0.625rem] font-bold px-1.5 py-0.5 rounded shadow-sm">IA</span>
         </div>
       </div>
     </div>
@@ -42,27 +42,10 @@ const columns = computed(() => {
     { status: 'RESERVATION', label: 'Reserva' },
     { status: 'WON', label: 'Convertido' }
   ]
-  
+
   return statuses.map(s => ({
     ...s,
     leads: props.leads.filter(l => l.status === s.status)
   }))
 })
 </script>
-
-<style scoped>
-.kanban-board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 24px; min-height: 60vh; align-items: flex-start; }
-.kanban-column { min-width: 250px; width: 280px; flex-shrink: 0; background: var(--glass-bg-heavy); border-radius: var(--radius-lg); display: flex; flex-direction: column; max-height: 80vh; }
-.column-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border-subtle); position: sticky; top: 0; background: var(--glass-bg-heavy); z-index: 10; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-.column-header h3 { font-size: 0.875rem; margin: 0; }
-.column-body { padding: 12px; overflow-y: auto; flex: 1; }
-
-.lead-card { background: var(--glass-bg); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer; transition: transform 150ms ease; border: 1px solid var(--glass-border-subtle); position: relative; }
-.lead-card:hover { transform: translateY(-2px); border-color: var(--color-primary-400); }
-.card-title { font-weight: 600; font-size: 0.9375rem; color: var(--color-surface-50); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.card-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-surface-400); margin-top: 8px; }
-.card-footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--glass-border-subtle); font-size: 0.75rem; color: var(--color-surface-200); }
-
-.badge-recurrent { position: absolute; top: -6px; right: 10px; background: var(--color-warning); color: white; font-size: 0.625rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.badge-ai { position: absolute; top: -6px; right: 80px; background: #6366f1; color: white; font-size: 0.625rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-</style>

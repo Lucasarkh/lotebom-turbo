@@ -97,7 +97,7 @@ watch(() => form.value.accountEmail, (email) => {
   emailError.value = ''
   emailAvailable.value = false
   if (!email || !email.includes('@')) return
-  
+
   clearTimeout(emailDebounceTimer)
   emailDebounceTimer = setTimeout(async () => {
     emailLoading.value = true
@@ -120,7 +120,7 @@ watch(() => form.value.code, (code) => {
   codeError.value = ''
   codeAvailable.value = false
   if (!code) return
-  
+
   clearTimeout(codeDebounceTimer)
   codeDebounceTimer = setTimeout(async () => {
     codeLoading.value = true
@@ -287,7 +287,7 @@ async function approvePendingRealtor(realtor: any) {
 function copyLink(realtor: RealtorRecord, project: RealtorProject | null = null) {
   let url = ''
   const linkedProjects = realtor.projects ?? []
-  
+
   if (project) {
     url = `${window.location.origin}/${project.slug}?c=${realtor.code}`
   } else if (linkedProjects.length > 0) {
@@ -298,7 +298,7 @@ function copyLink(realtor: RealtorRecord, project: RealtorProject | null = null)
     // Fallback if no projects
     url = `${window.location.origin}/p?c=${realtor.code}`
   }
-  
+
   navigator.clipboard.writeText(url)
   toast.success('Link copiado!')
 }
@@ -332,532 +332,192 @@ function openInvite() {
 onMounted(fetchData)
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="header">
-      <div>
-        <h1>Gestão de Corretores</h1>
-        <p class="subtitle">Gerencie os links e CRECI dos corretores</p>
-      </div>
-      <div class="header-actions" style="display: flex; gap: 12px;">
-        <button class="btn btn-outline" :disabled="!canWriteRealtors" :title="!canWriteRealtors ? writePermissionHint : undefined" @click="openInvite">
+  <div>
+    <UiPageHeader title="Gestão de Corretores" description="Gerencie os links e CRECI dos corretores">
+      <template #actions>
+        <UiButton variant="outline" :disabled="!canWriteRealtors" :title="!canWriteRealtors ? writePermissionHint : undefined" @click="openInvite">
           Convidar Corretor via E-mail
-        </button>
-        <button class="btn btn-primary" :disabled="!canWriteRealtors" :title="!canWriteRealtors ? writePermissionHint : undefined" @click="openCreate">
+        </UiButton>
+        <UiButton variant="primary" :disabled="!canWriteRealtors" :title="!canWriteRealtors ? writePermissionHint : undefined" @click="openCreate">
           Vincular Corretor Manualmente
-        </button>
-      </div>
+        </UiButton>
+      </template>
+    </UiPageHeader>
+
+    <div v-if="loading" class="mt-6">
+      <UiLoadingState text="Carregando..." />
     </div>
 
-    <div v-if="loading" class="loading">Carregando...</div>
-    
-    <div v-else class="card">
-      <div v-if="realtors.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-        <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-          <div class="icon-blob mx-auto mb-4"><i class="bi bi-people-fill" aria-hidden="true"></i></div>
-          <h3 class="fw-bold mb-3">Nenhum corretor cadastrado</h3>
-          <p class="mb-4 px-4">Cadastre corretores para gerenciar links de divulgação dos seus loteamentos.</p>
-        </div>
-      </div>
-      
-      <table v-else class="table">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>CRECI</th>
-            <th>Projetos / Links</th>
-            <th>Telefone</th>
-            <th>Conta</th>
-            <th class="text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="realtor in realtors" :key="realtor.id" class="clickable-row" @click="router.push(`/painel/corretores/${realtor.id}`)">
-            <td>
-              <div class="realtor-name">
-                <div class="realtor-avatar-placeholder">{{ realtor.name[0] }}</div>
-                <strong>{{ realtor.name }}</strong>
-              </div>
-            </td>
-            <td>{{ realtor.creci || '-' }}</td>
-            <td>
-              <div v-if="realtor.projects?.length" class="project-links">
-                <div v-for="p in realtor.projects" :key="p.id" class="p-link-item">
-                  <span class="p-name">{{ p.name }}</span>
-                  <button class="btn-copy-small" @click="copyLink(realtor, p)" title="Copiar Link deste projeto">
-                    Copiar Link
-                  </button>
-                </div>
-              </div>
-              <div v-else class="text-muted">Nenhum projeto selecionado</div>
-            </td>
-            <td>{{ realtor.phone }}</td>
-            <td>
-              <div class="account-status-col">
-                <span v-if="isPendingRealtor(realtor)" class="badge badge-pending">Pendente</span>
-                <span v-else-if="realtor.user" class="badge badge-success">{{ realtor.user.email }}</span>
-                <span v-else class="badge badge-neutral">Sem conta</span>
-                <button
-                  v-if="isPendingRealtor(realtor)"
-                  class="btn-copy-small btn-approve"
-                  :disabled="!canWriteRealtors || approvingId === realtor.id"
-                  :title="!canWriteRealtors ? writePermissionHint : undefined"
-                  @click.stop="approvePendingRealtor(realtor)"
-                >
-                  {{ approvingId === realtor.id ? 'Aprovando...' : 'Aprovar' }}
+    <div v-else class="mt-6">
+      <UiCard v-if="realtors.length === 0" padding="none">
+        <UiEmptyState title="Nenhum corretor cadastrado" description="Cadastre corretores para gerenciar links de divulgação dos seus loteamentos." icon="👥" />
+      </UiCard>
+
+      <UiTable v-else>
+        <template #head>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Nome</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">CRECI</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Projetos / Links</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Telefone</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Conta</th>
+          <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-p-text-secondary">Ações</th>
+        </template>
+        <tr v-for="realtor in realtors" :key="realtor.id" class="cursor-pointer transition-colors hover:bg-p-overlay/50" @click="router.push(`/painel/corretores/${realtor.id}`)">
+          <td class="px-4 py-3 text-sm text-p-text">
+            <div class="flex items-center gap-3">
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-bold text-white">{{ realtor.name[0] }}</div>
+              <strong>{{ realtor.name }}</strong>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ realtor.creci || '-' }}</td>
+          <td class="px-4 py-3 text-sm text-p-text">
+            <div v-if="realtor.projects?.length" class="flex flex-col gap-2">
+              <div v-for="p in realtor.projects" :key="p.id" class="flex items-center justify-between gap-3 rounded bg-p-raised px-2 py-1 text-[13px]">
+                <span class="font-medium text-p-text">{{ p.name }}</span>
+                <button class="rounded border border-p-border px-2 py-0.5 text-[11px] text-p-text-muted transition-colors hover:border-blue-500 hover:text-blue-500" @click.stop="copyLink(realtor, p)" title="Copiar Link deste projeto">
+                  Copiar Link
                 </button>
               </div>
-            </td>
-            <td class="text-right actions vertical-actions">
-              <button class="btn-icon" :disabled="!canWriteRealtors" @click.stop="openEdit(realtor)" :title="!canWriteRealtors ? writePermissionHint : 'Editar'">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <span v-else class="text-p-text-muted">Nenhum projeto selecionado</span>
+          </td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ realtor.phone }}</td>
+          <td class="px-4 py-3 text-sm">
+            <div class="flex flex-col items-start gap-2">
+              <UiBadge v-if="isPendingRealtor(realtor)" variant="warning">Pendente</UiBadge>
+              <UiBadge v-else-if="realtor.user" variant="success">{{ realtor.user.email }}</UiBadge>
+              <UiBadge v-else variant="neutral">Sem conta</UiBadge>
+              <button
+                v-if="isPendingRealtor(realtor)"
+                class="rounded border border-amber-400/35 bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-400 transition-colors hover:border-amber-400 hover:bg-amber-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="!canWriteRealtors || approvingId === realtor.id"
+                :title="!canWriteRealtors ? writePermissionHint : undefined"
+                @click.stop="approvePendingRealtor(realtor)"
+              >
+                {{ approvingId === realtor.id ? 'Aprovando...' : 'Aprovar' }}
               </button>
-              <button class="btn-icon text-danger" :disabled="!canWriteRealtors" @click.stop="removeRealtor(realtor.id)" :title="!canWriteRealtors ? writePermissionHint : 'Remover'">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button class="rounded p-1 text-p-text-muted transition-colors hover:bg-p-overlay hover:text-blue-500" :disabled="!canWriteRealtors" @click.stop="openEdit(realtor)" :title="!canWriteRealtors ? writePermissionHint : 'Editar'">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <button class="rounded p-1 text-p-text-muted transition-colors hover:bg-red-500/10 hover:text-red-500" :disabled="!canWriteRealtors" @click.stop="removeRealtor(realtor.id)" :title="!canWriteRealtors ? writePermissionHint : 'Remover'">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </UiTable>
     </div>
 
-    <!-- Modal Modal -->
-    <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay">
-        <div class="modal modal-lg" @click.stop>
-          <div class="modal-header">
-            <h2>{{ editingRealtor ? 'Editar Corretor' : 'Novo Corretor' }}</h2>
-            <button class="modal-close" @click="showModal = false">&times;</button>
+    <!-- Create/Edit Modal -->
+    <UiModal v-model="showModal" :title="editingRealtor ? 'Editar Corretor' : 'Novo Corretor'" size="lg">
+      <form @submit.prevent="saveRealtor">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Nome do Corretor <span class="text-red-500">*</span></label>
+            <input v-model="form.name" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" placeholder="Nome completo" required @input="onNameInput">
           </div>
-          <div class="modal-body">
-          <form @submit.prevent="saveRealtor">
-            <div class="form-grid">
-              <div class="form-group span-2">
-                <label class="form-label">Nome do Corretor <span class="required">*</span></label>
-                <input v-model="form.name" type="text" class="form-input" placeholder="Nome completo" required @input="onNameInput">
-              </div>
 
-              <div class="form-group">
-                <label class="form-label">Código de Indicação (Slug) <span class="required">*</span></label>
-                <div class="input-wrapper">
-                  <input v-model="form.code" type="text" class="form-input" :class="{ 'is-invalid': codeError, 'is-valid': codeAvailable }" placeholder="joao-corretor" required>
-                  <span v-if="codeAvailable" class="valid-icon">✓</span>
-                </div>
-                <span v-if="codeError" class="error-text">{{ codeError }}</span>
-                <span v-else-if="codeLoading" class="help-text">Verificando...</span>
-                <small v-else class="help-text">Usado no link: ?c={{ form.code || '...' }}</small>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">CRECI</label>
-                <input v-model="form.creci" type="text" class="form-input" placeholder="Ex: 12345-F">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Telefone (WhatsApp) <span class="required">*</span></label>
-                <input v-model="form.phone" type="text" class="form-input" placeholder="(DD) 9XXXX-XXXX" required>
-              </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Código de Indicação (Slug) <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input v-model="form.code" type="text" class="w-full rounded-lg border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:outline-none focus:ring-2 focus:ring-p-accent/30" :class="codeError ? 'border-red-500' : codeAvailable ? 'border-green-500 pr-8' : 'border-p-border focus:border-p-accent'" placeholder="joao-corretor" required>
+              <span v-if="codeAvailable" class="absolute right-2.5 top-1/2 -translate-y-1/2 font-bold text-green-500">&#10003;</span>
             </div>
+            <p v-if="codeError" class="mt-1 text-xs text-red-500">{{ codeError }}</p>
+            <p v-else-if="codeLoading" class="mt-1 text-xs text-p-text-muted">Verificando...</p>
+            <p v-else class="mt-1 text-xs text-p-text-muted">Usado no link: ?c={{ form.code || '...' }}</p>
+          </div>
 
-            <!-- Account credentials section (only for new corretores) -->
-            <div v-if="!editingRealtor" class="form-section">
-              <h3 class="form-section-title">Conta de Acesso</h3>
-              <p class="help-text" style="margin-bottom: 12px;">Crie uma conta para o corretor acessar o painel e acompanhar seus leads e campanhas.</p>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label class="form-label">Email de Acesso *</label>
-                  <div class="input-wrapper">
-                    <input v-model="form.accountEmail" type="email" class="form-input" :class="{ 'is-invalid': emailError, 'is-valid': emailAvailable }" placeholder="corretor@email.com" required autocomplete="off">
-                    <span v-if="emailAvailable" class="valid-icon">✓</span>
-                  </div>
-                  <span v-if="emailError" class="error-text">{{ emailError }}</span>
-                  <span v-else-if="emailLoading" class="help-text">Verificando...</span>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Senha Inicial *</label>
-                  <AppPasswordInput v-model="form.accountPassword" :placeholder="PASSWORD_POLICY_HINT" required autocomplete="new-password" />
-                  <span v-if="accountPasswordError" class="error-text">{{ accountPasswordError }}</span>
-                  <small class="help-text">O corretor poderá alterar depois no painel.</small>
-                </div>
-              </div>
-            </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">CRECI</label>
+            <input v-model="form.creci" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" placeholder="Ex: 12345-F">
+          </div>
 
-            <div v-if="editingRealtor && editingRealtor.user" class="form-section">
-              <h3 class="form-section-title">Conta de Acesso</h3>
-              <p class="help-text">{{ editingRealtor.user.email }} — Conta ativa</p>
-            </div>
-
-            <div class="form-group projects-selection">
-              <label class="form-label">Empreendimentos Vinculados</label>
-              <div class="projects-grid">
-                <label v-for="p in projects" :key="p.id" class="project-checkbox">
-                  <input type="checkbox" :value="p.id" v-model="form.projectIds">
-                  <span>{{ p.name }}</span>
-                </label>
-              </div>
-              <p class="help-text" v-if="projects.length === 0">Nenhum empreendimento cadastrado.</p>
-              <p class="help-text" v-else>Selecione os empreendimentos que este corretor poderá divulgar.</p>
-            </div>
-
-            <div class="modal-actions">
-              <button type="button" class="btn btn-ghost" @click="showModal = false">Cancelar</button>
-              <button type="submit" class="btn btn-primary" :disabled="!canWriteRealtors" :title="!canWriteRealtors ? writePermissionHint : undefined">Salvar</button>
-            </div>
-          </form>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Telefone (WhatsApp) <span class="text-red-500">*</span></label>
+            <input v-model="form.phone" type="text" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" placeholder="(DD) 9XXXX-XXXX" required>
           </div>
         </div>
-      </div>
-    </Teleport>
+
+        <!-- Account credentials section (only for new corretores) -->
+        <div v-if="!editingRealtor" class="mt-6 border-t border-p-border pt-6">
+          <h3 class="text-base font-semibold text-p-text">Conta de Acesso</h3>
+          <p class="mb-3 text-xs text-p-text-muted">Crie uma conta para o corretor acessar o painel e acompanhar seus leads e campanhas.</p>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Email de Acesso *</label>
+              <div class="relative">
+                <input v-model="form.accountEmail" type="email" class="w-full rounded-lg border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:outline-none focus:ring-2 focus:ring-p-accent/30" :class="emailError ? 'border-red-500' : emailAvailable ? 'border-green-500 pr-8' : 'border-p-border focus:border-p-accent'" placeholder="corretor@email.com" required autocomplete="off">
+                <span v-if="emailAvailable" class="absolute right-2.5 top-1/2 -translate-y-1/2 font-bold text-green-500">&#10003;</span>
+              </div>
+              <p v-if="emailError" class="mt-1 text-xs text-red-500">{{ emailError }}</p>
+              <p v-else-if="emailLoading" class="mt-1 text-xs text-p-text-muted">Verificando...</p>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Senha Inicial *</label>
+              <AppPasswordInput v-model="form.accountPassword" :placeholder="PASSWORD_POLICY_HINT" required autocomplete="new-password" />
+              <p v-if="accountPasswordError" class="mt-1 text-xs text-red-500">{{ accountPasswordError }}</p>
+              <p class="mt-1 text-xs text-p-text-muted">O corretor poderá alterar depois no painel.</p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="editingRealtor && editingRealtor.user" class="mt-6 border-t border-p-border pt-6">
+          <h3 class="text-base font-semibold text-p-text">Conta de Acesso</h3>
+          <p class="text-xs text-p-text-muted">{{ editingRealtor.user.email }} — Conta ativa</p>
+        </div>
+
+        <div class="mt-6">
+          <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Empreendimentos Vinculados</label>
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <label v-for="p in projects" :key="p.id" class="flex items-center gap-2 rounded-lg border border-p-border bg-p-raised px-3 py-2 text-sm text-p-text-secondary cursor-pointer hover:bg-p-overlay">
+              <input type="checkbox" :value="p.id" v-model="form.projectIds" class="accent-p-accent">
+              <span>{{ p.name }}</span>
+            </label>
+          </div>
+          <p class="mt-1 text-xs text-p-text-muted" v-if="projects.length === 0">Nenhum empreendimento cadastrado.</p>
+          <p class="mt-1 text-xs text-p-text-muted" v-else>Selecione os empreendimentos que este corretor poderá divulgar.</p>
+        </div>
+
+      </form>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="!canWriteRealtors" :title="!canWriteRealtors ? writePermissionHint : undefined" @click="saveRealtor">Salvar</UiButton>
+        </div>
+      </template>
+    </UiModal>
 
     <!-- Invite Modal -->
-    <Teleport to="body">
-      <div v-if="showInviteModal" class="modal-overlay">
-        <div class="modal" @click.stop>
-          <div class="modal-header">
-            <h2>Convidar Corretor</h2>
-            <button class="modal-close" @click="showInviteModal = false">&times;</button>
-          </div>
-          <div class="modal-body">
-            <p style="color: var(--color-surface-200); margin-bottom: 20px; font-size: 0.875rem;">Envie um e-mail de convite para o corretor se cadastrar sozinho.</p>
-          
-            <form @submit.prevent="sendInvite">
-              <div class="form-group">
-                <label class="form-label">E-mail do Corretor</label>
-                <input 
-                  v-model="inviteForm.email" 
-                  type="email" 
-                  class="form-input" 
-                  placeholder="email@corretor.com.br" 
-                  required
-                >
-              </div>
-
-              <div class="modal-actions">
-                <button type="button" class="btn btn-ghost" @click="showInviteModal = false">
-                  Cancelar
-                </button>
-                <button type="submit" class="btn btn-primary" :disabled="!canWriteRealtors || !inviteForm.email" :title="!canWriteRealtors ? writePermissionHint : undefined">
-                  Enviar Convite
-                </button>
-              </div>
-            </form>
-          </div>
+    <UiModal v-model="showInviteModal" title="Convidar Corretor">
+      <p class="mb-5 text-sm text-p-text-muted">Envie um e-mail de convite para o corretor se cadastrar sozinho.</p>
+      <form @submit.prevent="sendInvite">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">E-mail do Corretor</label>
+          <input
+            v-model="inviteForm.email"
+            type="email"
+            class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30"
+            placeholder="email@corretor.com.br"
+            required
+          >
         </div>
-      </div>
-    </Teleport>
+      </form>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UiButton variant="ghost" @click="showInviteModal = false">Cancelar</UiButton>
+          <UiButton variant="primary" :disabled="!canWriteRealtors || !inviteForm.email" :title="!canWriteRealtors ? writePermissionHint : undefined" @click="sendInvite">Enviar Convite</UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
-
-<style scoped>
-.page-container {
-  padding: 24px;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-}
-
-h1 {
-  font-size: 24px;
-  margin: 0 0 8px 0;
-}
-.header-actions button {
-  color: #fff;
-}
-.subtitle {
-  color: var(--color-surface-400);
-  margin: 0;
-}
-
-.card {
-  background: var(--glass-bg);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  overflow: hidden;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th {
-  text-align: left;
-  padding: 12px 16px;
-  background: var(--glass-bg-heavy);
-  color: var(--color-surface-400);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--glass-border-subtle);
-}
-
-.clickable-row {
-  cursor: pointer;
-  transition: background 150ms;
-}
-.clickable-row:hover td {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.realtor-name {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.realtor-photo {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--glass-bg-heavy);
-}
-
-.realtor-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.realtor-avatar-placeholder {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #3b82f6;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.project-links {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.p-link-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 4px 8px;
-  background: var(--glass-bg-heavy);
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.p-name {
-  font-weight: 500;
-  color: var(--color-surface-100);
-}
-
-.btn-copy-small {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  cursor: pointer;
-  color: var(--color-surface-400);
-  transition: all 0.2s;
-}
-
-.btn-copy-small:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  color: var(--color-surface-400);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.btn-icon:hover {
-  background: var(--glass-bg-heavy);
-  color: #2563eb;
-}
-
-.btn-icon.text-danger:hover {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-}
-
-.btn-icon svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* Modal form specifics */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.span-2 {
-  grid-column: span 2;
-}
-
-@media (max-width: 640px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  .span-2 {
-    grid-column: span 1;
-  }
-}
-
-.form-section {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--glass-border-subtle);
-}
-
-.form-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: var(--color-surface-100);
-}
-
-.help-text {
-  font-size: 12px;
-  color: var(--color-surface-400);
-  margin-top: 4px;
-}
-
-.error-text {
-  font-size: 12px;
-  color: #ef4444;
-  margin-top: 4px;
-}
-
-.form-input.is-invalid {
-  border-color: #ef4444;
-}
-
-.form-input.is-invalid:focus {
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
-}
-
-.form-input.is-valid {
-  border-color: #10b981;
-  padding-right: 32px;
-}
-
-.form-input.is-valid:focus {
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
-}
-
-.input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-wrapper .form-input {
-  width: 100%;
-}
-
-.valid-icon {
-  position: absolute;
-  right: 10px;
-  color: #10b981;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--glass-border-subtle);
-}
-
-.empty-state {
-  padding: 48px;
-  text-align: center;
-  color: var(--color-surface-400);
-}
-
-.badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.badge-success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
-}
-
-.badge-neutral {
-  background: var(--glass-bg-heavy);
-  color: var(--color-surface-400);
-}
-
-.badge-pending {
-  background: rgba(251, 191, 36, 0.14);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.2);
-}
-
-.account-status-col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.btn-copy-small.btn-approve {
-  border-color: rgba(251, 191, 36, 0.35);
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.08);
-}
-
-.btn-copy-small.btn-approve:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.required {
-  color: #ef4444;
-  margin-left: 2px;
-}
-</style>

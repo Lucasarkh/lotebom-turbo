@@ -27,7 +27,7 @@ onMounted(async () => {
 })
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 
 const maxSourceSessions = computed(() => {
@@ -49,30 +49,30 @@ function formatCurrency(value: number): string {
 </script>
 
 <template>
-  <div class="metrics-page">
-    <NuxtLink to="/painel/metricas" class="back-link">
+  <div class="space-y-6">
+    <NuxtLink to="/painel/metricas" class="inline-flex items-center gap-2 text-sm font-medium text-p-text-muted hover:text-p-accent transition-colors">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Voltar às Métricas
     </NuxtLink>
 
-    <div class="header">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <h1>Origens de Tráfego</h1>
-        <p class="subtitle">Campanhas, fontes UTM e conversão por origem</p>
+        <h1 class="text-2xl font-extrabold text-p-text">Origens de Tráfego</h1>
+        <p class="mt-1 text-sm text-p-text-muted">Campanhas, fontes UTM e conversão por origem</p>
       </div>
 
-      <div class="filter-actions">
-        <div class="filter-group">
-          <label>Data Início:</label>
-          <input type="date" v-model="startDate" :max="startDateMax" class="date-input" />
+      <div class="flex flex-wrap items-end gap-4 rounded-xl border border-p-border bg-p-elevated p-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Início:</label>
+          <input type="date" v-model="startDate" :max="startDateMax" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" />
         </div>
-        <div class="filter-group">
-          <label>Data Fim:</label>
-          <input type="date" v-model="endDate" :min="endDateMin" :max="endDateMax" class="date-input" />
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Fim:</label>
+          <input type="date" v-model="endDate" :min="endDateMin" :max="endDateMax" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" />
         </div>
-        <div class="filter-group">
-          <label>Empreendimento:</label>
-          <select v-model="selectedProjectId" class="project-select">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Empreendimento:</label>
+          <select v-model="selectedProjectId" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text appearance-none focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30">
             <option value="all">Todos os Projetos</option>
             <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
           </select>
@@ -80,422 +80,127 @@ function formatCurrency(value: number): string {
       </div>
     </div>
 
-    <div v-if="loading && !data" class="loading">Carregando origens de tráfego...</div>
+    <UiLoadingState v-if="loading && !data" text="Carregando origens de tráfego..." />
 
-    <div v-else-if="data" class="dashboard" :class="{ 'loading-overlay': loading }">
+    <div v-else-if="data" class="space-y-6" :class="{ 'opacity-60': loading }">
       <!-- Summary Cards -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <CommonAppTooltip text="Total de visitas recebidas de todas as fontes de tráfego no período." position="bottom"><span class="stat-label">Sessões Totais</span></CommonAppTooltip>
-          <span class="stat-value text-blue">{{ data.summary.totalSessions }}</span>
-        </div>
-        <div class="stat-card">
-          <CommonAppTooltip text="Total de leads captados, independente da fonte de origem." position="bottom"><span class="stat-label">Leads Gerados</span></CommonAppTooltip>
-          <span class="stat-value text-emerald">{{ data.summary.totalLeads }}</span>
-        </div>
-        <div class="stat-card">
-          <CommonAppTooltip text="Quantidade de fontes de tráfego distintas identificadas (ex: Google, Facebook, direto)." position="bottom"><span class="stat-label">Fontes Únicas</span></CommonAppTooltip>
-          <span class="stat-value text-indigo">{{ data.summary.uniqueSources }}</span>
-        </div>
-        <div class="stat-card">
-          <CommonAppTooltip text="Número de campanhas de marketing atualmente ativas e gerando tráfego." position="bottom"><span class="stat-label">Campanhas Ativas</span></CommonAppTooltip>
-          <span class="stat-value text-purple">{{ data.summary.activeCampaigns }}</span>
-        </div>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <UiCard padding="md">
+          <div class="flex flex-col items-center text-center gap-2">
+            <CommonAppTooltip text="Total de visitas recebidas de todas as fontes de tráfego no período." position="bottom"><span class="text-sm font-medium text-p-text-secondary">Sessões Totais</span></CommonAppTooltip>
+            <span class="text-3xl font-bold text-blue-500">{{ data.summary.totalSessions }}</span>
+          </div>
+        </UiCard>
+        <UiCard padding="md">
+          <div class="flex flex-col items-center text-center gap-2">
+            <CommonAppTooltip text="Total de leads captados, independente da fonte de origem." position="bottom"><span class="text-sm font-medium text-p-text-secondary">Leads Gerados</span></CommonAppTooltip>
+            <span class="text-3xl font-bold text-emerald-500">{{ data.summary.totalLeads }}</span>
+          </div>
+        </UiCard>
+        <UiCard padding="md">
+          <div class="flex flex-col items-center text-center gap-2">
+            <CommonAppTooltip text="Quantidade de fontes de tráfego distintas identificadas (ex: Google, Facebook, direto)." position="bottom"><span class="text-sm font-medium text-p-text-secondary">Fontes Únicas</span></CommonAppTooltip>
+            <span class="text-3xl font-bold text-indigo-500">{{ data.summary.uniqueSources }}</span>
+          </div>
+        </UiCard>
+        <UiCard padding="md">
+          <div class="flex flex-col items-center text-center gap-2">
+            <CommonAppTooltip text="Número de campanhas de marketing atualmente ativas e gerando tráfego." position="bottom"><span class="text-sm font-medium text-p-text-secondary">Campanhas Ativas</span></CommonAppTooltip>
+            <span class="text-3xl font-bold text-purple-500">{{ data.summary.activeCampaigns }}</span>
+          </div>
+        </UiCard>
       </div>
 
       <!-- Fontes de Trafego -->
-      <div class="details-card">
-        <h3>Fontes de Tráfego</h3>
-        <div v-if="data.sources?.length">
-          <table class="simple-table">
+      <UiCard padding="md">
+        <h3 class="mb-5 text-base font-semibold text-p-text">Fontes de Tráfego</h3>
+        <div v-if="data.sources?.length" class="overflow-x-auto">
+          <table class="w-full text-sm">
             <thead>
-              <tr>
-                <th><CommonAppTooltip text="Origem do tráfego identificada pelo parâmetro UTM source ou referrer." position="bottom">Fonte</CommonAppTooltip></th>
-                <th><CommonAppTooltip text="Número de visitas vindas desta fonte." position="bottom">Sessões</CommonAppTooltip></th>
-                <th><CommonAppTooltip text="Leads gerados por visitantes vindos desta fonte." position="bottom">Leads</CommonAppTooltip></th>
-                <th><CommonAppTooltip text="Percentual de sessões desta fonte que resultaram em leads." position="bottom">Conversão %</CommonAppTooltip></th>
+              <tr class="border-b border-p-border">
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Origem do tráfego identificada pelo parâmetro UTM source ou referrer." position="bottom">Fonte</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Número de visitas vindas desta fonte." position="bottom">Sessões</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Leads gerados por visitantes vindos desta fonte." position="bottom">Leads</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Percentual de sessões desta fonte que resultaram em leads." position="bottom">Conversão %</CommonAppTooltip></th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-for="item in data.sources" :key="item.source">
-                <td>{{ item.source || '(direto)' }}</td>
-                <td>
-                  <div class="cell-with-bar">
-                    <span class="cell-value">{{ item.sessions }}</span>
-                    <div class="bar-container">
+            <tbody class="divide-y divide-p-border">
+              <tr v-for="item in data.sources" :key="item.source" class="hover:bg-p-overlay/50">
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ item.source || '(direto)' }}</td>
+                <td class="px-4 py-3.5">
+                  <div class="flex items-center gap-2.5">
+                    <span class="min-w-[36px] font-semibold text-p-text-secondary">{{ item.sessions }}</span>
+                    <div class="flex-1 min-w-[60px] h-2 rounded-full bg-white/5 overflow-hidden">
                       <div
-                        class="bar bar-blue"
+                        class="h-full rounded-full bg-blue-500 transition-all duration-500"
                         :style="{ width: maxSourceSessions > 0 ? (item.sessions / maxSourceSessions * 100) + '%' : '0%' }"
                       ></div>
                     </div>
                   </div>
                 </td>
-                <td>{{ item.leads }}</td>
-                <td>{{ item.conversionRate.toFixed(1) }}%</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ item.leads }}</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ item.conversionRate.toFixed(1) }}%</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div v-else class="no-data-placeholder">Nenhuma fonte de tráfego no período</div>
-      </div>
+        <UiEmptyState v-else title="Nenhuma fonte de tráfego no período" />
+      </UiCard>
 
       <!-- Campanhas -->
-      <div class="details-card">
-        <h3>Campanhas</h3>
-        <div v-if="data.campaigns?.length">
-          <table class="simple-table">
+      <UiCard padding="md">
+        <h3 class="mb-5 text-base font-semibold text-p-text">Campanhas</h3>
+        <div v-if="data.campaigns?.length" class="overflow-x-auto">
+          <table class="w-full text-sm">
             <thead>
-              <tr>
-                <th><CommonAppTooltip text="Nome da campanha de marketing configurada." position="bottom">Campanha</CommonAppTooltip></th>
-                <th><CommonAppTooltip text="Empreendimento vinculado à campanha." position="bottom">Projeto</CommonAppTooltip></th>
-                <th>Sessões</th>
-                <th>Leads</th>
-                <th><CommonAppTooltip text="Valor total investido nesta campanha de marketing." position="bottom">Investido (R$)</CommonAppTooltip></th>
-                <th><CommonAppTooltip text="Custo por Lead: valor investido dividido pelo número de leads gerados. Quanto menor, mais eficiente." position="bottom">CPL (R$)</CommonAppTooltip></th>
-                <th><CommonAppTooltip text="Taxa de conversão da campanha: percentual de sessões que geraram leads." position="bottom">Conversão %</CommonAppTooltip></th>
-                <th>Status</th>
+              <tr class="border-b border-p-border">
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Nome da campanha de marketing configurada." position="bottom">Campanha</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Empreendimento vinculado à campanha." position="bottom">Projeto</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Sessões</th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Leads</th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Valor total investido nesta campanha de marketing." position="bottom">Investido (R$)</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Custo por Lead: valor investido dividido pelo número de leads gerados. Quanto menor, mais eficiente." position="bottom">CPL (R$)</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted"><CommonAppTooltip text="Taxa de conversão da campanha: percentual de sessões que geraram leads." position="bottom">Conversão %</CommonAppTooltip></th>
+                <th class="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Status</th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-for="campaign in data.campaigns" :key="campaign.utmCampaign">
-                <td>{{ campaign.name || campaign.utmCampaign }}</td>
-                <td>{{ campaign.projectName || '---' }}</td>
-                <td>{{ campaign.sessions }}</td>
-                <td>{{ campaign.leads }}</td>
-                <td>{{ formatCurrency(campaign.totalSpent) }}</td>
-                <td>{{ formatCurrency(campaign.costPerLead) }}</td>
-                <td>{{ campaign.conversionRate.toFixed(1) }}%</td>
-                <td>
-                  <span v-if="campaign.active === true" class="badge badge-success">Ativa</span>
-                  <span v-else-if="campaign.active === false" class="badge badge-gray">Inativa</span>
+            <tbody class="divide-y divide-p-border">
+              <tr v-for="campaign in data.campaigns" :key="campaign.utmCampaign" class="hover:bg-p-overlay/50">
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ campaign.name || campaign.utmCampaign }}</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ campaign.projectName || '---' }}</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ campaign.sessions }}</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ campaign.leads }}</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ formatCurrency(campaign.totalSpent) }}</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ formatCurrency(campaign.costPerLead) }}</td>
+                <td class="px-4 py-3.5 text-p-text-secondary">{{ campaign.conversionRate.toFixed(1) }}%</td>
+                <td class="px-4 py-3.5">
+                  <UiBadge v-if="campaign.active === true" variant="success">Ativa</UiBadge>
+                  <UiBadge v-else-if="campaign.active === false" variant="neutral">Inativa</UiBadge>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div v-else class="no-data-placeholder">Nenhuma campanha encontrada no período</div>
-      </div>
+        <UiEmptyState v-else title="Nenhuma campanha encontrada no período" />
+      </UiCard>
 
       <!-- Canais (Medium) -->
-      <div class="details-card">
-        <h3>Canais (Medium)</h3>
-        <div v-if="data.mediums?.length" class="chart-list">
-          <div v-for="medium in data.mediums" :key="medium.medium" class="chart-item">
-            <span class="item-label">{{ medium.medium || '(nenhum)' }}</span>
-            <div class="bar-container">
+      <UiCard padding="md">
+        <h3 class="mb-5 text-base font-semibold text-p-text">Canais (Medium)</h3>
+        <div v-if="data.mediums?.length" class="flex flex-col gap-4">
+          <div v-for="medium in data.mediums" :key="medium.medium" class="flex items-center gap-3">
+            <span class="w-[140px] truncate text-[13px] text-p-text-secondary">{{ medium.medium || '(nenhum)' }}</span>
+            <div class="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
               <div
-                class="bar bar-indigo"
+                class="h-full rounded-full bg-indigo-500 transition-all duration-500"
                 :style="{ width: maxMediumCount > 0 ? (medium.count / maxMediumCount * 100) + '%' : '0%' }"
               ></div>
             </div>
-            <span class="item-count">{{ medium.count }}</span>
+            <span class="min-w-[40px] text-right text-sm font-semibold text-p-text">{{ medium.count }}</span>
           </div>
         </div>
-        <div v-else class="no-data-placeholder">Nenhum canal encontrado no período</div>
-      </div>
+        <UiEmptyState v-else title="Nenhum canal encontrado no período" />
+      </UiCard>
     </div>
   </div>
 </template>
-
-<style scoped>
-.metrics-page {
-  padding: 24px;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-surface-400);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 24px;
-  transition: color 0.2s;
-}
-
-.back-link:hover {
-  color: var(--color-primary-400);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-}
-
-h1 {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--color-surface-50);
-  margin: 0 0 8px 0;
-}
-
-.subtitle {
-  color: var(--color-surface-400);
-  font-size: 16px;
-  margin: 0;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 16px;
-  background: var(--glass-bg);
-  padding: 16px 24px;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  border: 1px solid var(--glass-border-subtle);
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.filter-group label {
-  font-size: 11px;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--color-surface-400);
-  letter-spacing: 0.05em;
-}
-
-.project-select,
-.date-input {
-  padding: 10px 14px;
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-900);
-  color: var(--color-surface-100);
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  appearance: none;
-  color-scheme: dark;
-}
-
-.project-select:focus,
-.date-input:focus {
-  outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-}
-
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  transition: opacity 0.2s;
-}
-
-.loading-overlay {
-  opacity: 0.7;
-}
-
-.loading {
-  padding: 48px;
-  text-align: center;
-  color: var(--color-surface-400);
-}
-
-/* Stats Cards */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
-}
-
-.stat-card {
-  background: var(--glass-bg);
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 8px;
-  border: 1px solid var(--glass-border-subtle);
-}
-
-.stat-label {
-  color: var(--color-surface-200);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.stat-value {
-  font-size: 32px;
-  font-weight: 700;
-}
-
-.text-blue { color: #2563eb; }
-.text-emerald { color: #059669; }
-.text-indigo { color: #4f46e5; }
-.text-purple { color: #8b5cf6; }
-
-/* Details Cards */
-.details-card {
-  background: var(--glass-bg);
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  border: 1px solid var(--glass-border-subtle);
-  margin-bottom: 24px;
-}
-
-.details-card h3 {
-  margin: 0 0 20px 0;
-  font-size: 16px;
-  color: var(--color-surface-100);
-}
-
-.no-data-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 120px;
-  background: rgba(0,0,0,0.2);
-  border: 1px dashed var(--color-surface-600);
-  border-radius: 12px;
-  color: var(--color-surface-500);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* Table */
-.simple-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.simple-table th {
-  text-align: left;
-  font-size: 11px;
-  text-transform: uppercase;
-  color: var(--color-surface-400);
-  font-weight: 700;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--glass-border-subtle);
-}
-
-.simple-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--glass-border-subtle);
-  font-size: 14px;
-  color: var(--color-surface-200);
-}
-
-.simple-table tr:hover td {
-  background: rgba(255,255,255,0.02);
-}
-
-/* Cell with bar (sources table) */
-.cell-with-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cell-value {
-  min-width: 36px;
-  font-weight: 600;
-}
-
-.cell-with-bar .bar-container {
-  flex: 1;
-  min-width: 60px;
-}
-
-/* Bar styles */
-.bar-container {
-  flex: 1;
-  background: rgba(255,255,255,0.06);
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.bar {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
-
-.bar-blue {
-  background: #2563eb;
-}
-
-.bar-indigo {
-  background: #4f46e5;
-}
-
-/* Chart list for mediums */
-.chart-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.chart-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.item-label {
-  font-size: 13px;
-  color: var(--color-surface-200);
-  width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.item-count {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-surface-100);
-  min-width: 40px;
-  text-align: right;
-}
-
-/* Badges */
-.badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.badge-success {
-  background: rgba(16,185,129,0.15);
-  color: #10b981;
-}
-
-.badge-gray {
-  background: rgba(148,163,184,0.15);
-  color: #94a3b8;
-}
-
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    gap: 20px;
-  }
-  .filter-actions {
-    width: 100%;
-  }
-  .simple-table {
-    display: block;
-    overflow-x: auto;
-  }
-}
-</style>

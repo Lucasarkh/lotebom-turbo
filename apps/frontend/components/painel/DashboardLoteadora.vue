@@ -1,88 +1,79 @@
 <template>
-  <div class="dashboard-loteadora">
-    <div class="page-header">
-      <div>
-        <h1>Dashboard Loteadora</h1>
-        <p>Visão geral dos seus projetos e leads</p>
-      </div>
-    </div>
+  <div>
+    <UiPageHeader title="Dashboard Loteadora" description="Visão geral dos seus projetos e leads" />
 
-    <div v-if="loading" class="loading-state">
-      <div class="loading-spinner"></div>
-      <span>Carregando...</span>
-    </div>
+    <UiLoadingState v-if="loading" text="Carregando..." />
 
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-      <button class="btn btn-primary" style="margin-top: 16px;" @click="loadDashboard">Tentar novamente</button>
+    <div v-else-if="error" class="mt-6">
+      <UiAlert variant="error" :title="error">
+        <template #default>
+          <UiButton variant="primary" size="sm" class="mt-3" @click="loadDashboard">Tentar novamente</UiButton>
+        </template>
+      </UiAlert>
     </div>
 
     <template v-else>
-      <div class="grid grid-cols-4">
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.projects }}</div>
-          <CommonAppTooltip text="Total de empreendimentos cadastrados na plataforma." position="bottom"><div class="stat-label">Projetos</div></CommonAppTooltip>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.publishedProjects }}</div>
-          <CommonAppTooltip text="Projetos que estão publicados e visíveis para o público." position="bottom"><div class="stat-label">Publicados</div></CommonAppTooltip>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.totalLots }}</div>
-          <CommonAppTooltip text="Total de lotes e elementos desenhados nos mapas de todos os projetos." position="bottom"><div class="stat-label">Elementos no Mapa</div></CommonAppTooltip>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.totalLeads }}</div>
-          <CommonAppTooltip text="Total de leads (contatos de interessados) captados em todos os projetos." position="bottom"><div class="stat-label">Leads</div></CommonAppTooltip>
-        </div>
+      <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <UiCard padding="md">
+          <div class="text-2xl font-bold text-p-text">{{ stats.projects }}</div>
+          <CommonAppTooltip text="Total de empreendimentos cadastrados na plataforma." position="bottom"><div class="mt-0.5 text-sm text-p-text-muted">Projetos</div></CommonAppTooltip>
+        </UiCard>
+        <UiCard padding="md">
+          <div class="text-2xl font-bold text-p-text">{{ stats.publishedProjects }}</div>
+          <CommonAppTooltip text="Projetos que estão publicados e visíveis para o público." position="bottom"><div class="mt-0.5 text-sm text-p-text-muted">Publicados</div></CommonAppTooltip>
+        </UiCard>
+        <UiCard padding="md">
+          <div class="text-2xl font-bold text-p-text">{{ stats.totalLots }}</div>
+          <CommonAppTooltip text="Total de lotes e elementos desenhados nos mapas de todos os projetos." position="bottom"><div class="mt-0.5 text-sm text-p-text-muted">Elementos no Mapa</div></CommonAppTooltip>
+        </UiCard>
+        <UiCard padding="md">
+          <div class="text-2xl font-bold text-p-text">{{ stats.totalLeads }}</div>
+          <CommonAppTooltip text="Total de leads (contatos de interessados) captados em todos os projetos." position="bottom"><div class="mt-0.5 text-sm text-p-text-muted">Leads</div></CommonAppTooltip>
+        </UiCard>
       </div>
 
-      <div style="margin-top: 32px;">
-        <h2 style="margin-bottom: 20px;">Projetos Recentes</h2>
-        <div v-if="projects.length === 0" class="empty-state">
-          <div class="empty-state-icon"><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
-          <h3>Nenhum projeto ainda</h3>
-          <p>Crie seu primeiro projeto para começar</p>
-          <NuxtLink to="/painel/projetos" class="btn btn-primary" style="margin-top: 16px;">
-            Criar Projeto
-          </NuxtLink>
-        </div>
-        <div v-else class="grid grid-cols-3">
-          <ProjectCard 
-            v-for="p in projects.slice(0, 6)" 
-            :key="p.id" 
-            :project="p" 
+      <div class="mt-8">
+        <h2 class="mb-5 text-lg font-semibold text-p-text">Projetos Recentes</h2>
+        <UiEmptyState
+          v-if="projects.length === 0"
+          title="Nenhum projeto ainda"
+          description="Crie seu primeiro projeto para começar"
+          icon="📂"
+        >
+          <template #action>
+            <UiButton variant="primary" to="/painel/projetos">Criar Projeto</UiButton>
+          </template>
+        </UiEmptyState>
+        <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ProjectCard
+            v-for="p in projects.slice(0, 6)"
+            :key="p.id"
+            :project="p"
             @click="$router.push(`/painel/projetos/${p.id}`)"
           />
         </div>
       </div>
 
-      <div v-if="recentLeads.length" style="margin-top: 32px;">
-        <h2 style="margin-bottom: 20px;">Leads Recentes</h2>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>Telefone</th>
-                <th>Projeto</th>
-                <th>Status</th>
-                <th>Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="l in recentLeads.slice(0, 5)" :key="l.id">
-                <td>{{ l.name }}</td>
-                <td>{{ l.email || '—' }}</td>
-                <td>{{ l.phone || '—' }}</td>
-                <td>{{ l.project?.name ?? '—' }}</td>
-                <td><span class="badge" :class="leadBadge(l.status)">{{ leadLabel(l.status) }}</span></td>
-                <td>{{ formatDate(l.createdAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div v-if="recentLeads.length" class="mt-8">
+        <h2 class="mb-5 text-lg font-semibold text-p-text">Leads Recentes</h2>
+        <UiTable>
+          <template #head>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Nome</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">E-mail</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Telefone</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Projeto</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Data</th>
+          </template>
+          <tr v-for="l in recentLeads.slice(0, 5)" :key="l.id">
+            <td class="px-4 py-3 text-sm text-p-text">{{ l.name }}</td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ l.email || '—' }}</td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ l.phone || '—' }}</td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ l.project?.name ?? '—' }}</td>
+            <td class="px-4 py-3"><UiBadge :variant="leadBadgeVariant(l.status)">{{ leadLabel(l.status) }}</UiBadge></td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ formatDate(l.createdAt) }}</td>
+          </tr>
+        </UiTable>
       </div>
     </template>
   </div>
@@ -118,9 +109,9 @@ async function loadDashboard() {
   }
 }
 
-function leadBadge(status) {
-  const map = { NEW: 'badge-info', CONTACTED: 'badge-warning', QUALIFIED: 'badge-success', WON: 'badge-success', LOST: 'badge-error' }
-  return map[status] || 'badge-neutral'
+function leadBadgeVariant(status) {
+  const map = { NEW: 'info', CONTACTED: 'warning', QUALIFIED: 'success', WON: 'success', LOST: 'danger' }
+  return map[status] || 'neutral'
 }
 
 function leadLabel(status) {

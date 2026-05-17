@@ -1,77 +1,106 @@
 <template>
-  <aside class="toolbox">
+  <aside class="flex flex-col w-[210px] min-w-[210px] bg-p-elevated border-r border-p-border overflow-y-auto overflow-x-hidden text-xs">
     <!-- Mode buttons -->
-    <div class="toolbox-modes">
+    <div class="grid grid-cols-2 gap-0.5 p-2 pb-1">
       <button
         v-for="m in modes"
         :key="m.id"
-        :class="['mode-btn', { active: editorMode === m.id }]"
+        :class="[
+          'flex items-center gap-1.5 border rounded-md px-2 py-1.5 cursor-pointer text-[0.72rem] transition-all',
+          editorMode === m.id
+            ? 'bg-p-accent text-white border-p-accent'
+            : 'border-p-border bg-p-elevated text-p-text hover:bg-p-overlay'
+        ]"
         :title="m.tooltip"
         @click="$emit('setMode', m.id)"
       >
-        <svg class="mode-svg" viewBox="0 0 20 20" fill="currentColor" v-html="m.svg" />
-        <span class="mode-label">{{ m.label }}</span>
+        <svg class="w-[15px] h-[15px] shrink-0" viewBox="0 0 20 20" fill="currentColor" v-html="m.svg" />
+        <span class="whitespace-nowrap">{{ m.label }}</span>
       </button>
     </div>
 
-    <div class="toolbox-divider" />
+    <div class="h-px bg-p-border mx-2 my-1" />
 
     <!-- Rotation control -->
-    <div v-if="editorMode === 'place'" class="rotation-bar">
-      <button class="rotate-btn" @click="$emit('rotate')" title="Rotacionar (R)">
+    <div v-if="editorMode === 'place'" class="flex items-center justify-between px-2 py-1.5 bg-p-accent/10 rounded-md mx-2 mb-1">
+      <button
+        class="flex items-center gap-1 border-none bg-transparent cursor-pointer text-[0.72rem] text-p-accent px-1.5 py-0.5 rounded hover:bg-p-accent/10"
+        @click="$emit('rotate')"
+        title="Rotacionar (R)"
+      >
         <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M15.312 11.424a5.5 5.5 0 01-9.379 2.341L4.22 15.478a.75.75 0 01-1.06-1.06l2.5-2.5a.75.75 0 011.06 0l2.5 2.5a.75.75 0 11-1.06 1.06l-1.075-1.074A4 4 0 0013.82 11.48l1.492-.057zM4.688 8.576a5.5 5.5 0 019.379-2.341l1.713-1.713a.75.75 0 011.06 1.06l-2.5 2.5a.75.75 0 01-1.06 0l-2.5-2.5a.75.75 0 111.06-1.06l1.075 1.074A4 4 0 006.18 8.52l-1.492.057z"/></svg>
         Girar
       </button>
-      <span class="rotation-value">{{ placementRotation }}°</span>
+      <span class="text-[0.68rem] text-p-text-muted font-mono">{{ placementRotation }}°</span>
     </div>
 
     <!-- Tile palette -->
-    <div class="tile-categories">
-      <div v-for="cat in categories" :key="cat.id" class="tile-category">
-        <button class="cat-header" @click="toggleCategory(cat.id)">
-          <span class="cat-chevron" :class="{ open: expandedCats.has(cat.id) }">▸</span>
-          <span class="cat-label">{{ cat.label }}</span>
+    <div class="flex-1 overflow-y-auto">
+      <div v-for="cat in categories" :key="cat.id" class="mb-px">
+        <button
+          class="flex items-center gap-1.5 w-full px-2.5 py-1.5 bg-transparent border-none cursor-pointer text-[0.72rem] font-semibold text-p-text-secondary text-left hover:bg-p-overlay"
+          @click="toggleCategory(cat.id)"
+        >
+          <span :class="['text-[0.6rem] text-p-text-muted transition-transform duration-150', expandedCats.has(cat.id) && 'rotate-90']">▸</span>
+          <span class="flex-1">{{ cat.label }}</span>
         </button>
         <Transition name="fold">
-          <div v-show="expandedCats.has(cat.id)" class="cat-tiles">
+          <div v-show="expandedCats.has(cat.id)" class="px-1.5 pb-1 pt-px">
             <button
               v-for="tile in cat.tiles"
               :key="tile.id"
-              :class="['tile-btn', { active: activeTileId === tile.id }]"
+              :class="[
+                'flex items-center gap-1.5 w-full px-1.5 py-0.5 border rounded-[5px] cursor-pointer transition-all text-left',
+                activeTileId === tile.id
+                  ? 'bg-p-accent/10 border-p-accent'
+                  : 'border-transparent bg-transparent hover:bg-p-overlay hover:border-p-border'
+              ]"
               :title="tile.description"
               @click="selectTile(tile.id)"
             >
               <TilePreview :tileId="tile.id" :size="32" />
-              <span class="tile-name">{{ tile.name }}</span>
-              <span class="tile-size">{{ tile.gridW }}×{{ tile.gridH }}</span>
+              <span class="flex-1 text-[0.7rem] text-p-text">{{ tile.name }}</span>
+              <span class="text-[0.6rem] text-p-text-muted font-mono">{{ tile.gridW }}×{{ tile.gridH }}</span>
             </button>
           </div>
         </Transition>
       </div>
     </div>
 
-    <div class="toolbox-divider" />
+    <div class="h-px bg-p-border mx-2 my-1" />
 
     <!-- Quick actions -->
-    <div class="quick-actions">
-      <button class="action-btn" @click="$emit('undo')" title="Desfazer (Ctrl+Z)">
+    <div class="px-2 py-1.5 flex flex-col gap-0.5">
+      <button
+        class="flex items-center gap-1.5 px-2 py-1.5 bg-transparent border border-p-border rounded-md cursor-pointer text-[0.72rem] text-p-text hover:bg-p-overlay"
+        @click="$emit('undo')"
+        title="Desfazer (Ctrl+Z)"
+      >
         <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M7.793 2.232a.75.75 0 01-.025 1.06L3.622 7.25h10.003a5.375 5.375 0 010 10.75H10.75a.75.75 0 010-1.5h2.875a3.875 3.875 0 000-7.75H3.622l4.146 3.957a.75.75 0 01-1.036 1.085l-5.5-5.25a.75.75 0 010-1.085l5.5-5.25a.75.75 0 011.06.025z" clip-rule="evenodd"/></svg>
         Desfazer
       </button>
-      <button class="action-btn" @click="$emit('redo')" title="Refazer (Ctrl+Y)">
+      <button
+        class="flex items-center gap-1.5 px-2 py-1.5 bg-transparent border border-p-border rounded-md cursor-pointer text-[0.72rem] text-p-text hover:bg-p-overlay"
+        @click="$emit('redo')"
+        title="Refazer (Ctrl+Y)"
+      >
         <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M12.207 2.232a.75.75 0 00.025 1.06l4.146 3.958H6.375a5.375 5.375 0 000 10.75H9.25a.75.75 0 000-1.5H6.375a3.875 3.875 0 010-7.75h10.003l-4.146 3.957a.75.75 0 001.036 1.085l5.5-5.25a.75.75 0 000-1.085l-5.5-5.25a.75.75 0 00-1.06.025z" clip-rule="evenodd"/></svg>
         Refazer
       </button>
-      <button class="action-btn save-btn" @click="$emit('save')" title="Salvar (Ctrl+S)">
+      <button
+        class="flex items-center gap-1.5 px-2 py-1.5 bg-transparent border border-p-border rounded-md cursor-pointer text-[0.72rem] text-p-text font-semibold hover:bg-emerald-500/10 hover:border-emerald-400"
+        @click="$emit('save')"
+        title="Salvar (Ctrl+S)"
+      >
         <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z"/></svg>
         Salvar
       </button>
     </div>
 
     <!-- Hint -->
-    <div class="toolbox-hint">
-      <span v-if="editorMode === 'select'">Clique para selecionar. Arraste para mover. <kbd>Ctrl</kbd>+clique = multi-seleção. <kbd>Espaço</kbd> = mover mapa.</span>
-      <span v-else-if="editorMode === 'place'">Clique no mapa para posicionar. <kbd>R</kbd> = girar. <kbd>Esc</kbd> = cancelar.</span>
+    <div class="px-2.5 py-2 text-[0.65rem] text-p-text-muted leading-snug border-t border-p-border mt-auto">
+      <span v-if="editorMode === 'select'">Clique para selecionar. Arraste para mover. <kbd class="inline-block px-1 bg-p-overlay border border-p-border rounded text-[0.6rem] font-mono text-p-text-muted">Ctrl</kbd>+clique = multi-seleção. <kbd class="inline-block px-1 bg-p-overlay border border-p-border rounded text-[0.6rem] font-mono text-p-text-muted">Espaço</kbd> = mover mapa.</span>
+      <span v-else-if="editorMode === 'place'">Clique no mapa para posicionar. <kbd class="inline-block px-1 bg-p-overlay border border-p-border rounded text-[0.6rem] font-mono text-p-text-muted">R</kbd> = girar. <kbd class="inline-block px-1 bg-p-overlay border border-p-border rounded text-[0.6rem] font-mono text-p-text-muted">Esc</kbd> = cancelar.</span>
       <span v-else-if="editorMode === 'pan'">Arraste para navegar. Roda do mouse = zoom.</span>
       <span v-else-if="editorMode === 'erase'">Clique em um elemento para removê-lo.</span>
     </div>
@@ -134,117 +163,6 @@ function selectTile(tileId: string) {
 </script>
 
 <style scoped>
-.toolbox {
-  display: flex;
-  flex-direction: column;
-  width: 210px;
-  min-width: 210px;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  overflow-y: auto;
-  overflow-x: hidden;
-  font-size: 0.78rem;
-}
-
-/* Modes */
-.toolbox-modes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
-  padding: 8px 8px 4px;
-}
-.mode-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid #e5e7eb;
-  background: white;
-  border-radius: 6px;
-  padding: 6px 8px;
-  cursor: pointer;
-  font-size: 0.72rem;
-  color: #374151;
-  transition: all 0.12s;
-}
-.mode-btn:hover { background: #f9fafb; }
-.mode-btn.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-.mode-svg { width: 15px; height: 15px; flex-shrink: 0; }
-.mode-label { white-space: nowrap; }
-
-/* Rotation */
-.rotation-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 5px 8px; background: #eff6ff; border-radius: 6px; margin: 0 8px 4px;
-}
-.rotate-btn {
-  display: flex; align-items: center; gap: 4px;
-  border: none; background: transparent; cursor: pointer; font-size: 0.72rem;
-  color: #3b82f6; padding: 3px 6px; border-radius: 4px;
-}
-.rotate-btn:hover { background: rgba(59,130,246,0.1); }
-.rotation-value { font-size: 0.68rem; color: #6b7280; font-family: 'SF Mono', Monaco, monospace; }
-
-.toolbox-divider { height: 1px; background: #e5e7eb; margin: 4px 8px; }
-
-/* Categories */
-.tile-categories { flex: 1; overflow-y: auto; }
-.tile-category { margin-bottom: 1px; }
-.cat-header {
-  display: flex; align-items: center; gap: 5px; width: 100%;
-  padding: 6px 10px; background: transparent; border: none; cursor: pointer;
-  font-size: 0.72rem; font-weight: 600; color: #4b5563; text-align: left;
-}
-.cat-header:hover { background: #f9fafb; }
-.cat-chevron { font-size: 0.6rem; color: #9ca3af; transition: transform 0.15s; }
-.cat-chevron.open { transform: rotate(90deg); }
-.cat-label { flex: 1; }
-
-.cat-tiles { padding: 1px 6px 4px; }
-.tile-btn {
-  display: flex; align-items: center; gap: 6px; width: 100%;
-  padding: 3px 5px; border: 1px solid transparent; background: transparent;
-  border-radius: 5px; cursor: pointer; transition: all 0.1s; text-align: left;
-}
-.tile-btn:hover { background: #f9fafb; border-color: #e5e7eb; }
-.tile-btn.active { background: #eff6ff; border-color: #3b82f6; }
-.tile-name { flex: 1; font-size: 0.7rem; color: #374151; }
-.tile-size { font-size: 0.6rem; color: #9ca3af; font-family: 'SF Mono', Monaco, monospace; }
-
-/* Quick actions */
-.quick-actions { padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; }
-.action-btn {
-  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
-  background: transparent; border: 1px solid #e5e7eb;
-  border-radius: 6px; cursor: pointer; font-size: 0.72rem; color: #374151;
-}
-.action-btn:hover { background: #f9fafb; }
-.save-btn { font-weight: 600; }
-.save-btn:hover { background: #f0fdf4; border-color: #4ade80; }
-
-/* Hint */
-.toolbox-hint {
-  padding: 8px 10px;
-  font-size: 0.65rem;
-  color: #9ca3af;
-  line-height: 1.45;
-  border-top: 1px solid #f3f4f6;
-  margin-top: auto;
-}
-.toolbox-hint kbd {
-  display: inline-block;
-  padding: 0 4px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 3px;
-  font-size: 0.6rem;
-  font-family: 'SF Mono', Monaco, monospace;
-  color: #6b7280;
-}
-
 /* Transitions */
 .fold-enter-active, .fold-leave-active { transition: all 0.2s; overflow: hidden; }
 .fold-enter-from, .fold-leave-to { max-height: 0; opacity: 0; }

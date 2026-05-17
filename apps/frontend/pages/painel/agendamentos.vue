@@ -1,200 +1,187 @@
 <template>
-  <div class="calendar-page p-10">
-    <div class="page-header d-flex justify-content-between align-items-center mb-10">
-      <div>
-        <h1 class="lotio-title gradient-text">Agenda</h1>
-        <p class="text-secondary font-medium mt-1">Gerencie visitas e monitoramento de leads com precisão.</p>
-      </div>
-      <div class="d-flex gap-3">
-        <button class="btn btn-glass" :disabled="!canWriteScheduling || !filters.projectId" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="showConfig = true">
+  <div class="space-y-6">
+    <UiPageHeader title="Agenda" description="Gerencie visitas e monitoramento de leads com precisão.">
+      <template #actions>
+        <UiButton variant="secondary" :disabled="!canWriteScheduling || !filters.projectId" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="showConfig = true">
           <i class="pi pi-sliders-h"></i>
           <span>Regras</span>
-        </button>
-        <button class="btn btn-lotio-primary shadow-lotio" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="openCreateModal(null)">
+        </UiButton>
+        <UiButton variant="primary" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="openCreateModal(null)">
           <i class="pi pi-plus"></i>
           <span>Novo Agendamento</span>
-        </button>
+        </UiButton>
+      </template>
+    </UiPageHeader>
+
+    <!-- Filter Bar -->
+    <div class="flex flex-wrap items-center gap-4 rounded-xl border border-p-border bg-p-elevated p-4">
+      <div class="min-w-[200px] flex-1">
+        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-p-text-muted">Empreendimento</label>
+        <select v-model="filters.projectId" class="w-full rounded-lg border border-p-border bg-p-raised px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" @change="loadSchedulings">
+          <option value="">Todos os projetos ativos</option>
+          <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </select>
+      </div>
+      <div class="min-w-[180px] flex-1">
+        <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-p-text-muted">Filtrar Status</label>
+        <select v-model="filters.status" class="w-full rounded-lg border border-p-border bg-p-raised px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" @change="loadSchedulings">
+          <option value="">Qualquer status</option>
+          <option value="PENDING">Pendentes</option>
+          <option value="CONFIRMED">Confirmados</option>
+          <option value="CANCELLED">Cancelados</option>
+          <option value="COMPLETED">Concluídos</option>
+        </select>
+      </div>
+      <div class="ml-auto flex items-center gap-3">
+        <div class="flex items-center gap-2 rounded-lg border border-p-border bg-p-raised p-1">
+          <button class="flex h-8 w-8 items-center justify-center rounded-md text-p-text-secondary hover:bg-p-overlay" @click="prevMonth"><i class="pi pi-chevron-left text-xs"></i></button>
+          <span class="min-w-[140px] text-center text-sm font-bold capitalize text-p-text">{{ currentMonthName }}</span>
+          <button class="flex h-8 w-8 items-center justify-center rounded-md text-p-text-secondary hover:bg-p-overlay" @click="nextMonth"><i class="pi pi-chevron-right text-xs"></i></button>
+        </div>
+        <UiButton variant="primary" size="sm" @click="goToToday">Hoje</UiButton>
       </div>
     </div>
 
-    <!-- Enhanced Filter Bar -->
-    <div class="lotio-filter-bar shadow-lotio-lg mb-12">
-      <div class="filter-item">
-        <label>Empreendimento</label>
-        <div class="lotio-select-wrapper">
-          <select v-model="filters.projectId" class="lotio-select-modern" @change="loadSchedulings">
-            <option value="">Todos os projetos ativos</option>
-            <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-          </select>
-          <i class="pi pi-chevron-down"></i>
-        </div>
-      </div>
-      <div class="filter-separator"></div>
-      <div class="filter-item">
-        <label>Filtrar Status</label>
-        <div class="lotio-select-wrapper">
-          <select v-model="filters.status" class="lotio-select-modern" @change="loadSchedulings">
-            <option value="">Qualquer status</option>
-            <option value="PENDING">Pendentes</option>
-            <option value="CONFIRMED">Confirmados</option>
-            <option value="CANCELLED">Cancelados</option>
-            <option value="COMPLETED">Concluídos</option>
-          </select>
-          <i class="pi pi-chevron-down"></i>
-        </div>
-      </div>
-      <div class="ms-auto d-flex align-items-center gap-6">
-        <div class="calendar-nav-group">
-          <button class="nav-btn-round" @click="prevMonth"><i class="pi pi-chevron-left"></i></button>
-          <span class="current-month-display">{{ currentMonthName }}</span>
-          <button class="nav-btn-round" @click="nextMonth"><i class="pi pi-chevron-right"></i></button>
-        </div>
-        <button class="btn btn-pill-today" @click="goToToday">Hoje</button>
-      </div>
-    </div>
+    <UiLoadingState v-if="loading && schedulings.length === 0" />
 
-    <div v-if="loading && schedulings.length === 0" class="lotio-loading-wrapper">
-       <div class="lotio-spinner-bounce">
-         <div class="bounce1"></div>
-         <div class="bounce2"></div>
-         <div class="bounce3"></div>
-       </div>
-    </div>
-
-    <!-- Calendar Card with Depth -->
-    <div v-else class="lotio-calendar-container shadow-lotio-xl mb-12">
-      <div class="calendar-header-grid">
-        <div v-for="day in weekDays" :key="day" class="weekday-label">{{ day }}</div>
+    <!-- Calendar -->
+    <UiCard v-else padding="none">
+      <div class="grid grid-cols-7 border-b border-p-border bg-p-raised/50">
+        <div v-for="day in weekDays" :key="day" class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-p-text-muted">{{ day }}</div>
       </div>
-      
-      <div class="calendar-main-grid">
-        <div 
-          v-for="(date, idx) in calendarDays" 
-          :key="idx" 
-          class="calendar-cell"
-          :class="{ 
-            'is-other-month': !isSameMonth(date, currentViewDate),
-            'is-today': isToday(date),
-            'is-selected': selectedDay && isSameDay(date, selectedDay),
-            'has-activity': getDayEvents(date).length > 0
+      <div class="grid grid-cols-7">
+        <div
+          v-for="(date, idx) in calendarDays"
+          :key="idx"
+          class="min-h-[130px] cursor-pointer border-b border-r border-p-border p-3 transition-colors hover:bg-p-raised"
+          :class="{
+            'opacity-20': !isSameMonth(date, currentViewDate),
+            'ring-2 ring-inset ring-p-accent': selectedDay && isSameDay(date, selectedDay),
           }"
           @click="selectDate(date)"
         >
-          <div class="cell-header">
-            <span class="cell-number">{{ date.getDate() }}</span>
+          <div class="mb-2">
+            <span
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold text-p-text"
+              :class="{ 'bg-p-accent text-white': isToday(date) }"
+            >{{ date.getDate() }}</span>
           </div>
-          <div class="cell-content">
-            <div 
-              v-for="event in getDayEvents(date).slice(0, 3)" 
-              :key="event.id" 
-              class="event-mini-tag"
-              :class="event.status.toLowerCase()"
+          <div class="flex flex-col gap-1">
+            <div
+              v-for="event in getDayEvents(date).slice(0, 3)"
+              :key="event.id"
+              class="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-bold"
+              :class="{
+                'bg-amber-500/15 text-amber-400': event.status.toLowerCase() === 'pending',
+                'bg-emerald-500/15 text-emerald-400': event.status.toLowerCase() === 'confirmed',
+                'bg-red-500/15 text-red-400 line-through opacity-70': event.status.toLowerCase() === 'cancelled',
+              }"
             >
-              <span class="status-dot"></span>
-              <span class="event-time">{{ formatTime(event.scheduledAt) }}</span>
-              <span class="event-name">{{ event.lead?.name || 'Manual' }}</span>
+              <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+              <span>{{ formatTime(event.scheduledAt) }}</span>
+              <span class="truncate">{{ event.lead?.name || 'Manual' }}</span>
             </div>
-            <div v-if="getDayEvents(date).length > 3" class="event-more-count">
+            <div v-if="getDayEvents(date).length > 3" class="pl-2 text-[11px] font-bold text-p-accent">
               + {{ getDayEvents(date).length - 3 }} atividades
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </UiCard>
 
-    <!-- Modern Sidebar Panel -->
+    <!-- Sidebar Panel -->
     <Transition name="panel-slide">
-       <div v-if="selectedDay" class="glass-sidebar shadow-lotio-xl">
-          <div class="sidebar-top">
-             <div class="d-flex justify-content-between align-items-center">
-                <div class="date-badge-large">
-                  <div class="month-name">{{ getMonthShort(selectedDay) }}</div>
-                  <div class="day-number">{{ selectedDay.getDate() }}</div>
-                </div>
-                <div class="flex-1 ms-4">
-                  <h3 class="sidebar-day-name">{{ getDayLong(selectedDay) }}</h3>
-                  <p class="sidebar-subtitle">{{ getDayEvents(selectedDay).length }} compromissos agendados</p>
-                </div>
-                <button class="btn-close-circle" @click="selectedDay = null">
-                  <i class="pi pi-times"></i>
-                </button>
-             </div>
+      <div v-if="selectedDay" class="fixed inset-y-0 right-0 z-[1000] flex w-[400px] flex-col border-l border-p-border bg-p-elevated shadow-2xl max-md:inset-x-0 max-md:top-auto max-md:bottom-0 max-md:h-[70vh] max-md:w-full max-md:rounded-t-2xl max-md:border-l-0 max-md:border-t">
+        <div class="border-b border-p-border px-6 py-5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div>
+                <div class="text-xs font-bold uppercase text-p-accent">{{ getMonthShort(selectedDay) }}</div>
+                <div class="text-3xl font-extrabold leading-none text-p-text">{{ selectedDay.getDate() }}</div>
+              </div>
+              <div>
+                <h3 class="text-lg font-extrabold capitalize text-p-text">{{ getDayLong(selectedDay) }}</h3>
+                <p class="text-sm text-p-text-muted">{{ getDayEvents(selectedDay).length }} compromissos agendados</p>
+              </div>
+            </div>
+            <button class="flex h-8 w-8 items-center justify-center rounded-full bg-p-overlay text-p-text-muted hover:text-p-text" @click="selectedDay = null">
+              <i class="pi pi-times text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6">
+          <div v-if="getDayEvents(selectedDay).length === 0" class="py-10 text-center">
+            <div class="mb-4 text-4xl"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></div>
+            <h4 class="font-bold text-p-text">Agenda Livre</h4>
+            <p class="mt-1 text-sm text-p-text-muted">Nenhum compromisso marcado para este dia.</p>
+            <UiButton variant="primary" class="mt-4 w-full" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="openCreateModal(selectedDay)">
+              <i class="pi pi-plus mr-2"></i> Criar Agendamento
+            </UiButton>
           </div>
 
-          <div class="sidebar-body">
-             <div v-if="getDayEvents(selectedDay).length === 0" class="empty-schedule">
-                <div class="empty-artwork"><i class="bi bi-calendar-event-fill" aria-hidden="true"></i></div>
-                <h4>Agenda Livre</h4>
-                <p>Nenhum compromisso marcado para este dia.</p>
-                <button class="btn btn-lotio-primary mt-4 w-full" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="openCreateModal(selectedDay)">
-                  <i class="pi pi-plus me-2"></i> Criar Agendamento
-                </button>
-             </div>
-             
-             <div v-else class="agenda-timeline">
-                <div v-for="event in getDayEvents(selectedDay)" :key="event.id" class="agenda-item-card">
-                   <div class="agenda-time">{{ formatTime(event.scheduledAt) }}</div>
-                   <div class="agenda-content">
-                      <div class="d-flex justify-content-between align-items-start">
-                         <h4 class="agenda-title">{{ event.lead?.name || 'Agendamento Manual' }}</h4>
-                         <span class="agenda-status-label" :class="event.status.toLowerCase()">
-                           {{ translateStatus(event.status) }}
-                         </span>
-                      </div>
-                      <div class="agenda-meta">
-                         <i class="pi pi-building"></i> {{ event.project?.name }}
-                      </div>
-                      
-                      <div v-if="event.lead" class="agenda-contact-box">
-                         <a v-if="event.lead.phone" :href="'tel:' + event.lead.phone" class="contact-link">
-                           <i class="pi pi-whatsapp"></i> {{ event.lead.phone }}
-                         </a>
-                         <span v-if="event.lead.email" class="contact-link">
-                           <i class="pi pi-envelope"></i> {{ event.lead.email }}
-                         </span>
-                      </div>
-
-                      <div v-if="event.user" class="agenda-broker">
-                         Corretor: {{ event.user.name }}
-                      </div>
-                      
-                      <div class="agenda-actions">
-                         <button v-if="event.status === 'PENDING'" class="btn-action-confirmed" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="updateStatus(event.id, 'CONFIRMED')">
-                           Confirmar
-                         </button>
-                         <button v-if="['PENDING', 'CONFIRMED'].includes(event.status)" class="btn-action-danger" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="updateStatus(event.id, 'CANCELLED')">
-                           Cancelar
-                         </button>
-                         <button class="btn-action-icon" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="deleteScheduling(event.id)">
-                            <i class="pi pi-trash"></i>
-                         </button>
-                      </div>
-                   </div>
+          <div v-else class="flex flex-col gap-6">
+            <div v-for="event in getDayEvents(selectedDay)" :key="event.id">
+              <div class="mb-2 text-sm font-bold text-p-accent">{{ formatTime(event.scheduledAt) }}</div>
+              <div class="rounded-xl border border-p-border bg-p-raised p-4">
+                <div class="flex items-start justify-between">
+                  <h4 class="font-bold text-p-text">{{ event.lead?.name || 'Agendamento Manual' }}</h4>
+                  <span
+                    class="rounded-md px-2 py-1 text-[11px] font-bold uppercase"
+                    :class="{
+                      'bg-emerald-500/15 text-emerald-400': event.status.toLowerCase() === 'confirmed',
+                      'bg-amber-500/15 text-amber-400': event.status.toLowerCase() === 'pending',
+                      'bg-red-500/15 text-red-400': event.status.toLowerCase() === 'cancelled',
+                    }"
+                  >{{ translateStatus(event.status) }}</span>
                 </div>
-                <button class="btn btn-lotio-soft w-full mt-6 py-3" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="openCreateModal(selectedDay)">
-                  <i class="pi pi-plus me-2"></i> Novo compromisso
-                </button>
-             </div>
+                <div class="mb-3 mt-1 text-sm text-p-text-muted">
+                  <i class="pi pi-building"></i> {{ event.project?.name }}
+                </div>
+                <div v-if="event.lead" class="flex flex-col gap-1.5 border-t border-p-border pt-3">
+                  <a v-if="event.lead.phone" :href="'tel:' + event.lead.phone" class="flex items-center gap-2 text-sm font-semibold text-p-text no-underline">
+                    <i class="pi pi-whatsapp text-p-text-muted"></i> {{ event.lead.phone }}
+                  </a>
+                  <span v-if="event.lead.email" class="flex items-center gap-2 text-sm font-semibold text-p-text">
+                    <i class="pi pi-envelope text-p-text-muted"></i> {{ event.lead.email }}
+                  </span>
+                </div>
+                <div v-if="event.user" class="mt-2 text-xs text-p-text-muted">Corretor: {{ event.user.name }}</div>
+                <div class="mt-4 flex gap-2">
+                  <UiButton v-if="event.status === 'PENDING'" variant="primary" size="sm" class="flex-1" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="updateStatus(event.id, 'CONFIRMED')">Confirmar</UiButton>
+                  <UiButton v-if="['PENDING', 'CONFIRMED'].includes(event.status)" variant="danger" size="sm" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="updateStatus(event.id, 'CANCELLED')">Cancelar</UiButton>
+                  <UiButton variant="ghost" size="sm" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="deleteScheduling(event.id)">
+                    <i class="pi pi-trash"></i>
+                  </UiButton>
+                </div>
+              </div>
+            </div>
+            <UiButton variant="secondary" class="w-full" :disabled="!canWriteScheduling" :title="!canWriteScheduling ? writePermissionHint : undefined" @click="openCreateModal(selectedDay)">
+              <i class="pi pi-plus mr-2"></i> Novo compromisso
+            </UiButton>
           </div>
-       </div>
+        </div>
+      </div>
     </Transition>
 
-    <PainelSchedulingConfigModal 
-      v-if="showConfig && filters.projectId" 
-      :projectId="filters.projectId" 
-      @close="showConfig = false" 
+    <PainelSchedulingConfigModal
+      v-if="showConfig && filters.projectId"
+      :projectId="filters.projectId"
+      @close="showConfig = false"
     />
-    <PainelSchedulingModal 
-      v-if="showCreate" 
+    <PainelSchedulingModal
+      v-if="showCreate"
       :initialDate="targetDate || undefined"
-      @close="showCreate = false" 
-      @success="loadSchedulings" 
+      @close="showCreate = false"
+      @success="loadSchedulings"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { formatTimeToBrasilia, formatDateToBrasilia, getISODateInBrasilia } from '~/utils/date'
+
+definePageMeta({ layout: 'painel' })
 
 const api = useApi();
 const toast = useToast();
@@ -256,7 +243,7 @@ onMounted(async () => {
         } else {
           projects.value = [];
         }
-        
+
         // Load all initially or let filters decide
         await loadSchedulings();
     } catch (e) {
@@ -272,7 +259,7 @@ const loadSchedulings = async () => {
        const url = filters.value.projectId ? `/scheduling?projectId=${filters.value.projectId}` : '/scheduling';
        const res = await api.get(url);
        let data = Array.isArray(res) ? res : (res.data || []);
-       
+
        if (filters.value.status) {
          schedulings.value = data.filter((s: SchedulingItem) => s.status === filters.value.status);
        } else {
@@ -298,7 +285,7 @@ const calendarDays = computed(() => {
    const month = currentViewDate.value.getMonth();
    const firstDayOfMonth = new Date(year, month, 1);
    const days = [];
-   
+
    const startOffset = firstDayOfMonth.getDay();
    const date = new Date(year, month, 1 - startOffset);
 
@@ -371,474 +358,6 @@ const deleteScheduling = async (id: string) => {
 </script>
 
 <style scoped>
-.gradient-text {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.font-medium { font-weight: 500; }
-
-/* Filter Bar Optimization */
-.lotio-filter-bar {
-   background: var(--glass-bg);
-   backdrop-filter: blur(16px);
-   -webkit-backdrop-filter: blur(16px);
-   border: 1px solid var(--glass-border);
-   border-radius: 20px;
-   padding: 10px 24px;
-   display: flex;
-   align-items: center;
-   gap: 20px;
-   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-   margin-bottom: 8px;
-}
-
-.lotio-select-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 200px;
-}
-
-.lotio-select-modern {
-   width: 100%;
-   border: none;
-   background: transparent;
-   font-weight: 700;
-   font-size: 1rem;
-   color: var(--color-surface-50);
-   outline: none;
-   padding: 4px 28px 4px 6px;
-   cursor: pointer;
-   appearance: none;
-}
-
-/* Fix for Select Options contrast */
-.lotio-select-modern option {
-  background: #141f1a !important;
-  color: #f0fdf4 !important;
-}
-
-.lotio-select-wrapper i {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 0.7rem;
-  color: var(--color-surface-500);
-}
-
-.filter-item label {
-   font-size: 0.65rem;
-   text-transform: uppercase;
-   font-weight: 800;
-   color: var(--color-surface-400);
-   margin-bottom: 2px;
-   letter-spacing: 0.03em;
-}
-
-.filter-separator { width: 1px; height: 35px; background: var(--glass-border); }
-
-.calendar-nav-group {
-   display: flex;
-   align-items: center;
-   background: var(--glass-bg-heavy);
-   padding: 4px;
-   border-radius: 12px;
-   gap: 8px;
-}
-
-.nav-btn-round {
-   width: 32px;
-   height: 32px;
-   border-radius: 9px;
-   border: none;
-   background: var(--glass-bg);
-   color: var(--color-surface-200);
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   cursor: pointer;
-   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-   transition: transform 0.1s, background 0.15s;
-}
-.nav-btn-round:hover { background: var(--glass-bg-hover); }
-.nav-btn-round:active { transform: scale(0.95); }
-
-.current-month-display {
-   font-weight: 700;
-   font-size: 0.95rem;
-   color: var(--color-surface-50);
-   min-width: 150px;
-   text-align: center;
-   text-transform: capitalize;
-}
-
-.btn-pill-today {
-   background: var(--color-primary-600);
-   color: white;
-   border: none;
-   border-radius: 20px;
-   padding: 8px 18px;
-   font-weight: 700;
-   font-size: 0.85rem;
-   cursor: pointer;
-   transition: background 0.15s;
-}
-.btn-pill-today:hover { background: var(--color-primary-500); }
-
-/* Calendar Container */
-.lotio-calendar-container {
-   background: var(--glass-bg);
-   backdrop-filter: blur(16px);
-   -webkit-backdrop-filter: blur(16px);
-   border-radius: 32px;
-   overflow: hidden;
-   border: 1px solid var(--glass-border);
-}
-
-.calendar-header-grid {
-   display: grid;
-   grid-template-columns: repeat(7, 1fr);
-   background: var(--glass-bg-heavy);
-   border-bottom: 1px solid var(--glass-border);
-}
-
-.weekday-label {
-   padding: 14px;
-   text-align: center;
-   font-size: 0.7rem;
-   font-weight: 800;
-   color: var(--color-surface-400);
-   text-transform: uppercase;
-   letter-spacing: 0.05em;
-}
-
-.calendar-main-grid {
-   display: grid;
-   grid-template-columns: repeat(7, 1fr);
-}
-
-.calendar-cell {
-   min-height: 140px;
-   padding: 16px;
-   border-right: 1px solid var(--glass-border-subtle);
-   border-bottom: 1px solid var(--glass-border-subtle);
-   cursor: pointer;
-   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-   background: var(--glass-bg);
-}
-
-.calendar-cell:hover:not(.is-other-month) { 
-   background: var(--glass-bg-heavy);
-   z-index: 2;
-   box-shadow: inset 0 0 0 2px var(--color-primary-500);
-}
-
-.calendar-cell.is-selected { background: var(--glass-bg-heavy); box-shadow: inset 0 0 0 2px var(--color-primary-500); }
-
-.cell-number { font-weight: 700; font-size: 1rem; color: var(--color-surface-50); }
-
-.is-other-month { opacity: 0.15; cursor: default; }
-
-.is-today .cell-number {
-   background: var(--color-primary-500);
-   color: white;
-   width: 28px;
-   height: 28px;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   border-radius: 8px;
-}
-
-.cell-content { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
-
-.event-mini-tag {
-   font-size: 0.7rem;
-   padding: 5px 10px;
-   border-radius: 8px;
-   font-weight: 700;
-   display: flex;
-   align-items: center;
-   gap: 6px;
-   max-width: 100%;
-}
-
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-.event-mini-tag.pending { background: rgba(255, 149, 0, 0.15); color: #FFB340; }
-.event-mini-tag.confirmed { background: rgba(52, 199, 89, 0.15); color: #34d399; }
-.event-mini-tag.cancelled { background: rgba(255, 59, 48, 0.15); color: #f87171; text-decoration: line-through; opacity: 0.7; }
-
-.event-more-count {
-   font-size: 0.65rem;
-   font-weight: 800;
-   color: var(--color-primary-400);
-   margin-top: 4px;
-   padding-left: 10px;
-}
-
-/* Sidebar Panel */
-.glass-sidebar {
-   position: fixed;
-   top: 0;
-   right: 0;
-   bottom: 0;
-   width: 400px;
-   background: var(--glass-bg-heavy);
-   backdrop-filter: blur(24px);
-   -webkit-backdrop-filter: blur(24px);
-   z-index: 1000;
-   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4);
-   padding: 40px 30px;
-   border-left: 1px solid var(--glass-border);
-   display: flex;
-   flex-direction: column;
-}
-
-.date-badge-large {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.month-name { font-weight: 700; color: var(--color-primary-400); font-size: 0.9rem; text-transform: uppercase; }
-.date-badge-large .day-number { font-size: 2.5rem; font-weight: 800; color: var(--color-surface-50); line-height: 1; }
-
-.sidebar-day-name { font-weight: 800; font-size: 1.6rem; text-transform: capitalize; color: var(--color-surface-50); margin-top: 4px; }
-.sidebar-subtitle { font-size: 0.9rem; color: var(--color-surface-400); font-weight: 500; }
-
-.sidebar-body {
-  flex: 1;
-  overflow-y: auto;
-  margin-top: 30px;
-  padding-right: 15px;
-  padding-bottom: 20px;
-}
-
-.sidebar-body::-webkit-scrollbar {
-  width: 4px;
-}
-
-.sidebar-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-.sidebar-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.agenda-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.agenda-item-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.agenda-time { 
-  font-weight: 700; 
-  font-size: 0.85rem; 
-  color: var(--color-primary-400); 
-  margin-bottom: 10px;
-}
-
-.agenda-content {
-  background: var(--glass-bg);
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid var(--glass-border-subtle);
-}
-
-.agenda-title { font-size: 1.1rem; font-weight: 700; color: var(--color-surface-50); margin-bottom: 2px; }
-
-.agenda-status-label { 
-  font-size: 0.7rem; 
-  font-weight: 700; 
-  padding: 4px 10px; 
-  border-radius: 6px; 
-  text-transform: uppercase;
-}
-.agenda-status-label.confirmed { color: #34d399; background: rgba(52, 211, 153, 0.15); }
-.agenda-status-label.pending { color: #FFB340; background: rgba(255, 149, 0, 0.15); }
-.agenda-status-label.cancelled { color: #f87171; background: rgba(255, 59, 48, 0.15); }
-
-.agenda-meta { 
-  font-weight: 500; 
-  color: var(--color-surface-400); 
-  font-size: 0.85rem; 
-  margin-bottom: 15px;
-}
-
-.agenda-contact-box { 
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-top: 1px solid var(--glass-border-subtle);
-  padding-top: 15px;
-}
-
-.contact-link { 
-  color: var(--color-surface-50); 
-  font-size: 0.85rem; 
-  font-weight: 600; 
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-}
-.contact-link i { color: var(--color-surface-400); width: 24px; font-size: 0.9rem; }
-
-.agenda-broker {
-  font-weight: 500;
-  color: var(--color-surface-400);
-  font-size: 0.8rem;
-  margin-top: 10px;
-}
-
-/* Actions */
-.agenda-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 20px;
-}
-
-.btn-action-confirmed {
-  flex: 1;
-  background: var(--color-primary-500);
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-action-confirmed:hover { background: var(--color-primary-600); }
-
-.btn-action-danger { 
-  background: rgba(255, 59, 48, 0.12); 
-  color: #f87171; 
-  border: none;
-  padding: 10px 15px; 
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-action-danger:hover { background: rgba(255, 59, 48, 0.2); }
-
-.btn-action-icon { 
-  width: 38px; 
-  height: 38px; 
-  border-radius: 8px; 
-  background: transparent; 
-  border: 1px solid var(--glass-border-subtle);
-  color: var(--color-surface-400);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-action-icon:hover { background: var(--glass-bg-hover); }
-
-/* Custom Utilities */
-.shadow-lotio { box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2); }
-.shadow-lotio-lg { box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3); }
-.shadow-lotio-xl { box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4); }
-
-.btn-glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 10px 20px;
-  font-weight: 700;
-  color: var(--color-surface-100);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-glass:hover { background: var(--glass-bg-hover); }
-
-.btn-close-circle {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--glass-bg-heavy);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-surface-400);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-close-circle:hover { background: var(--glass-bg-hover); color: var(--color-surface-200); }
-
-.empty-schedule { text-align: center; padding: 40px 20px; }
-.empty-artwork { font-size: 3rem; margin-bottom: 16px; }
-.empty-schedule h4 { color: var(--color-surface-100); font-weight: 700; margin-bottom: 8px; }
-.empty-schedule p { color: var(--color-surface-400); font-size: 0.9rem; }
-
-.sidebar-top { padding-bottom: 24px; border-bottom: 1px solid var(--glass-border-subtle); }
-
-/* Animations */
 .panel-slide-enter-active, .panel-slide-leave-active { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
 .panel-slide-enter-from, .panel-slide-leave-to { transform: translateX(100px); opacity: 0; }
-
-.lotio-loading-wrapper { display: flex; justify-content: center; padding: 60px 0; }
-
-.lotio-spinner-bounce {
-  width: 70px;
-  text-align: center;
-}
-.lotio-spinner-bounce > div {
-  width: 12px; height: 12px; background-color: var(--color-primary-500);
-  border-radius: 100%; display: inline-block;
-  animation: sk-bouncedelay 1.4s infinite ease-in-out both; margin: 0 3px;
-}
-.lotio-spinner-bounce .bounce1 { animation-delay: -0.32s; }
-.lotio-spinner-bounce .bounce2 { animation-delay: -0.16s; }
-
-@keyframes sk-bouncedelay {
-  0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); }
-}
-
-@media (max-width: 767px) {
-  .calendar-page { padding: 16px !important; }
-  .lotio-filter-bar { flex-direction: column; gap: 8px; }
-  .lotio-filter-bar > * { width: 100%; }
-  .lotio-calendar-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .calendar-header-grid, .calendar-main-grid { min-width: 560px; }
-  .calendar-cell { min-height: 72px; }
-  .glass-sidebar {
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: 70vh;
-    border-left: none;
-    border-top: 1px solid var(--glass-border);
-    border-radius: 16px 16px 0 0;
-    padding: 20px 16px;
-    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
-  }
-  .agenda-timeline { overflow-y: auto; flex: 1; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-}
 </style>
-
-

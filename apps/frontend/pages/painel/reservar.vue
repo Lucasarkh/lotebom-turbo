@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'painel' })
+
 const { fetchApi } = useApi()
 const { get: getPublic } = usePublicApi()
 const { success: toastSuccess, error: toastError } = useToast()
@@ -25,7 +27,7 @@ interface ReservationRules {
   expiryHours: number
   currency: string
 }
-interface CorreторOption { id: string; code: string; name: string }
+interface CorretorOption { id: string; code: string; name: string }
 
 // ─── State ────────────────────────────────────────────────
 const step = ref<1 | 2 | 3 | 'done'>(1)
@@ -42,8 +44,8 @@ const lotSearch = ref('')
 
 // Step 2 data
 const form = ref({ name: '', email: '', phone: '', cpf: '' })
-const corretores = ref<CorreторOption[]>([])
-const selectedCorretor = ref<CorreторOption | null>(null)
+const corretores = ref<CorretorOption[]>([])
+const selectedCorretor = ref<CorretorOption | null>(null)
 
 // Step 3 / submit
 const submitting = ref(false)
@@ -203,519 +205,207 @@ onMounted(loadProjects)
 </script>
 
 <template>
-  <div class="reservar-page">
+  <div class="space-y-6 max-w-[980px]">
     <!-- Header -->
-    <div class="page-header">
-      <div>
-        <h1>Reservar Lote</h1>
-        <p>Reserve um lote para um cliente seguindo as regras definidas pela loteadora.</p>
-      </div>
-    </div>
+    <UiPageHeader title="Reservar Lote" description="Reserve um lote para um cliente seguindo as regras definidas pela loteadora." />
 
     <!-- Step indicator -->
-    <div class="step-bar" v-if="step !== 'done'">
-      <div class="step-item" :class="{ active: step >= 1, done: step > 1 }">
-        <div class="step-num">{{ step > 1 ? '✓' : '1' }}</div>
+    <div v-if="step !== 'done'" class="flex items-center rounded-2xl border border-p-border bg-p-elevated px-5 py-4 shadow-sm overflow-x-auto">
+      <div class="flex items-center gap-2.5 text-[13px] font-bold tracking-wide whitespace-nowrap" :class="[step >= 1 ? 'text-p-text' : 'text-p-text-muted', step > 1 ? 'text-p-accent' : '']">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 border-[1.5px]" :class="step >= 1 ? (step > 1 ? 'bg-p-accent/10 border-p-accent/30 text-p-accent' : 'bg-p-accent border-p-accent text-white') : 'bg-p-overlay border-p-border text-p-text-muted'">{{ step > 1 ? '\u2713' : '1' }}</div>
         <span>Selecionar Lote</span>
       </div>
-      <div class="step-connector"></div>
-      <div class="step-item" :class="{ active: step >= 2, done: step > 2 }">
-        <div class="step-num">{{ step > 2 ? '✓' : '2' }}</div>
+      <div class="flex-1 h-0.5 min-w-4 bg-p-border mx-1"></div>
+      <div class="flex items-center gap-2.5 text-[13px] font-bold tracking-wide whitespace-nowrap" :class="[step >= 2 ? 'text-p-text' : 'text-p-text-muted', step > 2 ? 'text-p-accent' : '']">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 border-[1.5px]" :class="step >= 2 ? (step > 2 ? 'bg-p-accent/10 border-p-accent/30 text-p-accent' : 'bg-p-accent border-p-accent text-white') : 'bg-p-overlay border-p-border text-p-text-muted'">{{ step > 2 ? '\u2713' : '2' }}</div>
         <span>Dados do Cliente</span>
       </div>
-      <div class="step-connector"></div>
-      <div class="step-item" :class="{ active: step >= 3 }">
-        <div class="step-num">3</div>
+      <div class="flex-1 h-0.5 min-w-4 bg-p-border mx-1"></div>
+      <div class="flex items-center gap-2.5 text-[13px] font-bold tracking-wide whitespace-nowrap" :class="step >= 3 ? 'text-p-text' : 'text-p-text-muted'">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 border-[1.5px]" :class="step >= 3 ? 'bg-p-accent border-p-accent text-white' : 'bg-p-overlay border-p-border text-p-text-muted'">3</div>
         <span>Confirmar</span>
       </div>
     </div>
 
-    <!-- ── STEP 1: Select Lot ─────────────────────────────── -->
-    <div v-if="step === 1" class="step-panel">
-      <div v-if="loadingProjects" class="loading-state">
-        <div class="spinner"></div>
-        <p>Carregando seus projetos...</p>
-      </div>
+    <!-- STEP 1: Select Lot -->
+    <UiCard v-if="step === 1" padding="lg">
+      <UiLoadingState v-if="loadingProjects" text="Carregando seus projetos..." />
 
-      <div v-else-if="projects.length === 0" class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="44" height="44"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
-        <h3>Nenhum projeto vinculado</h3>
-        <p>Você ainda não está vinculado a nenhum loteamento. Entre em contato com seu gestor.</p>
-      </div>
+      <UiEmptyState
+        v-else-if="projects.length === 0"
+        title="Nenhum projeto vinculado"
+        description="Você ainda não está vinculado a nenhum loteamento. Entre em contato com seu gestor."
+      >
+        <template #icon>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" class="text-p-text-muted"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        </template>
+      </UiEmptyState>
 
       <template v-else>
         <!-- Project picker -->
-        <div class="section-label">Escolha o loteamento</div>
-        <div class="project-grid">
+        <div class="text-xs font-bold text-p-text-muted uppercase tracking-widest mb-3.5">Escolha o loteamento</div>
+        <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3">
           <button
             v-for="p in projects"
             :key="p.id"
-            class="project-card"
-            :class="{ selected: selectedProject?.id === p.id }"
+            class="flex items-center gap-3 px-4 py-4 rounded-2xl border cursor-pointer text-[15px] font-semibold text-p-text text-left w-full sm:w-auto sm:min-w-[180px] transition-all"
+            :class="selectedProject?.id === p.id ? 'border-p-accent bg-p-accent/10 text-p-accent' : 'border-p-border bg-p-raised hover:border-p-accent/30 hover:-translate-y-px hover:shadow-md'"
             @click="selectProject(p)"
           >
-            <div class="project-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" class="shrink-0 text-p-text-muted"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span>{{ p.name }}</span>
-            <svg v-if="selectedProject?.id === p.id" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" class="check-icon"><polyline points="20 6 9 17 4 12"/></svg>
+            <svg v-if="selectedProject?.id === p.id" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" class="ml-auto text-p-accent"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
         </div>
 
         <!-- Lots for selected project -->
         <template v-if="selectedProject">
-          <div class="section-label" style="margin-top: 24px">
-            Lotes disponíveis em <strong>{{ selectedProject.name }}</strong>
+          <div class="text-xs font-bold text-p-text-muted uppercase tracking-widest mb-3.5 mt-6">
+            Lotes disponíveis em <strong class="text-p-text-secondary">{{ selectedProject.name }}</strong>
           </div>
 
           <!-- Reservation rules info -->
-          <div v-if="reservationRules" class="rules-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0; color:var(--color-primary-400)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>Taxa de reserva: <strong>{{ feeDisplay }}</strong> · Validade: <strong>{{ expiryDisplay }}</strong> após confirmar a reserva. Esta reserva esta sujeita a analise de credito da loteadora.</span>
-          </div>
+          <UiAlert v-if="reservationRules" variant="info" class="mb-4">
+            Taxa de reserva: <strong>{{ feeDisplay }}</strong> -- Validade: <strong>{{ expiryDisplay }}</strong> após confirmar a reserva. Esta reserva esta sujeita a analise de credito da loteadora.
+          </UiAlert>
 
-          <div v-if="loadingLots" class="loading-state">
-            <div class="spinner"></div>
-          </div>
+          <UiLoadingState v-if="loadingLots" />
 
-          <div v-else-if="lots.length === 0" class="empty-state" style="padding: 32px 0">
-            <p>Nenhum lote disponível neste projeto no momento.</p>
+          <div v-else-if="lots.length === 0" class="text-center py-8 text-sm text-p-text-muted">
+            Nenhum lote disponível neste projeto no momento.
           </div>
 
           <template v-else>
-            <input v-model="lotSearch" class="lot-search" placeholder="Buscar por código ou quadra..." />
+            <input
+              v-model="lotSearch"
+              class="w-full px-4 py-3.5 rounded-xl border border-p-border bg-p-raised text-p-text text-base mb-4 transition-colors focus:outline-none focus:ring-2 focus:ring-p-accent/30 focus:border-p-accent placeholder:text-p-text-muted"
+              placeholder="Buscar por código ou quadra..."
+            />
 
-            <div class="lots-grid">
+            <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
               <button
                 v-for="lot in filteredLots"
                 :key="lot.mapElementId"
-                class="lot-card"
-                :class="{ selected: selectedLot?.mapElementId === lot.mapElementId }"
+                class="relative rounded-2xl border p-4 cursor-pointer text-left transition-all"
+                :class="selectedLot?.mapElementId === lot.mapElementId ? 'border-p-accent bg-p-accent/10' : 'border-p-border bg-p-raised hover:border-p-accent/30 hover:-translate-y-px hover:shadow-md'"
                 @click="selectedLot = lot"
               >
-                <div class="lot-code">{{ lot.code }}</div>
-                <div v-if="lot.block" class="lot-block">Quadra {{ lot.block }}</div>
-                <div class="lot-area" v-if="lot.areaM2">{{ lot.areaM2 }}m²</div>
-                <div class="lot-price">{{ formatPrice(lot.price) }}</div>
-                <div v-if="lot.tags?.length" class="lot-tags">
-                  <span v-for="tag in lot.tags.slice(0, 2)" :key="tag" class="lot-tag">{{ tag }}</span>
+                <div class="text-lg font-bold text-p-text mb-1 tracking-tight">{{ lot.code }}</div>
+                <div v-if="lot.block" class="text-xs text-p-text-muted mb-2 uppercase tracking-widest font-bold">Quadra {{ lot.block }}</div>
+                <div class="text-[15px] text-p-text-muted" v-if="lot.areaM2">{{ lot.areaM2 }}m²</div>
+                <div class="text-base font-bold text-p-accent mt-2">{{ formatPrice(lot.price) }}</div>
+                <div v-if="lot.tags?.length" class="flex flex-wrap gap-1.5 mt-2.5">
+                  <span v-for="tag in lot.tags.slice(0, 2)" :key="tag" class="text-[11px] bg-p-accent/10 text-p-accent px-2 py-1 rounded-full font-bold tracking-wide uppercase">{{ tag }}</span>
                 </div>
-                <div v-if="selectedLot?.mapElementId === lot.mapElementId" class="lot-check">✓</div>
+                <div v-if="selectedLot?.mapElementId === lot.mapElementId" class="absolute top-2.5 right-2.5 w-[22px] h-[22px] rounded-full bg-p-accent text-white flex items-center justify-center text-xs font-bold">&check;</div>
               </button>
             </div>
           </template>
         </template>
 
-        <div class="step-actions">
-          <button class="btn btn-primary" :disabled="!selectedLot" @click="goStep2">
-            Continuar →
-          </button>
+        <div class="flex items-center justify-end gap-3 mt-7 flex-wrap">
+          <UiButton variant="primary" :disabled="!selectedLot" @click="goStep2">
+            Continuar &rarr;
+          </UiButton>
         </div>
       </template>
-    </div>
+    </UiCard>
 
-    <!-- ── STEP 2: Client Data ────────────────────────────── -->
-    <div v-if="step === 2" class="step-panel">
-      <div class="selected-lot-banner">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
-        Lote <strong>{{ selectedLot?.code }}</strong>
-        <span v-if="selectedLot?.block"> · Quadra {{ selectedLot.block }}</span>
-        <span v-if="selectedLot?.areaM2"> · {{ selectedLot.areaM2 }}m²</span>
-        em <strong>{{ selectedProject?.name }}</strong>
+    <!-- STEP 2: Client Data -->
+    <UiCard v-if="step === 2" padding="lg">
+      <div class="flex items-center flex-wrap gap-1.5 rounded-2xl border border-p-info/20 bg-p-info/[0.06] px-4 py-3.5 text-[15px] text-p-text-muted mb-5 leading-relaxed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="text-p-accent shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+        Lote <strong class="text-p-text">{{ selectedLot?.code }}</strong>
+        <span v-if="selectedLot?.block"> -- Quadra {{ selectedLot.block }}</span>
+        <span v-if="selectedLot?.areaM2"> -- {{ selectedLot.areaM2 }}m²</span>
+        em <strong class="text-p-text">{{ selectedProject?.name }}</strong>
       </div>
 
-      <div class="form-grid">
-        <div class="form-group span-2">
-          <label class="form-label">Nome completo do cliente <span class="req">*</span></label>
-          <input v-model="form.name" class="form-input" type="text" placeholder="Nome completo" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-7">
+        <div class="sm:col-span-2">
+          <UiInput v-model="form.name" label="Nome completo do cliente *" placeholder="Nome completo" />
         </div>
-        <div class="form-group">
-          <label class="form-label">E-mail <span class="req">*</span></label>
-          <input v-model="form.email" class="form-input" type="email" placeholder="email@exemplo.com" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">WhatsApp <span class="req">*</span></label>
-          <input v-model="form.phone" class="form-input" type="tel" placeholder="(11) 99999-9999" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">CPF</label>
-          <input v-model="form.cpf" class="form-input" type="text" placeholder="000.000.000-00" />
-        </div>
+        <UiInput v-model="form.email" label="E-mail *" type="email" placeholder="email@exemplo.com" />
+        <UiInput v-model="form.phone" label="WhatsApp *" type="tel" placeholder="(11) 99999-9999" />
+        <UiInput v-model="form.cpf" label="CPF" placeholder="000.000.000-00" />
 
         <!-- IMOBILIARIA: assign corretor -->
-        <div v-if="authStore.isImobiliaria" class="form-group">
-          <label class="form-label">Corretor responsável</label>
-          <select v-model="selectedCorretor" class="form-input">
+        <div v-if="authStore.isImobiliaria">
+          <label class="mb-1.5 block text-sm font-medium text-p-text-secondary">Corretor responsável</label>
+          <select v-model="selectedCorretor" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text transition-colors focus:outline-none focus:ring-2 focus:ring-p-accent/30 focus:border-p-accent">
             <option :value="null">— Nenhum (minha equipe em geral) —</option>
             <option v-for="c in corretores" :key="c.id" :value="c">{{ c.name }} ({{ c.code }})</option>
           </select>
         </div>
       </div>
 
-      <div class="step-actions">
-        <button class="btn btn-ghost" @click="step = 1"><i class="bi bi-arrow-left-short back-nav-icon" aria-hidden="true"></i><span class="back-nav-label">Voltar</span></button>
-        <button class="btn btn-primary" @click="goStep3">Revisar Reserva →</button>
+      <div class="flex items-center justify-end gap-3 flex-wrap">
+        <UiButton variant="ghost" @click="step = 1">
+          <i class="pi pi-arrow-left mr-1"></i> Voltar
+        </UiButton>
+        <UiButton variant="primary" @click="goStep3">Revisar Reserva &rarr;</UiButton>
       </div>
-    </div>
+    </UiCard>
 
-    <!-- ── STEP 3: Confirm ────────────────────────────────── -->
-    <div v-if="step === 3" class="step-panel">
-      <h2 class="confirm-title">Confirmar Reserva</h2>
+    <!-- STEP 3: Confirm -->
+    <UiCard v-if="step === 3" padding="lg">
+      <h2 class="text-2xl font-semibold text-p-text mb-6 tracking-tight">Confirmar Reserva</h2>
 
-      <div class="confirm-grid">
-        <div class="confirm-section">
-          <div class="confirm-section-title">Lote</div>
-          <div class="confirm-row"><span>Loteamento</span><strong>{{ selectedProject?.name }}</strong></div>
-          <div class="confirm-row"><span>Código</span><strong>{{ selectedLot?.code }}</strong></div>
-          <div v-if="selectedLot?.block" class="confirm-row"><span>Quadra</span><strong>{{ selectedLot.block }}</strong></div>
-          <div v-if="selectedLot?.areaM2" class="confirm-row"><span>Área</span><strong>{{ selectedLot.areaM2 }}m²</strong></div>
-          <div class="confirm-row"><span>Valor do lote</span><strong>{{ formatPrice(selectedLot?.price ?? null) }}</strong></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div class="rounded-2xl border border-p-border bg-p-raised p-5">
+          <div class="text-xs font-bold uppercase tracking-widest text-p-text-muted mb-3.5">Lote</div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Loteamento</span><strong class="text-p-text">{{ selectedProject?.name }}</strong></div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Código</span><strong class="text-p-text">{{ selectedLot?.code }}</strong></div>
+          <div v-if="selectedLot?.block" class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Quadra</span><strong class="text-p-text">{{ selectedLot.block }}</strong></div>
+          <div v-if="selectedLot?.areaM2" class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Área</span><strong class="text-p-text">{{ selectedLot.areaM2 }}m²</strong></div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px]"><span class="text-p-text-muted">Valor do lote</span><strong class="text-p-text">{{ formatPrice(selectedLot?.price ?? null) }}</strong></div>
         </div>
 
-        <div class="confirm-section">
-          <div class="confirm-section-title">Cliente</div>
-          <div class="confirm-row"><span>Nome</span><strong>{{ form.name }}</strong></div>
-          <div class="confirm-row"><span>E-mail</span><strong>{{ form.email }}</strong></div>
-          <div class="confirm-row"><span>WhatsApp</span><strong>{{ form.phone }}</strong></div>
-          <div v-if="form.cpf" class="confirm-row"><span>CPF</span><strong>{{ form.cpf }}</strong></div>
-          <div v-if="selectedCorretor" class="confirm-row"><span>Corretor</span><strong>{{ selectedCorretor.name }}</strong></div>
+        <div class="rounded-2xl border border-p-border bg-p-raised p-5">
+          <div class="text-xs font-bold uppercase tracking-widest text-p-text-muted mb-3.5">Cliente</div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Nome</span><strong class="text-p-text">{{ form.name }}</strong></div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">E-mail</span><strong class="text-p-text">{{ form.email }}</strong></div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">WhatsApp</span><strong class="text-p-text">{{ form.phone }}</strong></div>
+          <div v-if="form.cpf" class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">CPF</span><strong class="text-p-text">{{ form.cpf }}</strong></div>
+          <div v-if="selectedCorretor" class="flex justify-between items-center gap-3 py-2.5 text-[15px]"><span class="text-p-text-muted">Corretor</span><strong class="text-p-text">{{ selectedCorretor.name }}</strong></div>
         </div>
 
-        <div class="confirm-section highlight">
-          <div class="confirm-section-title">Condições de Reserva</div>
-          <div class="confirm-row"><span>Taxa de reserva</span><strong>{{ feeDisplay }}</strong></div>
-          <div v-if="feeAmount" class="confirm-row"><span>Valor estimado</span><strong>{{ formatPrice(feeAmount) }}</strong></div>
-          <div class="confirm-row"><span>Validade</span><strong>{{ expiryDisplay }}</strong></div>
-          <p class="confirm-note">O lote será bloqueado imediatamente para outros compradores. A reserva expirará automaticamente após o prazo se não for confirmada. A efetivacao da venda esta sujeita a analise de credito da loteadora, que e a responsavel exclusiva por essa etapa.</p>
+        <div class="sm:col-span-2 rounded-2xl border border-p-info/20 bg-p-info/[0.06] p-5">
+          <div class="text-xs font-bold uppercase tracking-widest text-p-text-muted mb-3.5">Condições de Reserva</div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Taxa de reserva</span><strong class="text-p-text">{{ feeDisplay }}</strong></div>
+          <div v-if="feeAmount" class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Valor estimado</span><strong class="text-p-text">{{ formatPrice(feeAmount) }}</strong></div>
+          <div class="flex justify-between items-center gap-3 py-2.5 text-[15px]"><span class="text-p-text-muted">Validade</span><strong class="text-p-text">{{ expiryDisplay }}</strong></div>
+          <p class="text-sm text-p-text-muted mt-3.5 leading-relaxed">O lote será bloqueado imediatamente para outros compradores. A reserva expirará automaticamente após o prazo se não for confirmada. A efetivacao da venda esta sujeita a analise de credito da loteadora, que e a responsavel exclusiva por essa etapa.</p>
         </div>
       </div>
 
-      <div class="step-actions">
-        <button class="btn btn-ghost" @click="step = 2"><i class="bi bi-arrow-left-short back-nav-icon" aria-hidden="true"></i><span class="back-nav-label">Voltar</span></button>
-        <button class="btn btn-primary btn-reserve" :disabled="submitting" @click="submitReservation">
+      <div class="flex items-center justify-end gap-3 flex-wrap">
+        <UiButton variant="ghost" @click="step = 2">
+          <i class="pi pi-arrow-left mr-1"></i> Voltar
+        </UiButton>
+        <UiButton variant="primary" size="lg" :disabled="submitting" :loading="submitting" @click="submitReservation">
           <svg v-if="!submitting" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
           {{ submitting ? 'Reservando...' : 'Confirmar Reserva' }}
-        </button>
+        </UiButton>
       </div>
-    </div>
+    </UiCard>
 
-    <!-- ── DONE: Success ──────────────────────────────────── -->
-    <div v-if="step === 'done'" class="done-panel">
-      <div class="done-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <!-- DONE: Success -->
+    <UiCard v-if="step === 'done'" padding="lg">
+      <div class="flex flex-col items-center text-center py-8 gap-4">
+        <div class="text-p-accent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h2 class="text-2xl font-semibold text-p-text tracking-tight">Reserva realizada!</h2>
+        <p class="text-base text-p-text-muted max-w-[44ch] leading-relaxed">O lote <strong class="text-p-text">{{ selectedLot?.code }}</strong> de <strong class="text-p-text">{{ selectedProject?.name }}</strong> foi reservado para <strong class="text-p-text">{{ form.name }}</strong>.</p>
+        <p class="text-[15px] text-p-text-muted">A reserva expira em <strong class="text-p-text">{{ expiryDisplay }}</strong>.</p>
+        <div class="flex gap-3 flex-wrap justify-center mt-2">
+          <UiButton variant="primary" to="/painel/leads">Ver nos Meus Leads</UiButton>
+          <UiButton variant="ghost" @click="() => { step = 1; selectedProject = null; selectedLot = null; form = { name: '', email: '', phone: '', cpf: '' } }">
+            Nova Reserva
+          </UiButton>
+        </div>
       </div>
-      <h2>Reserva realizada!</h2>
-      <p>O lote <strong>{{ selectedLot?.code }}</strong> de <strong>{{ selectedProject?.name }}</strong> foi reservado para <strong>{{ form.name }}</strong>.</p>
-      <p class="done-expiry">A reserva expira em <strong>{{ expiryDisplay }}</strong>.</p>
-      <div class="done-actions">
-        <NuxtLink :to="`/painel/leads`" class="btn btn-primary">Ver nos Meus Leads</NuxtLink>
-        <button class="btn btn-ghost" @click="() => { step = 1; selectedProject = null; selectedLot = null; form = { name: '', email: '', phone: '', cpf: '' } }">
-          Nova Reserva
-        </button>
-      </div>
-    </div>
+    </UiCard>
   </div>
 </template>
-
-<style scoped>
-.reservar-page {
-  --reserve-primary: #0071e3;
-  --reserve-primary-hover: #0077ed;
-  --reserve-primary-soft: rgba(0, 113, 227, 0.08);
-  --reserve-surface: #ffffff;
-  --reserve-surface-alt: #f5f5f7;
-  --reserve-text: #1d1d1f;
-  --reserve-muted: #86868b;
-  --reserve-border: #d2d2d7;
-  --reserve-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
-  max-width: 980px;
-  font-family: var(--font-sans);
-  color: var(--reserve-text);
-}
-
-/* Header */
-.page-header { margin-bottom: 28px; }
-.page-header h1 {
-  margin: 0 0 8px;
-  color: var(--reserve-text);
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.page-header p {
-  margin: 0;
-  max-width: 58ch;
-  color: var(--reserve-muted);
-  font-size: 0.9375rem;
-  line-height: 1.6;
-}
-
-/* Step bar */
-.step-bar {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 28px;
-  padding: 18px 22px;
-  border: 1px solid var(--reserve-border);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
-}
-.step-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--reserve-muted);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-.step-item.active { color: var(--reserve-text); }
-.step-item.done { color: var(--reserve-primary); }
-.step-num {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  background: var(--reserve-surface-alt);
-  border: 1.5px solid var(--reserve-border);
-  color: var(--reserve-muted);
-  flex-shrink: 0;
-}
-.step-item.active .step-num {
-  background: var(--reserve-primary);
-  border-color: var(--reserve-primary);
-  color: white;
-}
-.step-item.done .step-num {
-  background: rgba(0, 113, 227, 0.12);
-  border-color: rgba(0, 113, 227, 0.28);
-  color: var(--reserve-primary);
-}
-.step-connector {
-  flex: 1;
-  height: 2px;
-  min-width: 16px;
-  background: var(--reserve-border);
-}
-
-/* Panel wrapper */
-.step-panel {
-  background: var(--reserve-surface);
-  border: 1px solid var(--reserve-border);
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: var(--reserve-shadow);
-}
-
-/* Loading / empty */
-.loading-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 0; color: var(--reserve-muted); }
-.spinner { width: 32px; height: 32px; border: 3px solid rgba(0, 113, 227, 0.15); border-top-color: var(--reserve-primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.empty-state { text-align: center; padding: 56px 32px; color: var(--reserve-muted); display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.empty-state h3 { font-size: 1.375rem; font-weight: 600; color: var(--reserve-text); margin: 0; letter-spacing: -0.02em; }
-.empty-state p { margin: 0; font-size: 0.9375rem; line-height: 1.6; }
-
-/* Section label */
-.section-label { font-size: 0.75rem; font-weight: 700; color: var(--reserve-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
-
-/* Project cards */
-.project-grid { display: flex; flex-direction: column; gap: 12px; }
-@media (min-width: 640px) { .project-grid { flex-direction: row; flex-wrap: wrap; } }
-.project-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid var(--reserve-border);
-  background: var(--reserve-surface-alt);
-  cursor: pointer;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--reserve-text);
-  transition: all 150ms ease;
-  text-align: left;
-  width: 100%;
-}
-@media (min-width: 640px) { .project-card { width: auto; min-width: 180px; } }
-.project-card:hover { border-color: rgba(0, 113, 227, 0.28); transform: translateY(-1px); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08); }
-.project-card.selected { border-color: var(--reserve-primary); background: rgba(0, 113, 227, 0.08); color: var(--reserve-primary); }
-.project-icon { color: var(--reserve-muted); flex-shrink: 0; }
-.check-icon { margin-left: auto; color: var(--reserve-primary); }
-
-/* Rules box */
-.rules-box {
-  display: flex; align-items: flex-start; gap: 10px;
-  background: rgba(0, 113, 227, 0.06); border: 1px solid rgba(0, 113, 227, 0.16);
-  border-radius: 16px; padding: 14px 16px;
-  font-size: 0.875rem; color: var(--reserve-muted); margin-bottom: 18px; line-height: 1.6;
-}
-
-.rules-box strong { color: var(--reserve-text); }
-
-/* Lot search */
-.lot-search {
-  width: 100%; padding: 14px 16px; border-radius: 12px;
-  border: 1px solid var(--reserve-border);
-  background: #fafafa; color: var(--reserve-text);
-  font-size: 1.0625rem; margin-bottom: 16px; box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-.lot-search:focus { outline: none; border-color: var(--reserve-primary); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); background: white; }
-.lot-search::placeholder { color: var(--reserve-muted); }
-
-/* Lots grid */
-.lots-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-@media (min-width: 480px) { .lots-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 768px) { .lots-grid { grid-template-columns: repeat(4, 1fr); } }
-
-.lot-card {
-  position: relative;
-  background: var(--reserve-surface-alt); border: 1px solid var(--reserve-border);
-  border-radius: 16px; padding: 16px;
-  cursor: pointer; text-align: left; transition: all 150ms ease;
-}
-.lot-card:hover { border-color: rgba(0, 113, 227, 0.28); transform: translateY(-1px); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08); }
-.lot-card.selected { border-color: var(--reserve-primary); background: rgba(0, 113, 227, 0.08); }
-.lot-code { font-size: 1.125rem; font-weight: 700; color: var(--reserve-text); margin-bottom: 4px; letter-spacing: -0.02em; }
-.lot-block { font-size: 0.75rem; color: var(--reserve-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
-.lot-area { font-size: 0.9375rem; color: var(--reserve-muted); }
-.lot-price { font-size: 1rem; font-weight: 700; color: var(--reserve-primary); margin-top: 8px; }
-.lot-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.lot-tag { font-size: 0.6875rem; background: rgba(0, 113, 227, 0.1); color: var(--reserve-primary); padding: 4px 8px; border-radius: 999px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-.lot-check { position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--reserve-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
-
-/* Form */
-.form-grid {
-  display: grid; grid-template-columns: 1fr; gap: 18px; margin-bottom: 28px;
-}
-@media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } }
-.span-2 { grid-column: 1; }
-@media (min-width: 600px) { .span-2 { grid-column: span 2; } }
-.form-group { display: flex; flex-direction: column; gap: 8px; }
-.form-label { font-size: 0.75rem; font-weight: 700; color: var(--reserve-muted); text-transform: uppercase; letter-spacing: 0.08em; }
-.req { color: #f87171; }
-.form-input {
-  width: 100%; padding: 14px 16px; border-radius: 12px;
-  border: 1px solid var(--reserve-border);
-  background: #fafafa; color: var(--reserve-text);
-  font-family: inherit;
-  font-size: 1.0625rem; box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-.form-input:focus { outline: none; border-color: var(--reserve-primary); box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1); background: white; }
-.form-input::placeholder { color: var(--reserve-muted); }
-
-/* Selected lot banner */
-.selected-lot-banner {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-  background: rgba(0, 113, 227, 0.06); border: 1px solid rgba(0, 113, 227, 0.16);
-  border-radius: 16px; padding: 14px 16px;
-  font-size: 0.9375rem; color: var(--reserve-muted);
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-.selected-lot-banner svg { color: var(--reserve-primary); flex-shrink: 0; }
-
-.selected-lot-banner strong { color: var(--reserve-text); }
-
-/* Confirm grid */
-.confirm-title { font-size: 1.5rem; font-weight: 600; color: var(--reserve-text); margin: 0 0 24px; letter-spacing: -0.02em; }
-.confirm-grid { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
-@media (min-width: 640px) {
-  .confirm-grid { display: grid; grid-template-columns: 1fr 1fr; }
-  .confirm-section.highlight { grid-column: span 2; }
-}
-.confirm-section {
-  background: var(--reserve-surface-alt); border: 1px solid var(--reserve-border);
-  border-radius: 18px; padding: 20px;
-}
-.confirm-section.highlight { background: rgba(0, 113, 227, 0.06); border-color: rgba(0, 113, 227, 0.16); }
-.confirm-section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--reserve-muted); margin-bottom: 14px; }
-.confirm-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; font-size: 0.9375rem; border-bottom: 1px solid rgba(134, 134, 139, 0.18); }
-.confirm-row:last-of-type { border-bottom: none; }
-.confirm-row span { color: var(--reserve-muted); }
-.confirm-row strong { color: var(--reserve-text); }
-.confirm-note { font-size: 0.875rem; color: var(--reserve-muted); margin: 14px 0 0; line-height: 1.7; }
-
-/* Step actions */
-.step-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
-
-/* Buttons */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 52px;
-  padding: 0 24px; border-radius: 12px;
-  font-weight: 600; font-size: 1.0625rem;
-  cursor: pointer; transition: all 150ms ease; border: none;
-  font-family: inherit;
-}
-.btn-primary { background: var(--reserve-primary); color: white; box-shadow: 0 12px 28px rgba(0, 113, 227, 0.22); }
-.btn-primary:hover:not(:disabled) { background: var(--reserve-primary-hover); transform: translateY(-1px); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-ghost { background: white; color: var(--reserve-text); border: 1px solid var(--reserve-border); }
-.btn-ghost:hover { background: var(--reserve-surface-alt); color: var(--reserve-text); }
-.btn-reserve { padding: 0 32px; }
-
-/* Done panel */
-.done-panel {
-  background: var(--reserve-surface);
-  border: 1px solid rgba(0, 113, 227, 0.18);
-  border-radius: 24px;
-  padding: 56px 36px;
-  text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
-  box-shadow: var(--reserve-shadow);
-}
-.done-icon { color: var(--reserve-primary); }
-.done-panel h2 { font-size: 1.75rem; font-weight: 600; color: var(--reserve-text); margin: 0; letter-spacing: -0.03em; }
-.done-panel p { font-size: 1rem; color: var(--reserve-muted); margin: 0; line-height: 1.7; max-width: 44ch; }
-.done-panel strong { color: var(--reserve-text); }
-.done-expiry { font-size: 0.9375rem; color: var(--reserve-muted); }
-.done-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
-
-@media (max-width: 768px) {
-  .step-bar {
-    padding: 16px;
-    overflow-x: auto;
-  }
-
-  .step-panel,
-  .done-panel {
-    padding: 24px;
-  }
-
-  .lot-search,
-  .form-input,
-  .btn {
-    font-size: 1rem;
-  }
-
-  .confirm-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 560px) {
-  .step-actions .btn,
-  .done-actions .btn {
-    width: 100%;
-  }
-
-  .lots-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

@@ -1,63 +1,33 @@
 <template>
   <div>
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1>Gestão de Leads</h1>
-        <p>{{ pageMode === 'prelaunch' ? 'Gerencie a fila por empreendimento e por lote sem perder a distribuição rotativa de corretores.' : 'Acompanhe o funil de vendas e gerencie interessados em tempo real.' }}</p>
+        <h1 class="text-xl font-semibold text-p-text md:text-2xl">Gestão de Leads</h1>
+        <p class="mt-1 text-sm text-p-text-muted">{{ pageMode === 'prelaunch' ? 'Gerencie a fila por empreendimento e por lote sem perder a distribuição rotativa de corretores.' : 'Acompanhe o funil de vendas e gerencie interessados em tempo real.' }}</p>
       </div>
-      <div class="d-flex gap-2">
-        <div class="view-toggle page-mode-toggle">
-          <button
-            type="button"
-            class="toggle-btn"
-            :class="{ active: pageMode === 'leads' }"
-            @click="pageMode = 'leads'"
-          >
-            Leads
-          </button>
-          <button
-            type="button"
-            class="toggle-btn"
-            :class="{ active: pageMode === 'prelaunch' }"
-            @click="pageMode = 'prelaunch'"
-          >
-            Pré-lançamento
-          </button>
+      <div class="flex flex-wrap gap-2">
+        <div class="flex rounded-lg border border-p-border bg-p-elevated p-1">
+          <button type="button" class="rounded-md px-4 py-2 text-sm font-semibold transition-all" :class="pageMode === 'leads' ? 'bg-p-overlay text-p-accent shadow-sm' : 'text-p-text-muted hover:text-p-text'" @click="pageMode = 'leads'">Leads</button>
+          <button type="button" class="rounded-md px-4 py-2 text-sm font-semibold transition-all" :class="pageMode === 'prelaunch' ? 'bg-p-overlay text-p-accent shadow-sm' : 'text-p-text-muted hover:text-p-text'" @click="pageMode = 'prelaunch'">Pré-lançamento</button>
         </div>
-        <div v-if="pageMode === 'leads'" class="view-toggle">
-          <button 
-            type="button"
-            class="toggle-btn" 
-            :class="{ active: viewMode === 'kanban' }" 
-            @click="viewMode = 'kanban'"
-          >
-            Kanban
-          </button>
-          <button 
-            type="button"
-            class="toggle-btn" 
-            :class="{ active: viewMode === 'table' }" 
-            @click="viewMode = 'table'"
-          >
-            Tabela
-          </button>
+        <div v-if="pageMode === 'leads'" class="flex rounded-lg border border-p-border bg-p-elevated p-1">
+          <button type="button" class="rounded-md px-4 py-2 text-sm font-semibold transition-all" :class="viewMode === 'kanban' ? 'bg-p-overlay text-p-accent shadow-sm' : 'text-p-text-muted hover:text-p-text'" @click="viewMode = 'kanban'">Kanban</button>
+          <button type="button" class="rounded-md px-4 py-2 text-sm font-semibold transition-all" :class="viewMode === 'table' ? 'bg-p-overlay text-p-accent shadow-sm' : 'text-p-text-muted hover:text-p-text'" @click="viewMode = 'table'">Tabela</button>
         </div>
-        <button v-if="pageMode === 'leads'" class="btn btn-primary" :disabled="!canWriteLeads" :title="!canWriteLeads ? writePermissionHint : undefined" @click="showCreateModal = true">+ Novo Lead</button>
+        <UiButton v-if="pageMode === 'leads'" variant="primary" :disabled="!canWriteLeads" :title="!canWriteLeads ? writePermissionHint : undefined" @click="showCreateModal = true">+ Novo Lead</UiButton>
       </div>
     </div>
 
-    <!-- Enhanced Filters -->
-    <div v-if="pageMode === 'leads'" class="filter-card">
-      <div class="filter-group">
-        <label class="form-label">Projeto</label>
-        <select v-model="filters.projectId" class="form-select" @change="loadLeads(filters)">
+    <!-- Filters (leads mode) -->
+    <div v-if="pageMode === 'leads'" class="mt-6 flex flex-wrap items-end gap-4 rounded-xl border border-p-border bg-p-elevated p-5">
+      <div class="min-w-[200px] flex-1">
+        <UiSelect v-model="filters.projectId" label="Projeto" @change="loadLeads(filters)">
           <option value="">Todos os projetos</option>
           <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-        </select>
+        </UiSelect>
       </div>
-      <div class="filter-group">
-        <label class="form-label">Status</label>
-        <select v-model="filters.status" class="form-select" @change="loadLeads(filters)">
+      <div class="min-w-[200px] flex-1">
+        <UiSelect v-model="filters.status" label="Status" @change="loadLeads(filters)">
           <option value="">Todos os status</option>
           <option value="NEW">Novo</option>
           <option value="CONTACTED">Contatado</option>
@@ -67,273 +37,226 @@
           <option value="WON">Convertido</option>
           <option value="LOST">Perdido</option>
           <option value="ABANDONED">Abandonou Checkout</option>
-        </select>
+        </UiSelect>
       </div>
-      <div class="filter-group flex-2">
-        <label class="form-label">Buscar nome ou e-mail</label>
-        <input v-model="filters.search" type="text" class="form-input" placeholder="Pesquisar..." @keyup.enter="loadLeads(filters)">
+      <div class="min-w-[200px] flex-[2]">
+        <UiInput v-model="filters.search" label="Buscar nome ou e-mail" placeholder="Pesquisar..." @keyup.enter="loadLeads(filters)" />
       </div>
-      <div class="filter-actions mt-auto">
-        <button class="btn btn-secondary btn-sm" @click="resetFilters">Limpar</button>
-      </div>
+      <UiButton variant="secondary" size="sm" @click="resetFilters">Limpar</UiButton>
     </div>
 
-    <div v-else class="queue-layout">
-      <div class="queue-summary-grid">
-        <article class="queue-summary-card">
-          <span class="queue-summary-card__label">Na fila</span>
-          <strong class="queue-summary-card__value">{{ preLaunchQueueSummary.active }}</strong>
-        </article>
-        <article class="queue-summary-card">
-          <span class="queue-summary-card__label">Contatados</span>
-          <strong class="queue-summary-card__value">{{ preLaunchQueueSummary.contacted }}</strong>
-        </article>
-        <article class="queue-summary-card">
-          <span class="queue-summary-card__label">Convertidos</span>
-          <strong class="queue-summary-card__value">{{ preLaunchQueueSummary.converted }}</strong>
-        </article>
-        <article class="queue-summary-card">
-          <span class="queue-summary-card__label">Removidos</span>
-          <strong class="queue-summary-card__value">{{ preLaunchQueueSummary.removed }}</strong>
-        </article>
+    <!-- Pre-launch mode -->
+    <div v-else class="mt-6 space-y-6">
+      <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <UiCard padding="md">
+          <span class="block text-xs font-bold uppercase tracking-wider text-p-text-muted">Na fila</span>
+          <strong class="mt-2 block text-2xl font-bold text-p-text">{{ preLaunchQueueSummary.active }}</strong>
+        </UiCard>
+        <UiCard padding="md">
+          <span class="block text-xs font-bold uppercase tracking-wider text-p-text-muted">Contatados</span>
+          <strong class="mt-2 block text-2xl font-bold text-p-text">{{ preLaunchQueueSummary.contacted }}</strong>
+        </UiCard>
+        <UiCard padding="md">
+          <span class="block text-xs font-bold uppercase tracking-wider text-p-text-muted">Convertidos</span>
+          <strong class="mt-2 block text-2xl font-bold text-p-text">{{ preLaunchQueueSummary.converted }}</strong>
+        </UiCard>
+        <UiCard padding="md">
+          <span class="block text-xs font-bold uppercase tracking-wider text-p-text-muted">Removidos</span>
+          <strong class="mt-2 block text-2xl font-bold text-p-text">{{ preLaunchQueueSummary.removed }}</strong>
+        </UiCard>
       </div>
 
-      <div class="queue-buckets-grid">
-        <section class="queue-bucket-card">
-          <div class="queue-bucket-card__header">
-            <h2>Empreendimentos na fila</h2>
-            <span>{{ preLaunchProjectBuckets.length }}</span>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <UiCard>
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-p-text">Empreendimentos na fila</h2>
+            <span class="text-sm text-p-text-muted">{{ preLaunchProjectBuckets.length }}</span>
           </div>
-          <div v-if="preLaunchProjectBuckets.length" class="queue-chip-list">
-            <button
-              v-for="bucket in preLaunchProjectBuckets"
-              :key="bucket.projectId"
-              type="button"
-              class="queue-chip"
-              :class="{ active: queueFilters.projectId === bucket.projectId }"
-              @click="applyProjectBucket(bucket.projectId)"
-            >
+          <div v-if="preLaunchProjectBuckets.length" class="flex flex-wrap gap-2">
+            <button v-for="bucket in preLaunchProjectBuckets" :key="bucket.projectId" type="button" class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-all" :class="queueFilters.projectId === bucket.projectId ? 'border-amber-400/45 bg-amber-400/12 text-amber-300' : 'border-p-border bg-p-overlay/50 text-p-text-secondary hover:border-p-border-hover'" @click="applyProjectBucket(bucket.projectId)">
               <span>{{ bucket.projectName }}</span>
-              <strong>{{ bucket.total }}</strong>
+              <strong class="text-xs">{{ bucket.total }}</strong>
             </button>
           </div>
-          <p v-else class="queue-muted">Nenhum empreendimento com fila ativa no momento.</p>
-        </section>
+          <p v-else class="text-sm text-p-text-muted">Nenhum empreendimento com fila ativa no momento.</p>
+        </UiCard>
 
-        <section class="queue-bucket-card">
-          <div class="queue-bucket-card__header">
-            <h2>Lotes com fila</h2>
-            <span>{{ filteredLotBuckets.length }}</span>
+        <UiCard>
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-p-text">Lotes com fila</h2>
+            <span class="text-sm text-p-text-muted">{{ filteredLotBuckets.length }}</span>
           </div>
-          <div v-if="filteredLotBuckets.length" class="queue-chip-list">
-            <button
-              v-for="bucket in filteredLotBuckets"
-              :key="bucket.mapElementId"
-              type="button"
-              class="queue-chip"
-              :class="{ active: queueFilters.mapElementId === bucket.mapElementId }"
-              @click="applyLotBucket(bucket.mapElementId, bucket.projectId)"
-            >
+          <div v-if="filteredLotBuckets.length" class="flex flex-wrap gap-2">
+            <button v-for="bucket in filteredLotBuckets" :key="bucket.mapElementId" type="button" class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-all" :class="queueFilters.mapElementId === bucket.mapElementId ? 'border-amber-400/45 bg-amber-400/12 text-amber-300' : 'border-p-border bg-p-overlay/50 text-p-text-secondary hover:border-p-border-hover'" @click="applyLotBucket(bucket.mapElementId, bucket.projectId)">
               <span>{{ bucket.lotCode }}</span>
-              <strong>{{ bucket.total }}</strong>
+              <strong class="text-xs">{{ bucket.total }}</strong>
             </button>
           </div>
-          <p v-else class="queue-muted">Selecione um empreendimento ou aguarde novos interessados na fila.</p>
-        </section>
+          <p v-else class="text-sm text-p-text-muted">Selecione um empreendimento ou aguarde novos interessados na fila.</p>
+        </UiCard>
       </div>
 
-      <div class="filter-card">
-        <div class="filter-group">
-          <label class="form-label">Empreendimento</label>
-          <select v-model="queueFilters.projectId" class="form-select" @change="onQueueProjectChange">
+      <!-- Pre-launch filters -->
+      <div class="flex flex-wrap items-end gap-4 rounded-xl border border-p-border bg-p-elevated p-5">
+        <div class="min-w-[200px] flex-1">
+          <UiSelect v-model="queueFilters.projectId" label="Empreendimento" @change="onQueueProjectChange">
             <option value="">Todos os empreendimentos</option>
             <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-          </select>
+          </UiSelect>
         </div>
-        <div class="filter-group">
-          <label class="form-label">Lote</label>
-          <select v-model="queueFilters.mapElementId" class="form-select" @change="loadPreLaunchQueue(queueFilters)">
+        <div class="min-w-[200px] flex-1">
+          <UiSelect v-model="queueFilters.mapElementId" label="Lote" @change="loadPreLaunchQueue(queueFilters)">
             <option value="">Todos os lotes</option>
             <option v-for="bucket in filteredLotBuckets" :key="bucket.mapElementId" :value="bucket.mapElementId">{{ bucket.lotCode }}</option>
-          </select>
+          </UiSelect>
         </div>
-        <div class="filter-group">
-          <label class="form-label">Status da fila</label>
-          <select v-model="queueFilters.status" class="form-select" @change="loadPreLaunchQueue(queueFilters)">
+        <div class="min-w-[200px] flex-1">
+          <UiSelect v-model="queueFilters.status" label="Status da fila" @change="loadPreLaunchQueue(queueFilters)">
             <option value="">Todos</option>
             <option value="ACTIVE">Na fila</option>
             <option value="CONTACTED">Contatado</option>
             <option value="CONVERTED">Convertido</option>
             <option value="REMOVED">Removido</option>
-          </select>
+          </UiSelect>
         </div>
-        <div class="filter-group flex-2">
-          <label class="form-label">Buscar lead, corretor, lote ou e-mail</label>
-          <input v-model="queueFilters.search" type="text" class="form-input" placeholder="Pesquisar..." @keyup.enter="loadPreLaunchQueue(queueFilters)">
+        <div class="min-w-[200px] flex-[2]">
+          <UiInput v-model="queueFilters.search" label="Buscar lead, corretor, lote ou e-mail" placeholder="Pesquisar..." @keyup.enter="loadPreLaunchQueue(queueFilters)" />
         </div>
-        <div class="filter-actions mt-auto">
-          <button class="btn btn-secondary btn-sm" @click="resetQueueFilters">Limpar</button>
-        </div>
+        <UiButton variant="secondary" size="sm" @click="resetQueueFilters">Limpar</UiButton>
       </div>
     </div>
 
-    <div v-if="pageMode === 'leads' && meta.totalItems > 0" class="leads-count-bar">
+    <!-- Count bar -->
+    <div v-if="pageMode === 'leads' && meta.totalItems > 0" class="mt-4 flex items-center gap-2 text-sm text-p-text-muted">
       <span>{{ meta.totalItems }} lead{{ meta.totalItems !== 1 ? 's' : '' }} encontrado{{ meta.totalItems !== 1 ? 's' : '' }}</span>
-      <span v-if="meta.totalPages > 1" class="text-muted">— página {{ meta.currentPage }} de {{ meta.totalPages }}</span>
+      <span v-if="meta.totalPages > 1">— página {{ meta.currentPage }} de {{ meta.totalPages }}</span>
     </div>
-
-    <div v-else-if="pageMode === 'prelaunch' && preLaunchQueueMeta.totalItems > 0" class="leads-count-bar">
+    <div v-else-if="pageMode === 'prelaunch' && preLaunchQueueMeta.totalItems > 0" class="mt-4 flex items-center gap-2 text-sm text-p-text-muted">
       <span>{{ preLaunchQueueMeta.totalItems }} registro{{ preLaunchQueueMeta.totalItems !== 1 ? 's' : '' }} na fila</span>
-      <span v-if="preLaunchQueueMeta.totalPages > 1" class="text-muted">— página {{ preLaunchQueueMeta.currentPage }} de {{ preLaunchQueueMeta.totalPages }}</span>
+      <span v-if="preLaunchQueueMeta.totalPages > 1">— página {{ preLaunchQueueMeta.currentPage }} de {{ preLaunchQueueMeta.totalPages }}</span>
     </div>
 
-    <div v-if="pageMode === 'leads' && loading" class="loading-state flex-center py-12">
-      <div class="loading-spinner"></div>
-    </div>
+    <!-- Loading -->
+    <UiLoadingState v-if="pageMode === 'leads' && loading" />
+    <UiLoadingState v-else-if="pageMode === 'prelaunch' && queueLoading" />
 
-    <div v-else-if="pageMode === 'prelaunch' && queueLoading" class="loading-state flex-center py-12">
-      <div class="loading-spinner"></div>
-    </div>
+    <!-- Empty states -->
+    <UiEmptyState v-else-if="pageMode === 'leads' && leads.length === 0" title="Nenhum lead encontrado" description="Ajuste os filtros ou cadastre um novo lead manual." icon="📥" />
+    <UiEmptyState v-else-if="pageMode === 'prelaunch' && preLaunchQueue.length === 0" title="Nenhum interessado na fila" description="Quando o pré-lançamento captar novos interessados, a gestão por empreendimento e lote aparecerá aqui." icon="⏳" />
 
-    <div v-else-if="pageMode === 'leads' && leads.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-inbox-fill" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Nenhum lead encontrado</h3>
-        <p class="mb-4 px-4">Ajuste os filtros ou cadastre um novo lead manual.</p>
-      </div>
-    </div>
+    <!-- Leads content -->
+    <div v-else-if="pageMode === 'leads'" class="mt-4">
+      <LeadsLeadKanban v-if="viewMode === 'kanban'" :leads="leads" @select="viewLead" />
 
-    <div v-else-if="pageMode === 'prelaunch' && preLaunchQueue.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-hourglass-split" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Nenhum interessado na fila</h3>
-        <p class="mb-4 px-4">Quando o pré-lançamento captar novos interessados, a gestão por empreendimento e lote aparecerá aqui.</p>
-      </div>
-    </div>
-
-    <div v-else-if="pageMode === 'leads'" class="content-view">
-      <!-- Kanban View -->
-      <LeadsLeadKanban 
-        v-if="viewMode === 'kanban'" 
-        :leads="leads" 
-        @select="viewLead" 
-      />
-
-      <!-- Table View -->
-      <div v-else class="table-wrapper">
-        <table class="table-modern">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Contato</th>
-              <th>Projeto</th>
-              <th>Corretor</th>
-              <th>Status</th>
-              <th>Data</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="lead in leads" :key="lead.id" class="clickable-row" @click="viewLead(lead)">
-              <td>
-                <div class="d-flex flex-column">
-                  <strong>{{ lead.name }}</strong>
-                  <span v-if="lead.isRecurrent" class="badge-recurrent-tag">Recorrente</span>
-                  <span v-if="lead.aiChatTranscript" class="badge-ai-tag">IA</span>
-                </div>
-              </td>
-              <td>
-                <div class="small-info">
-                  <span>{{ lead.email || '—' }}</span>
-                  <span>{{ lead.phone || '—' }}</span>
-                </div>
-              </td>
-              <td>{{ lead.project?.name || '—' }}</td>
-              <td>{{ lead.realtorLink?.name || 'Direto' }}</td>
-              <td><LeadsLeadStatusBadge :status="lead.status" /></td>
-              <td>{{ formatDateToBrasilia(lead.createdAt) }}</td>
-              <td @click.stop>
-                <div class="d-flex gap-1">
-                  <button class="btn-icon btn-sm" :disabled="!canWriteLeads" :title="!canWriteLeads ? writePermissionHint : 'Editar'" @click="editLead(lead)"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-                  <button class="btn-icon btn-sm" :disabled="!canWriteLeads" :title="!canWriteLeads ? writePermissionHint : 'Excluir'" @click="onDeleteLead(lead)"><i class="bi bi-trash3-fill" aria-hidden="true"></i></button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="p-4 border-top">
+      <div v-else>
+        <UiTable>
+          <template #head>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Nome</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Contato</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Projeto</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Corretor</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Data</th>
+            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Ações</th>
+          </template>
+          <tr v-for="lead in leads" :key="lead.id" class="cursor-pointer transition-colors hover:bg-p-overlay/50" @click="viewLead(lead)">
+            <td class="px-4 py-3">
+              <div class="flex flex-col">
+                <strong class="text-sm text-p-text">{{ lead.name }}</strong>
+                <span v-if="lead.isRecurrent" class="mt-0.5 w-fit rounded bg-p-warning/10 px-1.5 py-0.5 text-[10px] font-bold text-p-warning">Recorrente</span>
+                <span v-if="lead.aiChatTranscript" class="mt-0.5 w-fit rounded bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-bold text-indigo-400">IA</span>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-col gap-0.5 text-sm text-p-text-secondary">
+                <span>{{ lead.email || '—' }}</span>
+                <span>{{ lead.phone || '—' }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ lead.project?.name || '—' }}</td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ lead.realtorLink?.name || 'Direto' }}</td>
+            <td class="px-4 py-3"><LeadsLeadStatusBadge :status="lead.status" /></td>
+            <td class="px-4 py-3 text-sm text-p-text-secondary">{{ formatDateToBrasilia(lead.createdAt) }}</td>
+            <td class="px-4 py-3" @click.stop>
+              <div class="flex gap-1">
+                <button class="rounded-md p-1.5 text-p-text-muted transition-colors hover:bg-p-overlay hover:text-p-text" :disabled="!canWriteLeads" :title="!canWriteLeads ? writePermissionHint : 'Editar'" @click="editLead(lead)"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                <button class="rounded-md p-1.5 text-p-text-muted transition-colors hover:bg-p-overlay hover:text-p-danger" :disabled="!canWriteLeads" :title="!canWriteLeads ? writePermissionHint : 'Excluir'" @click="onDeleteLead(lead)"><i class="bi bi-trash3-fill" aria-hidden="true"></i></button>
+              </div>
+            </td>
+          </tr>
+        </UiTable>
+        <div class="mt-4">
           <CommonPagination :meta="meta" @change="loadLeads(filters, $event)" />
         </div>
       </div>
     </div>
 
-    <div v-else class="table-wrapper queue-table-wrapper">
-      <table class="table-modern">
-        <thead>
-          <tr>
-            <th>Posição</th>
-            <th>Lead</th>
-            <th>Empreendimento</th>
-            <th>Lote</th>
-            <th>Corretor</th>
-            <th>Status</th>
-            <th>Entrada</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="entry in preLaunchQueue" :key="entry.id" class="clickable-row" @click="viewQueueLead(entry)">
-            <td><span class="queue-position-badge">#{{ entry.position }}</span></td>
-            <td>
-              <div class="d-flex flex-column">
-                <strong>{{ entry.lead?.name || 'Lead sem nome' }}</strong>
-                <span class="small-info-single">{{ entry.lead?.email || entry.lead?.phone || 'Sem contato' }}</span>
-              </div>
-            </td>
-            <td>{{ entry.project?.name || '—' }}</td>
-            <td>{{ entry.mapElement?.code || entry.mapElement?.name || '—' }}</td>
-            <td>{{ entry.realtorLink?.name || 'Direto' }}</td>
-            <td>
-              <span class="queue-status-badge" :class="`queue-status-badge--${String(entry.status || '').toLowerCase()}`">
-                {{ queueStatusLabel(entry.status) }}
-              </span>
-            </td>
-            <td>{{ formatDateToBrasilia(entry.createdAt) }}</td>
-            <td @click.stop>
-              <div class="queue-actions">
-                <button class="btn btn-secondary btn-sm" :disabled="!canWriteLeads || entry.status === 'CONTACTED'" :title="!canWriteLeads ? writePermissionHint : 'Marcar como contatado'" @click="changeQueueStatus(entry, 'CONTACTED')">Contatado</button>
-                <button class="btn btn-primary btn-sm" :disabled="!canWriteLeads || entry.status === 'CONVERTED'" :title="!canWriteLeads ? writePermissionHint : 'Marcar como convertido'" @click="changeQueueStatus(entry, 'CONVERTED')">Converter</button>
-                <button class="btn btn-danger btn-sm" :disabled="!canWriteLeads || entry.status === 'REMOVED'" :title="!canWriteLeads ? writePermissionHint : 'Remover da fila'" @click="changeQueueStatus(entry, 'REMOVED')">Remover</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="p-4 border-top">
+    <!-- Pre-launch queue table -->
+    <div v-else class="mt-4">
+      <UiTable>
+        <template #head>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Posição</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Lead</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Empreendimento</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Lote</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Corretor</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Status</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Entrada</th>
+          <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-p-text-secondary">Ações</th>
+        </template>
+        <tr v-for="entry in preLaunchQueue" :key="entry.id" class="cursor-pointer transition-colors hover:bg-p-overlay/50" @click="viewQueueLead(entry)">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center justify-center rounded-full bg-amber-400/14 px-2.5 py-1 text-sm font-bold text-amber-300">#{{ entry.position }}</span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex flex-col">
+              <strong class="text-sm text-p-text">{{ entry.lead?.name || 'Lead sem nome' }}</strong>
+              <span class="text-sm text-p-text-muted">{{ entry.lead?.email || entry.lead?.phone || 'Sem contato' }}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ entry.project?.name || '—' }}</td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ entry.mapElement?.code || entry.mapElement?.name || '—' }}</td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ entry.realtorLink?.name || 'Direto' }}</td>
+          <td class="px-4 py-3">
+            <UiBadge :variant="{ active: 'info', contacted: 'warning', converted: 'success', removed: 'danger' }[String(entry.status || '').toLowerCase()] || 'neutral'">
+              {{ queueStatusLabel(entry.status) }}
+            </UiBadge>
+          </td>
+          <td class="px-4 py-3 text-sm text-p-text-secondary">{{ formatDateToBrasilia(entry.createdAt) }}</td>
+          <td class="px-4 py-3" @click.stop>
+            <div class="flex flex-wrap gap-1.5">
+              <UiButton variant="secondary" size="xs" :disabled="!canWriteLeads || entry.status === 'CONTACTED'" @click="changeQueueStatus(entry, 'CONTACTED')">Contatado</UiButton>
+              <UiButton variant="primary" size="xs" :disabled="!canWriteLeads || entry.status === 'CONVERTED'" @click="changeQueueStatus(entry, 'CONVERTED')">Converter</UiButton>
+              <UiButton variant="danger" size="xs" :disabled="!canWriteLeads || entry.status === 'REMOVED'" @click="changeQueueStatus(entry, 'REMOVED')">Remover</UiButton>
+            </div>
+          </td>
+        </tr>
+      </UiTable>
+      <div class="mt-4">
         <CommonPagination :meta="preLaunchQueueMeta" @change="loadPreLaunchQueue(queueFilters, $event)" />
       </div>
     </div>
 
     <!-- Modals -->
-    <LeadsLeadFormModal 
-      v-if="showCreateModal" 
+    <LeadsLeadFormModal
+      v-if="showCreateModal"
       :projects="projects"
-      @close="showCreateModal = false" 
-      @saved="loadLeads(filters)" 
+      @close="showCreateModal = false"
+      @saved="loadLeads(filters)"
     />
 
-    <LeadsLeadFormModal 
-      v-if="showEditModal" 
+    <LeadsLeadFormModal
+      v-if="showEditModal"
       :lead="editingLead"
       :projects="projects"
-      @close="showEditModal = false" 
-      @saved="loadLeads(filters)" 
+      @close="showEditModal = false"
+      @saved="loadLeads(filters)"
     />
 
-    <LeadsLeadDetailsModal 
-      v-if="selectedLead" 
-      :lead="selectedLead" 
-      @close="selectedLead = undefined" 
+    <LeadsLeadDetailsModal
+      v-if="selectedLead"
+      :lead="selectedLead"
+      @close="selectedLead = undefined"
       @refresh="onDetailsRefresh"
       @edit="onDetailsEdit"
     />
@@ -342,6 +265,8 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
+
+definePageMeta({ layout: 'painel' })
 
 type LeadRecord = Record<string, any> & {
   id?: string
@@ -384,7 +309,6 @@ const writePermissionHint = 'Disponível apenas para usuários com permissão de
 const pageMode = ref(route.query.view === 'prelaunch' ? 'prelaunch' : 'leads')
 const viewMode = ref('kanban')
 
-// Persistence of view preference
 onMounted(() => {
   const savedView = localStorage.getItem('lotio_leads_view_mode')
   if (savedView) {
@@ -407,7 +331,6 @@ const filteredLotBuckets = computed(() => {
   return preLaunchLotBuckets.value.filter(bucket => bucket.projectId === queueFilters.value.projectId)
 })
 
-// Debounced search
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 watch(() => filters.value.search, (val) => {
   if (searchTimer) clearTimeout(searchTimer)
@@ -537,7 +460,6 @@ const changeQueueStatus = async (entry: PreLaunchQueueRecord, status: 'CONTACTED
 }
 
 onMounted(async () => {
-  // Support pre-filtering by realtorLinkId from URL (e.g. from corretor detail page)
   if (route.query.realtorLinkId) {
     filters.value.realtorLinkId = route.query.realtorLinkId as string
   }
@@ -549,286 +471,3 @@ onMounted(async () => {
   await loadLeads(filters.value)
 })
 </script>
-
-<style scoped>
-.page-header { margin-bottom: 24px; border-bottom: 2px solid var(--glass-border-subtle); padding-bottom: 16px; }
-
-.page-mode-toggle {
-  min-width: 240px;
-}
-
-.view-toggle { 
-  background: var(--glass-bg); 
-  border-radius: var(--radius-md); 
-  display: flex; 
-  padding: 4px; 
-  gap: 4px;
-  height: 48px;
-}
-.toggle-btn { 
-  border: none; 
-  background: none; 
-  padding: 0 16px; 
-  font-weight: 600; 
-  font-size: 0.875rem; 
-  color: var(--color-surface-400); 
-  cursor: pointer; 
-  border-radius: var(--radius-sm);
-  transition: all 200ms ease;
-  flex: 1;
-  white-space: nowrap;
-}
-.toggle-btn.active { 
-  background: rgba(255, 255, 255, 0.06); 
-  color: var(--color-primary-500); 
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.filter-card { 
-  background: var(--glass-bg); 
-  border-radius: var(--radius-lg); 
-  padding: 20px; 
-  margin-bottom: 24px; 
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-  display: flex; 
-  gap: 20px; 
-  align-items: flex-end; 
-  flex-wrap: wrap; 
-  border: 1px solid var(--glass-border-subtle); 
-}
-.filter-group { flex: 1; min-width: 200px; }
-.flex-2 { flex: 2; }
-.filter-actions { padding-bottom: 4px; }
-
-.queue-layout {
-  display: grid;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.queue-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 16px;
-}
-
-.queue-summary-card,
-.queue-bucket-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.queue-summary-card {
-  padding: 18px 20px;
-}
-
-.queue-summary-card__label {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--color-surface-400);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.queue-summary-card__value {
-  font-size: 2rem;
-  line-height: 1;
-}
-
-.queue-buckets-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.queue-bucket-card {
-  padding: 18px 20px;
-}
-
-.queue-bucket-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.queue-bucket-card__header h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.queue-bucket-card__header span {
-  color: var(--color-surface-400);
-  font-size: 0.875rem;
-}
-
-.queue-chip-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.queue-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--glass-border-subtle);
-  background: rgba(255,255,255,0.03);
-  color: var(--color-surface-100);
-  border-radius: 999px;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: all 180ms ease;
-}
-
-.queue-chip.active {
-  border-color: rgba(251, 191, 36, 0.45);
-  background: rgba(251, 191, 36, 0.12);
-  color: #fcd34d;
-}
-
-.queue-chip strong {
-  font-size: 0.8rem;
-}
-
-.queue-muted {
-  color: var(--color-surface-400);
-  margin: 0;
-}
-
-.table-modern { width: 100%; border-collapse: collapse; }
-.clickable-row { cursor: pointer; transition: background 150ms; }
-.clickable-row:hover { background: var(--glass-bg-heavy); }
-
-.small-info { display: flex; flex-direction: column; font-size: 0.8125rem; color: var(--color-surface-200); gap: 2px; }
-
-.small-info-single {
-  font-size: 0.8125rem;
-  color: var(--color-surface-300);
-}
-
-.badge-recurrent-tag {
-  font-size: 0.625rem;
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--color-warning);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-  width: fit-content;
-  margin-top: 2px;
-}
-
-.badge-ai-tag {
-  font-size: 0.625rem;
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-  width: fit-content;
-  margin-top: 2px;
-}
-
-.table-wrapper { 
-  background: var(--glass-bg); 
-  border: 1px solid var(--glass-border-subtle); 
-  border-radius: var(--radius-lg); 
-  overflow: hidden; 
-}
-
-.queue-table-wrapper {
-  overflow: hidden;
-}
-
-.queue-position-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 52px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(251, 191, 36, 0.14);
-  color: #fcd34d;
-  font-weight: 700;
-}
-
-.queue-status-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.queue-status-badge--active {
-  background: rgba(59, 130, 246, 0.12);
-  color: #93c5fd;
-}
-
-.queue-status-badge--contacted {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fcd34d;
-}
-
-.queue-status-badge--converted {
-  background: rgba(16, 185, 129, 0.12);
-  color: #6ee7b7;
-}
-
-.queue-status-badge--removed {
-  background: rgba(239, 68, 68, 0.12);
-  color: #fca5a5;
-}
-
-.queue-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.loading-state, .empty-state {
-  text-align: center;
-  background: var(--glass-bg);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--glass-border-subtle);
-}
-
-.empty-icon { font-size: 2.5rem; margin-bottom: 16px; }
-
-.d-flex { display: flex; }
-.justify-content-between { justify-content: space-between; }
-.align-items-center { align-items: center; }
-.flex-column { flex-direction: column; }
-.gap-1 { gap: 4px; }
-.gap-2 { gap: 8px; }
-.mt-auto { margin-top: auto; }
-.py-12 { padding-top: 48px; padding-bottom: 48px; }
-.p-4 { padding: 16px; }
-.border-top { border-top: 1px solid var(--glass-border-subtle); }
-
-.leads-count-bar { font-size: 0.8125rem; color: var(--color-surface-400); margin-bottom: 12px; display: flex; gap: 8px; align-items: center; }
-.text-muted { color: var(--color-surface-500); }
-.btn-icon { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); font-size: 1rem; transition: background 150ms; }
-.btn-icon:hover { background: var(--glass-bg-heavy); }
-
-@media (max-width: 767px) {
-  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .page-header > div { width: 100%; justify-content: space-between; }
-  .filter-group { min-width: 100%; flex: unset; }
-  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table-modern { min-width: 600px; }
-  .view-toggle { align-self: flex-start; }
-  .page-mode-toggle,
-  .view-toggle { width: 100%; }
-  .page-header > div:last-child { flex-direction: column; }
-  .queue-actions { flex-direction: column; }
-}
-</style>

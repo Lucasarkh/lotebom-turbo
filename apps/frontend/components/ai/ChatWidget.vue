@@ -105,7 +105,7 @@ const parseMessage = (text: string) => {
       const txt = text.substring(lastIndex, match.index).trim()
       if (txt) parts.push({ type: 'text', content: txt })
     }
-    
+
     try {
       const cardRaw = match[1]
       if (!cardRaw) {
@@ -119,7 +119,7 @@ const parseMessage = (text: string) => {
     } catch (e) {
       parts.push({ type: 'text', content: match[0] })
     }
-    
+
     lastIndex = regex.lastIndex
   }
 
@@ -140,26 +140,26 @@ function toggleChat() {
 
 async function sendMessage() {
   if (!lgpdConsentAccepted.value || !input.value.trim() || loading.value) return
-  
+
   const userMsg = input.value
   tracking.trackClick('Chat: Enviar Mensagem', 'AI_CHAT')
-  
+
   chatStore.addMessage('user', userMsg)
   input.value = ''
   loading.value = true
   loadingStatus.value = 'Pensando...'
-  
+
   await nextTick()
   scrollToBottom()
 
   try {
     // Artificial delays for "fluidity" and realism
-    setTimeout(() => { 
-      if (loading.value) loadingStatus.value = 'Consultando disponibilidade...' 
+    setTimeout(() => {
+      if (loading.value) loadingStatus.value = 'Consultando disponibilidade...'
     }, 1500)
-    
-    setTimeout(() => { 
-      if (loading.value) loadingStatus.value = 'Analisando melhores lotes...' 
+
+    setTimeout(() => {
+      if (loading.value) loadingStatus.value = 'Analisando melhores lotes...'
     }, 3000)
 
     const res = await post(`/p/${props.project.slug}/ai/chat`, {
@@ -217,706 +217,146 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="project?.aiEnabled" class="ai-widget" :class="{ 'is-active': isOpen }">
+  <div
+    v-if="project?.aiEnabled"
+    class="fixed bottom-6 left-6 z-[3200] font-sans max-md:bottom-[calc(80px+env(safe-area-inset-bottom,0px))] max-md:left-4"
+    :class="{ '!left-0 !bottom-0': isOpen }"
+    style="--chat-bg:#0f1d21;--chat-surface:#142a30;--chat-surface-2:#1a3640;--chat-border:#2d4c57;--chat-text:#e7f4f7;--chat-muted:#a8c3cb;--chat-primary:#15b4a6;--chat-primary-strong:#0e9c90;--chat-user-bubble:#0ca678"
+  >
     <!-- Bubble Button -->
-    <button v-if="!isOpen" class="ai-bubble" @click="toggleChat">
-      <span class="ai-icon">
+    <button
+      v-if="!isOpen"
+      class="group relative w-14 h-14 max-md:w-[52px] max-md:h-[52px] rounded-full bg-gradient-to-br from-[#15b4a6] to-[#0d8f86] text-white border border-[#0b6f68] shadow-[0_8px_22px_rgba(3,42,46,0.45)] cursor-pointer flex items-center justify-center transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_26px_rgba(3,42,46,0.52)]"
+      @click="toggleChat"
+    >
+      <span class="flex items-center justify-center">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
       </span>
-      <div class="ai-tooltip">Dúvidas? Fale comigo!</div>
+      <div class="absolute left-[70px] max-md:hidden top-1/2 -translate-y-1/2 bg-[#0f2b32] text-[#dcf2f6] px-4 py-2 rounded-[20px] text-[0.825rem] font-semibold shadow-[0_6px_14px_rgba(1,16,20,0.35)] whitespace-nowrap pointer-events-none opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:left-[65px]">Dúvidas? Fale comigo!</div>
     </button>
 
-    <div v-if="isOpen" class="ai-modal-backdrop" @click="closeChat"></div>
+    <div v-if="isOpen" class="fixed inset-0 bg-black/[0.42] backdrop-blur-sm z-[1] animate-[aiFadeIn_0.2s_ease]" @click="closeChat"></div>
 
     <!-- Chat Window -->
-    <div v-if="isOpen" class="ai-window">
-      <div class="ai-header">
-        <div class="ai-avatar">
+    <div
+      v-if="isOpen"
+      class="fixed bottom-[110px] left-6 w-[350px] max-w-[calc(100vw-40px)] h-[500px] max-h-[calc(100vh-120px)] bg-[var(--chat-bg)] border border-[var(--chat-border)] rounded-2xl shadow-[0_18px_45px_rgba(3,17,20,0.55)] flex flex-col overflow-hidden animate-[slideUp_0.3s_ease-out] z-[2] max-md:left-0 max-md:right-0 max-md:bottom-0 max-md:w-full max-md:max-w-full max-md:h-[min(80vh,640px)] max-md:max-h-[80dvh] max-md:rounded-[20px_20px_0_0] max-md:animate-[aiSheetUp_0.28s_ease-out]"
+    >
+      <div class="px-5 py-4 bg-[#0a1418] border-b border-[var(--chat-border)] text-white flex items-center gap-3">
+        <div class="bg-[#17323a] border border-[#27515d] w-9 h-9 flex items-center justify-center rounded-[10px]">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
         </div>
-        <div class="ai-info">
-          <div class="ai-name">Assistente {{ project?.name }}</div>
-          <div class="ai-status">Online agora</div>
+        <div>
+          <div class="font-semibold text-[0.95rem]">Assistente {{ project?.name }}</div>
+          <div class="text-[0.7rem] text-[#c9e7ed] flex items-center gap-1 before:content-[''] before:w-1.5 before:h-1.5 before:bg-green-500 before:rounded-full">Online agora</div>
         </div>
-        <button class="ai-close" @click="closeChat">&times;</button>
+        <button class="ml-auto bg-transparent border-none text-white text-xl cursor-pointer opacity-50 transition-opacity duration-200 hover:opacity-100" @click="closeChat">&times;</button>
       </div>
 
-      <div class="ai-messages" ref="scrollContainer">
-        <div v-for="(msg, i) in messages" :key="i" class="ai-msg" :class="`ai-msg-${msg.role}`">
+      <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-3 bg-[var(--chat-surface)]" ref="scrollContainer">
+        <div v-for="(msg, i) in messages" :key="i" class="max-w-[85%] leading-relaxed text-[0.95rem]" :class="msg.role === 'user' ? 'self-end' : 'self-start'">
           <template v-if="msg.role === 'ai'">
-            <div v-for="(part, pi) in parseMessage(msg.text)" :key="pi" class="ai-message-part">
-              <div v-if="part.type === 'text'" class="ai-msg-bubble">{{ part.content }}</div>
-              
-              <div v-else-if="part.type === 'card'" class="lot-mini-card" @click="navigateToLot(part.content.code)">
-                <div class="lot-mini-header">
-                  <span class="lot-mini-code">{{ part.content.code }}</span>
-                  <span class="lot-mini-status" :class="part.content.status.toLowerCase()">{{ part.content.status }}</span>
+            <div v-for="(part, pi) in parseMessage(msg.text)" :key="pi" class="[&+&]:mt-2">
+              <div v-if="part.type === 'text'" class="px-3.5 py-2.5 rounded-[15px] bg-[var(--chat-surface-2)] text-[var(--chat-text)] border border-[var(--chat-border)] rounded-bl-[2px] shadow-[0_2px_5px_rgba(2,14,17,0.24)]">{{ part.content }}</div>
+
+              <div v-else-if="part.type === 'card'" class="bg-[#173741] border border-[#2f5562] rounded-xl overflow-hidden shadow-md w-full max-w-[280px] cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-[#4f7886]" @click="navigateToLot(part.content.code)">
+                <div class="px-3 py-2.5 bg-[#122d35] border-b border-[#2f5562] flex justify-between items-center">
+                  <span class="font-bold text-[#ebf9fc]">{{ part.content.code }}</span>
+                  <span
+                    class="text-[0.7rem] font-bold uppercase px-2 py-0.5 rounded-[10px]"
+                    :class="part.content.status.toLowerCase() === 'disponível' ? 'bg-emerald-500/[0.12] text-emerald-400' : 'bg-red-500/[0.12] text-red-900'"
+                  >{{ part.content.status }}</span>
                 </div>
-                <div class="lot-mini-body">
-                  <div class="lot-mini-info">
-                    <span class="label">Área:</span>
-                    <span class="value">{{ part.content.area }}</span>
+                <div class="p-3 flex flex-col gap-1.5">
+                  <div class="flex justify-between text-[0.85rem]">
+                    <span class="text-[var(--chat-muted)]">Área:</span>
+                    <span class="font-semibold text-[#e6f4f8]">{{ part.content.area }}</span>
                   </div>
-                  <div class="lot-mini-info">
-                    <span class="label">Preço:</span>
-                    <span class="value">{{ part.content.price }}</span>
+                  <div class="flex justify-between text-[0.85rem]">
+                    <span class="text-[var(--chat-muted)]">Preço:</span>
+                    <span class="font-semibold text-[#e6f4f8]">{{ part.content.price }}</span>
                   </div>
-                  <div class="lot-mini-info">
-                    <span class="label">Topografia:</span>
-                    <span class="value">{{ part.content.topography }}</span>
+                  <div class="flex justify-between text-[0.85rem]">
+                    <span class="text-[var(--chat-muted)]">Topografia:</span>
+                    <span class="font-semibold text-[#e6f4f8]">{{ part.content.topography }}</span>
                   </div>
                 </div>
-                <div v-if="part.content.tags && part.content.tags.length" class="lot-mini-tags">
-                  <span v-for="tag in part.content.tags" :key="tag" class="tag">{{ tag }}</span>
+                <div v-if="part.content.tags && part.content.tags.length" class="px-3 py-2 flex flex-wrap gap-1 border-t border-dashed border-[#38606d]">
+                  <span v-for="tag in part.content.tags" :key="tag" class="text-[0.7rem] bg-[#0f2b32] text-[#c9e7ed] px-1.5 py-0.5 rounded">{{ tag }}</span>
                 </div>
-                <div class="lot-mini-footer">
+                <div class="px-3 py-2 bg-[#122d35] border-t border-[#2f5562] flex justify-between items-center text-[0.8rem] font-semibold text-[#7ad7e4]">
                   <span>Ver detalhes</span>
-                  <span>→</span>
+                  <span>&rarr;</span>
                 </div>
               </div>
             </div>
 
             <!-- Multi-card Action -->
-            <div v-if="getCards(msg.text).length > 1" class="ai-msg-actions">
-              <button class="ai-action-btn" @click="navigateToUnits(getCards(msg.text).map(c => c.code))">
+            <div v-if="getCards(msg.text).length > 1" class="mt-3 flex justify-start pl-2.5">
+              <button class="bg-[var(--chat-primary)] text-white border-none px-4 py-2 rounded-[20px] text-[0.85rem] font-semibold cursor-pointer transition-all duration-200 shadow-[0_6px_14px_rgba(9,82,92,0.35)] hover:bg-[var(--chat-primary-strong)] hover:-translate-y-[1px] hover:shadow-[0_8px_18px_rgba(9,82,92,0.45)]" @click="navigateToUnits(getCards(msg.text).map(c => c.code))">
                 Ver todos os {{ getCards(msg.text).length }} lotes encontrados
               </button>
             </div>
           </template>
-          <div v-else class="ai-msg-bubble">{{ msg.text }}</div>
+          <div v-else class="px-3.5 py-2.5 rounded-[15px] bg-[var(--chat-user-bubble)] text-white rounded-br-[2px]">{{ msg.text }}</div>
         </div>
-        <div v-if="loading" class="ai-msg ai-msg-ai">
-          <div class="ai-msg-bubble loading-bubble">
-            <div class="searching-animation">
-              <div class="dot"></div>
-              <div class="dot"></div>
-              <div class="dot"></div>
+        <div v-if="loading" class="max-w-[85%] self-start">
+          <div class="flex items-center gap-2.5 bg-[#173741] text-[#b8d5dd] italic text-[0.85rem] px-4 py-3 rounded-[15px] rounded-bl-[2px]">
+            <div class="flex gap-1">
+              <div class="w-1.5 h-1.5 bg-[#7dc6d2] rounded-full animate-[pulse_1.5s_infinite_ease-in-out]"></div>
+              <div class="w-1.5 h-1.5 bg-[#7dc6d2] rounded-full animate-[pulse_1.5s_infinite_ease-in-out_0.2s]"></div>
+              <div class="w-1.5 h-1.5 bg-[#7dc6d2] rounded-full animate-[pulse_1.5s_infinite_ease-in-out_0.4s]"></div>
             </div>
-            <span class="loading-text">{{ loadingStatus }}</span>
+            <span class="whitespace-nowrap">{{ loadingStatus }}</span>
           </div>
         </div>
       </div>
 
-      <form class="ai-input-area" @submit.prevent="sendMessage">
-        <div v-if="showConsentBlock" class="ai-privacy-consent" :class="{ 'is-closing': consentClosing }">
-          <label class="ai-consent-label">
+      <form class="px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] bg-[#10262d] border-t border-[var(--chat-border)] flex flex-wrap gap-2.5 items-center max-[420px]:px-3 max-[420px]:py-2.5 max-[420px]:pb-[calc(10px+env(safe-area-inset-bottom,0px))] max-[420px]:gap-2" @submit.prevent="sendMessage">
+        <div
+          v-if="showConsentBlock"
+          class="w-full bg-[#0d2128] border border-[#a6c9d1] rounded-[10px] px-2.5 py-2 overflow-hidden max-h-40 opacity-100 translate-y-0 transition-all duration-[240ms] ease-in-out"
+          :class="consentClosing ? 'max-h-0 opacity-0 -translate-y-1.5 !m-0 !py-0 !border-0' : ''"
+        >
+          <label class="flex gap-2 items-start text-[0.72rem] text-[#cfe8ee] leading-[1.45]">
             <input
               type="checkbox"
               :checked="lgpdConsentAccepted"
+              class="mt-0.5 accent-[var(--chat-primary)]"
               @change="onConsentChange"
             />
             <span>
               Concordo que um resumo desta conversa com o assistente virtual possa ser registrado para atendimento e melhoria do serviço, conforme
-              <NuxtLink to="/termos-de-uso" target="_blank">Termos de Uso</NuxtLink>
+              <NuxtLink to="/termos-de-uso" target="_blank" class="text-[#61d9ff] underline">Termos de Uso</NuxtLink>
               e
-              <NuxtLink to="/politica-de-privacidade" target="_blank">Política de Privacidade</NuxtLink>.
+              <NuxtLink to="/politica-de-privacidade" target="_blank" class="text-[#61d9ff] underline">Política de Privacidade</NuxtLink>.
             </span>
           </label>
         </div>
 
-        <div class="ai-input-wrapper">
-          <input 
-            v-model="input" 
-            placeholder="Digite sua dúvida..." 
+        <div class="relative flex-1 min-w-0 flex items-center">
+          <input
+            v-model="input"
+            placeholder="Digite sua dúvida..."
             maxlength="280"
             :disabled="!lgpdConsentAccepted"
+            class="w-full max-w-full border border-[#86aeb8] rounded-[20px] py-[11px] pl-[18px] pr-[65px] text-[0.95rem] outline-none transition-all duration-200 bg-[#0b1e24] text-[#ecfafc] placeholder:text-[#8eb2bc] focus:border-[var(--chat-primary)] focus:bg-[#0a1a20] focus:shadow-[0_0_0_3px_rgba(21,180,166,0.2)] max-[420px]:py-2.5 max-[420px]:pl-3.5 max-[420px]:pr-[58px] max-[420px]:text-[0.9rem]"
           />
-          <div class="input-limit" :class="{ 'error': input.length >= 280 }">
+          <div
+            class="absolute right-[15px] max-[420px]:right-3 text-[0.65rem] text-[#a8c7cf] pointer-events-none font-medium"
+            :class="input.length >= 280 ? '!text-red-500' : ''"
+          >
             {{ input.length }}/280
           </div>
         </div>
-        <button type="submit" :disabled="!lgpdConsentAccepted || !input.trim() || loading">
+        <button
+          type="submit"
+          :disabled="!lgpdConsentAccepted || !input.trim() || loading"
+          class="bg-[var(--chat-primary)] text-white border-none w-10 h-10 min-w-[40px] max-[420px]:w-[38px] max-[420px]:h-[38px] max-[420px]:min-w-[38px] rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0 shadow-[0_4px_10px_rgba(8,75,84,0.45)] hover:enabled:scale-105 hover:enabled:bg-[var(--chat-primary-strong)] hover:enabled:shadow-[0_6px_12px_rgba(8,75,84,0.55)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+        >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
       </form>
     </div>
   </div>
 </template>
-
-<style scoped>
-.ai-widget {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  z-index: 3200;
-  font-family: var(--font-sans, sans-serif);
-  --chat-bg: #0f1d21;
-  --chat-surface: #142a30;
-  --chat-surface-2: #1a3640;
-  --chat-border: #2d4c57;
-  --chat-text: #e7f4f7;
-  --chat-muted: #a8c3cb;
-  --chat-primary: #15b4a6;
-  --chat-primary-strong: #0e9c90;
-  --chat-user-bubble: #0ca678;
-}
-
-.ai-widget.is-active {
-  left: 0;
-  bottom: 0;
-}
-
-.ai-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(6px);
-  z-index: 1;
-  animation: aiFadeIn 0.2s ease;
-}
-
-@keyframes aiFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@media (max-width: 768px) {
-  .ai-widget {
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-    left: 16px;
-    right: auto;
-  }
-  .ai-bubble {
-    width: 52px;
-    height: 52px;
-  }
-  .ai-tooltip {
-    display: none;
-  }
-}
-
-.ai-bubble {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #15b4a6 0%, #0d8f86 100%);
-  color: white;
-  border: 1px solid #0b6f68;
-  box-shadow: 0 8px 22px rgba(3, 42, 46, 0.45);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
-}
-
-.ai-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ai-bubble:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 26px rgba(3, 42, 46, 0.52);
-}
-
-.ai-bubble.is-open {
-  background: #113f4a;
-}
-
-.ai-tooltip {
-  position: absolute;
-  left: 70px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #0f2b32;
-  color: #dcf2f6;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 0.825rem;
-  font-weight: 600;
-  box-shadow: 0 6px 14px rgba(1, 16, 20, 0.35);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: all 0.2s;
-}
-
-.ai-bubble:hover .ai-tooltip {
-  opacity: 1;
-  left: 65px;
-}
-
-.ai-window {
-  position: fixed;
-  bottom: 110px;
-  left: 24px;
-  width: 350px;
-  max-width: calc(100vw - 40px);
-  height: 500px;
-  max-height: calc(100vh - 120px);
-  background: var(--chat-bg);
-  border: 1px solid var(--chat-border);
-  border-radius: 16px;
-  box-shadow: 0 18px 45px rgba(3, 17, 20, 0.55);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: slideUp 0.3s ease-out;
-  z-index: 2;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-  .ai-window {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-width: 100%;
-    height: min(80vh, 640px);
-    height: min(80dvh, 640px);
-    max-height: 80dvh;
-    border-radius: 20px 20px 0 0;
-    animation: aiSheetUp 0.28s ease-out;
-  }
-}
-
-@keyframes aiSheetUp {
-  from { opacity: 0; transform: translateY(100%); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.ai-header {
-  padding: 16px 20px;
-  background: #0a1418;
-  border-bottom: 1px solid var(--chat-border);
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.ai-avatar {
-  background: #17323a;
-  border: 1px solid #27515d;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-}
-
-.ai-name {
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.ai-status {
-  font-size: 0.7rem;
-  color: #c9e7ed;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.ai-status::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: #22c55e;
-  border-radius: 50%;
-}
-
-.ai-close {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.25rem;
-  cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.2s;
-}
-
-.ai-close:hover {
-  opacity: 1;
-}
-
-.ai-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: var(--chat-surface);
-}
-
-.ai-msg {
-  max-width: 85%;
-  line-height: 1.5;
-  font-size: 0.95rem;
-}
-
-.ai-msg-user {
-  align-self: flex-end;
-}
-
-.ai-msg-ai {
-  align-self: flex-start;
-}
-
-.loading-bubble {
-  display: flex !important;
-  align-items: center;
-  gap: 10px;
-  background: #173741 !important;
-  color: #b8d5dd !important;
-  font-style: italic;
-  font-size: 0.85rem;
-  padding: 12px 16px !important;
-  border-bottom-left-radius: 2px !important;
-}
-
-.searching-animation {
-  display: flex;
-  gap: 4px;
-}
-
-.searching-animation .dot {
-  width: 6px;
-  height: 6px;
-  background: #7dc6d2;
-  border-radius: 50%;
-  animation: pulse 1.5s infinite ease-in-out;
-}
-
-.searching-animation .dot:nth-child(2) { animation-delay: 0.2s; }
-.searching-animation .dot:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes pulse {
-  0%, 100% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 1; }
-}
-
-.loading-text {
-  white-space: nowrap;
-}
-
-.ai-msg-bubble {
-  padding: 10px 14px;
-  border-radius: 15px;
-}
-
-.ai-msg-user .ai-msg-bubble {
-  background: var(--chat-user-bubble);
-  color: white;
-  border-bottom-right-radius: 2px;
-}
-
-.ai-msg-ai .ai-msg-bubble {
-  background: var(--chat-surface-2);
-  color: var(--chat-text);
-  border: 1px solid var(--chat-border);
-  border-bottom-left-radius: 2px;
-  box-shadow: 0 2px 5px rgba(2, 14, 17, 0.24);
-}
-
-.ai-message-part + .ai-message-part {
-  margin-top: 8px;
-}
-
-/* Lot Mini Card */
-.lot-mini-card {
-  background: #173741;
-  border: 1px solid #2f5562;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 280px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.lot-mini-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border-color: #4f7886;
-}
-
-.lot-mini-footer {
-  padding: 8px 12px;
-  background: #122d35;
-  border-top: 1px solid #2f5562;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #7ad7e4;
-}
-
-.ai-msg-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-start;
-  padding-left: 10px;
-}
-
-.ai-action-btn {
-  background: var(--chat-primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 6px 14px rgba(9, 82, 92, 0.35);
-}
-
-.ai-action-btn:hover {
-  background: var(--chat-primary-strong);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(9, 82, 92, 0.45);
-}
-
-.lot-mini-header {
-  padding: 10px 12px;
-  background: #122d35;
-  border-bottom: 1px solid #2f5562;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.lot-mini-code {
-  font-weight: 700;
-  color: #ebf9fc;
-}
-
-.lot-mini-status {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.lot-mini-status.disponível {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
-}
-
-.lot-mini-status.vendido {
-  background: rgba(239, 68, 68, 0.12);
-  color: #991b1b;
-}
-
-.lot-mini-body {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.lot-mini-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-}
-
-.lot-mini-info .label {
-  color: var(--chat-muted);
-}
-
-.lot-mini-info .value {
-  font-weight: 600;
-  color: #e6f4f8;
-}
-
-.lot-mini-tags {
-  padding: 8px 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  border-top: 1px dashed #38606d;
-}
-
-.lot-mini-tags .tag {
-  font-size: 0.7rem;
-  background: #0f2b32;
-  color: #c9e7ed;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.ai-input-area {
-  padding: 12px 15px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  background: #10262d;
-  border-top: 1px solid var(--chat-border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.ai-privacy-consent {
-  width: 100%;
-  background: #0d2128;
-  border: 1px solid #a6c9d1;
-  border-radius: 10px;
-  padding: 8px 10px;
-  overflow: hidden;
-  max-height: 160px;
-  opacity: 1;
-  transform: translateY(0);
-  transition: max-height 0.24s ease, opacity 0.24s ease, transform 0.24s ease, margin 0.24s ease, padding 0.24s ease, border-width 0.24s ease;
-}
-
-.ai-privacy-consent.is-closing {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-6px);
-  margin: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-width: 0;
-}
-
-.ai-consent-label {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  font-size: 0.72rem;
-  color: #cfe8ee;
-  line-height: 1.45;
-}
-
-.ai-consent-label input {
-  margin-top: 2px;
-}
-
-.ai-consent-label a {
-  color: #61d9ff;
-  text-decoration: underline;
-}
-
-.ai-consent-label input {
-  accent-color: var(--chat-primary);
-}
-
-.ai-input-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-}
-
-.ai-input-area input {
-  width: 100%;
-  max-width: 100%;
-  border: 1px solid #86aeb8;
-  border-radius: 20px;
-  padding: 11px 65px 11px 18px;
-  font-size: 0.95rem;
-  outline: none;
-  transition: all 0.2s;
-  background: #0b1e24;
-  color: #ecfafc;
-}
-
-.ai-input-area input::placeholder {
-  color: #8eb2bc;
-}
-
-.ai-input-area input:focus {
-  border-color: var(--chat-primary);
-  background: #0a1a20;
-  box-shadow: 0 0 0 3px rgba(21, 180, 166, 0.2);
-}
-
-.input-limit {
-  position: absolute;
-  right: 15px;
-  font-size: 0.65rem;
-  color: #a8c7cf;
-  pointer-events: none;
-  font-weight: 500;
-}
-
-.input-limit.error {
-  color: #ef4444;
-}
-
-.ai-input-area button {
-  background: var(--chat-primary);
-  color: white;
-  border: none;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(8, 75, 84, 0.45);
-}
-
-.ai-input-area button:hover:not(:disabled) {
-  transform: scale(1.05);
-  background: var(--chat-primary-strong);
-  box-shadow: 0 6px 12px rgba(8, 75, 84, 0.55);
-}
-
-.ai-input-area button:disabled {
-  background: #e2e8f0;
-  color: #94a3b8;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.ai-input-area button:disabled {
-  opacity: 0.5;
-}
-
-@media (max-width: 420px) {
-  .ai-input-area {
-    padding: 10px 12px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    gap: 8px;
-  }
-
-  .ai-input-area input {
-    padding: 10px 58px 10px 14px;
-    font-size: 0.9rem;
-  }
-
-  .input-limit {
-    right: 12px;
-  }
-
-  .ai-input-area button {
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-  }
-}
-
-.typing {
-  font-weight: bold;
-  letter-spacing: 2px;
-  animation: blink 1.5s infinite;
-}
-
-@keyframes blink {
-  0% { opacity: 0.2; }
-  50% { opacity: 1; }
-  100% { opacity: 0.2; }
-}
-</style>

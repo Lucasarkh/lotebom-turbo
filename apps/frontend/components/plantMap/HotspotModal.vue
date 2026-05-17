@@ -1,122 +1,119 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="modelValue" class="pm-modal-overlay">
-        <div class="pm-modal" role="dialog" aria-modal="true" :aria-label="isEdit ? 'Editar hotspot' : 'Novo hotspot'">
-          <div class="pm-modal__header">
-            <h3>{{ isEdit ? 'Editar hotspot' : 'Novo hotspot' }}</h3>
-            <button class="pm-modal__close" @click="$emit('update:modelValue', false)">✕</button>
-          </div>
-
-          <form class="pm-modal__body" @submit.prevent="handleSubmit">
-            <!-- Type -->
-            <div class="pm-field">
-              <label class="pm-label">Tipo *</label>
-              <div class="pm-type-grid">
-                <button
-                  v-for="t in HOTSPOT_TYPES"
-                  :key="t.value"
-                  type="button"
-                  class="pm-type-btn"
-                  :class="{ active: form.type === t.value }"
-                  :style="form.type === t.value ? { borderColor: t.color, background: t.color + '18' } : {}"
-                  @click="form.type = t.value"
-                >
-                  <span>{{ t.icon }}</span>
-                  <span>{{ t.label }}</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Title -->
-            <div class="pm-field">
-              <label class="pm-label">Título *</label>
-              <input v-model="form.title" class="pm-input" required placeholder="Ex: Lote 12" />
-            </div>
-
-            <!-- Label (shown above pin) -->
-            <div class="pm-field">
-              <label class="pm-label">Rótulo sobre o pino</label>
-              <div style="display:flex; gap: 8px; align-items: center;">
-                <input v-model="form.label" class="pm-input" placeholder="Ex: L-12" style="flex:1" />
-                <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; flex-shrink:0;">
-                  <input type="checkbox" v-model="form.labelEnabled" />
-                  Exibir
-                </label>
-              </div>
-            </div>
-
-            <!-- Lot status (only for LOTE) -->
-            <div v-if="form.type === 'LOTE'" class="pm-field">
-              <label class="pm-label">Status do lote</label>
-              <select v-model="form.loteStatus" class="pm-input pm-select">
-                <option value="AVAILABLE">Disponível</option>
-                <option value="RESERVED">Reservado</option>
-                <option value="SOLD">Vendido</option>
-              </select>
-            </div>
-
-            <div v-if="form.type === 'LOTE'" class="pm-field">
-              <label class="pm-label">Identificação do lote no painel</label>
-              <div class="pm-lot-grid">
-                <input
-                  v-model="lotInfo.block"
-                  class="pm-input"
-                  placeholder="Quadra (ex: B)"
-                />
-                <input
-                  v-model="lotInfo.lotNumber"
-                  class="pm-input"
-                  placeholder="Lote nº (ex: 31)"
-                />
-              </div>
-              <p class="pm-hint" style="color: #2563eb; margin-top: 6px;">
-                Esses campos sao sincronizados automaticamente com a ficha do lote no painel.
-              </p>
-            </div>
-
-            <!-- Hint about automatic creation -->
-            <div v-if="!isEdit" class="pm-field">
-              <p v-if="form.type === 'LOTE'" class="pm-hint">
-                <i class="bi bi-stars" aria-hidden="true"></i> Hotspots do tipo Lote ganham automaticamente uma página pública e ficha técnica para edição de fotos, preços e detalhes.
-              </p>
-              <p v-else class="pm-hint" style="color: #6b7280;">
-                <i class="bi bi-info-circle-fill" aria-hidden="true"></i> Hotspots informativos (portarias, áreas comuns, etc) não possuem página individual própria.
-              </p>
-            </div>
-
-            <!-- Label offsets -->
-            <details class="pm-advanced" style="margin-top: 4px;">
-              <summary class="pm-label" style="cursor: pointer;"><i class="bi bi-gear-fill" aria-hidden="true"></i> Avançado - offset do rótulo</summary>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
-                <div>
-                  <label class="pm-label">Offset X (px)</label>
-                  <input v-model.number="form.labelOffsetX" type="number" class="pm-input" />
-                </div>
-                <div>
-                  <label class="pm-label">Offset Y (px)</label>
-                  <input v-model.number="form.labelOffsetY" type="number" class="pm-input" />
-                </div>
-              </div>
-            </details>
-
-            <!-- Error -->
-            <div v-if="error" class="pm-error">{{ error }}</div>
-
-            <!-- Actions -->
-            <div class="pm-modal__footer">
-              <button type="button" class="pm-btn pm-btn--ghost" @click="$emit('update:modelValue', false)">
-                Cancelar
-              </button>
-              <button type="submit" class="pm-btn pm-btn--primary" :disabled="saving">
-                {{ saving ? 'Salvando...' : (isEdit ? 'Salvar' : 'Criar hotspot') }}
-              </button>
-            </div>
-          </form>
+  <UiModal :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)" :title="isEdit ? 'Editar hotspot' : 'Novo hotspot'" size="md">
+    <form @submit.prevent="handleSubmit">
+      <!-- Type -->
+      <div class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-p-text mb-1.5">Tipo *</label>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button
+            v-for="t in HOTSPOT_TYPES"
+            :key="t.value"
+            type="button"
+            :class="[
+              'flex flex-col items-center gap-0.5 py-2 px-1.5 border-[1.5px] rounded-lg cursor-pointer text-xs font-semibold text-p-text transition-all hover:border-p-text-muted hover:bg-p-overlay',
+              form.type === t.value ? 'font-bold' : 'border-p-border bg-p-elevated'
+            ]"
+            :style="form.type === t.value ? { borderColor: t.color, background: t.color + '18' } : {}"
+            @click="form.type = t.value"
+          >
+            <span class="text-xl">{{ t.icon }}</span>
+            <span>{{ t.label }}</span>
+          </button>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- Title -->
+      <div class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-p-text mb-1.5">Título *</label>
+        <input v-model="form.title" required placeholder="Ex: Lote 12"
+          class="w-full px-2.5 py-2 border-[1.5px] border-p-border rounded-lg text-sm bg-p-raised text-p-text focus:outline-none focus:border-p-accent transition-colors" />
+      </div>
+
+      <!-- Label (shown above pin) -->
+      <div class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-p-text mb-1.5">Rótulo sobre o pino</label>
+        <div class="flex gap-2 items-center">
+          <input v-model="form.label" placeholder="Ex: L-12"
+            class="flex-1 px-2.5 py-2 border-[1.5px] border-p-border rounded-lg text-sm bg-p-raised text-p-text focus:outline-none focus:border-p-accent transition-colors" />
+          <label class="flex items-center gap-1.5 text-[13px] cursor-pointer shrink-0 text-p-text-secondary">
+            <input type="checkbox" v-model="form.labelEnabled" class="accent-p-accent" />
+            Exibir
+          </label>
+        </div>
+      </div>
+
+      <!-- Lot status (only for LOTE) -->
+      <div v-if="form.type === 'LOTE'" class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-p-text mb-1.5">Status do lote</label>
+        <select v-model="form.loteStatus"
+          class="w-full px-2.5 py-2 border-[1.5px] border-p-border rounded-lg text-sm bg-p-raised text-p-text appearance-auto focus:outline-none focus:border-p-accent transition-colors">
+          <option value="AVAILABLE">Disponível</option>
+          <option value="RESERVED">Reservado</option>
+          <option value="SOLD">Vendido</option>
+        </select>
+      </div>
+
+      <div v-if="form.type === 'LOTE'" class="mb-3.5">
+        <label class="block text-[13px] font-semibold text-p-text mb-1.5">Identificação do lote no painel</label>
+        <div class="grid grid-cols-2 gap-2">
+          <input
+            v-model="lotInfo.block"
+            placeholder="Quadra (ex: B)"
+            class="px-2.5 py-2 border-[1.5px] border-p-border rounded-lg text-sm bg-p-raised text-p-text focus:outline-none focus:border-p-accent transition-colors"
+          />
+          <input
+            v-model="lotInfo.lotNumber"
+            placeholder="Lote nº (ex: 31)"
+            class="px-2.5 py-2 border-[1.5px] border-p-border rounded-lg text-sm bg-p-raised text-p-text focus:outline-none focus:border-p-accent transition-colors"
+          />
+        </div>
+        <p class="text-[11px] font-semibold text-p-accent mt-1.5">
+          Esses campos sao sincronizados automaticamente com a ficha do lote no painel.
+        </p>
+      </div>
+
+      <!-- Hint about automatic creation -->
+      <div v-if="!isEdit" class="mb-3.5">
+        <p v-if="form.type === 'LOTE'" class="text-[11px] font-semibold text-emerald-500 mt-1">
+          <i class="bi bi-stars" aria-hidden="true"></i> Hotspots do tipo Lote ganham automaticamente uma página pública e ficha técnica para edição de fotos, preços e detalhes.
+        </p>
+        <p v-else class="text-[11px] text-p-text-muted mt-1">
+          <i class="bi bi-info-circle-fill" aria-hidden="true"></i> Hotspots informativos (portarias, áreas comuns, etc) não possuem página individual própria.
+        </p>
+      </div>
+
+      <!-- Label offsets -->
+      <details class="mt-1">
+        <summary class="block text-[13px] font-semibold text-p-text mb-1.5 cursor-pointer"><i class="bi bi-gear-fill" aria-hidden="true"></i> Avançado - offset do rótulo</summary>
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <div>
+            <label class="block text-[13px] font-semibold text-p-text mb-1.5">Offset X (px)</label>
+            <input v-model.number="form.labelOffsetX" type="number"
+              class="w-full px-2.5 py-2 border-[1.5px] border-p-border rounded-lg text-sm bg-p-raised text-p-text focus:outline-none focus:border-p-accent transition-colors" />
+          </div>
+          <div>
+            <label class="block text-[13px] font-semibold text-p-text mb-1.5">Offset Y (px)</label>
+            <input v-model.number="form.labelOffsetY" type="number"
+              class="w-full px-2.5 py-2 border-[1.5px] border-p-border rounded-lg text-sm bg-p-raised text-p-text focus:outline-none focus:border-p-accent transition-colors" />
+          </div>
+        </div>
+      </details>
+
+      <!-- Error -->
+      <div v-if="error" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-[13px] mt-2">{{ error }}</div>
+    </form>
+
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UiButton variant="ghost" @click="$emit('update:modelValue', false)">
+          Cancelar
+        </UiButton>
+        <UiButton variant="primary" :disabled="saving" @click="handleSubmit">
+          {{ saving ? 'Salvando...' : (isEdit ? 'Salvar' : 'Criar hotspot') }}
+        </UiButton>
+      </div>
+    </template>
+  </UiModal>
 </template>
 
 <script setup lang="ts">
@@ -262,159 +259,3 @@ const HOTSPOT_TYPES = Object.entries(HOTSPOT_TYPE_LABELS).map(([value, label]) =
   color: HOTSPOT_TYPE_COLORS[value as PlantHotspotType],
 }))
 </script>
-
-<style scoped>
-.pm-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(2px);
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.pm-modal {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 460px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.25);
-}
-
-.pm-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 20px 0;
-}
-.pm-modal__header h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-}
-.pm-modal__close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  color: #6b7280;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-.pm-modal__close:hover { background: #f3f4f6; }
-
-.pm-modal__body {
-  padding: 16px 20px;
-}
-
-.pm-hint {
-  font-size: 11px;
-  color: #10b981;
-  margin-top: 4px;
-  font-weight: 600;
-}
-
-.pm-modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #f3f4f6;
-}
-
-.pm-field {
-  margin-bottom: 14px;
-}
-.pm-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 6px;
-}
-.pm-input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1.5px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.15s;
-}
-.pm-input:focus { border-color: #3b82f6; }
-.pm-textarea { resize: vertical; min-height: 56px; }
-.pm-select { appearance: auto; background: white; }
-
-.pm-lot-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.pm-type-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-.pm-type-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 6px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  color: #374151;
-  transition: all 0.15s;
-}
-.pm-type-btn:hover { border-color: #9ca3af; background: #f9fafb; }
-.pm-type-btn.active { font-weight: 700; }
-.pm-type-btn span:first-child { font-size: 20px; }
-
-.pm-btn {
-  padding: 9px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.15s;
-}
-.pm-btn--primary { background: #1d4ed8; color: white; }
-.pm-btn--primary:hover:not(:disabled) { background: #1e40af; }
-.pm-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.pm-btn--ghost { background: #f3f4f6; color: #374151; }
-.pm-btn--ghost:hover { background: #e5e7eb; }
-
-.pm-error {
-  background: #fee2e2;
-  color: #b91c1c;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-top: 8px;
-}
-
-.pm-advanced summary::-webkit-details-marker { color: #6b7280; }
-
-/* Transition */
-.modal-enter-active, .modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-.modal-enter-active .pm-modal, .modal-leave-active .pm-modal {
-  transition: transform 0.2s ease;
-}
-.modal-enter-from, .modal-leave-to { opacity: 0; }
-.modal-enter-from .pm-modal, .modal-leave-to .pm-modal { transform: scale(0.95) translateY(-8px); }
-</style>

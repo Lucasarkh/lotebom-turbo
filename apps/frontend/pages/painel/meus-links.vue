@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'painel' })
 
 const { fetchApi } = useApi()
 const { success: toastSuccess, error: toastError } = useToast()
@@ -89,41 +90,36 @@ onMounted(fetchLink)
 </script>
 
 <template>
-  <div class="links-page">
-    <div class="page-header">
-      <div>
-        <h1>Meus Links</h1>
-        <p>Compartilhe seus links personalizados com clientes interessados nos loteamentos.</p>
-      </div>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Meus Links" description="Compartilhe seus links personalizados com clientes interessados nos loteamentos." />
 
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="!link" class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
-        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
-        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
-      </svg>
-      <h3>Nenhum vínculo encontrado</h3>
-      <p>Você ainda não foi vinculado a nenhuma loteadora. Entre em contato com seu gestor.</p>
-      <button class="btn btn-primary" :disabled="requestingAccess" @click="requestAccess">
-        {{ requestingAccess ? 'Enviando solicitação...' : 'Solicitar link para loteadora' }}
-      </button>
-    </div>
+    <UiEmptyState v-else-if="!link" title="Nenhum vínculo encontrado" description="Você ainda não foi vinculado a nenhuma loteadora. Entre em contato com seu gestor.">
+      <template #icon>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" class="text-p-text-muted">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+        </svg>
+      </template>
+      <template #action>
+        <UiButton variant="primary" :disabled="requestingAccess" @click="requestAccess">
+          {{ requestingAccess ? 'Enviando solicitação...' : 'Solicitar link para loteadora' }}
+        </UiButton>
+      </template>
+    </UiEmptyState>
 
     <template v-else>
       <!-- Corretor info card -->
-      <div class="info-card">
-        <div class="info-card-row">
-          <div class="info-item">
-            <span class="info-label">Seu código de corretor</span>
-            <div class="code-display">
-              <span class="code-value">{{ link.code }}</span>
+      <UiCard>
+        <div class="flex flex-wrap items-center gap-8">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-p-text-muted">Seu código de corretor</span>
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-base font-bold text-p-accent">{{ link.code }}</span>
               <button
-                class="copy-btn"
-                :class="{ copied: copiedKey === 'code' }"
+                class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors"
+                :class="copiedKey === 'code' ? 'border-p-accent/30 bg-p-accent/10 text-p-accent' : 'border-p-accent/20 bg-p-accent/5 text-p-accent hover:bg-p-accent/10'"
                 @click="copyLink('code', link.code)"
               >
                 <svg v-if="copiedKey !== 'code'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -132,73 +128,73 @@ onMounted(fetchLink)
               </button>
             </div>
           </div>
-          <div class="info-item">
-            <span class="info-label">Leads recebidos</span>
-            <span class="info-value">{{ link._count.leads }}</span>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-p-text-muted">Leads recebidos</span>
+            <span class="text-lg font-bold text-p-text">{{ link._count.leads }}</span>
           </div>
-          <div class="info-item">
-            <span class="info-label">Status</span>
-            <span class="status-badge" :class="isPendingLink ? 'pending' : (link.enabled ? 'active' : 'inactive')">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-p-text-muted">Status</span>
+            <UiBadge :variant="isPendingLink ? 'warning' : (link.enabled ? 'success' : 'danger')">
               {{ isPendingLink ? 'Pendente' : (link.enabled ? 'Ativo' : 'Inativo') }}
-            </span>
+            </UiBadge>
           </div>
         </div>
-        <div v-if="isPendingLink" class="warning-notice" style="background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.2); color: #fbbf24;">
+        <div v-if="isPendingLink" class="mt-3 rounded-lg border border-p-warning/20 bg-p-warning/5 px-3.5 py-2 text-sm text-p-warning">
           Sua solicitação está pendente de aprovação pela loteadora.
         </div>
-        <div v-if="!link.enabled" class="warning-notice">
+        <div v-if="!link.enabled && !isPendingLink" class="mt-3 rounded-lg border border-p-danger/20 bg-p-danger/5 px-3.5 py-2 text-sm text-p-danger">
           Seu vínculo está inativo. Entre em contato com seu gestor para reativar.
         </div>
-        <div v-if="!link.enabled && !isPendingLink" style="margin-top: 12px;">
-          <button class="btn btn-primary" :disabled="requestingAccess" @click="requestAccess">
+        <div v-if="!link.enabled && !isPendingLink" class="mt-3">
+          <UiButton variant="primary" :disabled="requestingAccess" @click="requestAccess">
             {{ requestingAccess ? 'Enviando solicitação...' : 'Solicitar reativação para loteadora' }}
-          </button>
+          </UiButton>
         </div>
-      </div>
+      </UiCard>
 
       <!-- How it works -->
-      <div class="how-it-works">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0; color:var(--color-primary-400)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div class="flex items-start gap-2.5 rounded-xl border border-p-accent/15 bg-p-accent/5 px-4 py-3 text-sm text-p-text-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="mt-0.5 shrink-0 text-p-accent"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span>Quando um cliente acessar um loteamento pelo seu link e preencher o formulário de interesse, o lead será atribuído automaticamente a você.</span>
       </div>
 
       <!-- No projects -->
-      <div v-if="isPendingLink" class="empty-state" style="padding: 40px 0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <h3>Solicitação em análise</h3>
-        <p>Assim que sua solicitação for aprovada, seus links aparecerão aqui.</p>
-      </div>
+      <UiEmptyState v-if="isPendingLink" title="Solicitação em análise" description="Assim que sua solicitação for aprovada, seus links aparecerão aqui.">
+        <template #icon>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" class="text-p-text-muted">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </template>
+      </UiEmptyState>
 
-      <div v-else-if="link.projects.length === 0" class="empty-state" style="padding: 40px 0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <path d="M3 9h18"/>
-        </svg>
-        <h3>Nenhum loteamento vinculado</h3>
-        <p>Você ainda não possui loteamentos ativos no seu perfil.</p>
-      </div>
+      <UiEmptyState v-else-if="link.projects.length === 0" title="Nenhum loteamento vinculado" description="Você ainda não possui loteamentos ativos no seu perfil.">
+        <template #icon>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" class="text-p-text-muted">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18"/>
+          </svg>
+        </template>
+      </UiEmptyState>
 
       <!-- Project links -->
-      <div v-else class="projects-grid">
-        <div v-for="project in link.projects" :key="project.id" class="project-card">
-          <div class="project-header">
-            <div class="project-icon">
+      <div v-else class="flex flex-col gap-3">
+        <UiCard v-for="project in link.projects" :key="project.id" class="transition-colors hover:border-p-accent/20">
+          <div class="mb-3 flex items-center gap-2.5">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-p-accent/10 text-p-accent">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                 <polyline points="9 22 9 12 15 12 15 22"/>
               </svg>
             </div>
-            <h3 class="project-name">{{ project.name }}</h3>
+            <h3 class="text-base font-bold text-p-text">{{ project.name }}</h3>
           </div>
 
-          <div class="link-row">
-            <span class="link-url">{{ projectLink(project.slug) }}</span>
+          <div class="mb-2.5 flex items-center gap-2 rounded-lg bg-p-raised px-3 py-2">
+            <span class="flex-1 truncate font-mono text-[13px] text-p-accent">{{ projectLink(project.slug) }}</span>
             <button
-              class="copy-btn"
-              :class="{ copied: copiedKey === project.id }"
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors"
+              :class="copiedKey === project.id ? 'border-p-accent/30 bg-p-accent/10 text-p-accent' : 'border-p-accent/20 bg-p-accent/5 text-p-accent hover:bg-p-accent/10'"
               @click="copyLink(project.id, projectLink(project.slug))"
             >
               <svg v-if="copiedKey !== project.id" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -211,136 +207,13 @@ onMounted(fetchLink)
             :href="projectLink(project.slug)"
             target="_blank"
             rel="noopener noreferrer"
-            class="view-link"
+            class="inline-flex items-center gap-1.5 text-[13px] text-p-text-muted transition-colors hover:text-p-accent"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             Abrir página do loteamento
           </a>
-        </div>
+        </UiCard>
       </div>
     </template>
   </div>
 </template>
-
-<style scoped>
-
-.page-header {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
-  margin-bottom: 24px;
-}
-.page-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-surface-50); margin: 0 0 4px; }
-.page-header p { font-size: 0.875rem; color: var(--color-surface-300); margin: 0; }
-
-.loading-state { display: flex; justify-content: center; padding: 64px; }
-.spinner {
-  width: 36px; height: 36px;
-  border: 3px solid rgba(16,185,129,0.15);
-  border-top-color: var(--color-primary-500);
-  border-radius: 50%; animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state {
-  text-align: center; padding: 64px 32px;
-  color: var(--color-surface-400);
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
-.empty-state h3 { font-size: 1.125rem; font-weight: 600; color: var(--color-surface-200); margin: 0; }
-.empty-state p { margin: 0; font-size: 0.875rem; }
-
-.info-card {
-  background: var(--glass-bg, rgba(255,255,255,0.04));
-  border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  margin-bottom: 16px;
-}
-.info-card-row {
-  display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
-}
-.info-item { display: flex; flex-direction: column; gap: 4px; }
-.info-label { font-size: 0.75rem; font-weight: 600; color: var(--color-surface-400); text-transform: uppercase; letter-spacing: 0.05em; }
-.info-value { font-size: 1.125rem; font-weight: 700; color: var(--color-surface-100); }
-
-.code-display { display: flex; align-items: center; gap: 8px; }
-.code-value { font-family: monospace; font-size: 1rem; font-weight: 700; color: var(--color-primary-300); }
-
-.status-badge {
-  display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 3px 10px;
-  border-radius: 99px;
-}
-.status-badge.active { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); }
-.status-badge.inactive { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.15); }
-.status-badge.pending { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
-
-.warning-notice {
-  margin-top: 12px; padding: 8px 14px;
-  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.15);
-  border-radius: var(--radius-sm); font-size: 0.875rem; color: #fca5a5;
-}
-
-.how-it-works {
-  display: flex; align-items: flex-start; gap: 10px;
-  background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.15);
-  border-radius: var(--radius-md); padding: 12px 16px;
-  font-size: 0.875rem; color: var(--color-surface-300);
-  margin-bottom: 24px;
-}
-
-.projects-grid { display: flex; flex-direction: column; gap: 12px; }
-
-.project-card {
-  background: var(--glass-bg, rgba(255,255,255,0.04));
-  border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
-  border-radius: var(--radius-lg);
-  padding: 16px 20px;
-  transition: border-color 150ms ease;
-}
-.project-card:hover { border-color: rgba(16,185,129,0.2); }
-
-.project-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
-}
-.project-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; border-radius: var(--radius-sm);
-  background: rgba(16,185,129,0.08); color: var(--color-primary-400);
-  flex-shrink: 0;
-}
-.project-name { font-size: 1rem; font-weight: 700; color: var(--color-surface-50); margin: 0; }
-
-.link-row {
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(0,0,0,0.2); border-radius: var(--radius-sm);
-  padding: 8px 12px; margin-bottom: 10px;
-}
-.link-url {
-  flex: 1; font-size: 0.8125rem; font-family: monospace;
-  color: var(--color-primary-300); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-.copy-btn {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: var(--radius-sm);
-  border: 1px solid rgba(16,185,129,0.2); background: rgba(16,185,129,0.06);
-  color: var(--color-primary-400); font-size: 0.75rem; font-weight: 600;
-  cursor: pointer; transition: all 150ms ease; white-space: nowrap;
-}
-.copy-btn:hover { background: rgba(16,185,129,0.12); }
-.copy-btn.copied { background: rgba(16,185,129,0.15); color: var(--color-primary-300); }
-
-.view-link {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 0.8125rem; color: var(--color-surface-400);
-  text-decoration: none; transition: color 150ms ease;
-}
-.view-link:hover { color: var(--color-primary-400); }
-
-@media (max-width: 639px) {
-  .links-page { padding: 16px; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .info-card-row { flex-direction: column; gap: 16px; }
-  .link-row { flex-direction: column; gap: 8px; }
-  .copy-btn { width: 100%; justify-content: center; }
-}
-</style>

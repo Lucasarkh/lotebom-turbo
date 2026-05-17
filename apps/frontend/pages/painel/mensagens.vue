@@ -1,84 +1,76 @@
 <template>
-  <div class="mensagens-page">
-    <div class="page-header">
-      <div>
-        <h1>Mensagens do Site</h1>
-        <p>Interessados que preencheram o formulário na landing page da plataforma.</p>
-      </div>
-      <button @click="fetchLeads" class="btn btn-secondary">
-        <i class="pi pi-refresh mr-2" :class="{ 'pi-spin': leadsLoading }"></i>
-        Atualizar
-      </button>
-    </div>
+  <div class="space-y-6">
+    <UiPageHeader title="Mensagens do Site" description="Interessados que preencheram o formulário na landing page da plataforma.">
+      <template #actions>
+        <UiButton variant="secondary" @click="fetchLeads">
+          <i class="pi pi-refresh mr-2" :class="{ 'pi-spin': leadsLoading }"></i>
+          Atualizar
+        </UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="leadsLoading" class="loading-state">
-      <div class="loading-spinner"></div>
-    </div>
-    
-    <div v-else-if="leads.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-envelope-fill" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Nenhuma mensagem</h3>
-        <p class="mb-4 px-4">Mensagens aparecerão aqui quando alguém se interessar pela plataforma.</p>
-      </div>
-    </div>
+    <UiLoadingState v-if="leadsLoading" />
 
-    <div v-else class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Contato</th>
-            <th>Data</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="lead in leads" :key="lead.id">
-            <td>
-              <div style="font-weight: 600; color: var(--color-surface-50);">{{ lead.name }}</div>
-              <div v-if="lead.message" style="font-size: 0.75rem; color: var(--color-surface-400); margin-top: 2px;">
-                "{{ lead.message }}"
-              </div>
-            </td>
-            <td>
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                <a :href="'mailto:' + lead.email" class="text-primary" style="font-size: 0.8125rem;" v-if="lead.email">{{ lead.email }}</a>
-                <a :href="'https://wa.me/' + lead.phone.replace(/\D/g, '')" target="_blank" style="color: var(--color-success); font-size: 0.8125rem; display: flex; align-items: center; gap: 4px;" v-if="lead.phone">
-                  <i class="pi pi-whatsapp"></i>
-                  {{ lead.phone }}
-                </a>
-              </div>
-            </td>
-            <td>
-              {{ formatDateToBrasilia(lead.createdAt) }}
-            </td>
-            <td>
-              <span 
-                class="badge"
-                :class="lead.status === 'NEW' ? 'badge-primary' : 'badge-neutral'"
-              >
-                {{ lead.status === 'NEW' ? 'Novo' : lead.status }}
-              </span>
-            </td>
-            <td>
-              <button 
-                v-if="lead.status === 'NEW'" 
-                @click="markContacted(lead.id)"
-                class="btn btn-ghost btn-sm"
-              >
-                Marcar Contato
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <UiEmptyState
+      v-else-if="leads.length === 0"
+      title="Nenhuma mensagem"
+      description="Mensagens aparecerão aqui quando alguém se interessar pela plataforma."
+    >
+      <template #icon>
+        <i class="bi bi-envelope-fill text-2xl text-p-text-muted"></i>
+      </template>
+    </UiEmptyState>
+
+    <UiTable v-else>
+      <template #head>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-p-text-muted">Nome</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-p-text-muted">Contato</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-p-text-muted">Data</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-p-text-muted">Status</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-p-text-muted">Ações</th>
+      </template>
+      <tr v-for="lead in leads" :key="lead.id" class="hover:bg-p-overlay/50 transition-colors">
+        <td class="px-4 py-3">
+          <div class="font-semibold text-p-text">{{ lead.name }}</div>
+          <div v-if="lead.message" class="text-xs text-p-text-muted mt-0.5">
+            "{{ lead.message }}"
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex flex-col gap-1">
+            <a v-if="lead.email" :href="'mailto:' + lead.email" class="text-p-accent text-[13px]">{{ lead.email }}</a>
+            <a v-if="lead.phone" :href="'https://wa.me/' + lead.phone.replace(/\D/g, '')" target="_blank" class="text-p-success text-[13px] flex items-center gap-1">
+              <i class="pi pi-whatsapp"></i>
+              {{ lead.phone }}
+            </a>
+          </div>
+        </td>
+        <td class="px-4 py-3 text-sm text-p-text-secondary">
+          {{ formatDateToBrasilia(lead.createdAt) }}
+        </td>
+        <td class="px-4 py-3">
+          <UiBadge :variant="lead.status === 'NEW' ? 'primary' : 'neutral'">
+            {{ lead.status === 'NEW' ? 'Novo' : lead.status }}
+          </UiBadge>
+        </td>
+        <td class="px-4 py-3">
+          <UiButton
+            v-if="lead.status === 'NEW'"
+            variant="ghost"
+            size="sm"
+            @click="markContacted(lead.id)"
+          >
+            Marcar Contato
+          </UiButton>
+        </td>
+      </tr>
+    </UiTable>
   </div>
 </template>
 
 <script setup>
+definePageMeta({ layout: 'painel' })
+
 const authStore = useAuthStore()
 if (!authStore.isSysAdmin) {
   navigateTo(authStore.getDashboardRoute())
@@ -115,13 +107,3 @@ async function markContacted(id) {
   }
 }
 </script>
-
-<style scoped>
-.mensagens-page {
-  animation: fadeIn 0.4s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-</style>

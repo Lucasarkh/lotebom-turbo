@@ -1,28 +1,25 @@
 <template>
   <div>
-    <div class="page-header">
-      <div>
-        <h1>Projetos</h1>
-        <p>Gerencie seus loteamentos</p>
-      </div>
-      <button class="btn btn-primary" :disabled="!authStore.canEdit" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="handleNewProject">+ Novo Projeto</button>
-    </div>
+    <UiPageHeader title="Projetos" description="Gerencie seus loteamentos">
+      <template #actions>
+        <UiButton variant="primary" :disabled="!authStore.canEdit" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="handleNewProject">+ Novo Projeto</UiButton>
+      </template>
+    </UiPageHeader>
 
-    <div v-if="loading" class="loading-state"><div class="loading-spinner"></div></div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="projects.length === 0" class="empty-state-container d-flex align-items-center justify-content-center py-5">
-      <div class="card text-center p-5 rounded-5 max-w-500" style="backdrop-filter: blur(var(--glass-blur));">
-        <div class="icon-blob mx-auto mb-4"><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
-        <h3 class="fw-bold mb-3">Nenhum projeto ainda</h3>
-        <p class="mb-4 px-4">Crie seu primeiro loteamento para começar a gerenciar unidades e leads.</p>
-      </div>
-    </div>
+    <UiEmptyState
+      v-else-if="projects.length === 0"
+      title="Nenhum projeto ainda"
+      description="Crie seu primeiro loteamento para começar a gerenciar unidades e leads."
+      icon="📂"
+    />
 
-    <div v-else class="grid grid-cols-3">
-      <ProjectCard 
-        v-for="p in projects" 
-        :key="p.id" 
-        :project="p" 
+    <div v-else class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ProjectCard
+        v-for="p in projects"
+        :key="p.id"
+        :project="p"
         :show-date="true"
         @click="$router.push(`/painel/projetos/${p.id}`)"
       />
@@ -31,38 +28,30 @@
     <CommonPagination :meta="meta" @change="loadProjects" />
 
     <!-- Create modal -->
-    <div v-if="showCreate" class="modal-overlay">
-      <div class="modal">
-        <div class="modal-title">Novo Projeto</div>
-        <form @submit.prevent="handleCreate">
-          <div class="form-group">
-            <label class="form-label">Nome</label>
-            <input v-model="form.name" class="form-input" placeholder="Residencial Parque dos Ipês" required />
+    <UiModal v-model="showCreate" title="Novo Projeto">
+      <form @submit.prevent="handleCreate">
+        <div class="space-y-4">
+          <UiInput v-model="form.name" label="Nome" placeholder="Residencial Parque dos Ipês" required />
+          <div>
+            <UiInput v-model="form.slug" label="Slug" placeholder="parque-dos-ipes" required :error="slugTaken ? 'Este slug já está em uso!' : ''" @input="onSlugInput" />
+            <p v-if="!slugTaken" class="mt-1 text-xs text-p-text-muted">URL pública: /{{ form.slug || '...' }}</p>
           </div>
-          <div class="form-group">
-            <label class="form-label">Slug</label>
-            <input v-model="form.slug" class="form-input" :class="{ 'input-error': slugTaken }" placeholder="parque-dos-ipes" required @input="onSlugInput" />
-            <small v-if="slugTaken" style="color:var(--error-color); font-size:0.75rem">Este slug já está em uso!</small>
-            <small v-else style="color:var(--color-surface-400); font-size:0.75rem">URL pública: /{{ form.slug || '...' }}</small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Descrição</label>
-            <textarea v-model="form.description" class="form-textarea" rows="3" placeholder="Descrição do loteamento..."></textarea>
-          </div>
-          <div v-if="createError" class="alert alert-error">{{ createError }}</div>
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" @click="showCreate = false">Cancelar</button>
-            <button type="submit" class="btn btn-primary" :disabled="creating || slugTaken">{{ creating ? 'Criando...' : 'Criar' }}</button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <UiTextarea v-model="form.description" label="Descrição" placeholder="Descrição do loteamento..." :rows="3" />
+        </div>
+        <UiAlert v-if="createError" variant="error" :title="createError" class="mt-4" />
+        <div class="mt-6 flex justify-end gap-3">
+          <UiButton variant="secondary" type="button" @click="showCreate = false">Cancelar</UiButton>
+          <UiButton variant="primary" type="submit" :disabled="creating || slugTaken" :loading="creating">Criar</UiButton>
+        </div>
+      </form>
+    </UiModal>
   </div>
 </template>
 
 <script setup>
-// Force refresh project list page
 import { ref, watch, onMounted } from 'vue'
+
+definePageMeta({ layout: 'painel' })
 
 const { fetchApi } = useApi()
 const authStore = useAuthStore()
@@ -85,7 +74,6 @@ const checkingSlug = ref(false)
 
 const form = ref({ name: '', slug: '', description: '' })
 
-/** Open the create modal */
 const handleNewProject = async () => {
   if (!authStore.canEdit) return
   showCreate.value = true
@@ -97,7 +85,6 @@ watch(() => form.value.slug, (v) => {
     slugTaken.value = false
     return
   }
-  // Simplified debounce
   clearTimeout(slugTimeout)
   slugTimeout = setTimeout(async () => {
     checkingSlug.value = true
@@ -157,6 +144,3 @@ const handleCreate = async () => {
 
 onMounted(() => loadProjects(1))
 </script>
-
-<style scoped>
-</style>

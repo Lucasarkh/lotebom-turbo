@@ -1,47 +1,74 @@
 <template>
-  <div class="notification-bell" ref="bellRef">
-    <button class="bell-btn" @click="toggleDropdown" :aria-label="`Notificações${unreadCount > 0 ? ` — ${unreadCount} não lidas` : ''}`">
+  <div class="relative flex items-center" ref="bellRef">
+    <button
+      class="relative flex items-center justify-center p-2 rounded-lg bg-transparent border-none cursor-pointer text-p-text-muted transition-all duration-150 hover:bg-white/[0.06] hover:text-p-text-secondary"
+      @click="toggleDropdown"
+      :aria-label="`Notificações${unreadCount > 0 ? ` — ${unreadCount} não lidas` : ''}`"
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
         <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
       </svg>
-      <span v-if="unreadCount > 0" class="badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+      <span
+        v-if="unreadCount > 0"
+        class="absolute top-0.5 right-0.5 bg-p-accent text-white text-[0.625rem] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1 leading-none border-[1.5px] border-p-base"
+      >{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
 
     <Teleport to="body">
-      <div v-if="open" class="notification-dropdown" :style="dropdownStyle">
-        <div class="dropdown-header">
-          <span class="dropdown-title">Notificações</span>
-          <div class="header-actions">
-            <button v-if="unreadCount > 0" class="mark-all-btn" @click="handleMarkAllAsRead">
+      <div
+        v-if="open"
+        class="fixed w-[360px] max-sm:w-[calc(100vw-16px)] max-sm:!right-2 bg-p-base/[0.97] backdrop-blur-[20px] border border-p-border rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] z-[9999] overflow-hidden animate-[dropdown-in_150ms_ease]"
+        :style="dropdownStyle"
+      >
+        <div class="flex items-center justify-between px-4 py-3.5 border-b border-p-border gap-2">
+          <span class="text-sm font-bold text-p-text">Notificações</span>
+          <div class="flex items-center gap-3">
+            <button
+              v-if="unreadCount > 0"
+              class="bg-transparent border-none cursor-pointer text-xs text-p-accent p-0 font-inherit transition-colors duration-150 hover:text-p-accent-hover"
+              @click="handleMarkAllAsRead"
+            >
               Marcar todas como lidas
             </button>
-            <NuxtLink to="/painel/notificacoes" class="see-all-link" @click="open = false">
+            <NuxtLink
+              to="/painel/notificacoes"
+              class="text-xs text-p-text-muted no-underline transition-colors duration-150 hover:text-p-text-secondary"
+              @click="open = false"
+            >
               Ver todas
             </NuxtLink>
           </div>
         </div>
 
-        <div class="dropdown-body">
-          <div v-if="loading" class="empty-state">
-            <div class="spinner"></div>
+        <div class="max-h-[420px] overflow-y-auto">
+          <div v-if="loading" class="flex flex-col items-center justify-center py-10 px-4 gap-3 text-p-text-muted">
+            <div class="w-6 h-6 border-2 border-p-border border-t-p-accent rounded-full animate-spin"></div>
           </div>
-          <div v-else-if="recentItems.length === 0" class="empty-state">
+          <div v-else-if="recentItems.length === 0" class="flex flex-col items-center justify-center py-10 px-4 gap-3 text-p-text-muted">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <p>Nenhuma notificação</p>
+            <p class="text-sm m-0">Nenhuma notificação</p>
           </div>
           <template v-else>
             <div
               v-for="n in recentItems"
               :key="n.id"
-              class="notification-item"
-              :class="{ unread: !n.isRead }"
+              class="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors duration-150 border-b border-white/[0.04] last:border-b-0 relative"
+              :class="!n.isRead ? 'bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'"
               @click="handleNotificationClick(n)"
             >
-              <div class="item-icon" :class="typeIconClass(n.type)">
+              <div
+                class="w-8 h-8 rounded flex items-center justify-center shrink-0 mt-0.5"
+                :class="{
+                  'bg-emerald-500/[0.12] text-emerald-400': n.type === 'NEW_LEAD',
+                  'bg-blue-500/[0.12] text-blue-400': n.type === 'NEW_SCHEDULING',
+                  'bg-yellow-500/[0.12] text-yellow-400': n.type === 'LEAD_MILESTONE' || n.type === 'ACCESS_MILESTONE',
+                  'bg-violet-500/[0.12] text-violet-400': n.type !== 'NEW_LEAD' && n.type !== 'NEW_SCHEDULING' && n.type !== 'LEAD_MILESTONE' && n.type !== 'ACCESS_MILESTONE'
+                }"
+              >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                   <template v-if="n.type === 'NEW_LEAD'">
                     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -60,19 +87,19 @@
                   </template>
                 </svg>
               </div>
-              <div class="item-content">
-                <div class="item-title">{{ n.title }}</div>
-                <div class="item-message">{{ n.message }}</div>
-                <div class="item-time">{{ formatTime(n.createdAt) }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[0.8125rem] font-semibold text-p-text mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ n.title }}</div>
+                <div class="text-xs text-p-text-muted leading-[1.4] line-clamp-2">{{ n.message }}</div>
+                <div class="text-[0.6875rem] text-p-text-muted mt-1">{{ formatTime(n.createdAt) }}</div>
               </div>
-              <div v-if="!n.isRead" class="unread-dot"></div>
+              <div v-if="!n.isRead" class="w-[7px] h-[7px] rounded-full bg-p-accent shrink-0 mt-1.5"></div>
             </div>
           </template>
         </div>
       </div>
 
       <!-- Backdrop -->
-      <div v-if="open" class="dropdown-backdrop" @click="open = false"></div>
+      <div v-if="open" class="fixed inset-0 z-[9998]" @click="open = false"></div>
     </Teleport>
   </div>
 </template>
@@ -148,188 +175,3 @@ onUnmounted(() => {
   window.removeEventListener('resize', positionDropdown)
 })
 </script>
-
-<style scoped>
-.notification-bell { position: relative; display: flex; align-items: center; }
-
-.bell-btn {
-  position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-surface-300);
-  padding: 8px;
-  border-radius: var(--radius-md);
-  transition: all 150ms ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.bell-btn:hover { background: rgba(255,255,255,0.06); color: var(--color-surface-100); }
-
-.badge {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  background: var(--color-primary-500);
-  color: #fff;
-  font-size: 0.625rem;
-  font-weight: 700;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  line-height: 1;
-  border: 1.5px solid rgba(10, 15, 13, 0.85);
-}
-
-.notification-dropdown {
-  position: fixed;
-  width: 360px;
-  background: rgba(14, 20, 17, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(52, 211, 153, 0.12);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  z-index: 9999;
-  overflow: hidden;
-  animation: dropdown-in 150ms ease;
-}
-
-@keyframes dropdown-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0);    }
-}
-
-.dropdown-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-}
-
-.dropdown-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(52, 211, 153, 0.08);
-  gap: 8px;
-}
-.dropdown-title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--color-surface-50);
-}
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.mark-all-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.75rem;
-  color: var(--color-primary-400);
-  padding: 0;
-  font-family: inherit;
-  transition: color 150ms;
-}
-.mark-all-btn:hover { color: var(--color-primary-300); }
-.see-all-link {
-  font-size: 0.75rem;
-  color: var(--color-surface-400);
-  text-decoration: none;
-  transition: color 150ms;
-}
-.see-all-link:hover { color: var(--color-surface-200); }
-
-.dropdown-body { max-height: 420px; overflow-y: auto; }
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 16px;
-  gap: 12px;
-  color: var(--color-surface-500);
-}
-.empty-state p { font-size: 0.875rem; margin: 0; }
-.spinner {
-  width: 24px; height: 24px;
-  border: 2px solid rgba(52, 211, 153, 0.15);
-  border-top-color: var(--color-primary-500);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.notification-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  cursor: pointer;
-  transition: background 150ms;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  position: relative;
-}
-.notification-item:last-child { border-bottom: none; }
-.notification-item:hover { background: rgba(255,255,255,0.04); }
-.notification-item.unread { background: rgba(16, 185, 129, 0.04); }
-.notification-item.unread:hover { background: rgba(16, 185, 129, 0.08); }
-
-.item-icon {
-  width: 32px; height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.icon-lead         { background: rgba(16, 185, 129, 0.12); color: var(--color-primary-400); }
-.icon-scheduling   { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }
-.icon-milestone    { background: rgba(234, 179, 8, 0.12);  color: #fbbf24; }
-.icon-system       { background: rgba(139, 92, 246, 0.12); color: #a78bfa; }
-
-.item-content { flex: 1; min-width: 0; }
-.item-title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-surface-100);
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.item-message {
-  font-size: 0.75rem;
-  color: var(--color-surface-400);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.item-time {
-  font-size: 0.6875rem;
-  color: var(--color-surface-500);
-  margin-top: 4px;
-}
-
-.unread-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--color-primary-500);
-  flex-shrink: 0;
-  margin-top: 6px;
-}
-
-@media (max-width: 480px) {
-  .notification-dropdown { width: calc(100vw - 16px); right: 8px !important; }
-}
-</style>

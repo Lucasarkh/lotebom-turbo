@@ -1,334 +1,304 @@
 <template>
-  <div class="purchase-admin-page">
-    <div v-if="loading" class="loading-state"><div class="loading-spinner"></div></div>
+  <div class="space-y-6">
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-      <button class="btn btn-primary" @click="loadPage">Tentar novamente</button>
+    <div v-else-if="error" class="flex min-h-[55vh] flex-col items-center justify-center gap-3.5">
+      <p class="text-p-text-secondary">{{ error }}</p>
+      <UiButton variant="primary" @click="loadPage">Tentar novamente</UiButton>
     </div>
 
     <template v-else>
-      <div class="page-header purchase-admin-header">
-        <div>
-          <NuxtLink :to="`/painel/projetos/${projectId}`" class="btn btn-ghost btn-sm page-back-btn" style="margin-bottom: 8px;">
-            <i class="bi bi-arrow-left-short back-nav-icon" aria-hidden="true"></i>
-            <span class="back-nav-label">Voltar ao Projeto</span>
-          </NuxtLink>
-          <h1>Reservas</h1>
-          <p>Centralize o acompanhamento da reserva, organize contratos e execute as acoes operacionais sem espalhar atalhos pelo painel.</p>
+      <div>
+        <NuxtLink :to="`/painel/projetos/${projectId}`" class="mb-3 inline-flex items-center gap-1.5 text-sm text-p-text-muted transition-colors hover:text-p-text">
+          <i class="bi bi-arrow-left-short text-lg" aria-hidden="true"></i>
+          <span>Voltar ao Projeto</span>
+        </NuxtLink>
+        <UiPageHeader title="Reservas" description="Centralize o acompanhamento da reserva, organize contratos e execute as acoes operacionais sem espalhar atalhos pelo painel.">
+          <template #actions>
+            <UiButton variant="primary" :disabled="saving" @click="saveConfig">
+              {{ saving ? 'Salvando...' : 'Salvar configuracao' }}
+            </UiButton>
+          </template>
+        </UiPageHeader>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div class="rounded-2xl border border-p-border bg-p-elevated p-5">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-widest text-p-text-muted">Reservas em fluxo</span>
+          <strong class="text-3xl font-bold text-p-text">{{ metrics.summary.totalReservations }}</strong>
         </div>
-
-        <button class="btn btn-primary" :disabled="saving" @click="saveConfig">
-          {{ saving ? 'Salvando...' : 'Salvar configuracao' }}
-        </button>
+        <div class="rounded-2xl border border-p-border bg-p-elevated p-5">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-widest text-p-text-muted">Vendas confirmadas</span>
+          <strong class="text-3xl font-bold text-p-text">{{ metrics.summary.totalSales }}</strong>
+        </div>
+        <div class="rounded-2xl border border-p-border bg-p-elevated p-5">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-widest text-p-text-muted">Conversao</span>
+          <strong class="text-3xl font-bold text-p-text">{{ metrics.summary.conversionRate }}%</strong>
+        </div>
+        <div class="rounded-2xl border border-p-border bg-p-elevated p-5">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-widest text-p-text-muted">Fechamento medio</span>
+          <strong class="text-3xl font-bold text-p-text">{{ metrics.summary.averageClosingHours }}h</strong>
+        </div>
+        <div class="rounded-2xl border border-p-border bg-p-elevated p-5">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-widest text-p-text-muted">Contratos assinados</span>
+          <strong class="text-3xl font-bold text-p-text">{{ metrics.summary.contractSignedRate }}%</strong>
+        </div>
       </div>
 
-      <div class="purchase-admin-summary">
-        <article class="purchase-admin-stat">
-          <span>Reservas em fluxo</span>
-          <strong>{{ metrics.summary.totalReservations }}</strong>
-        </article>
-        <article class="purchase-admin-stat">
-          <span>Vendas confirmadas</span>
-          <strong>{{ metrics.summary.totalSales }}</strong>
-        </article>
-        <article class="purchase-admin-stat">
-          <span>Conversao</span>
-          <strong>{{ metrics.summary.conversionRate }}%</strong>
-        </article>
-        <article class="purchase-admin-stat">
-          <span>Fechamento medio</span>
-          <strong>{{ metrics.summary.averageClosingHours }}h</strong>
-        </article>
-        <article class="purchase-admin-stat">
-          <span>Contratos assinados</span>
-          <strong>{{ metrics.summary.contractSignedRate }}%</strong>
-        </article>
-      </div>
-
-      <section class="card purchase-admin-card purchase-admin-card--full">
-        <div class="purchase-admin-card__header purchase-admin-card__header--split">
+      <UiCard padding="lg" class="col-span-full">
+        <div class="flex flex-col items-start justify-between gap-4 sm:flex-row">
           <div>
-            <h2>Central de reservas</h2>
-            <p>Edite dados da reserva, libere o lote, cancele a reserva ou confirme a venda sem sair deste menu.</p>
+            <h2 class="text-lg font-semibold text-p-text">Central de reservas</h2>
+            <p class="mt-1.5 text-sm leading-relaxed text-p-text-muted">Edite dados da reserva, libere o lote, cancele a reserva ou confirme a venda sem sair deste menu.</p>
           </div>
-          <button class="btn btn-secondary" type="button" :disabled="reservationsLoading" @click="loadReservations">
+          <UiButton variant="secondary" :disabled="reservationsLoading" @click="loadReservations">
             {{ reservationsLoading ? 'Atualizando...' : 'Atualizar lista' }}
-          </button>
+          </UiButton>
         </div>
 
-        <div v-if="reservationsLoading" class="purchase-admin-empty">Carregando reservas...</div>
-        <div v-else-if="!reservations.length" class="purchase-admin-empty">Nenhuma reserva encontrada para este projeto.</div>
-        <div v-else class="purchase-admin-reservation-list">
+        <div v-if="reservationsLoading" class="mt-4 text-p-text-muted">Carregando reservas...</div>
+        <div v-else-if="!reservations.length" class="mt-4 text-p-text-muted">Nenhuma reserva encontrada para este projeto.</div>
+        <div v-else class="mt-4 flex flex-col gap-4">
           <article
             v-for="reservation in reservations"
             :key="reservation.leadId"
-            class="purchase-admin-reservation-card"
+            class="space-y-4 rounded-2xl border border-p-border bg-p-overlay/50 p-5"
           >
-            <div class="purchase-admin-reservation-card__main">
+            <div class="flex flex-col items-start justify-between gap-4 sm:flex-row">
               <div>
-                <p class="purchase-admin-reservation-card__eyebrow">{{ reservation.projectName }}</p>
-                <h3>{{ reservation.customerName || 'Cliente sem nome' }}</h3>
-                <p>
+                <p class="mb-2 text-xs font-bold uppercase tracking-widest text-p-text-muted">{{ reservation.projectName }}</p>
+                <h3 class="mb-1 text-base font-semibold text-p-text">{{ reservation.customerName || 'Cliente sem nome' }}</h3>
+                <p class="text-sm text-p-text-secondary">
                   Lote {{ reservation.lotCode || 'Nao definido' }}
                   <span v-if="reservation.block">· Quadra {{ reservation.block }}</span>
                 </p>
               </div>
-              <span class="purchase-admin-reservation-status" :class="reservation.cancelledAt ? 'is-cancelled' : 'is-active'">
+              <span
+                class="inline-flex min-w-[110px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-bold"
+                :class="reservation.cancelledAt ? 'bg-p-danger-subtle text-p-danger' : 'bg-p-success-subtle text-p-success'"
+              >
                 {{ reservation.cancelledAt ? 'Encerrada' : 'Ativa' }}
               </span>
             </div>
 
-            <div class="purchase-admin-reservation-meta">
-              <span><strong>E-mail:</strong> {{ reservation.customerEmail || '—' }}</span>
-              <span><strong>WhatsApp:</strong> {{ reservation.customerPhone || '—' }}</span>
-              <span><strong>Status:</strong> {{ formatLeadStatus(reservation.leadStatus) }}</span>
-              <span><strong>Etapa:</strong> {{ formatStepLabel(reservation.currentStep) }}</span>
-              <span><strong>Expira em:</strong> {{ formatReservationExpiry(reservation.reservationExpiresAt) }}</span>
-              <span><strong>Contrato:</strong> {{ formatContractStatus(reservation.contractStatus) }}</span>
+            <div class="grid grid-cols-1 gap-2.5 text-sm text-p-text-secondary sm:grid-cols-3">
+              <span><strong class="text-p-text">E-mail:</strong> {{ reservation.customerEmail || '—' }}</span>
+              <span><strong class="text-p-text">WhatsApp:</strong> {{ reservation.customerPhone || '—' }}</span>
+              <span><strong class="text-p-text">Status:</strong> {{ formatLeadStatus(reservation.leadStatus) }}</span>
+              <span><strong class="text-p-text">Etapa:</strong> {{ formatStepLabel(reservation.currentStep) }}</span>
+              <span><strong class="text-p-text">Expira em:</strong> {{ formatReservationExpiry(reservation.reservationExpiresAt) }}</span>
+              <span><strong class="text-p-text">Contrato:</strong> {{ formatContractStatus(reservation.contractStatus) }}</span>
             </div>
 
-            <div class="purchase-admin-reservation-actions">
-              <button class="btn btn-secondary btn-sm" type="button" @click="openReservationEditor(reservation)">
-                Editar reserva
-              </button>
-              <button
-                class="btn btn-outline btn-sm"
-                type="button"
+            <div class="flex flex-wrap gap-2.5">
+              <UiButton variant="secondary" size="sm" @click="openReservationEditor(reservation)">Editar reserva</UiButton>
+              <UiButton
+                variant="ghost"
+                size="sm"
                 :disabled="reservationActingLeadId === reservation.leadId || !reservation.actions?.canRelease"
                 @click="runReservationAction(reservation, 'release', 'Reserva liberada com sucesso.')"
               >
                 {{ reservationActingLeadId === reservation.leadId ? 'Processando...' : 'Liberar reserva' }}
-              </button>
-              <button
-                class="btn btn-danger btn-sm"
-                type="button"
+              </UiButton>
+              <UiButton
+                variant="danger"
+                size="sm"
                 :disabled="reservationActingLeadId === reservation.leadId || !reservation.actions?.canCancel"
                 @click="runReservationAction(reservation, 'cancel', 'Reserva cancelada com sucesso.')"
               >
                 Cancelar reserva
-              </button>
-              <button
-                class="btn btn-success btn-sm"
-                type="button"
+              </UiButton>
+              <UiButton
+                variant="success"
+                size="sm"
                 :disabled="reservationActingLeadId === reservation.leadId || !reservation.actions?.canConfirmSale"
                 @click="confirmSaleReservation(reservation)"
               >
                 Confirmar venda
-              </button>
+              </UiButton>
             </div>
           </article>
         </div>
-      </section>
+      </UiCard>
 
-      <div class="purchase-admin-grid">
-        <section class="card purchase-admin-card">
-          <div class="purchase-admin-card__header">
-            <h2>Regras do fluxo</h2>
-            <p>Defina quais campos e documentos sao obrigatorios e em quais estados civis o cadastro do conjugue sera exigido.</p>
-          </div>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <UiCard padding="lg">
+          <h2 class="text-lg font-semibold text-p-text">Regras do fluxo</h2>
+          <p class="mt-1.5 text-sm leading-relaxed text-p-text-muted">Defina quais campos e documentos sao obrigatorios e em quais estados civis o cadastro do conjugue sera exigido.</p>
 
-          <div class="purchase-admin-fieldset">
-            <label class="purchase-admin-toggle">
-              <input v-model="form.autoGenerateContract" type="checkbox" />
+          <div class="mt-5 space-y-5">
+            <label class="flex items-center gap-2 text-sm text-p-text-secondary">
+              <input v-model="form.autoGenerateContract" type="checkbox" class="accent-p-accent" />
               <span>Gerar contrato automaticamente quando a etapa estiver liberada</span>
             </label>
-          </div>
 
-          <div class="purchase-admin-fieldset">
-            <label class="purchase-admin-label">Provedor de assinatura</label>
-            <select v-model="form.signatureProvider" class="form-input">
-              <option value="MANUAL">Manual</option>
-              <option value="DOCUSIGN">DocuSign</option>
-              <option value="CLICKSIGN">Clicksign</option>
-              <option value="ZAPSIGN">ZapSign</option>
-            </select>
-          </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold text-p-text-secondary">Provedor de assinatura</label>
+              <select v-model="form.signatureProvider" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none">
+                <option value="MANUAL">Manual</option>
+                <option value="DOCUSIGN">DocuSign</option>
+                <option value="CLICKSIGN">Clicksign</option>
+                <option value="ZAPSIGN">ZapSign</option>
+              </select>
+            </div>
 
-          <div class="purchase-admin-fieldset">
-            <div class="purchase-admin-card__header purchase-admin-card__header--compact">
-              <h3>Campos obrigatorios</h3>
-              <p>Esses campos aparecem no cadastro do titular.</p>
+            <div>
+              <h3 class="text-sm font-semibold text-p-text">Campos obrigatorios</h3>
+              <p class="mb-3 text-xs text-p-text-muted">Esses campos aparecem no cadastro do titular.</p>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label v-for="field in fieldOptions" :key="field.field" class="flex items-center gap-2 rounded-xl bg-p-overlay/50 px-3.5 py-3 text-sm text-p-text-secondary">
+                  <input v-model="field.required" type="checkbox" class="accent-p-accent" />
+                  <span>{{ field.label }}</span>
+                </label>
+              </div>
             </div>
-            <div class="purchase-admin-check-grid">
-              <label v-for="field in fieldOptions" :key="field.field" class="purchase-admin-check">
-                <input v-model="field.required" type="checkbox" />
-                <span>{{ field.label }}</span>
-              </label>
-            </div>
-          </div>
 
-          <div class="purchase-admin-fieldset">
-            <div class="purchase-admin-card__header purchase-admin-card__header--compact">
-              <h3>Documentos obrigatorios</h3>
-              <p>O cliente so avanca para simulacao depois de enviar todos os itens marcados.</p>
+            <div>
+              <h3 class="text-sm font-semibold text-p-text">Documentos obrigatorios</h3>
+              <p class="mb-3 text-xs text-p-text-muted">O cliente so avanca para simulacao depois de enviar todos os itens marcados.</p>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label v-for="doc in documentOptions" :key="doc.documentType" class="flex items-center gap-2 rounded-xl bg-p-overlay/50 px-3.5 py-3 text-sm text-p-text-secondary">
+                  <input v-model="doc.required" type="checkbox" class="accent-p-accent" />
+                  <span>{{ doc.label }}</span>
+                </label>
+              </div>
             </div>
-            <div class="purchase-admin-check-grid">
-              <label v-for="doc in documentOptions" :key="doc.documentType" class="purchase-admin-check">
-                <input v-model="doc.required" type="checkbox" />
-                <span>{{ doc.label }}</span>
-              </label>
-            </div>
-          </div>
 
-          <div class="purchase-admin-fieldset">
-            <div class="purchase-admin-card__header purchase-admin-card__header--compact">
-              <h3>Estados civis que exigem conjugue</h3>
-              <p>Use valores como CASADO e UNIAO_ESTAVEL.</p>
-            </div>
-            <div class="purchase-admin-tags">
-              <span v-for="(status, index) in form.requireSpouseWhenMaritalStatus" :key="`${status}-${index}`" class="purchase-admin-tag">
-                {{ status }}
-                <button type="button" @click="removeSpouseStatus(index)">x</button>
-              </span>
-            </div>
-            <div class="purchase-admin-inline-form">
-              <input v-model="newSpouseStatus" class="form-input" placeholder="Digite um estado civil e pressione adicionar" @keydown.enter.prevent="addSpouseStatus" />
-              <button class="btn btn-secondary" type="button" @click="addSpouseStatus">Adicionar</button>
+            <div>
+              <h3 class="text-sm font-semibold text-p-text">Estados civis que exigem conjugue</h3>
+              <p class="mb-3 text-xs text-p-text-muted">Use valores como CASADO e UNIAO_ESTAVEL.</p>
+              <div class="mb-3 flex flex-wrap gap-2.5">
+                <span v-for="(status, index) in form.requireSpouseWhenMaritalStatus" :key="`${status}-${index}`" class="inline-flex items-center gap-2 rounded-full bg-p-success-subtle px-3 py-1.5 text-sm text-p-success">
+                  {{ status }}
+                  <button type="button" class="cursor-pointer border-0 bg-transparent text-current" @click="removeSpouseStatus(index)">x</button>
+                </span>
+              </div>
+              <div class="flex gap-3">
+                <input v-model="newSpouseStatus" class="flex-1 rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Digite um estado civil e pressione adicionar" @keydown.enter.prevent="addSpouseStatus" />
+                <UiButton variant="secondary" @click="addSpouseStatus">Adicionar</UiButton>
+              </div>
             </div>
           </div>
-        </section>
+        </UiCard>
 
-        <section class="card purchase-admin-card">
-          <div class="purchase-admin-card__header">
-            <h2>Tabelas de pagamento</h2>
-            <p>Monte combinacoes comerciais por empreendimento com entrada minima, limite de parcelas e cenarios prontos para o cliente aprovar.</p>
-          </div>
+        <UiCard padding="lg">
+          <h2 class="text-lg font-semibold text-p-text">Tabelas de pagamento</h2>
+          <p class="mt-1.5 text-sm leading-relaxed text-p-text-muted">Monte combinacoes comerciais por empreendimento com entrada minima, limite de parcelas e cenarios prontos para o cliente aprovar.</p>
 
-          <div class="purchase-admin-stack">
-            <article v-for="(table, tableIndex) in form.paymentTables" :key="table.localId" class="purchase-admin-subcard">
-              <div class="purchase-admin-subcard__header">
-                <h3>{{ table.name || `Tabela ${tableIndex + 1}` }}</h3>
-                <button class="btn btn-danger btn-sm" type="button" @click="removePaymentTable(tableIndex)">Remover</button>
+          <div class="mt-5 space-y-4">
+            <article v-for="(table, tableIndex) in form.paymentTables" :key="table.localId" class="space-y-3.5 rounded-2xl border border-p-border bg-p-overlay/50 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold text-p-text">{{ table.name || `Tabela ${tableIndex + 1}` }}</h3>
+                <UiButton variant="danger" size="sm" @click="removePaymentTable(tableIndex)">Remover</UiButton>
               </div>
 
-              <div class="purchase-admin-subgrid">
-                <label class="purchase-admin-label-group">
-                  <span>Nome</span>
-                  <input v-model="table.name" class="form-input" placeholder="Tabela Comercial Prime" />
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label class="space-y-1.5">
+                  <span class="text-xs font-medium text-p-text-secondary">Nome</span>
+                  <input v-model="table.name" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Tabela Comercial Prime" />
                 </label>
-                <label class="purchase-admin-label-group">
-                  <span>Entrada minima (%)</span>
-                  <input v-model.number="table.entryMinPercent" type="number" min="0" class="form-input" />
+                <label class="space-y-1.5">
+                  <span class="text-xs font-medium text-p-text-secondary">Entrada minima (%)</span>
+                  <input v-model.number="table.entryMinPercent" type="number" min="0" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" />
                 </label>
-                <label class="purchase-admin-label-group">
-                  <span>Maximo de parcelas</span>
-                  <input v-model.number="table.maxInstallments" type="number" min="1" class="form-input" />
+                <label class="space-y-1.5">
+                  <span class="text-xs font-medium text-p-text-secondary">Maximo de parcelas</span>
+                  <input v-model.number="table.maxInstallments" type="number" min="1" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" />
                 </label>
-                <label class="purchase-admin-label-group">
-                  <span>Indice de correcao</span>
-                  <input v-model="table.correctionIndex" class="form-input" placeholder="INCC" />
+                <label class="space-y-1.5">
+                  <span class="text-xs font-medium text-p-text-secondary">Indice de correcao</span>
+                  <input v-model="table.correctionIndex" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="INCC" />
                 </label>
               </div>
 
-              <div class="purchase-admin-conditions">
-                <div class="purchase-admin-subcard__header purchase-admin-subcard__header--minor">
-                  <h4>Cenarios da tabela</h4>
-                  <button class="btn btn-secondary btn-sm" type="button" @click="addCondition(tableIndex)">Nova condicao</button>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <h4 class="text-xs font-semibold text-p-text-secondary">Cenarios da tabela</h4>
+                  <UiButton variant="secondary" size="sm" @click="addCondition(tableIndex)">Nova condicao</UiButton>
                 </div>
 
-                <div v-for="(condition, conditionIndex) in table.conditions" :key="condition.localId" class="purchase-admin-condition-row">
-                  <input v-model.number="condition.numberInstallments" type="number" min="1" class="form-input" placeholder="Parcelas" />
-                  <input v-model.number="condition.entryAmount" type="number" min="0" class="form-input" placeholder="Entrada" />
-                  <input v-model.number="condition.installmentAmount" type="number" min="0" class="form-input" placeholder="Valor da parcela" />
-                  <input v-model.number="condition.totalAmount" type="number" min="0" class="form-input" placeholder="Total estimado" />
-                  <button class="btn btn-danger btn-sm" type="button" @click="removeCondition(tableIndex, conditionIndex)">Excluir</button>
+                <div v-for="(condition, conditionIndex) in table.conditions" :key="condition.localId" class="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+                  <input v-model.number="condition.numberInstallments" type="number" min="1" class="rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Parcelas" />
+                  <input v-model.number="condition.entryAmount" type="number" min="0" class="rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Entrada" />
+                  <input v-model.number="condition.installmentAmount" type="number" min="0" class="rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Valor da parcela" />
+                  <input v-model.number="condition.totalAmount" type="number" min="0" class="rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Total estimado" />
+                  <UiButton variant="danger" size="sm" @click="removeCondition(tableIndex, conditionIndex)">Excluir</UiButton>
                 </div>
               </div>
             </article>
 
-            <button class="btn btn-secondary" type="button" @click="addPaymentTable">Adicionar tabela</button>
+            <UiButton variant="secondary" @click="addPaymentTable">Adicionar tabela</UiButton>
           </div>
-        </section>
+        </UiCard>
 
-        <section class="card purchase-admin-card">
-          <div class="purchase-admin-card__header">
-            <h2>Templates de contrato</h2>
-            <p>Use variaveis como &#123;&#123;cliente_nome&#125;&#125;, &#123;&#123;cliente_cpf&#125;&#125;, &#123;&#123;lote_numero&#125;&#125;, &#123;&#123;quadra&#125;&#125;, &#123;&#123;valor_total&#125;&#125;, &#123;&#123;entrada&#125;&#125; e &#123;&#123;parcelas&#125;&#125;.</p>
-          </div>
+        <UiCard padding="lg">
+          <h2 class="text-lg font-semibold text-p-text">Templates de contrato</h2>
+          <p class="mt-1.5 text-sm leading-relaxed text-p-text-muted">Use variaveis como &#123;&#123;cliente_nome&#125;&#125;, &#123;&#123;cliente_cpf&#125;&#125;, &#123;&#123;lote_numero&#125;&#125;, &#123;&#123;quadra&#125;&#125;, &#123;&#123;valor_total&#125;&#125;, &#123;&#123;entrada&#125;&#125; e &#123;&#123;parcelas&#125;&#125;.</p>
 
-          <div class="purchase-admin-stack">
-            <article v-for="(template, templateIndex) in form.contractTemplates" :key="template.localId" class="purchase-admin-subcard">
-              <div class="purchase-admin-subcard__header">
-                <h3>{{ template.title || `Template ${templateIndex + 1}` }}</h3>
-                <button class="btn btn-danger btn-sm" type="button" @click="removeTemplate(templateIndex)">Remover</button>
+          <div class="mt-5 space-y-4">
+            <article v-for="(template, templateIndex) in form.contractTemplates" :key="template.localId" class="space-y-3.5 rounded-2xl border border-p-border bg-p-overlay/50 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold text-p-text">{{ template.title || `Template ${templateIndex + 1}` }}</h3>
+                <UiButton variant="danger" size="sm" @click="removeTemplate(templateIndex)">Remover</UiButton>
               </div>
 
-              <label class="purchase-admin-label-group">
-                <span>Titulo</span>
-                <input v-model="template.title" class="form-input" placeholder="Contrato de compra e venda" />
+              <label class="block space-y-1.5">
+                <span class="text-xs font-medium text-p-text-secondary">Titulo</span>
+                <input v-model="template.title" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Contrato de compra e venda" />
               </label>
-              <label class="purchase-admin-label-group">
-                <span>Conteudo</span>
-                <textarea v-model="template.contentTemplate" class="form-textarea" rows="8" placeholder="Escreva o texto base do contrato."></textarea>
+              <label class="block space-y-1.5">
+                <span class="text-xs font-medium text-p-text-secondary">Conteudo</span>
+                <textarea v-model="template.contentTemplate" class="w-full resize-y rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" rows="8" placeholder="Escreva o texto base do contrato."></textarea>
               </label>
-              <label class="purchase-admin-toggle">
-                <input :checked="template.isActive" type="checkbox" @change="setTemplateActive(templateIndex)" />
+              <label class="flex items-center gap-2 text-sm text-p-text-secondary">
+                <input :checked="template.isActive" type="checkbox" class="accent-p-accent" @change="setTemplateActive(templateIndex)" />
                 <span>Usar como template ativo</span>
               </label>
             </article>
 
-            <button class="btn btn-secondary" type="button" @click="addTemplate">Adicionar template</button>
+            <UiButton variant="secondary" @click="addTemplate">Adicionar template</UiButton>
           </div>
-        </section>
+        </UiCard>
 
-        <section class="card purchase-admin-card">
-          <div class="purchase-admin-card__header">
-            <h2>Abandono por etapa</h2>
-            <p>Veja onde o cliente costuma parar antes da confirmacao da venda.</p>
-          </div>
+        <UiCard padding="lg">
+          <h2 class="text-lg font-semibold text-p-text">Abandono por etapa</h2>
+          <p class="mt-1.5 text-sm leading-relaxed text-p-text-muted">Veja onde o cliente costuma parar antes da confirmacao da venda.</p>
 
-          <div v-if="metrics.abandonmentByStep?.length" class="purchase-admin-abandonment">
-            <article v-for="item in metrics.abandonmentByStep" :key="item.step" class="purchase-admin-abandonment__item">
+          <div v-if="metrics.abandonmentByStep?.length" class="mt-4 space-y-3">
+            <article v-for="item in metrics.abandonmentByStep" :key="item.step" class="flex items-center justify-between gap-4 rounded-xl bg-p-overlay/50 p-3.5">
               <div>
-                <strong>{{ item.step }}</strong>
-                <p>{{ formatStepLabel(item.step) }}</p>
+                <strong class="block text-sm text-p-text">{{ item.step }}</strong>
+                <p class="mt-1 text-xs text-p-text-muted">{{ formatStepLabel(item.step) }}</p>
               </div>
-              <span>{{ item.count }}</span>
+              <span class="text-xl font-bold text-p-text">{{ item.count }}</span>
             </article>
           </div>
-          <p v-else class="purchase-admin-empty">Nenhum abandono registrado ainda.</p>
-        </section>
+          <p v-else class="mt-4 text-sm text-p-text-muted">Nenhum abandono registrado ainda.</p>
+        </UiCard>
       </div>
     </template>
 
-    <div v-if="editingReservation" class="modal-overlay">
-      <div class="modal" style="max-width: 560px;">
-        <div class="modal-header" style="margin-bottom: 16px;">
-          <h3>Editar reserva</h3>
-          <button class="modal-close" @click="closeReservationEditor">✕</button>
-        </div>
-        <div class="modal-body purchase-admin-edit-modal">
-          <label class="purchase-admin-label-group">
-            <span>Nome do cliente</span>
-            <input v-model="reservationForm.name" class="form-input" />
-          </label>
-          <label class="purchase-admin-label-group">
-            <span>E-mail</span>
-            <input v-model="reservationForm.email" class="form-input" type="email" />
-          </label>
-          <label class="purchase-admin-label-group">
-            <span>WhatsApp</span>
-            <input v-model="reservationForm.phone" class="form-input" />
-          </label>
-          <label class="purchase-admin-label-group">
-            <span>CPF</span>
-            <input v-model="reservationForm.cpf" class="form-input" />
-          </label>
-          <label class="purchase-admin-label-group">
-            <span>Expiracao da reserva</span>
-            <input v-model="reservationForm.reservationExpiresAt" class="form-input" type="datetime-local" />
-          </label>
-
-          <div class="purchase-admin-edit-modal__actions">
-            <button class="btn btn-ghost btn-sm" type="button" @click="closeReservationEditor">Fechar</button>
-            <button class="btn btn-primary btn-sm" type="button" :disabled="savingReservationEdit" @click="saveReservationEdit">
-              {{ savingReservationEdit ? 'Salvando...' : 'Salvar reserva' }}
-            </button>
-          </div>
+    <UiModal v-model="showReservationEditor" title="Editar reserva" size="md">
+      <div class="space-y-3.5">
+        <UiInput v-model="reservationForm.name" label="Nome do cliente" />
+        <UiInput v-model="reservationForm.email" label="E-mail" type="email" />
+        <UiInput v-model="reservationForm.phone" label="WhatsApp" />
+        <UiInput v-model="reservationForm.cpf" label="CPF" />
+        <div>
+          <label class="mb-1 block text-sm font-medium text-p-text-secondary">Expiracao da reserva</label>
+          <input v-model="reservationForm.reservationExpiresAt" type="datetime-local" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none" />
         </div>
       </div>
-    </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UiButton variant="ghost" size="sm" @click="closeReservationEditor">Fechar</UiButton>
+          <UiButton variant="primary" size="sm" :disabled="savingReservationEdit" @click="saveReservationEdit">
+            {{ savingReservationEdit ? 'Salvando...' : 'Salvar reserva' }}
+          </UiButton>
+        </div>
+      </template>
+    </UiModal>
   </div>
 </template>
 
@@ -346,6 +316,11 @@ const reservations = ref<any[]>([])
 const reservationActingLeadId = ref('')
 const editingReservation = ref<any | null>(null)
 const savingReservationEdit = ref(false)
+
+const showReservationEditor = computed({
+  get: () => !!editingReservation.value,
+  set: (v: boolean) => { if (!v) closeReservationEditor() }
+})
 
 const reservationForm = reactive({
   leadId: '',
@@ -730,341 +705,6 @@ onMounted(() => {
 })
 
 definePageMeta({
-  layout: 'default',
+  layout: 'painel',
 })
 </script>
-
-<style scoped>
-.purchase-admin-page {
-  display: grid;
-  gap: 24px;
-}
-
-.purchase-admin-header {
-  border-bottom: 1px solid var(--glass-border-subtle);
-  padding-bottom: 24px;
-}
-
-.purchase-admin-header h1 {
-  margin: 0;
-  font-size: 1.7rem;
-}
-
-.purchase-admin-header p {
-  margin: 6px 0 0;
-  color: var(--color-surface-400);
-}
-
-.purchase-admin-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.purchase-admin-stat {
-  padding: 20px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(18, 25, 38, 0.92), rgba(23, 33, 53, 0.88));
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.purchase-admin-stat span {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--color-surface-400);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.purchase-admin-stat strong {
-  font-size: 1.9rem;
-  color: var(--color-surface-50);
-}
-
-.purchase-admin-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-}
-
-.purchase-admin-card {
-  display: grid;
-  gap: 20px;
-}
-
-.purchase-admin-card--full {
-  grid-column: 1 / -1;
-}
-
-.purchase-admin-card__header h2,
-.purchase-admin-card__header h3,
-.purchase-admin-card__header h4 {
-  margin: 0;
-}
-
-.purchase-admin-card__header--split {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.purchase-admin-card__header p {
-  margin: 6px 0 0;
-  color: var(--color-surface-400);
-  line-height: 1.6;
-}
-
-.purchase-admin-card__header--compact p {
-  margin-top: 4px;
-  font-size: 0.9rem;
-}
-
-.purchase-admin-fieldset,
-.purchase-admin-stack {
-  display: grid;
-  gap: 14px;
-}
-
-.purchase-admin-toggle,
-.purchase-admin-check,
-.purchase-admin-label-group {
-  display: grid;
-  gap: 8px;
-  color: var(--color-surface-200);
-}
-
-.purchase-admin-toggle {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-}
-
-.purchase-admin-check-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.purchase-admin-check {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.purchase-admin-label {
-  color: var(--color-surface-300);
-  font-weight: 600;
-}
-
-.purchase-admin-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.purchase-admin-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(34, 197, 94, 0.12);
-  color: #86efac;
-}
-
-.purchase-admin-tag button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.purchase-admin-inline-form,
-.purchase-admin-subgrid,
-.purchase-admin-condition-row {
-  display: grid;
-  gap: 12px;
-}
-
-.purchase-admin-inline-form {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.purchase-admin-subgrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.purchase-admin-subcard {
-  display: grid;
-  gap: 14px;
-  padding: 18px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.purchase-admin-subcard__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.purchase-admin-subcard__header--minor {
-  margin-top: 6px;
-}
-
-.purchase-admin-conditions {
-  display: grid;
-  gap: 12px;
-}
-
-.purchase-admin-condition-row {
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-}
-
-.purchase-admin-abandonment {
-  display: grid;
-  gap: 12px;
-}
-
-.purchase-admin-reservation-list {
-  display: grid;
-  gap: 16px;
-}
-
-.purchase-admin-reservation-card {
-  display: grid;
-  gap: 16px;
-  padding: 20px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.purchase-admin-reservation-card__main {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.purchase-admin-reservation-card__eyebrow {
-  margin: 0 0 8px;
-  color: var(--color-surface-400);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.purchase-admin-reservation-card h3 {
-  margin: 0 0 4px;
-}
-
-.purchase-admin-reservation-card p {
-  margin: 0;
-  color: var(--color-surface-300);
-}
-
-.purchase-admin-reservation-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 110px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.purchase-admin-reservation-status.is-active {
-  background: rgba(34, 197, 94, 0.14);
-  color: #86efac;
-}
-
-.purchase-admin-reservation-status.is-cancelled {
-  background: rgba(248, 113, 113, 0.12);
-  color: #fca5a5;
-}
-
-.purchase-admin-reservation-meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px 16px;
-  color: var(--color-surface-300);
-  font-size: 0.92rem;
-}
-
-.purchase-admin-reservation-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.purchase-admin-edit-modal {
-  display: grid;
-  gap: 14px;
-}
-
-.purchase-admin-edit-modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.purchase-admin-abandonment__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.purchase-admin-abandonment__item p {
-  margin: 4px 0 0;
-  color: var(--color-surface-400);
-}
-
-.purchase-admin-abandonment__item span {
-  font-size: 1.4rem;
-  font-weight: 700;
-}
-
-.purchase-admin-empty {
-  margin: 0;
-  color: var(--color-surface-400);
-}
-
-@media (max-width: 1024px) {
-  .purchase-admin-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .purchase-admin-check-grid,
-  .purchase-admin-subgrid,
-  .purchase-admin-condition-row,
-  .purchase-admin-inline-form {
-    grid-template-columns: 1fr;
-  }
-
-  .purchase-admin-card__header--split,
-  .purchase-admin-reservation-card__main,
-  .purchase-admin-reservation-actions,
-  .purchase-admin-edit-modal__actions {
-    flex-direction: column;
-  }
-
-  .purchase-admin-reservation-meta {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

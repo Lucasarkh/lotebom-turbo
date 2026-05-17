@@ -1,189 +1,169 @@
 <template>
-  <div>
-    <div class="page-header category-page-header">
-      <div style="flex: 1;">
-        <div class="flex items-center gap-2" style="margin-bottom: 4px;">
-          <NuxtLink :to="`/painel/projetos/${projectId}`" class="btn btn-ghost btn-sm page-back-btn">
-            <i class="bi bi-arrow-left-short back-nav-icon" aria-hidden="true"></i>
-            <span class="back-nav-label">{{ projectName || 'Projeto' }}</span>
-          </NuxtLink>
-        </div>
-        <h1 class="category-page-title"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i> Categorias de Lote</h1>
-        <p class="category-page-subtitle">Crie, edite e ilustre as categorias exibidas na página pública dedicada.</p>
-      </div>
-
-      <div class="category-header-actions">
-        <a
-          v-if="publicCategoriesUrl"
-          :href="publicCategoriesUrl"
-          target="_blank"
-          class="category-public-link"
-        >
-          <i class="bi bi-globe2" aria-hidden="true"></i>
-          <span>Ver página pública</span>
-        </a>
-      </div>
+  <div class="space-y-6">
+    <div>
+      <NuxtLink :to="`/painel/projetos/${projectId}`" class="mb-3 inline-flex items-center gap-1.5 text-sm text-p-text-muted transition-colors hover:text-p-text">
+        <i class="bi bi-arrow-left-short text-lg" aria-hidden="true"></i>
+        <span>{{ projectName || 'Projeto' }}</span>
+      </NuxtLink>
+      <UiPageHeader title="Categorias de Lote" description="Crie, edite e ilustre as categorias exibidas na página pública dedicada.">
+        <template #actions>
+          <a
+            v-if="publicCategoriesUrl"
+            :href="publicCategoriesUrl"
+            target="_blank"
+            class="inline-flex items-center gap-2 rounded-full border border-p-info/30 bg-p-info-subtle px-4 py-2 text-sm font-bold text-p-text transition-all hover:-translate-y-0.5 hover:border-p-info/50"
+          >
+            <i class="bi bi-globe2" aria-hidden="true"></i>
+            <span>Ver página pública</span>
+          </a>
+        </template>
+      </UiPageHeader>
     </div>
 
-    <div v-if="loading" class="loading-state category-page-loading">
-      <div class="loading-spinner"></div>
-    </div>
+    <UiLoadingState v-if="loading" />
 
-    <div v-else-if="loadError" class="card category-page-error">
-      {{ loadError }}
-    </div>
+    <UiAlert v-else-if="loadError" variant="error" :title="loadError" />
 
-    <div v-else class="category-page-layout" :class="{ 'is-readonly': isReadOnly }">
-      <div v-if="isArchivedProject" class="alert alert-warning category-page-alert">
-        Projeto arquivado em modo somente leitura. Publique o projeto para liberar edições.
-      </div>
+    <div v-else class="space-y-5" :class="{ 'pointer-events-none opacity-60': isReadOnly }">
+      <UiAlert v-if="isArchivedProject" variant="warning" title="Projeto arquivado em modo somente leitura. Publique o projeto para liberar edições." />
 
-      <section class="category-create-card card">
-        <div class="category-section-head">
+      <UiCard padding="lg">
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2>Nova categoria</h2>
-            <p>Use nome, descrição curta e imagem para formar os cards da página pública.</p>
+            <h2 class="text-lg font-semibold text-p-text">Nova categoria</h2>
+            <p class="mt-1 text-sm text-p-text-muted">Use nome, descrição curta e imagem para formar os cards da página pública.</p>
           </div>
-          <span class="category-section-chip">Organização visual e comercial</span>
+          <span class="rounded-full border border-p-border bg-p-overlay px-3 py-1.5 text-xs text-p-text-secondary">Organização visual e comercial</span>
         </div>
 
-        <fieldset :disabled="isReadOnly || savingNewCategory" class="category-fieldset">
-          <div class="category-create-grid">
-            <label class="form-group">
-              <span class="form-label">Nome</span>
-              <input v-model="newCategory.name" class="form-input" maxlength="80" placeholder="Ex: Vista livre" />
-            </label>
-            <label class="form-group">
-              <span class="form-label">Descrição curta</span>
-              <input v-model="newCategory.description" class="form-input" maxlength="500" placeholder="Ex: lotes com melhor abertura visual do empreendimento." />
-            </label>
-
-            <div class="category-create-aside">
-              <strong>Boas práticas</strong>
-              <p>Use categorias objetivas. Elas aparecem como cards independentes para o cliente navegar antes de ver os lotes.</p>
+        <fieldset :disabled="isReadOnly || savingNewCategory" class="m-0 border-0 p-0">
+          <div class="grid grid-cols-1 items-start gap-3 lg:grid-cols-[1.2fr_1.2fr_0.7fr]">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Nome</label>
+              <input v-model="newCategory.name" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" maxlength="80" placeholder="Ex: Vista livre" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-p-text-secondary">Descrição curta</label>
+              <input v-model="newCategory.description" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" maxlength="500" placeholder="Ex: lotes com melhor abertura visual do empreendimento." />
+            </div>
+            <div class="rounded-xl border border-p-border bg-p-overlay p-3.5">
+              <strong class="mb-2 block text-sm text-p-text">Boas práticas</strong>
+              <p class="text-sm leading-relaxed text-p-text-muted">Use categorias objetivas. Elas aparecem como cards independentes para o cliente navegar antes de ver os lotes.</p>
             </div>
           </div>
 
-          <div class="category-create-actions">
-            <button class="category-primary-btn" type="button" @click="createCategory">
+          <div class="mt-4 flex justify-end">
+            <UiButton variant="primary" type="button" @click="createCategory">
               <i class="bi bi-plus-lg" aria-hidden="true"></i>
               {{ savingNewCategory ? 'Salvando...' : 'Criar categoria' }}
-            </button>
+            </UiButton>
           </div>
         </fieldset>
-      </section>
+      </UiCard>
 
-      <section class="category-list-section">
-        <div class="category-section-head">
+      <div>
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2>Categorias cadastradas</h2>
-            <p>{{ categories.length }} categoria<span v-if="categories.length !== 1">s</span> prontas para organização de lotes.</p>
+            <h2 class="text-lg font-semibold text-p-text">Categorias cadastradas</h2>
+            <p class="mt-1 text-sm text-p-text-muted">{{ categories.length }} categoria<span v-if="categories.length !== 1">s</span> prontas para organização de lotes.</p>
           </div>
         </div>
 
-        <div v-if="categories.length === 0" class="card category-empty-state">
-          <div class="icon-blob mx-auto mb-4"><i class="bi bi-images" aria-hidden="true"></i></div>
-          <h3>Nenhuma categoria criada</h3>
-          <p>Cadastre a primeira categoria para separar grupos de lotes e publicar a vitrine de categorias.</p>
-        </div>
+        <UiEmptyState
+          v-if="categories.length === 0"
+          title="Nenhuma categoria criada"
+          description="Cadastre a primeira categoria para separar grupos de lotes e publicar a vitrine de categorias."
+        />
 
-        <div v-else class="category-grid">
-          <article v-for="category in categories" :key="category.id" class="card category-card">
-            <div class="category-card__preview-column">
-              <div class="category-card__media" :class="{ 'has-image': !!category.imageUrl }">
-                <img v-if="category.imageUrl" :src="category.imageUrl" :alt="`Imagem da categoria ${category.name}`" />
-                <div v-else class="category-card__media-placeholder">
-                  <i class="bi bi-image" aria-hidden="true"></i>
-                  <span>Sem imagem</span>
-                </div>
-              </div>
-
-              <div class="category-card__media-actions">
-                <label v-if="!isReadOnly" class="category-media-btn category-upload-btn">
-                  <i class="bi bi-upload" aria-hidden="true"></i>
-                  <span>{{ category.isUploading ? 'Enviando...' : 'Enviar imagem' }}</span>
-                  <input
-                    :disabled="category.isUploading"
-                    type="file"
-                    accept="image/*"
-                    class="category-file-input"
-                    @change="uploadCategoryImage(category, $event)"
-                  />
-                </label>
-                <button
-                  v-if="!isReadOnly && category.imageUrl"
-                  type="button"
-                  class="category-media-btn category-media-btn--danger"
-                  :disabled="category.isRemovingImage"
-                  @click="removeCategoryImage(category)"
-                >
-                  <i class="bi bi-trash3" aria-hidden="true"></i>
-                  <span>{{ category.isRemovingImage ? 'Removendo...' : 'Remover' }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="category-card__body">
-              <div class="category-card__topbar">
-                <div>
-                  <div class="category-card__title-row">
-                    <h3>{{ category.name || 'Categoria sem nome' }}</h3>
-                    <span class="category-slug">/{{ category.slug }}</span>
-                  </div>
-                  <div class="category-card__meta">
-                    <span class="category-stat category-stat--success">{{ category.availableLots }} disponíveis</span>
-                    <span class="category-stat">{{ category.totalLots }} no total</span>
+        <div v-else class="flex flex-col gap-4">
+          <UiCard v-for="category in categories" :key="category.id" class="!p-0 overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-[260px_1fr]">
+              <div class="flex flex-col gap-3 border-b border-p-border bg-p-overlay/40 p-4 md:border-b-0 md:border-r">
+                <div class="min-h-[180px] overflow-hidden rounded-xl border border-p-border bg-p-overlay" :class="{ '!bg-p-base': !!category.imageUrl }">
+                  <img v-if="category.imageUrl" :src="category.imageUrl" :alt="`Imagem da categoria ${category.name}`" class="block h-[180px] w-full object-cover" />
+                  <div v-else class="flex min-h-[180px] flex-col items-center justify-center gap-2.5 text-p-text-muted">
+                    <i class="bi bi-image text-3xl" aria-hidden="true"></i>
+                    <span class="text-sm">Sem imagem</span>
                   </div>
                 </div>
 
-                <div class="category-card__actions">
-                  <button
-                    type="button"
-                    class="category-primary-btn"
-                    :disabled="isReadOnly || category.isSaving"
-                    @click="saveCategory(category)"
-                  >
-                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                    {{ category.isSaving ? 'Salvando...' : 'Salvar' }}
-                  </button>
-                  <button
-                    v-if="!isReadOnly"
-                    type="button"
-                    class="category-danger-btn"
-                    :disabled="category.isDeleting"
-                    @click="deleteCategory(category)"
+                <div class="flex flex-col gap-2">
+                  <label v-if="!isReadOnly" class="relative flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl border border-p-border bg-p-overlay px-4 py-2.5 text-sm font-bold text-p-text-secondary transition-colors hover:border-p-border-hover hover:text-p-text">
+                    <i class="bi bi-upload" aria-hidden="true"></i>
+                    <span>{{ category.isUploading ? 'Enviando...' : 'Enviar imagem' }}</span>
+                    <input
+                      :disabled="category.isUploading"
+                      type="file"
+                      accept="image/*"
+                      class="absolute inset-0 cursor-pointer opacity-0"
+                      @change="uploadCategoryImage(category, $event)"
+                    />
+                  </label>
+                  <UiButton
+                    v-if="!isReadOnly && category.imageUrl"
+                    variant="danger"
+                    size="sm"
+                    :disabled="category.isRemovingImage"
+                    class="w-full"
+                    @click="removeCategoryImage(category)"
                   >
                     <i class="bi bi-trash3" aria-hidden="true"></i>
-                    {{ category.isDeleting ? 'Excluindo...' : 'Excluir' }}
-                  </button>
+                    {{ category.isRemovingImage ? 'Removendo...' : 'Remover' }}
+                  </UiButton>
                 </div>
               </div>
 
-              <div class="category-form-grid">
-                <label class="form-group">
-                  <span class="form-label">Nome</span>
-                  <input v-model="category.name" class="form-input" maxlength="80" :disabled="isReadOnly || category.isSaving" />
-                </label>
-                <label class="form-group category-form-grid__wide">
-                  <span class="form-label">Descrição</span>
-                  <textarea
-                    v-model="category.description"
-                    class="form-input category-textarea"
-                    maxlength="500"
-                    rows="3"
-                    :disabled="isReadOnly || category.isSaving"
-                  ></textarea>
-                </label>
-              </div>
+              <div class="p-5">
+                <div class="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row">
+                  <div>
+                    <div class="mb-2 flex flex-wrap items-center gap-2.5">
+                      <h3 class="text-lg font-semibold text-p-text">{{ category.name || 'Categoria sem nome' }}</h3>
+                      <span class="rounded-full bg-p-overlay px-2.5 py-1 text-xs text-p-text-secondary">/{{ category.slug }}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="rounded-full bg-p-success-subtle px-2.5 py-1 text-xs font-medium text-p-success">{{ category.availableLots }} disponíveis</span>
+                      <span class="rounded-full bg-p-overlay px-2.5 py-1 text-xs text-p-text-secondary">{{ category.totalLots }} no total</span>
+                    </div>
+                  </div>
 
-              <div class="category-card__footer-note">
-                <i class="bi bi-info-circle" aria-hidden="true"></i>
-                <span>O slug é gerado automaticamente a partir do nome e aparece na navegação pública.</span>
+                  <div class="flex flex-wrap gap-2.5">
+                    <UiButton variant="primary" :disabled="isReadOnly || category.isSaving" @click="saveCategory(category)">
+                      <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                      {{ category.isSaving ? 'Salvando...' : 'Salvar' }}
+                    </UiButton>
+                    <UiButton v-if="!isReadOnly" variant="danger" :disabled="category.isDeleting" @click="deleteCategory(category)">
+                      <i class="bi bi-trash3" aria-hidden="true"></i>
+                      {{ category.isDeleting ? 'Excluindo...' : 'Excluir' }}
+                    </UiButton>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Nome</label>
+                    <input v-model="category.name" class="w-full rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none" maxlength="80" :disabled="isReadOnly || category.isSaving" />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-p-text-secondary">Descrição</label>
+                    <textarea
+                      v-model="category.description"
+                      class="w-full resize-y rounded-lg border border-p-border bg-p-overlay px-3 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none"
+                      maxlength="500"
+                      rows="3"
+                      :disabled="isReadOnly || category.isSaving"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div class="mt-3.5 inline-flex items-center gap-2 text-xs text-p-text-muted">
+                  <i class="bi bi-info-circle" aria-hidden="true"></i>
+                  <span>O slug é gerado automaticamente a partir do nome e aparece na navegação pública.</span>
+                </div>
               </div>
             </div>
-          </article>
+          </UiCard>
         </div>
-      </section>
+      </div>
     </div>
   </div>
 </template>
@@ -195,7 +175,7 @@ import { useApi } from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
 import { useAuthStore } from '~/stores/auth'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'painel' })
 
 type CategoryApiItem = {
   id: string
@@ -402,436 +382,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.category-page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--glass-border-subtle);
-  padding-bottom: 24px;
-  margin-bottom: 24px;
-}
-
-.category-page-title {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.category-page-subtitle {
-  margin: 0;
-  color: var(--color-surface-400);
-  font-weight: 500;
-}
-
-.category-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.category-public-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 40px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(59, 130, 246, 0.26);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(15, 23, 42, 0.94));
-  color: #f8fafc;
-  text-decoration: none;
-  font-weight: 700;
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.24);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-
-.category-public-link:hover {
-  transform: translateY(-1px);
-  border-color: rgba(96, 165, 250, 0.5);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.28), rgba(15, 23, 42, 0.98));
-  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.3);
-}
-
-.page-back-btn {
-  padding: 6px 14px !important;
-  border-radius: 12px;
-  color: #d1d5db !important;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  text-decoration: none;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.page-back-btn:hover {
-  color: #f8fafc !important;
-  border-color: rgba(148, 163, 184, 0.7);
-  background: rgba(15, 23, 42, 0.62);
-}
-
-.category-page-loading {
-  height: 360px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.category-page-error {
-  max-width: 520px;
-  color: var(--color-danger);
-}
-
-.category-page-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.category-section-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-
-.category-section-head h2 {
-  margin: 0 0 4px;
-}
-
-.category-section-head p {
-  margin: 0;
-  color: var(--color-surface-400);
-}
-
-.category-section-chip {
-  border-radius: 999px;
-  padding: 8px 12px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(15, 23, 42, 0.35);
-  color: var(--color-surface-200);
-  font-size: 0.82rem;
-  white-space: nowrap;
-}
-
-.category-fieldset {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-inline-size: 0;
-}
-
-.category-create-card {
-  padding: 22px;
-}
-
-.category-create-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(240px, 0.7fr);
-  gap: 14px;
-  align-items: start;
-}
-
-.category-create-aside {
-  min-height: 100%;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.48), rgba(15, 23, 42, 0.22));
-}
-
-.category-create-aside strong {
-  display: block;
-  margin-bottom: 8px;
-  color: #f8fafc;
-}
-
-.category-create-aside p {
-  margin: 0;
-  color: var(--color-surface-300);
-  line-height: 1.5;
-  font-size: 0.9rem;
-}
-
-.category-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.category-form-grid__wide {
-  grid-column: 1 / -1;
-}
-
-.category-create-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
-.category-primary-btn,
-.category-danger-btn,
-.category-media-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  border: 0;
-  border-radius: 12px;
-  padding: 0 16px;
-  font-weight: 700;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-
-.category-primary-btn {
-  background: linear-gradient(135deg, #059669, #34d399);
-  color: #f8fafc;
-  box-shadow: 0 10px 24px rgba(5, 150, 105, 0.22);
-}
-
-.category-primary-btn:hover:not(:disabled),
-.category-danger-btn:hover:not(:disabled),
-.category-media-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.category-danger-btn {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-}
-
-.category-media-btn {
-  position: relative;
-  width: 100%;
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
-}
-
-.category-media-btn--danger {
-  color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.24);
-  background: rgba(127, 29, 29, 0.22);
-}
-
-.category-primary-btn:disabled,
-.category-danger-btn:disabled,
-.category-media-btn:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
-
-.category-empty-state {
-  padding: 48px 24px;
-  text-align: center;
-}
-
-.category-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.category-card {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 0;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: linear-gradient(180deg, rgba(9, 16, 27, 0.94), rgba(8, 15, 23, 0.92));
-  box-shadow: 0 18px 44px rgba(2, 6, 23, 0.22);
-}
-
-.category-card__preview-column {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px;
-  border-right: 1px solid rgba(148, 163, 184, 0.12);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.18));
-}
-
-.category-card__media {
-  min-height: 180px;
-  border-radius: 18px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.78));
-  border: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-.category-card__media.has-image {
-  background: #0f172a;
-}
-
-.category-card__media img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  display: block;
-}
-
-.category-card__media-placeholder {
-  min-height: 180px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: rgba(226, 232, 240, 0.88);
-}
-
-.category-card__media-placeholder i {
-  font-size: 2rem;
-}
-
-.category-card__media-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.category-upload-btn {
-  position: relative;
-  overflow: hidden;
-}
-
-.category-file-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.category-card__body {
-  padding: 20px 22px;
-}
-
-.category-card__topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 16px;
-}
-
-.category-card__title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.category-card__title-row h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #f8fafc;
-}
-
-.category-card__meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.category-slug,
-.category-stat {
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 0.76rem;
-  background: rgba(148, 163, 184, 0.12);
-  color: var(--color-surface-200);
-}
-
-.category-stat--success {
-  background: rgba(16, 185, 129, 0.14);
-  color: #6ee7b7;
-}
-
-.category-textarea {
-  min-height: 110px;
-  resize: vertical;
-}
-
-.category-card__actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-.category-card__footer-note {
-  margin-top: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-surface-400);
-  font-size: 0.84rem;
-}
-
-@media (max-width: 900px) {
-  .category-create-grid,
-  .category-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .category-form-grid__wide {
-    grid-column: auto;
-  }
-
-  .category-card {
-    grid-template-columns: 1fr;
-  }
-
-  .category-card__preview-column {
-    border-right: 0;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-  }
-
-  .category-card__topbar {
-    flex-direction: column;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-back-btn {
-    padding: 9px 14px !important;
-    min-height: 38px;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .category-page-header {
-    align-items: stretch;
-  }
-
-  .category-public-link {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .category-card__media-actions,
-  .category-card__actions,
-  .category-create-actions {
-    justify-content: stretch;
-  }
-
-  .category-card__media-actions > *,
-  .category-card__actions > *,
-  .category-create-actions > * {
-    width: 100%;
-  }
-}
-</style>

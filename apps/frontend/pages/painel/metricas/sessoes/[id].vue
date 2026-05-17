@@ -93,35 +93,35 @@ onMounted(async () => {
 })
 
 definePageMeta({
-  layout: 'default'
+  layout: 'painel'
 })
 </script>
 
 <template>
-  <div class="metrics-page">
-    <NuxtLink :to="{ path: '/painel/metricas/sessoes', query: { ...route.query } }" class="back-link">
+  <div class="space-y-6">
+    <NuxtLink :to="{ path: '/painel/metricas/sessoes', query: { ...route.query } }" class="inline-flex items-center gap-2 text-sm font-medium text-p-text-muted hover:text-p-accent transition-colors">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Voltar às Sessões
     </NuxtLink>
 
-    <div class="header">
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <h1>Detalhe da Sessão</h1>
-        <p class="subtitle">{{ data?.summary?.id || route.params.id }}</p>
+        <h1 class="text-2xl font-extrabold text-p-text">Detalhe da Sessão</h1>
+        <p class="mt-1 text-sm text-p-text-muted">{{ data?.summary?.id || route.params.id }}</p>
       </div>
 
-      <div class="filter-actions">
-        <div class="filter-group">
-          <label>Data Início:</label>
-          <input v-model="startDate" type="date" :max="startDateMax" class="date-input" />
+      <div class="flex flex-wrap items-end gap-4 rounded-xl border border-p-border bg-p-elevated p-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Início:</label>
+          <input v-model="startDate" type="date" :max="startDateMax" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" />
         </div>
-        <div class="filter-group">
-          <label>Data Fim:</label>
-          <input v-model="endDate" type="date" :min="endDateMin" :max="endDateMax" class="date-input" />
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Data Fim:</label>
+          <input v-model="endDate" type="date" :min="endDateMin" :max="endDateMax" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text [color-scheme:dark] focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30" />
         </div>
-        <div class="filter-group">
-          <label>Empreendimento:</label>
-          <select v-model="selectedProjectId" class="project-select">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[11px] font-bold uppercase tracking-wider text-p-text-muted">Empreendimento:</label>
+          <select v-model="selectedProjectId" class="rounded-lg border border-p-border bg-p-raised px-3 py-2.5 text-sm text-p-text appearance-none focus:border-p-accent focus:outline-none focus:ring-2 focus:ring-p-accent/30">
             <option value="all">Todos os Projetos</option>
             <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
           </select>
@@ -129,157 +129,114 @@ definePageMeta({
       </div>
     </div>
 
-    <div v-if="loading && !data" class="loading">Carregando sessão...</div>
+    <UiLoadingState v-if="loading && !data" text="Carregando sessão..." />
 
-    <div v-else-if="data" class="dashboard" :class="{ 'loading-overlay': loading }">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <CommonAppTooltip text="Tempo total observado entre o primeiro e o último sinal real de atividade desta sessão. Retornos após inatividade longa abrem uma nova sessão, em vez de esticar esta." position="bottom"><span class="stat-label">Duração</span></CommonAppTooltip>
-          <span class="stat-value text-blue">{{ formatDuration(data.summary.durationSec) }}</span>
-        </div>
-        <div class="stat-card">
-          <CommonAppTooltip text="Quantidade de visualizações de páginas dentro desta sessão." position="bottom"><span class="stat-label">Páginas</span></CommonAppTooltip>
-          <span class="stat-value text-cyan">{{ data.summary.pageViews }}</span>
-        </div>
-        <div class="stat-card">
-          <CommonAppTooltip text="Leads gerados durante esta sessão específica." position="bottom"><span class="stat-label">Leads</span></CommonAppTooltip>
-          <span class="stat-value text-emerald">{{ data.summary.totalLeads }}</span>
-        </div>
-        <div class="stat-card">
-          <CommonAppTooltip text="Quantidade de sessões associadas ao mesmo visitante persistente desta sessão." position="bottom"><span class="stat-label">Visitante</span></CommonAppTooltip>
-          <span class="stat-value text-indigo">{{ data.summary.visitorSessions || 1 }} sessões</span>
-          <NuxtLink v-if="data.summary.visitorId" :to="{ path: `/painel/metricas/visitantes/${data.summary.visitorId}`, query: { ...route.query } }" class="stat-link">
+    <div v-else-if="data" class="space-y-6" :class="{ 'opacity-60': loading }">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <UiCard padding="md">
+          <CommonAppTooltip text="Tempo total observado entre o primeiro e o último sinal real de atividade desta sessão. Retornos após inatividade longa abrem uma nova sessão, em vez de esticar esta." position="bottom"><span class="text-xs text-p-text-muted">Duração</span></CommonAppTooltip>
+          <span class="mt-2 block text-2xl font-extrabold text-blue-400">{{ formatDuration(data.summary.durationSec) }}</span>
+        </UiCard>
+        <UiCard padding="md">
+          <CommonAppTooltip text="Quantidade de visualizações de páginas dentro desta sessão." position="bottom"><span class="text-xs text-p-text-muted">Páginas</span></CommonAppTooltip>
+          <span class="mt-2 block text-2xl font-extrabold text-cyan-400">{{ data.summary.pageViews }}</span>
+        </UiCard>
+        <UiCard padding="md">
+          <CommonAppTooltip text="Leads gerados durante esta sessão específica." position="bottom"><span class="text-xs text-p-text-muted">Leads</span></CommonAppTooltip>
+          <span class="mt-2 block text-2xl font-extrabold text-emerald-400">{{ data.summary.totalLeads }}</span>
+        </UiCard>
+        <UiCard padding="md">
+          <CommonAppTooltip text="Quantidade de sessões associadas ao mesmo visitante persistente desta sessão." position="bottom"><span class="text-xs text-p-text-muted">Visitante</span></CommonAppTooltip>
+          <span class="mt-2 block text-2xl font-extrabold text-indigo-400">{{ data.summary.visitorSessions || 1 }} sessões</span>
+          <NuxtLink v-if="data.summary.visitorId" :to="{ path: `/painel/metricas/visitantes/${data.summary.visitorId}`, query: { ...route.query } }" class="mt-2 inline-flex text-[13px] font-semibold text-blue-300 hover:text-blue-200 transition-colors">
             Ver visitante consolidado
           </NuxtLink>
-        </div>
+        </UiCard>
       </div>
 
-      <div class="details-grid">
-        <div class="details-card">
-          <CommonAppTooltip text="Resumo contextual da sessão: atribuição, origem, landing e janela temporal." position="bottom"><h3>Resumo</h3></CommonAppTooltip>
-          <dl class="info-list">
-            <div><dt>Projeto</dt><dd>{{ data.summary.projectName || '---' }}</dd></div>
-            <div><dt>Corretor</dt><dd>{{ data.summary.realtorName || '---' }}</dd></div>
-            <div><dt>Origem</dt><dd>{{ data.summary.utmSource || '(Direto)' }}</dd></div>
-            <div><dt>Campanha</dt><dd>{{ data.summary.utmCampaign || '(Nenhuma)' }}</dd></div>
-            <div><dt>Landing</dt><dd>{{ data.summary.landingPage || '---' }}</dd></div>
-            <div><dt>Entrada</dt><dd>{{ formatDateTime(data.summary.firstSeenAt) }}</dd></div>
-            <div><dt>Última atividade</dt><dd>{{ formatDateTime(data.summary.lastSeenAt) }}</dd></div>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <UiCard padding="md">
+          <CommonAppTooltip text="Resumo contextual da sessão: atribuição, origem, landing e janela temporal." position="bottom"><h3 class="text-base font-semibold text-p-text mb-4">Resumo</h3></CommonAppTooltip>
+          <dl class="grid gap-3">
+            <div class="flex justify-between gap-4"><dt class="text-xs text-p-text-muted">Projeto</dt><dd class="text-right text-sm text-p-text">{{ data.summary.projectName || '---' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-xs text-p-text-muted">Corretor</dt><dd class="text-right text-sm text-p-text">{{ data.summary.realtorName || '---' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-xs text-p-text-muted">Origem</dt><dd class="text-right text-sm text-p-text">{{ data.summary.utmSource || '(Direto)' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-xs text-p-text-muted">Campanha</dt><dd class="text-right text-sm text-p-text">{{ data.summary.utmCampaign || '(Nenhuma)' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-xs text-p-text-muted">Landing</dt><dd class="text-right text-sm text-p-text">{{ data.summary.landingPage || '---' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-xs text-p-text-muted">Entrada</dt><dd class="text-right text-sm text-p-text">{{ formatDateTime(data.summary.firstSeenAt) }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-xs text-p-text-muted">Última atividade</dt><dd class="text-right text-sm text-p-text">{{ formatDateTime(data.summary.lastSeenAt) }}</dd></div>
           </dl>
-        </div>
+        </UiCard>
 
-        <div class="details-card">
-          <CommonAppTooltip text="Ranking dos lotes com os quais o visitante interagiu durante esta sessão." position="bottom"><h3>Lotes Interagidos</h3></CommonAppTooltip>
-          <div v-if="data.lots?.length" class="stack-list">
-            <div v-for="lot in data.lots" :key="lot.label" class="stack-item">
-              <span>{{ lot.label }}</span>
-              <strong>{{ lot.count }}</strong>
+        <UiCard padding="md">
+          <CommonAppTooltip text="Ranking dos lotes com os quais o visitante interagiu durante esta sessão." position="bottom"><h3 class="text-base font-semibold text-p-text mb-4">Lotes Interagidos</h3></CommonAppTooltip>
+          <div v-if="data.lots?.length" class="grid gap-2.5">
+            <div v-for="lot in data.lots" :key="lot.label" class="flex items-center justify-between gap-4 rounded-xl bg-p-base/50 px-3.5 py-3">
+              <span class="text-sm text-p-text-secondary">{{ lot.label }}</span>
+              <strong class="text-sm text-p-text">{{ lot.count }}</strong>
             </div>
           </div>
-          <div v-else class="no-data-placeholder">Nenhum lote interagido nesta sessão.</div>
-        </div>
+          <UiEmptyState v-else title="Nenhum lote interagido nesta sessão." />
+        </UiCard>
 
-        <div class="details-card">
-          <CommonAppTooltip text="Resumo do comportamento desta visita, agrupando os principais tipos de interação observados." position="bottom"><h3>Atividade Geral</h3></CommonAppTooltip>
-          <div v-if="activitySummary.length" class="stack-list">
-            <div v-for="activity in activitySummary" :key="activity.label" class="stack-item">
-              <span>{{ activity.label }}</span>
-              <strong>{{ activity.count }}</strong>
+        <UiCard padding="md">
+          <CommonAppTooltip text="Resumo do comportamento desta visita, agrupando os principais tipos de interação observados." position="bottom"><h3 class="text-base font-semibold text-p-text mb-4">Atividade Geral</h3></CommonAppTooltip>
+          <div v-if="activitySummary.length" class="grid gap-2.5">
+            <div v-for="activity in activitySummary" :key="activity.label" class="flex items-center justify-between gap-4 rounded-xl bg-p-base/50 px-3.5 py-3">
+              <span class="text-sm text-p-text-secondary">{{ activity.label }}</span>
+              <strong class="text-sm text-p-text">{{ activity.count }}</strong>
             </div>
           </div>
-          <div v-else class="no-data-placeholder">Nenhuma atividade resumida disponível.</div>
-        </div>
+          <UiEmptyState v-else title="Nenhuma atividade resumida disponível." />
+        </UiCard>
       </div>
 
-      <div class="details-card">
-        <CommonAppTooltip text="Ordem exata das páginas vistas nesta sessão, facilitando a leitura do percurso do visitante." position="bottom"><h3>Páginas Percorridas</h3></CommonAppTooltip>
-        <div v-if="pageJourney.length" class="journey-list">
-          <div v-for="page in pageJourney" :key="page.id" class="journey-item">
-            <div class="journey-step">{{ page.step }}</div>
-            <div class="journey-body">
-              <strong>{{ page.title }}</strong>
-              <div class="table-muted">{{ page.path || 'Sem rota registrada' }}</div>
+      <UiCard padding="md">
+        <CommonAppTooltip text="Ordem exata das páginas vistas nesta sessão, facilitando a leitura do percurso do visitante." position="bottom"><h3 class="text-base font-semibold text-p-text mb-4">Páginas Percorridas</h3></CommonAppTooltip>
+        <div v-if="pageJourney.length" class="grid gap-2.5">
+          <div v-for="pg in pageJourney" :key="pg.id" class="grid grid-cols-[40px_1fr_180px] items-center gap-3.5 rounded-xl bg-p-base/50 px-3.5 py-3 max-md:grid-cols-1">
+            <div class="grid h-10 w-10 place-items-center rounded-full bg-cyan-500/15 font-extrabold text-cyan-300">{{ pg.step }}</div>
+            <div class="min-w-0">
+              <strong class="text-sm text-p-text">{{ pg.title }}</strong>
+              <div class="text-xs text-p-text-muted">{{ pg.path || 'Sem rota registrada' }}</div>
             </div>
-            <div class="journey-time">{{ formatDateTime(page.timestamp) }}</div>
+            <div class="text-xs text-p-text-muted max-md:text-left md:text-right">{{ formatDateTime(pg.timestamp) }}</div>
           </div>
         </div>
-        <div v-else class="no-data-placeholder">Nenhuma página percorrida registrada nesta sessão.</div>
-      </div>
+        <UiEmptyState v-else title="Nenhuma página percorrida registrada nesta sessão." />
+      </UiCard>
 
-      <div class="details-card">
-        <CommonAppTooltip text="Leads efetivamente gerados nesta sessão, com status e momento de criação." position="bottom"><h3>Leads da Sessão</h3></CommonAppTooltip>
-        <div v-if="data.leads?.length" class="stack-list">
-          <div v-for="lead in data.leads" :key="lead.id" class="stack-item lead-item">
+      <UiCard padding="md">
+        <CommonAppTooltip text="Leads efetivamente gerados nesta sessão, com status e momento de criação." position="bottom"><h3 class="text-base font-semibold text-p-text mb-4">Leads da Sessão</h3></CommonAppTooltip>
+        <div v-if="data.leads?.length" class="grid gap-2.5">
+          <div v-for="lead in data.leads" :key="lead.id" class="flex items-start justify-between gap-4 rounded-xl bg-p-base/50 px-3.5 py-3">
             <div>
-              <strong>{{ lead.name || 'Lead sem nome' }}</strong>
-              <div class="table-muted">{{ lead.email || lead.phone || 'Sem contato' }}</div>
+              <strong class="text-sm text-p-text">{{ lead.name || 'Lead sem nome' }}</strong>
+              <div class="text-xs text-p-text-muted">{{ lead.email || lead.phone || 'Sem contato' }}</div>
             </div>
-            <div class="lead-meta">
-              <span>{{ lead.status }}</span>
-              <span>{{ formatDateTime(lead.createdAt) }}</span>
+            <div class="grid gap-1 text-right">
+              <span class="text-sm text-p-text-secondary">{{ lead.status }}</span>
+              <span class="text-xs text-p-text-muted">{{ formatDateTime(lead.createdAt) }}</span>
             </div>
           </div>
         </div>
-        <div v-else class="no-data-placeholder">Nenhum lead associado a esta sessão.</div>
-      </div>
+        <UiEmptyState v-else title="Nenhum lead associado a esta sessão." />
+      </UiCard>
 
-      <div class="details-card">
-        <CommonAppTooltip text="Sequência cronológica dos eventos registrados ao longo da sessão." position="bottom"><h3>Linha do Tempo</h3></CommonAppTooltip>
-        <div v-if="data.events?.length" class="timeline">
-          <div v-for="event in data.events" :key="event.id" class="timeline-item">
-            <div class="timeline-time">{{ formatDateTime(event.timestamp) }}</div>
-            <div class="timeline-body">
-              <strong>{{ formatEventType(event) }}</strong>
-              <div>{{ event.action || event.label || event.path || 'Sem descrição' }}</div>
-              <div class="table-muted">{{ event.path || event.category || 'geral' }}</div>
+      <UiCard padding="md">
+        <CommonAppTooltip text="Sequência cronológica dos eventos registrados ao longo da sessão." position="bottom"><h3 class="text-base font-semibold text-p-text mb-4">Linha do Tempo</h3></CommonAppTooltip>
+        <div v-if="data.events?.length" class="grid gap-3">
+          <div v-for="event in data.events" :key="event.id" class="grid grid-cols-[180px_1fr] gap-4 border-b border-p-border py-3 last:border-b-0 max-md:grid-cols-1">
+            <div class="text-xs text-p-text-muted">{{ formatDateTime(event.timestamp) }}</div>
+            <div>
+              <strong class="text-sm text-p-text">{{ formatEventType(event) }}</strong>
+              <div class="text-sm text-p-text-secondary">{{ event.action || event.label || event.path || 'Sem descrição' }}</div>
+              <div class="text-xs text-p-text-muted">{{ event.path || event.category || 'geral' }}</div>
             </div>
           </div>
         </div>
-        <div v-else class="no-data-placeholder">Nenhum evento registrado nesta sessão.</div>
-      </div>
+        <UiEmptyState v-else title="Nenhum evento registrado nesta sessão." />
+      </UiCard>
     </div>
   </div>
 </template>
-
-<style scoped>
-.metrics-page { padding: 24px; }
-.back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--color-surface-400); text-decoration: none; margin-bottom: 24px; }
-.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 32px; }
-h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; color: var(--color-surface-50); }
-.subtitle { margin: 0; color: var(--color-surface-400); }
-.filter-actions { display: flex; gap: 16px; flex-wrap: wrap; background: var(--glass-bg); border: 1px solid var(--glass-border-subtle); border-radius: var(--radius-lg); padding: 16px 20px; }
-.filter-group { display: flex; flex-direction: column; gap: 6px; }
-.filter-group label, .table-muted, dt { color: var(--color-surface-400); font-size: 12px; }
-.date-input, .project-select { border: 1px solid var(--glass-border-subtle); background: rgba(15, 23, 42, 0.55); color: var(--color-surface-50); border-radius: 12px; padding: 10px 12px; }
-.dashboard, .details-grid { display: grid; gap: 24px; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
-.details-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.stat-card, .details-card { background: var(--glass-bg); border: 1px solid var(--glass-border-subtle); border-radius: var(--radius-lg); padding: 20px; }
-.stat-label { color: var(--color-surface-400); font-size: 12px; }
-.stat-value { display: block; margin-top: 8px; font-size: 28px; font-weight: 800; }
-.stat-link { display: inline-flex; margin-top: 10px; color: #93c5fd; text-decoration: none; font-size: 13px; font-weight: 600; }
-.info-list { display: grid; gap: 12px; margin: 0; }
-.info-list div { display: flex; justify-content: space-between; gap: 16px; }
-dd { margin: 0; color: var(--color-surface-50); text-align: right; }
-.stack-list { display: grid; gap: 10px; }
-.stack-item { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 14px; border-radius: 14px; background: rgba(15, 23, 42, 0.45); }
-.journey-list { display: grid; gap: 10px; }
-.journey-item { display: grid; grid-template-columns: 40px 1fr 180px; gap: 14px; align-items: center; padding: 12px 14px; border-radius: 14px; background: rgba(15, 23, 42, 0.45); }
-.journey-step { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; background: rgba(34, 211, 238, 0.16); color: #67e8f9; font-weight: 800; }
-.journey-body { min-width: 0; }
-.journey-time { color: var(--color-surface-400); font-size: 12px; text-align: right; }
-.lead-item { align-items: flex-start; }
-.lead-meta { display: grid; gap: 4px; text-align: right; }
-.timeline { display: grid; gap: 12px; }
-.timeline-item { display: grid; grid-template-columns: 180px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.12); }
-.timeline-time { color: var(--color-surface-400); font-size: 12px; }
-.loading, .no-data-placeholder { color: var(--color-surface-400); }
-.text-blue { color: #60a5fa; }
-.text-cyan { color: #22d3ee; }
-.text-emerald { color: #34d399; }
-.text-indigo { color: #818cf8; }
-@media (max-width: 960px) {
-  .header, .timeline-item, .info-list div, .journey-item { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
-  .journey-time { text-align: left; }
-}
-</style>
