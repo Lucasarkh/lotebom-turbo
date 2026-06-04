@@ -156,7 +156,7 @@ export class UserService {
   async findAll(tenantId: string | undefined, query: PaginationQueryDto) {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
-    const where = this.buildManagedUserScope(tenantId);
+    const where = { ...this.buildManagedUserScope(tenantId), isActive: true };
 
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
