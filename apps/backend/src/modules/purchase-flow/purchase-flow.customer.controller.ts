@@ -7,7 +7,7 @@ import {
   Req,
   Res
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { PurchaseFlowService } from './purchase-flow.service';
@@ -30,12 +30,14 @@ export class PurchaseFlowCustomerController {
 
   @Post('otp/request')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Solicitar código OTP para acesso à área do cliente' })
   requestOtp(@Body() dto: CustomerOtpRequestDto) {
     return this.service.requestOtp(dto);
   }
 
   @Post('otp/verify')
   @Throttle({ default: { limit: 8, ttl: 60000 } })
+  @ApiOperation({ summary: 'Verificar código OTP e autenticar cliente' })
   async verifyOtp(
     @Body() dto: CustomerOtpVerifyDto,
     @Res({ passthrough: true }) res: Response
@@ -55,6 +57,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Get('reserva-ativa')
+  @ApiOperation({ summary: 'Consultar reserva ativa do cliente' })
   getActiveReservation(@Req() req: Request) {
     return this.service.getActiveReservationByAccessToken(
       req.cookies?.[this.service.getAccessCookieName()]
@@ -62,6 +65,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Get('processo-compra')
+  @ApiOperation({ summary: 'Visualizar andamento do processo de compra' })
   getFlow(@Req() req: Request) {
     return this.service.getCustomerFlow(
       req.cookies?.[this.service.getAccessCookieName()]
@@ -69,6 +73,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Put('processo-compra/cadastro-cliente')
+  @ApiOperation({ summary: 'Atualizar cadastro do cliente principal' })
   updateCustomer(
     @Req() req: Request,
     @Body() dto: CustomerProfileDto
@@ -80,6 +85,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Put('processo-compra/cadastro-conjuge')
+  @ApiOperation({ summary: 'Atualizar cadastro do cônjuge' })
   updateSpouse(
     @Req() req: Request,
     @Body() dto: CustomerProfileDto
@@ -91,6 +97,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Post('processo-compra/documentos/upload-url')
+  @ApiOperation({ summary: 'Obter URL para upload de documento' })
   getDocumentUploadUrl(
     @Req() req: Request,
     @Body() dto: CustomerDocumentUploadRequestDto
@@ -102,6 +109,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Post('processo-compra/documentos')
+  @ApiOperation({ summary: 'Registrar documento enviado' })
   registerDocument(
     @Req() req: Request,
     @Body() dto: CustomerDocumentRegistrationDto
@@ -113,6 +121,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Post('processo-compra/simulacao')
+  @ApiOperation({ summary: 'Aprovar simulação de financiamento' })
   approveSimulation(
     @Req() req: Request,
     @Body() dto: CustomerSimulationDto
@@ -124,6 +133,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Post('processo-compra/confirmar-condicoes')
+  @ApiOperation({ summary: 'Confirmar condições de pagamento' })
   confirmConditions(
     @Req() req: Request,
     @Body() dto: CustomerConditionsConfirmationDto
@@ -135,6 +145,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Post('processo-compra/gerar-contrato')
+  @ApiOperation({ summary: 'Gerar contrato de compra e venda' })
   generateContract(
     @Req() req: Request,
     @Body() dto: GenerateContractDto
@@ -146,6 +157,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Post('processo-compra/assinar-contrato')
+  @ApiOperation({ summary: 'Assinar contrato eletronicamente' })
   signContract(
     @Req() req: Request,
     @Body() dto: ManualContractSignatureDto
@@ -157,6 +169,7 @@ export class PurchaseFlowCustomerController {
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Logout do cliente' })
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie(
       this.service.getAccessCookieName(),

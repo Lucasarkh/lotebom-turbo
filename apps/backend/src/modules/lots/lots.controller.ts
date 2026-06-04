@@ -15,7 +15,9 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiOperation,
   ApiQuery,
+  ApiResponse,
   ApiTags
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -46,6 +48,7 @@ export class LotsController {
 
   @Get()
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @ApiOperation({ summary: 'Listar lotes do projeto' })
   findAll(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -56,6 +59,7 @@ export class LotsController {
 
   @Get('categories')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @ApiOperation({ summary: 'Listar categorias de lote' })
   listCategories(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -65,6 +69,7 @@ export class LotsController {
 
   @Post('categories')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Criar categoria de lote' })
   createCategory(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -75,6 +80,7 @@ export class LotsController {
 
   @Put('categories/:categoryId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Atualizar categoria de lote' })
   updateCategory(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -86,6 +92,7 @@ export class LotsController {
 
   @Delete('categories/:categoryId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover categoria de lote' })
   removeCategory(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -96,6 +103,7 @@ export class LotsController {
 
   @Post('categories/:categoryId/image')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Upload de imagem da categoria' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -115,6 +123,7 @@ export class LotsController {
 
   @Delete('categories/:categoryId/image')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover imagem da categoria' })
   removeCategoryImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -125,6 +134,7 @@ export class LotsController {
 
   @Get(':mapElementId')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @ApiOperation({ summary: 'Buscar detalhes do lote' })
   findOne(
     @TenantId() tenantId: string,
     @Param('mapElementId') mapElementId: string
@@ -134,6 +144,7 @@ export class LotsController {
 
   @Put(':mapElementId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Atualizar/criar detalhes do lote' })
   upsert(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -145,6 +156,7 @@ export class LotsController {
 
   @Delete(':mapElementId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover detalhes do lote' })
   remove(
     @TenantId() tenantId: string,
     @Param('mapElementId') mapElementId: string
@@ -154,6 +166,7 @@ export class LotsController {
 
   @Post('imports')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Importar lotes via CSV' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -202,6 +215,7 @@ export class LotsController {
 
   @Get('imports/latest')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Última importação de CSV' })
   getLatestImport(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string
@@ -211,6 +225,7 @@ export class LotsController {
 
   @Get('imports/:importId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Status da importação CSV' })
   getImportStatus(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -225,6 +240,7 @@ export class LotsController {
 
   @Get('imports/:importId/errors')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Erros da importação CSV' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   getImportErrors(
     @TenantId() tenantId: string,

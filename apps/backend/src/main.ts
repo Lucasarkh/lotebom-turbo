@@ -35,19 +35,53 @@ async function bootstrap() {
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ limit: '10mb', extended: true }));
 
-  const config = new DocumentBuilder()
-    .setTitle('lotio API')
-    .setDescription('API para gerenciamento de mapas e projetos no lotio')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  const isProduction = process.env.NODE_ENV === 'production';
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      defaultModelsExpandDepth: -1
-    }
-  });
+  // Swagger — disponível apenas em ambientes não-produtivos por segurança
+  if (!isProduction) {
+    const config = new DocumentBuilder()
+      .setTitle('Lotio API')
+      .setDescription(
+        'API REST para gerenciamento de loteamentos, mapas interativos, ' +
+        'leads, corretores e fluxo de compra. Plataforma completa para ' +
+        'incorporadoras e imobiliárias.'
+      )
+      .setVersion('1.0')
+      .setContact('Lotio', 'https://lotio.com.br', 'contato@lotio.com.br')
+      .setTermsOfService('https://lotio.com.br/termos')
+      .setLicense('Proprietário', 'https://lotio.com.br')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'Authorization',
+          description: 'Insira o token JWT de autenticação',
+          in: 'header',
+        },
+        'bearer',
+      )
+      .addServer(
+        process.env.API_URL ?? 'http://localhost:8080',
+        'Servidor atual',
+      )
+      .addTag('Auth', 'Autenticação e gerenciamento de sessão')
+      .addTag('Users', 'Gerenciamento de usuários do sistema')
+      .addTag('Leads', 'Captação e gestão de leads')
+      .addTag('Projects', 'Gerenciamento de projetos/loteamentos')
+      .addTag('Health', 'Monitoramento e health checks')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: {
+        defaultModelsExpandDepth: -1,
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
+    });
+  }
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -103,8 +137,10 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 8080;
   await app.listen(port);
-  console.log(`lotio API running on http://localhost:${port}`);
-  console.log(`Swagger docs at http://localhost:${port}/docs`);
+  console.log(`Lotio API running on http://localhost:${port}`);
+  if (!isProduction) {
+    console.log(`Swagger docs: http://localhost:${port}/docs`);
+  }
 }
 
 bootstrap();

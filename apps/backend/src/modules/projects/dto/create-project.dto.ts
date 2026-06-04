@@ -3,12 +3,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PreLaunchCaptureMode } from '@prisma/client';
 
 export class CreateProjectDto {
-  @ApiProperty({ example: 'Residencial Parque dos Ipês' })
+  @ApiProperty({ description: 'Nome do projeto/loteamento', example: 'Residencial Parque dos Ipês' })
   @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
   name: string;
 
-  @ApiProperty({ example: 'parque-dos-ipes' })
+  @ApiProperty({ description: 'Slug único para URL do projeto', example: 'parque-dos-ipes' })
   @IsString()
   @IsNotEmpty({ message: 'Slug é obrigatório' })
   slug: string;

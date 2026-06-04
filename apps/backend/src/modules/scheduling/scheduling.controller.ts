@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { TenantGuard } from '@common/guards/tenant.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
@@ -30,12 +30,14 @@ export class SchedulingController {
 
   @Get('config/:projectId')
   @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Obter configuração de agendamento do projeto' })
   getConfig(@Param('projectId') projectId: string) {
     return this.service.getProjectConfig(projectId);
   }
 
   @Patch('config/:projectId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Atualizar configuração de agendamento' })
   updateConfig(
     @Param('projectId') projectId: string,
     @Body() dto: UpdateSchedulingConfigDto
@@ -45,6 +47,7 @@ export class SchedulingController {
 
   @Post()
   @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Criar agendamento' })
   create(
     @TenantId() tenantId: string,
     @Body() dto: CreateSchedulingDto,
@@ -55,6 +58,7 @@ export class SchedulingController {
 
   @Get()
   @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Listar agendamentos' })
   findAll(
     @TenantId() tenantId: string,
     @CurrentUser() user: any,
@@ -65,6 +69,7 @@ export class SchedulingController {
 
   @Patch(':id/status')
   @Roles('LOTEADORA', 'CORRETOR', 'IMOBILIARIA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Atualizar status do agendamento' })
   updateStatus(
     @Param('id') id: string,
     @Body('status') status: SchedulingStatus
@@ -74,6 +79,7 @@ export class SchedulingController {
 
   @Delete(':id')
   @Roles('LOTEADORA', 'IMOBILIARIA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover agendamento' })
   delete(@Param('id') id: string) {
     return this.service.deleteScheduling(id);
   }

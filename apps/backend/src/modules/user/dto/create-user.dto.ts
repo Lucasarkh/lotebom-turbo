@@ -14,33 +14,34 @@ import {
 } from '@/common/security/password-policy';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'Ana Editora' })
+  @ApiProperty({ description: 'Nome completo do usuário', example: 'Ana Editora' })
   @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
   name: string;
 
-  @ApiProperty({ example: 'ana@vistaverde.com' })
+  @ApiProperty({ description: 'E-mail do usuário (deve ser único)', example: 'ana@vistaverde.com' })
   @IsEmail({}, { message: 'Email inválido' })
   @IsNotEmpty({ message: 'Email é obrigatório' })
   email: string;
 
-  @ApiProperty({ example: 'senha123' })
+  @ApiProperty({ description: 'Senha do usuário (deve atender à política de segurança)', example: 'senha123' })
   @IsString()
   @IsNotEmpty({ message: 'Senha é obrigatória' })
   @Matches(PASSWORD_POLICY_REGEX, { message: PASSWORD_POLICY_MESSAGE })
   password: string;
 
-  @ApiPropertyOptional({ enum: UserRole, example: 'LOTEADORA' })
+  @ApiPropertyOptional({ description: 'Papel do usuário no sistema', enum: UserRole, example: 'LOTEADORA' })
   @IsOptional()
   @IsEnum(UserRole, { message: 'Role inválida' })
   role?: UserRole;
 
   @ApiPropertyOptional({
+    description: 'Permissões de acesso aos módulos do painel (read/write/none)',
     example: {
       projects: 'write',
       leads: 'read',
-      distribution: 'none'
-    }
+      distribution: 'none',
+    },
   })
   @IsOptional()
   panelPermissions?: Record<string, string>;

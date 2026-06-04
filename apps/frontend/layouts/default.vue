@@ -202,6 +202,10 @@
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span v-if="!sidebarCollapsed">Sair</span>
         </button>
+        <button class="theme-toggle-btn" @click="themeStore.toggle()" :title="themeStore.isDark ? 'Modo claro' : 'Modo escuro'">
+          <i :class="themeStore.isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill'" class="text-lg"></i>
+          <span v-if="!sidebarCollapsed">{{ themeStore.isDark ? 'Modo claro' : 'Modo escuro' }}</span>
+        </button>
         <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :style="{ transform: sidebarCollapsed ? 'rotate(180deg)' : '' }"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
         </button>
@@ -228,8 +232,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
 
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const router = useRouter()
 const { success: toastSuccess } = useToast()
 const sidebarCollapsed = ref(false)
@@ -240,6 +246,7 @@ const showDashboardEntry = computed(() => !(authStore.isLoteadora && authStore.h
 const { unreadCount, startPolling, stopPolling } = useNotifications()
 
 onMounted(() => {
+  themeStore.init()
   if (authStore.isLoggedIn) startPolling(60000)
 })
 onUnmounted(() => stopPolling())
@@ -295,10 +302,10 @@ const handleLogout = async () => {
 
 .sidebar {
   width: 260px;
-  background: rgba(10, 15, 13, 0.85);
+  background: var(--layout-sidebar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(52, 211, 153, 0.1);
+  border-right: 1px solid var(--layout-sidebar-border);
   display: flex;
   flex-direction: column;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -314,7 +321,7 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   padding: 20px 16px;
-  border-bottom: 1px solid rgba(52, 211, 153, 0.1);
+  border-bottom: 1px solid var(--layout-sidebar-border);
 }
 .sidebar-logo-link {
   display: flex;
@@ -331,9 +338,9 @@ const handleLogout = async () => {
   gap: 12px;
   padding: 14px;
   margin: 12px 12px 0;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--layout-user-card-bg);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(52, 211, 153, 0.1);
+  border: 1px solid var(--layout-sidebar-border);
 }
 
 .user-bell {
@@ -350,7 +357,7 @@ const handleLogout = async () => {
   transition: background 150ms, color 150ms;
   margin-left: auto;
 }
-.user-bell:hover { background: rgba(255,255,255,0.08); color: var(--color-surface-100); }
+.user-bell:hover { background: var(--layout-nav-hover-bg); color: var(--color-surface-100); }
 .bell-badge {
   position: absolute;
   top: 0px; right: 0px;
@@ -362,7 +369,7 @@ const handleLogout = async () => {
   font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   padding: 0 3px;
-  border: 1.5px solid rgba(10, 15, 13, 0.9);
+  border: 1.5px solid var(--layout-nav-badge-border);
   line-height: 1;
 }
 .user-avatar {
@@ -393,7 +400,7 @@ const handleLogout = async () => {
   cursor: pointer; border: none; background: none; width: 100%; text-align: left;
   font-family: inherit;
 }
-.nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--color-surface-50); }
+.nav-item:hover { background: var(--layout-nav-hover-bg); color: var(--color-surface-50); }
 .nav-item.router-link-active {
   background: rgba(16, 185, 129, 0.12);
   color: var(--color-primary-400);
@@ -405,7 +412,7 @@ const handleLogout = async () => {
 
 .sidebar-footer {
   padding: 12px;
-  border-top: 1px solid rgba(52, 211, 153, 0.1);
+  border-top: 1px solid var(--layout-sidebar-border);
   display: flex; flex-direction: column; gap: 2px;
 }
 .logout-btn:hover { color: #f87171; background: rgba(239, 68, 68, 0.1); }
@@ -416,7 +423,17 @@ const handleLogout = async () => {
   color: var(--color-surface-400); border-radius: var(--radius-md);
   transition: all 150ms ease;
 }
-.collapse-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--color-surface-200); }
+.collapse-btn:hover { background: var(--layout-collapse-hover-bg); color: var(--color-surface-200); }
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px;
+  border: none; background: none; cursor: pointer;
+  color: var(--color-surface-400); border-radius: var(--radius-md);
+  transition: all 150ms ease;
+}
+.theme-toggle-btn:hover { background: var(--layout-collapse-hover-bg); color: var(--color-surface-200); }
 
 .main-content {
   flex: 1; margin-left: 260px;
@@ -426,7 +443,7 @@ const handleLogout = async () => {
   max-width: 100%;
   overflow-x: hidden;
   background:
-    linear-gradient(rgba(10, 15, 13, 1), rgba(10, 15, 13, 0.62)),
+    linear-gradient(var(--layout-main-overlay-from), var(--layout-main-overlay-to)),
     url('/img/banner-hero.jpg') center / cover fixed;
   background-attachment: fixed;
   position: relative;
@@ -458,7 +475,7 @@ const handleLogout = async () => {
 .mobile-hamburger {
   display: none;
   position: fixed; top: 12px; left: 12px; z-index: 99;
-  background: rgba(10, 15, 13, 0.85); border: 1px solid rgba(52, 211, 153, 0.12);
+  background: var(--layout-hamburger-bg); border: 1px solid var(--layout-hamburger-border);
   border-radius: var(--radius-md);
   padding: 8px; cursor: pointer; color: var(--color-surface-200);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -467,14 +484,14 @@ const handleLogout = async () => {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
-.mobile-hamburger:hover { background: rgba(10, 15, 13, 0.95); color: var(--color-surface-50); }
+.mobile-hamburger:hover { background: var(--layout-hamburger-bg); color: var(--color-surface-50); opacity: 0.95; }
 
 .nav-icon-wrapper { position: relative; display: flex; align-items: center; flex-shrink: 0; }
 .nav-badge-dot {
   position: absolute; top: -3px; right: -3px;
   width: 8px; height: 8px; border-radius: 50%;
   background: #ef4444;
-  border: 1.5px solid rgba(10, 15, 13, 0.9);
+  border: 1.5px solid var(--layout-nav-badge-border);
 }
 .nav-unread-chip {
   margin-left: auto;

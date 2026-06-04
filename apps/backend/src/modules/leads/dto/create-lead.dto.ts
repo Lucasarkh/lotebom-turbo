@@ -2,15 +2,15 @@ import { IsEmail, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateLeadDto {
-  @ApiProperty({ example: 'João Silva' })
+  @ApiProperty({ description: 'Nome completo do lead', example: 'João Silva' })
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'joao@email.com' })
+  @ApiProperty({ description: 'E-mail do lead', example: 'joao@email.com' })
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: '11999998888' })
+  @ApiProperty({ description: 'Telefone do lead com DDD', example: '11999998888' })
   @IsString()
   phone: string;
 

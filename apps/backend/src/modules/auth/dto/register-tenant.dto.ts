@@ -12,137 +12,137 @@ import {
 } from '@/common/security/password-policy';
 
 export class RegisterTenantDto {
-  @ApiProperty({ example: 'Loteadora Vista Verde' })
+  @ApiProperty({ description: 'Nome da loteadora/incorporadora', example: 'Loteadora Vista Verde' })
   @IsString()
   @IsNotEmpty({ message: 'Nome da empresa é obrigatório' })
   tenantName: string;
 
-  @ApiProperty({ example: 'vista-verde' })
+  @ApiProperty({ description: 'Slug único para URL do tenant', example: 'vista-verde' })
   @IsString()
   @IsNotEmpty({ message: 'Slug é obrigatório' })
   tenantSlug: string;
 
-  @ApiPropertyOptional({ example: 'vendas.vistaverde.com.br' })
+  @ApiPropertyOptional({ description: 'Domínio personalizado para o portal', example: 'vendas.vistaverde.com.br' })
   @IsOptional()
   @IsString()
   customDomain?: string;
 
-  @ApiPropertyOptional({ example: '12.345.678/0001-90' })
+  @ApiPropertyOptional({ description: 'CNPJ da empresa', example: '12.345.678/0001-90' })
   @IsOptional()
   @IsString()
   cnpj?: string;
 
-  @ApiPropertyOptional({ example: 'Vista Verde Empreendimentos Ltda' })
+  @ApiPropertyOptional({ description: 'Razão social', example: 'Vista Verde Empreendimentos Ltda' })
   @IsOptional()
   @IsString()
   legalName?: string;
 
-  @ApiPropertyOptional({ example: '123456789' })
+  @ApiPropertyOptional({ description: 'Inscrição estadual', example: '123456789' })
   @IsOptional()
   @IsString()
   stateRegistration?: string;
 
-  @ApiPropertyOptional({ example: '987654321' })
+  @ApiPropertyOptional({ description: 'Inscrição municipal', example: '987654321' })
   @IsOptional()
   @IsString()
   municipalRegistration?: string;
 
-  @ApiPropertyOptional({ example: 'Maria Souza' })
+  @ApiPropertyOptional({ description: 'Nome do representante legal', example: 'Maria Souza' })
   @IsOptional()
   @IsString()
   legalRepresentative?: string;
 
-  @ApiPropertyOptional({ example: 'CRECI-GO 12345 J' })
+  @ApiPropertyOptional({ description: 'Número CRECI', example: 'CRECI-GO 12345 J' })
   @IsOptional()
   @IsString()
   creci?: string;
 
-  @ApiPropertyOptional({ example: '(62) 99999-9999' })
+  @ApiPropertyOptional({ description: 'Telefone comercial', example: '(62) 99999-9999' })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ example: '(62) 98888-7777' })
+  @ApiPropertyOptional({ description: 'WhatsApp comercial', example: '(62) 98888-7777' })
   @IsOptional()
   @IsString()
   whatsapp?: string;
 
-  @ApiPropertyOptional({ example: 'contato@vistaverde.com.br' })
+  @ApiPropertyOptional({ description: 'E-mail público da empresa', example: 'contato@vistaverde.com.br' })
   @IsOptional()
   @IsString()
   publicEmail?: string;
 
-  @ApiPropertyOptional({ example: 'https://vistaverde.com.br' })
+  @ApiPropertyOptional({ description: 'Site da empresa', example: 'https://vistaverde.com.br' })
   @IsOptional()
   @IsString()
   website?: string;
 
-  @ApiPropertyOptional({ example: 'Fernanda Rocha' })
+  @ApiPropertyOptional({ description: 'Nome do contato', example: 'Fernanda Rocha' })
   @IsOptional()
   @IsString()
   contactName?: string;
 
-  @ApiPropertyOptional({ example: 'comercial@vistaverde.com.br' })
+  @ApiPropertyOptional({ description: 'E-mail do contato', example: 'comercial@vistaverde.com.br' })
   @IsOptional()
   @IsString()
   contactEmail?: string;
 
-  @ApiPropertyOptional({ example: '(62) 3333-2222' })
+  @ApiPropertyOptional({ description: 'Telefone do contato', example: '(62) 3333-2222' })
   @IsOptional()
   @IsString()
   contactPhone?: string;
 
-  @ApiPropertyOptional({ example: '74000-000' })
+  @ApiPropertyOptional({ description: 'CEP do endereço', example: '74000-000' })
   @IsOptional()
   @IsString()
   addressZipCode?: string;
 
-  @ApiPropertyOptional({ example: 'Av. Central' })
+  @ApiPropertyOptional({ description: 'Logradouro', example: 'Av. Central' })
   @IsOptional()
   @IsString()
   addressStreet?: string;
 
-  @ApiPropertyOptional({ example: '1000' })
+  @ApiPropertyOptional({ description: 'Número', example: '1000' })
   @IsOptional()
   @IsString()
   addressNumber?: string;
 
-  @ApiPropertyOptional({ example: 'Sala 1201' })
+  @ApiPropertyOptional({ description: 'Complemento', example: 'Sala 1201' })
   @IsOptional()
   @IsString()
   addressComplement?: string;
 
-  @ApiPropertyOptional({ example: 'Centro' })
+  @ApiPropertyOptional({ description: 'Bairro', example: 'Centro' })
   @IsOptional()
   @IsString()
   addressDistrict?: string;
 
-  @ApiPropertyOptional({ example: 'Goiania' })
+  @ApiPropertyOptional({ description: 'Cidade', example: 'Goiania' })
   @IsOptional()
   @IsString()
   addressCity?: string;
 
-  @ApiPropertyOptional({ example: 'GO' })
+  @ApiPropertyOptional({ description: 'UF', example: 'GO' })
   @IsOptional()
   @IsString()
   addressState?: string;
 
-  @ApiPropertyOptional({ example: 'Brasil' })
+  @ApiPropertyOptional({ description: 'País', example: 'Brasil' })
   @IsOptional()
   @IsString()
   addressCountry?: string;
 
-  @ApiProperty({ example: 'Carlos Admin' })
+  @ApiProperty({ description: 'Nome do administrador', example: 'Carlos Admin' })
   @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
   name: string;
 
-  @ApiProperty({ example: 'admin@vistaverde.com' })
+  @ApiProperty({ description: 'E-mail do administrador', example: 'admin@vistaverde.com' })
   @IsEmail({}, { message: 'Email inválido' })
   @IsNotEmpty({ message: 'Email é obrigatório' })
   email: string;
 
-  @ApiProperty({ example: 'senhaSegura123' })
+  @ApiProperty({ description: 'Senha do administrador (deve atender à política de segurança)', example: 'senhaSegura123' })
   @IsString()
   @IsNotEmpty({ message: 'Senha é obrigatória' })
   @Matches(PASSWORD_POLICY_REGEX, { message: PASSWORD_POLICY_MESSAGE })

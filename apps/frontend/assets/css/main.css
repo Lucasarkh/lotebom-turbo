@@ -116,7 +116,20 @@
   --space-10: 40px;
 
   --radius-full: 9999px;
+
+  /* Default layout chrome */
+  --layout-sidebar-bg: rgba(10, 15, 13, 0.85);
+  --layout-sidebar-border: rgba(52, 211, 153, 0.1);
+  --layout-main-overlay-from: rgba(10, 15, 13, 1);
+  --layout-main-overlay-to: rgba(10, 15, 13, 0.62);
+  --layout-user-card-bg: rgba(255, 255, 255, 0.04);
+  --layout-nav-hover-bg: rgba(255, 255, 255, 0.05);
+  --layout-nav-badge-border: rgba(10, 15, 13, 0.9);
+  --layout-hamburger-bg: rgba(10, 15, 13, 0.85);
+  --layout-hamburger-border: rgba(52, 211, 153, 0.12);
+  --layout-collapse-hover-bg: rgba(255, 255, 255, 0.06);
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    @layer base — element resets & typography.
@@ -627,3 +640,290 @@
 
 .painel-layout ::-webkit-scrollbar-thumb:hover,
 .layout ::-webkit-scrollbar-thumb:hover { background: var(--color-p-border-hover); }
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT THEME
+   Activated when <html> has class "light"
+   Overrides CSS custom properties — all Tailwind utilities
+   (bg-p-*, text-p-*, etc.) automatically pick up new values
+   via var() resolution.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Design tokens ────────────────────────────────────── */
+html.light {
+  /* Panel theme tokens (invert dark palette) */
+  --color-p-base: #fafafa;
+  --color-p-raised: #ffffff;
+  --color-p-elevated: #f4f4f5;
+  --color-p-overlay: #e4e4e7;
+  --color-p-border: #d4d4d8;
+  --color-p-border-hover: #a1a1aa;
+  --color-p-text: #18181b;
+  --color-p-text-secondary: #52525b;
+  --color-p-text-muted: #71717a;
+  --color-p-accent: #059669;
+  --color-p-accent-hover: #047857;
+  --color-p-accent-subtle: #d1fae5;
+  --color-p-success: #10b981;
+  --color-p-success-subtle: #d1fae5;
+  --color-p-warning: #f59e0b;
+  --color-p-warning-subtle: #fef3c7;
+  --color-p-danger: #ef4444;
+  --color-p-danger-subtle: #fee2e2;
+  --color-p-info: #3b82f6;
+  --color-p-info-subtle: #dbeafe;
+
+  /* Surface colors (invert dark green-tinted scale) */
+  --color-surface-950: #fafafa;
+  --color-surface-900: #f5f5f5;
+  --color-surface-800: #ebebeb;
+  --color-surface-700: #e0e0e0;
+  --color-surface-600: #d4d4d4;
+  --color-surface-500: #a3a3a3;
+  --color-surface-400: #737373;
+  --color-surface-300: #525252;
+  --color-surface-200: #404040;
+  --color-surface-100: #171717;
+  --color-surface-50: #0a0a0a;
+
+  /* Glass tokens — frosted white instead of dark tint */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg-light: rgba(255, 255, 255, 0.55);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.92);
+  --glass-bg-hover: rgba(0, 0, 0, 0.04);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-subtle: rgba(0, 0, 0, 0.04);
+  --glass-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --glass-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+  /* Text primitives */
+  --text-primary: var(--color-surface-900);
+  --text-secondary: rgba(0, 0, 0, 0.55);
+  --text-muted: rgba(0, 0, 0, 0.35);
+
+  /* Scrollbar (global rules will pick up --color-p-border) */
+
+  /* Default layout chrome — light */
+  --layout-sidebar-bg: rgba(255, 255, 255, 0.88);
+  --layout-sidebar-border: rgba(0, 0, 0, 0.08);
+  --layout-main-overlay-from: rgba(255, 255, 255, 0.95);
+  --layout-main-overlay-to: rgba(255, 255, 255, 0.62);
+  --layout-user-card-bg: rgba(0, 0, 0, 0.03);
+  --layout-nav-hover-bg: rgba(0, 0, 0, 0.04);
+  --layout-nav-badge-border: rgba(255, 255, 255, 0.9);
+  --layout-hamburger-bg: rgba(255, 255, 255, 0.88);
+  --layout-hamburger-border: rgba(0, 0, 0, 0.08);
+  --layout-collapse-hover-bg: rgba(0, 0, 0, 0.06);
+}
+
+/* ── color-scheme — native form control appearance ───── */
+html.light .layout,
+html.light .painel-layout,
+html.light .form-input,
+html.light .form-select,
+html.light .form-textarea,
+html.light .form-control {
+  color-scheme: light;
+}
+
+html.light .layout a {
+  color: var(--color-primary-700);
+}
+html.light .layout a:hover {
+  color: var(--color-primary-800);
+}
+
+/* ── Buttons — dark-mode defaults use rgba(255,…)         */
+html.light .btn-secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border-color: var(--gray-300);
+}
+html.light .btn-secondary:hover:not(:disabled) {
+  background: var(--gray-200);
+  color: var(--gray-900);
+  border-color: var(--gray-400);
+}
+
+html.light .btn-neutral {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border-color: var(--gray-200);
+}
+html.light .btn-neutral:hover:not(:disabled) {
+  background: var(--gray-200);
+  color: var(--gray-900);
+}
+
+html.light .btn-ghost {
+  background: transparent;
+  color: var(--gray-600);
+}
+html.light .btn-ghost:hover:not(:disabled) {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+html.light .btn-outline {
+  color: var(--color-primary-700);
+  border-color: var(--color-primary-500);
+}
+html.light .btn-outline:hover:not(:disabled) {
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-600);
+  color: var(--color-primary-800);
+}
+
+/* ── Form inputs ─────────────────────────────────────── */
+html.light .form-input,
+html.light .form-select,
+html.light .form-textarea,
+html.light .form-control {
+  color: var(--gray-900);
+  background: #ffffff;
+  border-color: var(--gray-300);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html.light .form-input:focus,
+html.light .form-select:focus,
+html.light .form-textarea:focus,
+html.light .form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+html.light .form-input::placeholder,
+html.light .form-textarea::placeholder,
+html.light .form-control::placeholder {
+  color: var(--gray-400);
+}
+html.light .form-select option {
+  background: #ffffff;
+  color: var(--gray-900);
+}
+
+/* ── Contact form ────────────────────────────────────── */
+html.light .contact-form input,
+html.light .contact-form textarea {
+  color: var(--gray-900);
+  background: #ffffff;
+  border-color: var(--gray-300);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html.light .contact-form input:focus,
+html.light .contact-form textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+html.light .contact-form label {
+  color: var(--gray-700);
+}
+
+/* ── Modals ──────────────────────────────────────────── */
+html.light .modal-close {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+  color: var(--gray-500);
+}
+html.light .modal-close:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+  border-color: var(--gray-300);
+}
+
+/* ── Tables ──────────────────────────────────────────── */
+html.light thead th {
+  background: var(--gray-50);
+  color: var(--gray-600);
+}
+html.light tbody td {
+  color: var(--gray-800);
+}
+html.light tbody tr:hover {
+  background: var(--color-primary-50);
+}
+
+/* ── Progress bar ────────────────────────────────────── */
+html.light .progress-bar {
+  background: var(--gray-200);
+}
+
+/* ── Back nav icon ───────────────────────────────────── */
+html.light .back-nav-icon {
+  background: var(--gray-200);
+  color: var(--gray-600);
+}
+
+/* ── Badges — use darker text for readability ────────── */
+html.light .badge-primary,
+html.light .badge-success {
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+html.light .badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+html.light .badge-danger,
+html.light .badge-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+html.light .badge-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+html.light .badge-neutral {
+  background: var(--gray-200);
+  color: var(--gray-600);
+}
+
+/* ── Alerts ──────────────────────────────────────────── */
+html.light .alert-success {
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+  border-color: var(--color-primary-200);
+}
+html.light .alert-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+html.light .alert-warning {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+html.light .alert-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+/* ── Loading spinner ─────────────────────────────────── */
+html.light .loading-spinner {
+  border-color: var(--gray-200);
+  border-top-color: var(--color-primary-500);
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+html.light .empty-state {
+  color: var(--gray-500);
+}
+
+/* ── Section headers ─────────────────────────────────── */
+html.light .section-title {
+  color: var(--gray-900);
+}
+
+/* ── Divider ─────────────────────────────────────────── */
+html.light .divider,
+html.light hr {
+  border-color: var(--gray-200);
+}
+
+/* ── Small info ──────────────────────────────────────── */
+html.light .small-info {
+  color: var(--gray-600);
+}

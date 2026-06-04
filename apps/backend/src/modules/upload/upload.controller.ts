@@ -10,7 +10,7 @@ import {
   UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { TenantGuard } from '@common/guards/tenant.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
@@ -29,6 +29,7 @@ export class UploadController {
 
   @Post('banner-image')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Upload de banner do projeto' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -53,6 +54,7 @@ export class UploadController {
 
   @Delete('banner-image')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover banner do projeto' })
   removeBannerImage(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -65,6 +67,7 @@ export class UploadController {
 
   @Post('og-logo')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Upload do logo Open Graph' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -83,6 +86,7 @@ export class UploadController {
 
   @Delete('og-logo')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover logo Open Graph' })
   removeOgLogo(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string
@@ -94,6 +98,7 @@ export class UploadController {
 
   @Get('footer-logos')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @ApiOperation({ summary: 'Listar logos do rodapé' })
   listFooterLogos(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string
@@ -103,6 +108,7 @@ export class UploadController {
 
   @Post('footer-logos')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Upload de logo do rodapé' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -130,6 +136,7 @@ export class UploadController {
 
   @Delete('footer-logos/:logoId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover logo do rodapé' })
   removeFooterLogo(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -142,6 +149,7 @@ export class UploadController {
 
   @Get('media')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @ApiOperation({ summary: 'Listar mídia da galeria' })
   listMedia(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string
@@ -151,6 +159,7 @@ export class UploadController {
 
   @Post('media')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Upload de mídia' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -180,6 +189,7 @@ export class UploadController {
 
   @Delete('media/:mediaId')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover mídia' })
   removeMedia(@TenantId() tenantId: string, @Param('mediaId') mediaId: string) {
     return this.uploadService.removeMedia(tenantId, mediaId);
   }
@@ -188,6 +198,7 @@ export class UploadController {
 
   @Get('presigned-upload')
   @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Obter URL pré-assinada para upload direto' })
   getPresignedUrl(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,

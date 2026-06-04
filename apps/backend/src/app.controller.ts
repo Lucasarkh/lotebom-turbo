@@ -6,10 +6,12 @@ import {
   Inject,
   Query
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { PrismaService } from '@/infra/db/prisma.service';
 import { SkipThrottle } from '@nestjs/throttler';
 import Redis from 'ioredis';
 
+@ApiTags('Health')
 @Controller()
 @SkipThrottle()
 export class AppController {
@@ -19,6 +21,21 @@ export class AppController {
   ) {}
 
   @Get('health')
+  @ApiOperation({
+    summary: 'Health check',
+    description: 'Verifica a saúde do sistema (banco de dados, Redis e uptime).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Sistema saudável ou degradado',
+    schema: {
+      example: {
+        status: 'ok',
+        uptime: 3600,
+        checks: { database: 'ok', redis: 'ok' },
+      },
+    },
+  })
   async health() {
     const checks: Record<string, string> = {};
 
@@ -48,6 +65,20 @@ export class AppController {
   }
 
   @Get('internal/tls/allow-host')
+  @ApiOperation({
+    summary: 'Verificar autorização de domínio para TLS',
+    description:
+      'Endpoint interno usado pelo Caddy para validar se um domínio está autorizado a receber certificado TLS.',
+  })
+  @ApiQuery({
+    name: 'domain',
+    required: true,
+    description: 'Nome de domínio a ser verificado',
+    example: 'vendas.lotio.com.br',
+  })
+  @ApiResponse({ status: 200, description: 'Domínio autorizado' })
+  @ApiResponse({ status: 400, description: 'Parâmetro de domínio inválido' })
+  @ApiResponse({ status: 403, description: 'Domínio não autorizado' })
   async allowTlsHost(@Query('domain') domain?: string) {
     const normalizedDomain = this.normalizeDomain(domain);
 

@@ -32,6 +32,14 @@
               {{ unreadCount > 9 ? '9+' : unreadCount }}
             </span>
           </NuxtLink>
+          <button
+            type="button"
+            class="rounded-lg p-2 text-p-text-secondary hover:bg-p-overlay hover:text-p-text transition-colors"
+            :title="themeStore.isDark ? 'Modo claro' : 'Modo escuro'"
+            @click="themeStore.toggle()"
+          >
+            <i :class="themeStore.isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill'" class="text-lg"></i>
+          </button>
           <span class="hidden sm:block text-sm text-p-text-secondary">{{ authStore.user?.name }}</span>
           <button
             type="button"
@@ -268,8 +276,10 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
 
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const router = useRouter()
 const route = useRoute()
 const { success: toastSuccess } = useToast()
@@ -280,6 +290,7 @@ const showDashboardEntry = computed(() => !(authStore.isLoteadora && authStore.h
 const { unreadCount, startPolling, stopPolling } = useNotifications()
 
 onMounted(() => {
+  themeStore.init()
   if (authStore.isLoggedIn) startPolling(60000)
 })
 onUnmounted(() => stopPolling())
