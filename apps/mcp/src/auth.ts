@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as crypto from 'crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 export interface AuthContext {
   tenantId: string;
@@ -12,37 +13,46 @@ export interface AuthContext {
 }
 
 /**
- * Authenticates the agent by reading the LOTIO_API_KEY environment variable,
- * looking up its hash in the AgentApiKey table, validating it's active and
- * not expired, and returning the tenant authorization context.
- *
- * This is called once at the start of every tool invocation.
+ * AsyncLocalStorage for per-request auth in HTTP mode.
+ * Stores auth context for the duration of an MCP request.
  */
-export async function authenticate(
-  prisma: PrismaClient
-): Promise<AuthContext> {
-  const apiKey = process.env.LOTIO_API_KEY;
+export const authStorage = new AsyncLocalStorage<AuthContext>();
 
-  if (!apiKey) {
+/**
+ * Returns the current auth context.
+ * In HTTP mode, reads from AsyncLocalStorage (set by middleware).
+ * In stdio mode, authenticates via env var (one-time).
+ */
+export async function getAuth(
+  prisma: PrismaClient,
+  apiKey?: string
+): Promise<AuthContext> {
+  // Try ALS first (HTTP mode)
+  const stored = authStorage.getStore();
+  if (stored) return stored;
+
+  // Fall back to env var (stdio mode)
+  return authenticateFromKey(prisma, apiKey || process.env.LOTIO_API_KEY || '');
+}
+
+/**
+ * Validates an API key and returns the auth context.
+ */
+async function authenticateFromKey(
+  prisma: PrismaClient,
+  apiKey: string
+): Promise<AuthContext> {
+  const cleanKey = apiKey.trim();
+
+  if (!cleanKey) {
     throw new Error(
       '❌ LOTIO_API_KEY não configurada.\n\n' +
         'Configure a variável de ambiente LOTIO_API_KEY no seu cliente MCP.\n' +
-        'Exemplo para Claude Desktop ou Cursor:\n\n' +
-        '  {\n' +
-        '    "lotio-mcp": {\n' +
-        '      "command": "node",\n' +
-        '      "args": ["dist/index.js"],\n' +
-        '      "cwd": "/caminho/para/apps/mcp",\n' +
-        '      "env": {\n' +
-        '        "LOTIO_API_KEY": "lotio_agent_..."\n' +
-        '      }\n' +
-        '    }\n' +
-        '  }\n\n' +
+        'Ou passe X-Lotio-API-Key no header HTTP.\n\n' +
         'Gere uma chave API no painel Lotio em: Configurações → Chaves API para Agentes'
     );
   }
 
-  const cleanKey = apiKey.trim();
   const keyHash = crypto
     .createHash('sha256')
     .update(cleanKey)
@@ -57,36 +67,26 @@ export async function authenticate(
 
   if (!record) {
     throw new Error(
-      '❌ Chave API inválida.\n\n' +
-        'A chave fornecida não foi encontrada no sistema.\n' +
-        'Verifique se a LOTIO_API_KEY está correta e se a chave não foi revogada.'
+      '❌ Chave API inválida. A chave fornecida não foi encontrada.\n' +
+        'Verifique se a chave está correta e não foi revogada.'
     );
   }
 
   if (!record.isActive) {
-    throw new Error(
-      '❌ Chave API inativa.\n\n' +
-        'Esta chave foi desativada. Gere uma nova chave no painel Lotio:\n' +
-        'Configurações → Chaves API para Agentes'
-    );
+    throw new Error('❌ Chave API inativa. Gere uma nova no painel Lotio.');
   }
 
   if (record.expiresAt && new Date(record.expiresAt) < new Date()) {
-    throw new Error(
-      '❌ Chave API expirada.\n\n' +
-        `Esta chave expirou em ${record.expiresAt.toISOString()}.\n` +
-        'Gere uma nova chave no painel Lotio.'
-    );
+    throw new Error('❌ Chave API expirada. Gere uma nova no painel Lotio.');
   }
 
+  // Update lastUsedAt (non-blocking)
   try {
     await (prisma as any).agentApiKey.update({
       where: { id: record.id },
       data: { lastUsedAt: new Date() }
     });
-  } catch {
-    // Non-critical — just update lastUsedAt
-  }
+  } catch {}
 
   return {
     tenantId: record.tenantId,
@@ -101,7 +101,6 @@ export async function authenticate(
 
 /**
  * Validates that the agent has a specific permission.
- * Permissions format: "resource:action" (e.g., "projects:read", "lots:write")
  */
 export function requirePermission(
   auth: AuthContext,
@@ -110,28 +109,24 @@ export function requirePermission(
   if (!auth.permissions.includes(permission)) {
     throw new Error(
       `❌ Permissão negada: "${permission}".\n\n` +
-        `Sua chave API "${auth.keyName}" não tem a permissão "${permission}".\n` +
-        `Permissões atuais: ${auth.permissions.join(', ') || 'nenhuma'}\n\n` +
-        'Solicite ao administrador da loteadora que atualize as permissões desta chave.'
+        `Permissões atuais: ${auth.permissions.join(', ') || 'nenhuma'}\n` +
+        'Solicite ao administrador que atualize as permissões desta chave.'
     );
   }
 }
 
 /**
  * Validates that the agent can access a specific project.
- * If projectIds is empty, all projects are allowed.
  */
 export function requireProjectAccess(
   auth: AuthContext,
   projectId: string
 ): void {
-  if (auth.projectIds.length === 0) return; // All projects allowed
+  if (auth.projectIds.length === 0) return;
   if (auth.projectIds.includes(projectId)) return;
 
   throw new Error(
-    `❌ Projeto não autorizado.\n\n` +
-      `Sua chave API "${auth.keyName}" não tem acesso ao projeto ${projectId}.\n` +
-      `Projetos permitidos: ${auth.projectIds.join(', ') || 'nenhum'}\n\n` +
-      'Solicite ao administrador que adicione este projeto ao escopo da chave.'
+    `❌ Projeto não autorizado: ${projectId}.\n` +
+      `Projetos permitidos: ${auth.projectIds.join(', ') || 'nenhum'}`
   );
 }

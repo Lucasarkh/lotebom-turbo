@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, requirePermission } from '../auth.js';
+import { getAuth, requirePermission } from '../auth.js';
 import { logAudit } from '../audit.js';
 import { z } from 'zod';
 
@@ -17,7 +17,7 @@ export function registerAiConfigTools(
     'Lista as configurações de IA do tenant (provedor, modelo, prompt ativo, etc.).',
     {},
     async () => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'ai:read');
 
       const configs = await (prisma as any).aiConfig.findMany({
@@ -61,7 +61,7 @@ export function registerAiConfigTools(
       project_id: z.string().describe('ID do projeto')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'ai:read');
 
       const project = await prisma.project.findFirst({
@@ -105,7 +105,7 @@ export function registerAiConfigTools(
       ai_config_id: z.string().optional().describe('ID da configuração de IA a vincular')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'ai:write');
 
       const project = await prisma.project.findFirst({

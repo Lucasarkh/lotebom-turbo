@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, requirePermission, requireProjectAccess } from '../auth.js';
+import { getAuth, requirePermission, requireProjectAccess } from '../auth.js';
 import { logAudit } from '../audit.js';
 import { z } from 'zod';
 
@@ -27,7 +27,7 @@ export function registerLeadTools(server: McpServer, prisma: PrismaClient) {
       limit: z.number().int().min(1).max(100).optional().default(20)
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'leads:read');
       requireProjectAccess(auth, params.project_id);
 
@@ -103,7 +103,7 @@ export function registerLeadTools(server: McpServer, prisma: PrismaClient) {
       lead_id: z.string().describe('ID do lead')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'leads:read');
 
       const lead = await (prisma as any).lead.findFirst({
@@ -144,7 +144,7 @@ export function registerLeadTools(server: McpServer, prisma: PrismaClient) {
       notes: z.string().optional().describe('Nota sobre a mudança de status')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'leads:write');
 
       const lead = await (prisma as any).lead.findFirst({
@@ -205,7 +205,7 @@ export function registerLeadTools(server: McpServer, prisma: PrismaClient) {
       note: z.string().min(1).max(2000).describe('Nota a ser adicionada')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'leads:write');
 
       const lead = await (prisma as any).lead.findFirst({

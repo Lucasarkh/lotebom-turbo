@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, requirePermission, requireProjectAccess } from '../auth.js';
+import { getAuth, requirePermission, requireProjectAccess } from '../auth.js';
 import { logAudit } from '../audit.js';
 import { z } from 'zod';
 
@@ -19,7 +19,7 @@ export function registerCategoryTools(
       project_id: z.string().describe('ID do projeto')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:read');
       requireProjectAccess(auth, params.project_id);
 
@@ -65,7 +65,7 @@ export function registerCategoryTools(
       description: z.string().optional().describe('Descrição da categoria')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:write');
       requireProjectAccess(auth, params.project_id);
 
@@ -143,7 +143,7 @@ export function registerCategoryTools(
       description: z.string().optional().describe('Nova descrição')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:write');
 
       const category = await prisma.lotCategory.findFirst({
@@ -207,7 +207,7 @@ export function registerCategoryTools(
         throw new Error('Confirme com true para excluir.');
       }
 
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:write');
 
       const category = await prisma.lotCategory.findFirst({

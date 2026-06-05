@@ -368,11 +368,9 @@ const today = computed(() => new Date().toISOString().split('T')[0])
 const mcpConfigExample = computed(() => `{
   "mcpServers": {
     "lotio": {
-      "command": "npx",
-      "args": ["tsx", "src/index.ts"],
-      "cwd": "/caminho/para/apps/mcp",
-      "env": {
-        "LOTIO_API_KEY": "${createdKey.value || 'SUA_CHAVE_AQUI'}"
+      "url": "http://localhost:3101/mcp",
+      "headers": {
+        "X-API-Key": "${createdKey.value || 'SUA_CHAVE_AQUI'}"
       }
     }
   }

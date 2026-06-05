@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, requirePermission, requireProjectAccess } from '../auth.js';
+import { getAuth, requirePermission, requireProjectAccess } from '../auth.js';
 import { logAudit } from '../audit.js';
 import { z } from 'zod';
 
@@ -24,7 +24,7 @@ export function registerProjectTools(
       limit: z.number().int().min(1).max(100).optional().default(20).describe('Itens por página')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:read');
 
       const where: any = { tenantId: auth.tenantId };
@@ -89,7 +89,7 @@ export function registerProjectTools(
       project_id: z.string().describe('ID do projeto (cuid)')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:read');
       requireProjectAccess(auth, params.project_id);
 
@@ -135,7 +135,7 @@ export function registerProjectTools(
       agent_enabled: z.boolean().optional().describe('Habilitar edição agentica (MCP)')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:write');
 
       // Generate slug from name
@@ -227,7 +227,7 @@ export function registerProjectTools(
       legal_notice: z.string().optional().describe('Aviso legal')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:write');
       requireProjectAccess(auth, params.project_id);
 
@@ -306,7 +306,7 @@ export function registerProjectTools(
       project_id: z.string().describe('ID do projeto')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:write');
       requireProjectAccess(auth, params.project_id);
 
@@ -348,7 +348,7 @@ export function registerProjectTools(
       project_id: z.string().describe('ID do projeto')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:write');
       requireProjectAccess(auth, params.project_id);
 
@@ -394,7 +394,7 @@ export function registerProjectTools(
         throw new Error('Confirmação necessária. Passe confirm: true para excluir.');
       }
 
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:write');
       requireProjectAccess(auth, params.project_id);
 

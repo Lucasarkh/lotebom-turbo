@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, requirePermission, requireProjectAccess } from '../auth.js';
+import { getAuth, requirePermission, requireProjectAccess } from '../auth.js';
 import { logAudit } from '../audit.js';
 import { z } from 'zod';
 
@@ -25,7 +25,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       limit: z.number().int().min(1).max(200).optional().default(50).describe('Itens por página')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:read');
       requireProjectAccess(auth, params.project_id);
 
@@ -126,7 +126,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       lot_id: z.string().describe('ID do lote (LotDetails id ou mapElementId)')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:read');
 
       // Try LotDetails id first, then mapElementId
@@ -204,7 +204,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       uso_permitido: z.string().optional().describe('Uso permitido')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:write');
 
       const lot = await prisma.lotDetails.findFirst({
@@ -278,7 +278,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       depth: z.number().optional().describe('Profundidade (m)')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:write');
       requireProjectAccess(auth, params.project_id);
 
@@ -358,7 +358,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         .describe('Novo status do lote')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'lots:write');
 
       const lot = await prisma.lotDetails.findFirst({

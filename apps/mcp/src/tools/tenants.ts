@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PrismaClient } from '@prisma/client';
-import { authenticate, requirePermission } from '../auth.js';
+import { getAuth, requirePermission } from '../auth.js';
 import { logAudit } from '../audit.js';
 import { z } from 'zod';
 
@@ -17,7 +17,7 @@ export function registerTenantTools(
     'Retorna informações do tenant (loteadora) vinculado à chave API, incluindo nome, slug, dados de contato, status de faturamento e total de projetos.',
     {},
     async () => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       // No specific permission needed — always allowed
 
       const tenant = await prisma.tenant.findUnique({
@@ -72,7 +72,7 @@ export function registerTenantTools(
       project_id: z.string().describe('ID do projeto a verificar')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
 
       const project = await prisma.project.findFirst({
         where: { id: params.project_id, tenantId: auth.tenantId },
@@ -125,7 +125,7 @@ export function registerTenantTools(
       project_id: z.string().describe('ID do projeto')
     },
     async (params) => {
-      const auth = await authenticate(prisma);
+      const auth = await getAuth(prisma);
       requirePermission(auth, 'projects:read');
 
       const project = await prisma.project.findFirst({

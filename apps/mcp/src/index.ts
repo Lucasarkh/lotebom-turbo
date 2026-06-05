@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { createServer } from './server.js';
+import { getAuth, authStorage } from './auth.js';
 
 async function main() {
   const prisma = new PrismaClient({
@@ -24,12 +25,28 @@ async function main() {
       '@modelcontextprotocol/sdk/server/streamableHttp.js'
     );
     const { randomUUID } = await import('node:crypto');
-    const { isInitializeRequest } = await import(
-      '@modelcontextprotocol/sdk/types.js'
-    );
 
     const app = createMcpExpressApp();
     const transports: Record<string, any> = {};
+
+    // ── Auth middleware: valida X-Lotio-API-Key em toda request ──
+    app.use(async (req: any, _res: any, next: any) => {
+      const apiKey =
+        req.headers['x-lotio-api-key']?.trim() ||
+        req.headers['authorization']?.replace(/^Bearer\s+/i, '')?.trim() ||
+        '';
+
+      try {
+        const auth = await getAuth(prisma, apiKey);
+        // Run the rest of the request with auth context in ALS
+        authStorage.run(auth, () => next());
+      } catch (err: any) {
+        _res.status(401).json({
+          error: err.message || 'Authentication failed',
+          hint: 'Passe X-Lotio-API-Key no header HTTP. Gere a chave em /painel/chaves-api'
+        });
+      }
+    });
 
     app.all('/mcp', async (req: any, res: any) => {
       const sessionId = req.headers['mcp-session-id'] as string;
@@ -39,9 +56,6 @@ async function main() {
         transport = transports[sessionId];
       } else if (!sessionId && req.method === 'POST') {
         try {
-          // Verify body is an initialize request — accept any POST as init
-          const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-          // Create new transport for initialization
           transport = new (StreamableHTTPServerTransport as any)({
             sessionIdGenerator: () => randomUUID()
           });
