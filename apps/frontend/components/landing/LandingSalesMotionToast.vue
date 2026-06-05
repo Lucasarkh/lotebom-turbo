@@ -60,7 +60,7 @@ defineProps<{
     left: 50%;
     transform: translateX(-50%);
     width: min(90vw, 360px);
-    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    top: calc(env(safe-area-inset-top, 0px) + 60px);
     bottom: auto;
     max-width: none;
     padding: 9px 12px;
