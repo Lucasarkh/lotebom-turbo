@@ -22,6 +22,11 @@ on:
         required: false
         type: boolean
         default: false
+      force_mcp:
+        description: "Forçar deploy do MCP"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,6 +44,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      mcp: ${{ steps.filter.outputs.mcp }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,6 +65,12 @@ jobs:
             frontend:
               - 'apps/frontend/**'
               - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+            mcp:
+              - 'apps/mcp/**'
+              - 'apps/backend/prisma/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'turbo.json'
@@ -103,11 +115,50 @@ jobs:
           cache-to: type=gha,mode=max,scope=backend
 
   # ============================================
+  # MCP: Build & Push Docker Image
+  # ============================================
+  mcp-build:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.mcp == 'true' || github.event.inputs.force_mcp == 'true' || needs.detect-changes.outputs.backend == 'true'
+    outputs:
+      owner_lc: ${{ steps.owner.outputs.owner_lc }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set OWNER lowercase
+        id: owner
+        run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/mcp/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner_lc }}/lotio-mcp:latest
+            ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner_lc }}/lotio-mcp:${{ github.sha }}
+          cache-from: type=gha,scope=mcp
+          cache-to: type=gha,mode=max,scope=mcp
+
+  # ============================================
   # Backend: Deploy
   # ============================================
   backend-deploy:
     runs-on: ubuntu-latest
-    needs: [detect-changes, backend-build]
+    needs: [detect-changes, backend-build, mcp-build]
     environment: production
     if: |
       always() &&
@@ -134,8 +185,10 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BACKEND_IMAGE: ghcr.io/${{ needs.backend-build.outputs.owner_lc }}/lotio-backend:${{ github.sha }}
           FRONTEND_IMAGE: ghcr.io/${{ needs.backend-build.outputs.owner_lc }}/lotio-frontend:latest
+          MCP_IMAGE: ghcr.io/${{ needs.mcp-build.outputs.owner_lc }}/lotio-mcp:latest
           BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
           FRONTEND_PORT: ${{ secrets.FRONTEND_PORT }}
+          MCP_PORT: ${{ secrets.MCP_PORT }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -172,7 +225,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_IMAGE,FRONTEND_IMAGE,BACKEND_PORT,FRONTEND_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
+          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_IMAGE,FRONTEND_IMAGE,MCP_IMAGE,BACKEND_PORT,FRONTEND_PORT,MCP_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
           script: |
             set -e
             mkdir -p "$DEPLOY_PATH"
@@ -215,8 +268,10 @@ jobs:
             write_env GHCR_OWNER           "$GHCR_OWNER"
             write_env BACKEND_TAG          "latest"
             write_env FRONTEND_TAG         "latest"
+            write_env MCP_TAG              "latest"
             write_env BACKEND_PORT         "${BACKEND_PORT:-127.0.0.1:8180}"
             write_env FRONTEND_PORT        "${FRONTEND_PORT:-127.0.0.1:3100}"
+            write_env MCP_PORT             "${MCP_PORT:-127.0.0.1:3101}"
             write_env POSTGRES_DB          "${POSTGRES_DB:-lotio}"
             write_env POSTGRES_USER        "$POSTGRES_USER"
             write_env POSTGRES_PASSWORD    "$POSTGRES_PASSWORD"
@@ -256,6 +311,10 @@ jobs:
 
             # --- Pull backend image ---
             docker compose -f docker-compose.prod.yml --env-file .env pull backend
+
+            # --- Pull & start MCP server ---
+            docker compose -f docker-compose.prod.yml --env-file .env pull mcp 2>/dev/null || true
+            docker compose -f docker-compose.prod.yml --env-file .env up -d mcp 2>/dev/null || true
 
             # --- Start infra ---
             docker compose -f docker-compose.prod.yml --env-file .env up -d db redis rabbitmq
@@ -368,6 +427,7 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
           FRONTEND_PORT: ${{ secrets.FRONTEND_PORT }}
+          MCP_PORT: ${{ secrets.MCP_PORT }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -404,7 +464,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_PORT,FRONTEND_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
+          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_PORT,FRONTEND_PORT,MCP_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
           script: |
             set -e
             mkdir -p "$DEPLOY_PATH"
@@ -447,8 +507,10 @@ jobs:
             write_env GHCR_OWNER           "$GHCR_OWNER"
             write_env BACKEND_TAG          "latest"
             write_env FRONTEND_TAG         "latest"
+            write_env MCP_TAG              "latest"
             write_env BACKEND_PORT         "${BACKEND_PORT:-127.0.0.1:8180}"
             write_env FRONTEND_PORT        "${FRONTEND_PORT:-127.0.0.1:3100}"
+            write_env MCP_PORT             "${MCP_PORT:-127.0.0.1:3101}"
             write_env POSTGRES_DB          "${POSTGRES_DB:-lotio}"
             write_env POSTGRES_USER        "$POSTGRES_USER"
             write_env POSTGRES_PASSWORD    "$POSTGRES_PASSWORD"
@@ -526,6 +588,7 @@ jobs:
           echo "|-----|---------|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Backend | ${{ needs.detect-changes.outputs.backend }} | ${{ github.event.inputs.force_backend || 'false' }} | ${{ needs.backend-deploy.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend | ${{ needs.detect-changes.outputs.frontend }} | ${{ github.event.inputs.force_frontend || 'false' }} | ${{ needs.frontend-deploy.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| MCP | ${{ needs.detect-changes.outputs.mcp }} | ${{ github.event.inputs.force_mcp || 'false' }} | deployed with backend |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
