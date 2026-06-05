@@ -1564,6 +1564,7 @@ model NearbyItem {
   drivingLabel            String?  // "6 min"
   walkingLabel            String?  // "18 min"
   routeUrl                String   @db.Text
+  photoUrl                String?  @db.Text
   visible                 Boolean  @default(true)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt

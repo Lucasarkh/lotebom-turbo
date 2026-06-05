@@ -8,38 +8,50 @@
         </p>
       </div>
 
-      <div class="nearby-grid">
+      <div class="nearby-categories">
         <div v-for="group in groupedItems" :key="group.category" class="nearby-category">
           <div class="nearby-category-header">
-            <span class="nearby-category-icon"><i :class="['bi', categoryIcon(group.category)]" aria-hidden="true"></i></span>
+            <span class="nearby-category-icon">
+              <i :class="['bi', categoryIcon(group.category)]" aria-hidden="true"></i>
+            </span>
             <h3 class="nearby-category-title">{{ group.categoryLabel }}</h3>
           </div>
 
-          <div class="nearby-items">
-            <div v-for="item in group.items" :key="item.name" class="nearby-item">
-              <div class="nearby-item-info">
-                <span class="nearby-item-name">{{ item.name }}</span>
-                <span class="nearby-item-meta">
-                  <span class="nearby-meta-distance">{{ item.distanceLabel }}</span>
-                  <span v-if="item.drivingLabel" class="nearby-meta-chip"><span class="nearby-meta-emoji"><i class="bi bi-car-front-fill" aria-hidden="true"></i></span> {{ item.drivingLabel }}</span>
-                  <span v-if="item.walkingLabel" class="nearby-meta-chip"><span class="nearby-meta-emoji"><i class="bi bi-person-walking" aria-hidden="true"></i></span> {{ item.walkingLabel }}</span>
+          <div class="nearby-cards">
+            <a
+              v-for="item in group.items"
+              :key="item.name"
+              :href="item.routeUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="nearby-card"
+              :title="`Ver rota para ${item.name}`"
+            >
+              <div class="nearby-card-photo" :class="{ 'has-photo': !!item.photoUrl }">
+                <img
+                  v-if="item.photoUrl"
+                  :src="item.photoUrl"
+                  :alt="item.name"
+                  loading="lazy"
+                  @error="($event.target as HTMLImageElement).parentElement!.classList.remove('has-photo')"
+                />
+                <span v-else class="nearby-card-photo-fallback">
+                  <i :class="['bi', categoryIcon(group.category)]" aria-hidden="true"></i>
                 </span>
               </div>
-              <a
-                :href="item.routeUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="nearby-route-btn"
-                title="Ver rota no Google Maps"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                  <polyline points="15 3 21 3 21 9"></polyline>
-                  <line x1="10" y1="14" x2="21" y2="3"></line>
-                </svg>
-                <span class="nearby-route-label">Ver rota</span>
-              </a>
-            </div>
+              <div class="nearby-card-body">
+                <span class="nearby-card-name">{{ item.name }}</span>
+                <span class="nearby-card-distance">{{ item.distanceLabel }}</span>
+                <span class="nearby-card-meta">
+                  <span v-if="item.drivingLabel" class="nearby-chip">
+                    <i class="bi bi-car-front-fill" aria-hidden="true"></i> {{ item.drivingLabel }}
+                  </span>
+                  <span v-if="item.walkingLabel" class="nearby-chip">
+                    <i class="bi bi-person-walking" aria-hidden="true"></i> {{ item.walkingLabel }}
+                  </span>
+                </span>
+              </div>
+            </a>
           </div>
         </div>
       </div>
@@ -51,7 +63,7 @@
           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
         </svg>
-        <span>Informações de localização fornecidas pelo Google Maps · *Categorias podem ter sido cadastradas de forma incorreta pelos estabelecimentos.</span>
+        <span>Informações de localização fornecidas pelo Google Maps</span>
       </div>
     </div>
   </section>
@@ -77,6 +89,7 @@ interface NearbyItem {
   walkingLabel: string | null
   shortAddress: string | null
   routeUrl: string
+  photoUrl: string | null
 }
 
 interface NearbyResponse {
@@ -138,22 +151,15 @@ watch(() => props.projectSlug, loadNearby)
 </script>
 
 <style scoped>
-/* ========================================
-   Base Design-System tokens (mirrored from
-   ProjectLandingView scoped styles so they
-   apply inside this child component)
-   ======================================== */
-
 .v4-container {
   max-width: 1040px;
   margin: 0 auto;
-  padding: 0 40px;
-  overflow: hidden;
+  padding: 0 20px;
   box-sizing: border-box;
 }
 
 .v4-section-header {
-  margin-bottom: 56px;
+  margin-bottom: 40px;
   max-width: 800px;
 }
 
@@ -163,7 +169,7 @@ watch(() => props.projectSlug, loadNearby)
 }
 
 .v4-section-title {
-  font-size: 40px;
+  font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.003em;
   line-height: 1.1;
@@ -172,67 +178,45 @@ watch(() => props.projectSlug, loadNearby)
 }
 
 .v4-section-subtitle {
-  font-size: 21px;
+  font-size: 17px;
   line-height: 1.38105;
   color: var(--v4-text-muted, #86868b);
   font-weight: 400;
 }
 
 /* ========================================
-   Grid — 2 cols on desktop, 1 col mobile
+   Category sections
    ======================================== */
-.nearby-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  overflow: hidden;
+.nearby-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
 }
 
-/* ========================================
-   Category card
-   ======================================== */
-.nearby-category {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-  padding: 28px 28px 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.nearby-category:hover {
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
-
-/* ========================================
-   Category header
-   ======================================== */
 .nearby-category-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .nearby-category-icon {
-  font-size: 1.25rem;
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--v4-bg-alt, #f5f5f7);
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 10px;
+  font-size: 1.1rem;
+  color: var(--v4-text, #1d1d1f);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
 }
 
 .nearby-category-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--v4-text, #1d1d1f);
   margin: 0;
@@ -240,171 +224,167 @@ watch(() => props.projectSlug, loadNearby)
 }
 
 /* ========================================
-   Items list
+   Cards grid — mobile first (2 cols)
    ======================================== */
-.nearby-items {
+.nearby-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ========================================
+   Individual card
+   ======================================== */
+.nearby-card {
   display: flex;
   flex-direction: column;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.nearby-item {
+.nearby-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+/* ========================================
+   Card photo
+   ======================================== */
+.nearby-card-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--v4-bg-alt, #f5f5f7);
+  overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 0;
-  min-width: 0;
+  justify-content: center;
 }
 
-.nearby-item:not(:last-child) {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+.nearby-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.nearby-item-info {
+.nearby-card-photo-fallback {
+  font-size: 1.6rem;
+  color: rgba(0, 0, 0, 0.12);
+}
+
+/* ========================================
+   Card body
+   ======================================== */
+.nearby-card-body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
+  padding: 12px 14px 14px;
 }
 
-.nearby-item-name {
-  font-size: 15px;
-  font-weight: 500;
+.nearby-card-name {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--v4-text, #1d1d1f);
-  white-space: nowrap;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* ========================================
-   Meta chips
-   ======================================== */
-.nearby-item-meta {
+.nearby-card-distance {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--v4-text, #1d1d1f);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.nearby-card-meta {
   display: flex;
-  align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: 13px;
-  color: var(--v4-text-muted, #86868b);
-  line-height: 1;
+  margin-top: 2px;
 }
 
-.nearby-meta-distance {
-  font-weight: 500;
-  color: var(--v4-text-muted, #86868b);
-}
-
-.nearby-meta-chip {
+.nearby-chip {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 3px 8px;
+  padding: 2px 7px;
   background: rgba(0, 0, 0, 0.04);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 11px;
+  color: var(--v4-text-muted, #86868b);
   white-space: nowrap;
 }
 
-.nearby-meta-emoji {
-  font-size: 12px;
+.nearby-chip i {
+  font-size: 10px;
 }
 
 /* ========================================
-   Route button
+   Tablet (≥ 640px) — 3 cols
    ======================================== */
-.nearby-route-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--v4-primary, #0071e3);
-  background: rgba(0, 113, 227, 0.06);
-  border-radius: 8px;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-
-.nearby-route-btn:hover {
-  background: rgba(0, 113, 227, 0.12);
-}
-
-.nearby-route-btn svg {
-  width: 13px;
-  height: 13px;
-}
-
-/* ========================================
-   Responsive — tablet (≤ 768px)
-   ======================================== */
-@media (max-width: 768px) {
+@media (min-width: 640px) {
   .v4-container {
-    padding: 0 20px;
-  }
-
-  .v4-section-header {
-    margin-bottom: 32px;
+    padding: 0 40px;
   }
 
   .v4-section-title {
-    font-size: 28px;
+    font-size: 36px;
   }
 
   .v4-section-subtitle {
-    font-size: 17px;
+    font-size: 19px;
   }
 
-  .nearby-grid {
-    grid-template-columns: 1fr;
+  .v4-section-header {
+    margin-bottom: 48px;
+  }
+
+  .nearby-cards {
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
   }
 
-  .nearby-category {
-    padding: 22px;
+  .nearby-card-body {
+    padding: 14px 16px 16px;
+  }
+
+  .nearby-card-name {
+    font-size: 14px;
   }
 }
 
 /* ========================================
-   Responsive — small mobile (≤ 480px)
+   Desktop (≥ 960px) — 5 cols (all visible)
    ======================================== */
-@media (max-width: 480px) {
-  .nearby-category {
-    padding: 16px;
-    border-radius: 14px;
+@media (min-width: 960px) {
+  .v4-section-title {
+    font-size: 40px;
   }
 
-  .nearby-route-label {
-    display: none;
+  .v4-section-subtitle {
+    font-size: 21px;
   }
 
-  .nearby-route-btn {
-    padding: 7px;
-    border-radius: 50%;
-    min-width: 30px;
-    min-height: 30px;
-    justify-content: center;
+  .v4-section-header {
+    margin-bottom: 56px;
   }
 
-  .nearby-item-name {
-    font-size: 13px;
+  .nearby-categories {
+    gap: 40px;
   }
 
-  .nearby-item-meta {
-    gap: 4px;
-  }
-
-  .nearby-meta-chip {
-    font-size: 11px;
-    padding: 2px 6px;
-  }
-
-  .nearby-meta-distance {
-    font-size: 12px;
+  .nearby-cards {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
   }
 }
 

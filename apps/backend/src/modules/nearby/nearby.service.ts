@@ -30,6 +30,7 @@ export interface NearbyPublicResponse {
     walkingLabel: string | null;
     shortAddress: string | null;
     routeUrl: string;
+    photoUrl: string | null;
   }[];
 }
 
@@ -86,7 +87,8 @@ export class NearbyService {
         drivingLabel: item.drivingLabel,
         walkingLabel: item.walkingLabel,
         shortAddress: item.shortAddress,
-        routeUrl: item.routeUrl
+        routeUrl: item.routeUrl,
+        photoUrl: item.photoUrl
       }))
     };
   }
@@ -336,7 +338,8 @@ export class NearbyService {
               distanceLabel: item.distanceLabel,
               drivingLabel: item.drivingLabel,
               walkingLabel: item.walkingLabel,
-              routeUrl: item.routeUrl
+              routeUrl: item.routeUrl,
+              photoUrl: item.photoUrl
             }
           });
         }
