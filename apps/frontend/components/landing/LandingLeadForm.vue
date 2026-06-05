@@ -105,7 +105,7 @@ const props = defineProps<{
   availableLots: number
 }>()
 
-const { fetchPublic } = usePublicApi()
+const { post } = usePublicApi()
 const { maskPhone, validateEmail, validatePhone, unmask } = useMasks()
 const { success: toastSuccess } = useToast()
 const tracking = useTracking()
@@ -155,18 +155,13 @@ const submitLead = async () => {
       phone: rawPhone,
       message: leadForm.value.message.trim() || undefined,
       mapElementId: leadForm.value.mapElementId || undefined,
-      source: 'landing_page',
-      isPreLaunch: props.isPreLaunchMode,
     }
 
     if (props.corretorCode) {
-      payload.corretorCode = props.corretorCode
+      payload.realtorCode = props.corretorCode
     }
 
-    await fetchPublic(`/p/${props.projectSlug}/leads`, {
-      method: 'POST',
-      body: payload,
-    })
+    await post(`/p/${props.projectSlug}/leads`, payload)
 
     leadSuccess.value = true
     toastSuccess('Interesse registrado com sucesso!')
