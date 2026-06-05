@@ -605,6 +605,51 @@ defineExpose({ navigateToScene, navigateBack, navStack })
 </script>
 
 <style>
+/* ─── Pannellum loading: discreto estilo Street View ─ */
+
+.pnlm-load-box {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  height: auto !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  position: absolute !important;
+  font-size: 0 !important;
+  color: transparent !important;
+  line-height: 0 !important;
+}
+
+.pnlm-load-box p {
+  display: none !important;
+}
+
+.pnlm-lbar {
+  width: 100% !important;
+  height: 3px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.pnlm-lbar-fill {
+  height: 3px !important;
+  background: rgba(16, 185, 129, 0.9) !important;
+  border-radius: 0 !important;
+  transition: width 0.2s ease !important;
+}
+
+.pnlm-lmsg {
+  display: none !important;
+}
+
 /* ─── Beacon hotspots ────────────────────────────── */
 
 .custom-hotspot {
