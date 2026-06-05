@@ -608,7 +608,8 @@ model LotDetails {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  medias ProjectMedia[]
+  medias          ProjectMedia[]
+  linkedBeacons   PanoramaBeacon[]     @relation("BeaconLinkLot")
 
   @@index([tenantId, projectId])
   @@index([status])
@@ -1127,8 +1128,9 @@ model Panorama {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  snapshots PanoramaSnapshot[]
-  beacons   PanoramaBeacon[]
+  snapshots     PanoramaSnapshot[]
+  beacons       PanoramaBeacon[]       @relation("BeaconPanorama")
+  linkedBeacons PanoramaBeacon[]       @relation("BeaconLinkPanorama")
 
   // Removed redundant @@index([tenantId]) — it is a left-prefix subset of the
   // composite @@index([tenantId, projectId]) and adds no independent query value.
@@ -1151,20 +1153,33 @@ model PanoramaSnapshot {
   @@index([panoramaId])
 }
 
+enum PanoramaBeaconLinkType {
+  NONE
+  LOT
+  PANORAMA
+  URL
+}
+
 model PanoramaBeacon {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  panoramaId  String
-  panorama    Panorama @relation(fields: [panoramaId], references: [id], onDelete: Cascade)
-  title       String
-  description String?  @db.Text
-  x           Float
-  y           Float
-  style       String   @default("default")
-  visible     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String                  @id @default(cuid())
+  tenantId       String
+  tenant         Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  panoramaId     String
+  panorama       Panorama                @relation("BeaconPanorama", fields: [panoramaId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?                 @db.Text
+  x              Float
+  y              Float
+  style          String                  @default("default")
+  visible        Boolean                 @default(true)
+  linkType       PanoramaBeaconLinkType  @default(NONE)
+  linkLotId      String?
+  linkLot        LotDetails?             @relation("BeaconLinkLot", fields: [linkLotId], references: [id], onDelete: SetNull)
+  linkPanoramaId String?
+  linkPanorama   Panorama?              @relation("BeaconLinkPanorama", fields: [linkPanoramaId], references: [id], onDelete: SetNull)
+  linkUrl        String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
 
   @@index([panoramaId])
   @@index([tenantId])

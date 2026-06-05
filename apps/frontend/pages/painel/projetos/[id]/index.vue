@@ -1339,6 +1339,14 @@
           </label>
           </section>
 
+          <LotPanoramaBeaconSection
+            v-if="editingLot"
+            :project-id="projectId"
+            :lot-id="editingLot.lotDetailsId || editingLot.id"
+            :lot-label="editingLotLabel"
+            @changed="refreshPanoramaBeacons"
+          />
+
           <div class="flex justify-end gap-3 mt-6 pt-5 border-t border-p-border">
             <UiButton variant="ghost" @click="closeEditingLot">Cancelar</UiButton>
             <UiButton variant="primary" :disabled="!authStore.canEdit || savingLot" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined" @click="saveLotDetails">
@@ -2275,6 +2283,21 @@ const settingsSaved = ref(false)
 const togglingPreLaunch = ref(false)
 
 const editingLot = ref<any>(null)
+
+const editingLotLabel = computed(() => {
+  const lot = editingLot.value
+  if (!lot) return ''
+  const parts: string[] = []
+  if (lot.block) parts.push(`Qd. ${lot.block}`)
+  if (lot.lotNumber) parts.push(`Lote ${lot.lotNumber}`)
+  return parts.join(' — ') || lot.mapElement?.code || 'Lote'
+})
+
+function refreshPanoramaBeacons() {
+  // Beacons were updated; no additional action needed here
+  // since the panorama editor loads beacons independently
+}
+
 const lotQrModal = ref<null | {
   code: string
   publicPageUrl: string

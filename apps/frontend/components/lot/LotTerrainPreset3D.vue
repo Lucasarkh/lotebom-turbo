@@ -567,6 +567,98 @@ const createTextSprite = (
   return sprite
 }
 
+const createSunLabelSprite = (
+  three: ThreeModule,
+  type: 'sunrise' | 'sunset',
+) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 96
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const isSunrise = type === 'sunrise'
+
+  ctx.fillStyle = isSunrise ? 'rgba(251, 191, 36, 0.93)' : 'rgba(120, 53, 15, 0.91)'
+  ctx.beginPath()
+  ctx.roundRect(6, 8, 244, 80, 20)
+  ctx.fill()
+
+  const iconColor = isSunrise ? '#78350f' : '#fde68a'
+  const sunX = 48
+  const horizonY = isSunrise ? 56 : 40
+  const sunR = 12
+
+  ctx.strokeStyle = iconColor
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(sunX - 20, horizonY)
+  ctx.lineTo(sunX + 20, horizonY)
+  ctx.stroke()
+
+  ctx.fillStyle = iconColor
+  ctx.beginPath()
+  if (isSunrise) {
+    ctx.arc(sunX, horizonY, sunR, Math.PI, 0)
+  } else {
+    ctx.arc(sunX, horizonY, sunR, 0, Math.PI)
+  }
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.strokeStyle = iconColor
+  ctx.lineWidth = 2
+  ctx.lineCap = 'round'
+  const rayInner = sunR + 3
+  const rayOuter = sunR + 9
+  for (let i = 0; i < 5; i++) {
+    const a = isSunrise
+      ? -Math.PI + (Math.PI / 6) * (i + 1)
+      : (Math.PI / 6) * (i + 1)
+    ctx.beginPath()
+    ctx.moveTo(sunX + Math.cos(a) * rayInner, horizonY + Math.sin(a) * rayInner)
+    ctx.lineTo(sunX + Math.cos(a) * rayOuter, horizonY + Math.sin(a) * rayOuter)
+    ctx.stroke()
+  }
+
+  ctx.lineWidth = 2.5
+  if (isSunrise) {
+    ctx.beginPath()
+    ctx.moveTo(sunX, 30)
+    ctx.lineTo(sunX, 20)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(sunX - 5, 25)
+    ctx.lineTo(sunX, 20)
+    ctx.lineTo(sunX + 5, 25)
+    ctx.stroke()
+  } else {
+    ctx.beginPath()
+    ctx.moveTo(sunX, 62)
+    ctx.lineTo(sunX, 72)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(sunX - 5, 67)
+    ctx.lineTo(sunX, 72)
+    ctx.lineTo(sunX + 5, 67)
+    ctx.stroke()
+  }
+
+  ctx.fillStyle = isSunrise ? '#451a03' : '#fef3c7'
+  ctx.font = '700 30px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(isSunrise ? 'Nasce' : 'Põe', 162, 48)
+
+  const texture = new three.CanvasTexture(canvas)
+  texture.colorSpace = three.SRGBColorSpace
+  const material = new three.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false })
+  const sprite = new three.Sprite(material)
+  sprite.scale.set(4.0, 1.5, 1)
+  sprite.renderOrder = 40
+  return sprite
+}
+
 const edgeMidpoint = (start: PlanPoint, end: PlanPoint) => ({
   x: (start.x + end.x) / 2,
   z: (start.z + end.z) / 2,
@@ -843,38 +935,51 @@ const buildTerrainGroup = () => {
   if (hasSolarGuide.value && showSolarOverlay.value) {
     const angleRad = (Number(solarGuideAngleDeg.value) * Math.PI) / 180
     const direction = new three.Vector3(Math.cos(angleRad), 0, Math.sin(angleRad)).normalize()
-    const lotCenter2d = polygonCentroid(planShape)
-    const lotCenter = new three.Vector3(lotCenter2d.x, 0, lotCenter2d.z)
-    const projections = planShape.map((point) => point.x * direction.x + point.z * direction.z)
+    const center = terrainCenter.clone()
+    center.y = 0
+    const projections = planShape.map((point) => (point.x - center.x) * direction.x + (point.z - center.z) * direction.z)
     const minProjection = Math.min(...projections)
     const maxProjection = Math.max(...projections)
-    const endpointPadding = Math.max(30, Math.max(spanX, spanZ) * 0.9)
-    const start = lotCenter.clone().add(direction.clone().multiplyScalar(minProjection - endpointPadding))
-    const end = lotCenter.clone().add(direction.clone().multiplyScalar(maxProjection + endpointPadding))
-    const arcBaseHeight = 1.6
-    const arcPeakHeight = Math.max(8, Math.max(spanX, spanZ) * 0.55)
+    const lotSpan = maxProjection - minProjection
+    const halfExtent = lotSpan * 0.5 * 1.55
+    const start = center.clone().add(direction.clone().multiplyScalar(-halfExtent))
+    const end = center.clone().add(direction.clone().multiplyScalar(halfExtent))
+    const arcBaseHeight = 1.4
+    const arcPeakHeight = Math.max(5, lotSpan * 0.4)
     start.y = arcBaseHeight
     end.y = arcBaseHeight
-    const arcControl = lotCenter.clone()
+    const arcControl = center.clone()
     arcControl.y = arcPeakHeight
 
     const solarCurve = new three.QuadraticBezierCurve3(start, arcControl, end)
     const solarGeometry = new three.BufferGeometry().setFromPoints(solarCurve.getPoints(48))
     const solarLine = new three.Line(
       solarGeometry,
-      new three.LineDashedMaterial({ color: '#f59e0b', dashSize: 0.9, gapSize: 0.45, transparent: true, opacity: 0.95 }),
+      new three.LineDashedMaterial({ color: '#f59e0b', dashSize: 0.5, gapSize: 0.3, transparent: true, opacity: 0.8 }),
     )
     solarLine.computeLineDistances()
     terrainGroup.add(solarLine)
 
-    const sunrise = createTextSprite(three, 'Sol nasce', { background: 'rgba(245, 158, 11, 0.94)', color: '#451a03', scaleX: 6.2, scaleY: 2.2 })
-    const sunset = createTextSprite(three, 'Sol se poe', { background: 'rgba(146, 64, 14, 0.92)', color: '#ffedd5', scaleX: 6.2, scaleY: 2.2 })
+    const arrowScale = Math.max(0.2, lotSpan * 0.015)
+    const coneGeo = new three.ConeGeometry(arrowScale * 0.45, arrowScale * 1.1, 6)
+    const coneMat = new three.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.75 })
+    for (const t of [0.3, 0.7]) {
+      const point = solarCurve.getPoint(t)
+      const tangent = solarCurve.getTangent(t).normalize().negate()
+      const cone = new three.Mesh(coneGeo, coneMat)
+      cone.position.copy(point)
+      cone.quaternion.setFromUnitVectors(new three.Vector3(0, 1, 0), tangent)
+      terrainGroup.add(cone)
+    }
+
+    const sunrise = createSunLabelSprite(three, 'sunrise')
+    const sunset = createSunLabelSprite(three, 'sunset')
     if (sunrise) {
-      sunrise.position.copy(end.clone().add(new three.Vector3(0, 1.35, 0)))
+      sunrise.position.copy(end.clone().add(new three.Vector3(0, 0.8, 0)))
       terrainGroup.add(sunrise)
     }
     if (sunset) {
-      sunset.position.copy(start.clone().add(new three.Vector3(0, 1.35, 0)))
+      sunset.position.copy(start.clone().add(new three.Vector3(0, 0.8, 0)))
       terrainGroup.add(sunset)
     }
   }

@@ -1,5 +1,26 @@
 // ─── Panorama 360 Types ──────────────────────────────────
 
+export type PanoramaBeaconLinkType = 'NONE' | 'LOT' | 'PANORAMA' | 'URL'
+
+export interface PanoramaBeaconLinkedLot {
+  id: string
+  block?: string | null
+  lotNumber?: string | null
+  price?: number | string | null
+  areaM2?: number | null
+  status?: string | null
+  panoramaUrl?: string | null
+  mapElement?: {
+    code?: string | null
+  } | null
+}
+
+export interface PanoramaBeaconLinkedPanorama {
+  id: string
+  title: string
+  projection?: string | null
+}
+
 export interface PanoramaBeacon {
   id: string
   tenantId: string
@@ -10,6 +31,12 @@ export interface PanoramaBeacon {
   y: number // normalised 0..1
   style: BeaconStyle
   visible: boolean
+  linkType: PanoramaBeaconLinkType
+  linkLotId?: string | null
+  linkLot?: PanoramaBeaconLinkedLot | null
+  linkPanoramaId?: string | null
+  linkPanorama?: PanoramaBeaconLinkedPanorama | null
+  linkUrl?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -106,6 +133,10 @@ export interface CreateBeaconPayload {
   y: number
   style?: BeaconStyle
   visible?: boolean
+  linkType?: PanoramaBeaconLinkType
+  linkLotId?: string
+  linkPanoramaId?: string
+  linkUrl?: string
 }
 
 export interface UpdateBeaconPayload {
@@ -115,4 +146,8 @@ export interface UpdateBeaconPayload {
   y?: number
   style?: BeaconStyle
   visible?: boolean
+  linkType?: PanoramaBeaconLinkType
+  linkLotId?: string
+  linkPanoramaId?: string
+  linkUrl?: string
 }

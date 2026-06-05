@@ -22,6 +22,15 @@
         >
           + Novo Panorama
         </button>
+        <button
+          v-if="activePanorama"
+          class="btn btn-sm btn-outline"
+          :disabled="!canEdit"
+          :title="!canEdit ? writePermissionHint : 'Criar beacons automaticamente para lotes sem beacon'"
+          @click="openImportLotsModal"
+        >
+          <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i> Importar Lotes
+        </button>
       </div>
 
       <div class="pe-toolbar-right">
@@ -173,6 +182,7 @@
             :panorama="activePanorama"
             :active-snapshot-id="activeSnapshotId"
             :editable="mode === 'add-beacon'"
+            :auto-rotate="0"
             :show-beacon-info="false"
             @beaconClick="editBeacon"
             @viewClick="on360ViewClick"
@@ -319,6 +329,71 @@
                 Visível na página pública
               </label>
             </div>
+
+            <!-- Link Configuration -->
+            <div class="form-group">
+              <label>Tipo de Link</label>
+              <select v-model="beaconForm.linkType" class="form-input">
+                <option value="NONE">Nenhum (apenas informativo)</option>
+                <option value="LOT">Vincular a um Lote</option>
+                <option value="PANORAMA">Vincular a outro Panorama</option>
+                <option value="URL">Link externo (URL)</option>
+              </select>
+            </div>
+
+            <!-- Lot selector -->
+            <div v-if="beaconForm.linkType === 'LOT'" class="form-group">
+              <label>Lote de destino</label>
+              <div class="pe-lot-search">
+                <input
+                  v-model="lotSearchQuery"
+                  class="form-input"
+                  placeholder="Buscar por quadra ou número do lote..."
+                  @input="onLotSearchInput"
+                />
+                <span v-if="lotSearchLoading" class="pe-lot-search-spinner"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></span>
+              </div>
+              <select
+                v-model="beaconForm.linkLotId"
+                class="form-input"
+                size="6"
+                :disabled="!projectLots.length && !lotSearchLoading"
+              >
+                <option value="">Selecione um lote...</option>
+                <option v-for="lot in projectLots" :key="lot.id" :value="lot.id">
+                  {{ lotLabel(lot) }}
+                </option>
+              </select>
+              <p v-if="projectLots.length === 0 && !lotSearchLoading && lotSearchQuery" class="pe-link-hint">
+                Nenhum lote encontrado para "{{ lotSearchQuery }}"
+              </p>
+              <p v-else-if="projectLots.length === 200" class="pe-link-hint">
+                Mostrando os primeiros 200 lotes. Refine a busca para encontrar mais.
+              </p>
+              <p v-if="beaconForm.linkLotId && selectedLinkedLot" class="pe-link-preview">
+                <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+                {{ lotDetailsPreview(selectedLinkedLot) }}
+                <span v-if="selectedLinkedLot.panoramaUrl" class="pe-link-tag">✓ Tem 360°</span>
+                <span v-else class="pe-link-tag muted">Sem 360°</span>
+              </p>
+            </div>
+
+            <!-- Panorama selector -->
+            <div v-if="beaconForm.linkType === 'PANORAMA'" class="form-group">
+              <label>Panorama de destino</label>
+              <select v-model="beaconForm.linkPanoramaId" class="form-input">
+                <option value="">Selecione um panorama...</option>
+                <option v-for="p in linkablePanoramas" :key="p.id" :value="p.id">
+                  {{ p.title }}
+                </option>
+              </select>
+            </div>
+
+            <!-- URL input -->
+            <div v-if="beaconForm.linkType === 'URL'" class="form-group">
+              <label>URL do link</label>
+              <input v-model="beaconForm.linkUrl" class="form-input" placeholder="https://..." />
+            </div>
           </fieldset>
           <div class="modal-actions">
             <button class="btn btn-ghost" @click="closeBeaconModal">Cancelar</button>
@@ -360,6 +435,58 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- ── Import Lots Modal ───────────────────────────── -->
+    <Teleport to="body">
+      <div v-if="showImportLots" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 520px;">
+          <h2>Importar Lotes como Beacons</h2>
+          <p style="font-size: 0.82rem; color: var(--color-surface-400); margin-bottom: 12px;">
+            Cria beacons automaticamente para lotes que ainda não possuem um neste panorama. Os beacons são posicionados no centro da imagem e podem ser reposicionados depois.
+          </p>
+
+          <div v-if="importLotsLoading" style="text-align: center; padding: 24px; color: var(--color-surface-400);">
+            Carregando lotes...
+          </div>
+
+          <div v-else-if="importLotsCandidates.length === 0" style="text-align: center; padding: 24px; color: var(--color-surface-400);">
+            Todos os lotes já possuem beacon neste panorama.
+          </div>
+
+          <div v-else style="max-height: 320px; overflow-y: auto;">
+            <div
+              v-for="lot in importLotsCandidates"
+              :key="lot.id"
+              class="pe-import-lot-item"
+            >
+              <label class="pe-checkbox-label" style="flex: 1;">
+                <input type="checkbox" :value="lot.id" v-model="importLotsSelected" />
+                {{ lot.label }}
+              </label>
+              <span v-if="lot.hasPanorama" class="pe-link-tag" style="font-size: 0.65rem;">360°</span>
+            </div>
+          </div>
+
+          <div v-if="importLotsCandidates.length > 0" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 0.78rem; color: var(--color-surface-400);">
+            <span>{{ importLotsSelected.length }} de {{ importLotsCandidates.length }} selecionados</span>
+            <button class="btn btn-xs btn-ghost" @click="importLotsSelected = importLotsCandidates.map(l => l.id)">Selecionar todos</button>
+          </div>
+
+          <div class="modal-actions" style="justify-content: space-between; margin-top: 16px;">
+            <span v-if="importLotsTotalWithBeacons" style="font-size: 0.78rem; color: var(--color-surface-500);">
+              {{ importLotsTotalWithBeacons }} lote(s) já possuem beacon
+            </span>
+            <span v-else></span>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-ghost" @click="showImportLots = false">Cancelar</button>
+              <button class="btn btn-primary" :disabled="importLotsSelected.length === 0 || importingLots" @click="doImportLots">
+                {{ importingLots ? 'Criando...' : `Criar ${importLotsSelected.length} beacon(s)` }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -376,10 +503,12 @@ import type {
   PanoramaBeacon,
   BeaconStyle,
   PanoramaProjection,
+  PanoramaBeaconLinkType,
 } from '~/composables/panorama/types'
 import PanoramaBeaconPin from './PanoramaBeaconPin.vue'
 import PanoramaViewer from './PanoramaViewer.vue'
 import { useToast } from '~/composables/useToast'
+import { useApi } from '~/composables/useApi'
 
 const props = defineProps<{
   projectId: string
@@ -392,6 +521,7 @@ const emit = defineEmits<{
 }>()
 
 const api = usePanoramaApi()
+const { fetchApi } = useApi()
 const toast = useToast()
 const writePermissionHint = 'Disponível apenas para usuários com permissão de edição'
 
@@ -462,6 +592,9 @@ onMounted(async () => {
     activePanoramaId.value = panoramas.value[0]?.id ?? null
     setInitialSnapshot()
   }
+
+  // Fetch project lots for beacon link configuration
+  loadProjectLots()
 })
 
 onBeforeUnmount(() => {
@@ -490,6 +623,29 @@ async function loadPanorama() {
     if (idx >= 0) panoramas.value[idx] = fresh
     setInitialSnapshot()
   } catch { /* ignore */ }
+}
+
+async function loadProjectLots(search = '') {
+  lotSearchLoading.value = true
+  try {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    const queryString = params.toString()
+    const url = `/projects/${props.projectId}/lots/summary${queryString ? '?' + queryString : ''}`
+    const lots = await fetchApi(url)
+    projectLots.value = (lots || []).map((l: any) => ({
+      id: l.id,
+      block: l.block ?? null,
+      lotNumber: l.lotNumber ?? null,
+      price: l.price ?? null,
+      areaM2: l.areaM2 ?? null,
+      status: l.status ?? null,
+      panoramaUrl: l.panoramaUrl ?? null,
+    }))
+  } catch { /* ignore */ }
+  finally {
+    lotSearchLoading.value = false
+  }
 }
 
 function setInitialSnapshot() {
@@ -533,6 +689,19 @@ const newPanoramaTitle = ref('Vista Geral')
 const newPanoramaProjection = ref<PanoramaProjection>('FLAT')
 const creatingPanorama = ref(false)
 
+// ── Import Lots ──────────────────────────────────────
+const showImportLots = ref(false)
+const importLotsLoading = ref(false)
+const importLotsCandidates = ref<{ id: string; label: string; hasPanorama: boolean }[]>([])
+const importLotsSelected = ref<string[]>([])
+const importingLots = ref(false)
+
+const importLotsTotalWithBeacons = computed(() => {
+  // Total lots that already have a beacon in the active panorama
+  // This is calculated against the API result when loading candidates
+  return 0 // placeholder, set during load
+})
+
 async function doCreatePanorama() {
   if (!canEdit.value) return
   creatingPanorama.value = true
@@ -552,6 +721,84 @@ async function doCreatePanorama() {
     toast.error(e.message || 'Erro ao criar panorama')
   } finally {
     creatingPanorama.value = false
+  }
+}
+
+// ── Import Lots as Beacons ───────────────────────────
+
+async function openImportLotsModal() {
+  if (!canEdit.value || !activePanorama.value) return
+  showImportLots.value = true
+  importLotsLoading.value = true
+  importLotsSelected.value = []
+
+  try {
+    // Fetch project lots (lightweight summary)
+    const lots: any[] = await fetchApi(`/projects/${props.projectId}/lots/summary`) || []
+
+    // Get existing linked lot IDs for the active panorama
+    const existingLinkedIds = new Set(
+      activePanorama.value!.beacons
+        .filter(b => b.linkType === 'LOT' && b.linkLotId)
+        .map(b => b.linkLotId!)
+    )
+
+    // Candidates: lots without a beacon in this panorama
+    importLotsCandidates.value = lots
+      .filter((l: any) => !existingLinkedIds.has(l.id))
+      .map((l: any) => ({
+        id: l.id,
+        label: [
+          l.block ? `Qd. ${l.block}` : '',
+          l.lotNumber ? `Lote ${l.lotNumber}` : '',
+        ].filter(Boolean).join(' — ') || l.id,
+        hasPanorama: !!l.panoramaUrl,
+      }))
+
+    // Select all by default
+    importLotsSelected.value = importLotsCandidates.value.map(l => l.id)
+  } catch {
+    importLotsCandidates.value = []
+  } finally {
+    importLotsLoading.value = false
+  }
+}
+
+async function doImportLots() {
+  if (!canEdit.value || !activePanorama.value || importLotsSelected.value.length === 0) return
+  importingLots.value = true
+  let created = 0
+
+  try {
+    for (const lotId of importLotsSelected.value) {
+      const lot = importLotsCandidates.value.find(l => l.id === lotId)
+      if (!lot) continue
+      try {
+        await api.createBeacon(activePanorama.value.id, {
+          title: lot.label,
+          x: 0.5, // center of image
+          y: 0.5,
+          style: 'default',
+          visible: true,
+          linkType: 'LOT',
+          linkLotId: lotId,
+        })
+        created++
+      } catch {
+        // Skip individual failures
+      }
+    }
+
+    toast.success(`${created} beacon(s) criado(s)!`)
+    showImportLots.value = false
+
+    // Reload the active panorama to get fresh beacons
+    await loadPanorama()
+    emitUpdate()
+  } catch (e: any) {
+    toast.error(e.message || 'Erro ao importar lotes')
+  } finally {
+    importingLots.value = false
   }
 }
 
@@ -629,6 +876,58 @@ const showBeaconModal = ref(false)
 const editingBeacon = ref<PanoramaBeacon | null>(null)
 const savingBeacon = ref(false)
 
+// Lot & panorama options for link configuration
+const projectLots = ref<LotLinkOption[]>([])
+const lotSearchQuery = ref('')
+const lotSearchLoading = ref(false)
+let lotSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+const linkablePanoramas = computed(() =>
+  panoramas.value.filter(p => p.id !== activePanoramaId.value)
+)
+
+interface LotLinkOption {
+  id: string
+  block?: string | null
+  lotNumber?: string | null
+  price?: number | string | null
+  areaM2?: number | null
+  status?: string | null
+  panoramaUrl?: string | null
+}
+
+function lotLabel(lot: LotLinkOption): string {
+  const parts: string[] = []
+  if (lot.block) parts.push(`Qd. ${lot.block}`)
+  if (lot.lotNumber) parts.push(`Lote ${lot.lotNumber}`)
+  if (lot.areaM2) parts.push(`${lot.areaM2}m²`)
+  if (lot.status) parts.push(lot.status)
+  return parts.join(' — ') || lot.id
+}
+
+function lotDetailsPreview(lot: LotLinkOption): string {
+  const parts: string[] = []
+  if (lot.price) {
+    const price = typeof lot.price === 'number' ? lot.price : parseFloat(String(lot.price))
+    if (!isNaN(price)) parts.push(`R$ ${price.toLocaleString('pt-BR')}`)
+  }
+  if (lot.areaM2) parts.push(`${lot.areaM2}m²`)
+  if (lot.status) parts.push(lot.status)
+  return parts.join(' • ')
+}
+
+function onLotSearchInput() {
+  if (lotSearchTimer) clearTimeout(lotSearchTimer)
+  lotSearchTimer = setTimeout(() => {
+    loadProjectLots(lotSearchQuery.value)
+  }, 300)
+}
+
+const selectedLinkedLot = computed(() => {
+  if (!beaconForm.linkLotId) return null
+  return projectLots.value.find(l => l.id === beaconForm.linkLotId) ?? null
+})
+
 const beaconForm = reactive({
   title: '',
   description: '',
@@ -636,6 +935,10 @@ const beaconForm = reactive({
   visible: true,
   x: 0,
   y: 0,
+  linkType: 'NONE' as PanoramaBeaconLinkType,
+  linkLotId: '',
+  linkPanoramaId: '',
+  linkUrl: '',
 })
 
 function openNewBeaconModal(x: number, y: number) {
@@ -647,6 +950,10 @@ function openNewBeaconModal(x: number, y: number) {
   beaconForm.visible = true
   beaconForm.x = x
   beaconForm.y = y
+  beaconForm.linkType = 'NONE'
+  beaconForm.linkLotId = ''
+  beaconForm.linkPanoramaId = ''
+  beaconForm.linkUrl = ''
   showBeaconModal.value = true
 }
 
@@ -659,6 +966,10 @@ function editBeacon(beacon: PanoramaBeacon) {
   beaconForm.visible = beacon.visible
   beaconForm.x = beacon.x
   beaconForm.y = beacon.y
+  beaconForm.linkType = (beacon.linkType as PanoramaBeaconLinkType) || 'NONE'
+  beaconForm.linkLotId = beacon.linkLotId ?? ''
+  beaconForm.linkPanoramaId = beacon.linkPanoramaId ?? ''
+  beaconForm.linkUrl = beacon.linkUrl ?? ''
   showBeaconModal.value = true
 }
 
@@ -678,24 +989,38 @@ async function doSaveBeacon() {
     const wasEditing = !!editingBeacon.value
     const normalizedDescription = beaconForm.description.trim()
 
+    // Build link payload based on type
+    const linkPayload = {
+      linkType: beaconForm.linkType,
+      linkLotId: beaconForm.linkType === 'LOT' ? (beaconForm.linkLotId || undefined) : undefined,
+      linkPanoramaId: beaconForm.linkType === 'PANORAMA' ? (beaconForm.linkPanoramaId || undefined) : undefined,
+      linkUrl: beaconForm.linkType === 'URL' ? (beaconForm.linkUrl || undefined) : undefined,
+    }
+
     if (editingBeacon.value) {
       const updated = await api.updateBeacon(editingBeacon.value.id, {
         title: beaconForm.title,
         description: normalizedDescription || undefined,
         style: beaconForm.style,
         visible: beaconForm.visible,
+        ...linkPayload,
       })
 
       const idx = activePanorama.value.beacons.findIndex(b => b.id === updated.id)
       if (idx >= 0) {
-        const current = activePanorama.value.beacons[idx]
         activePanorama.value.beacons[idx] = {
-          ...current,
-          ...updated,
+          ...activePanorama.value.beacons[idx],
+          ...(updated as any),
           title: beaconForm.title,
           description: normalizedDescription || null,
           style: beaconForm.style,
           visible: beaconForm.visible,
+          linkType: beaconForm.linkType,
+          linkLotId: beaconForm.linkType === 'LOT' ? (beaconForm.linkLotId || null) : null,
+          linkPanoramaId: beaconForm.linkType === 'PANORAMA' ? (beaconForm.linkPanoramaId || null) : null,
+          linkUrl: beaconForm.linkType === 'URL' ? (beaconForm.linkUrl || null) : null,
+          linkLot: (updated as any).linkLot ?? null,
+          linkPanorama: (updated as any).linkPanorama ?? null,
         }
       }
     } else {
@@ -706,8 +1031,9 @@ async function doSaveBeacon() {
         y: beaconForm.y,
         style: beaconForm.style,
         visible: beaconForm.visible,
+        ...linkPayload,
       })
-      activePanorama.value.beacons.push(created)
+      activePanorama.value.beacons.push(created as any)
     }
     closeBeaconModal()
     toast.success(wasEditing ? 'Beacon atualizado!' : 'Beacon criado!')
@@ -1317,6 +1643,65 @@ function clientToNormalized(clientX: number, clientY: number) {
   margin-top: 4px;
 }
 
+.pe-link-preview {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--color-surface-200);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pe-link-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.pe-link-tag.muted {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--color-surface-400);
+}
+
+.pe-lot-search {
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.pe-lot-search .form-input {
+  padding-right: 32px;
+}
+
+.pe-lot-search-spinner {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-primary-500);
+  font-size: 0.9rem;
+  animation: pe-spin 0.8s linear infinite;
+}
+
+@keyframes pe-spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.pe-link-hint {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--color-surface-500);
+}
+
+.form-input[size] {
+  min-height: 140px;
+}
+
 .pe-current-file {
   font-size: 0.78rem;
   color: var(--color-success);
@@ -1347,5 +1732,24 @@ function clientToNormalized(clientX: number, clientY: number) {
 .modal-content .btn-primary:hover:not(:disabled) {
   background: #1d4ed8;
   box-shadow: 0 10px 22px rgba(29, 78, 216, 0.42);
+}
+
+.pe-import-lot-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.1s;
+}
+
+.pe-import-lot-item:hover {
+  background: var(--glass-bg-heavy);
+}
+
+.pe-import-lot-item .pe-checkbox-label {
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--color-surface-200);
 }
 </style>

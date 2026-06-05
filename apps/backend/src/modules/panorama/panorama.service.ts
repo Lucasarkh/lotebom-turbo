@@ -50,7 +50,34 @@ export class PanoramaService {
       where: { projectId, tenantId },
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
-        beacons: { orderBy: { createdAt: 'asc' } }
+        beacons: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            linkLot: {
+              select: {
+                id: true,
+                block: true,
+                lotNumber: true,
+                price: true,
+                areaM2: true,
+                status: true,
+                panoramaUrl: true,
+                mapElement: {
+                  select: {
+                    code: true,
+                  }
+                }
+              }
+            },
+            linkPanorama: {
+              select: {
+                id: true,
+                title: true,
+                projection: true,
+              }
+            }
+          }
+        }
       },
       orderBy: { createdAt: 'asc' }
     });
@@ -66,7 +93,32 @@ export class PanoramaService {
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
         beacons: {
-          orderBy: { createdAt: 'asc' }
+          orderBy: { createdAt: 'asc' },
+          include: {
+            linkLot: {
+              select: {
+                id: true,
+                block: true,
+                lotNumber: true,
+                price: true,
+                areaM2: true,
+                status: true,
+                panoramaUrl: true,
+                mapElement: {
+                  select: {
+                    code: true,
+                  }
+                }
+              }
+            },
+            linkPanorama: {
+              select: {
+                id: true,
+                title: true,
+                projection: true,
+              }
+            }
+          }
         }
       },
       orderBy: { createdAt: 'asc' }
@@ -80,7 +132,34 @@ export class PanoramaService {
       where: { id: panoramaId, tenantId },
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
-        beacons: { orderBy: { createdAt: 'asc' } }
+        beacons: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            linkLot: {
+              select: {
+                id: true,
+                block: true,
+                lotNumber: true,
+                price: true,
+                areaM2: true,
+                status: true,
+                panoramaUrl: true,
+                mapElement: {
+                  select: {
+                    code: true,
+                  }
+                }
+              }
+            },
+            linkPanorama: {
+              select: {
+                id: true,
+                title: true,
+                projection: true,
+              }
+            }
+          }
+        }
       }
     });
     if (!panorama) throw new NotFoundException('Panorama não encontrado.');
@@ -105,7 +184,36 @@ export class PanoramaService {
         showImplantation: dto.showImplantation ?? false,
         implantationUrl: dto.implantationUrl
       },
-      include: { snapshots: true, beacons: true }
+      include: {
+        snapshots: true,
+        beacons: {
+          include: {
+            linkLot: {
+              select: {
+                id: true,
+                block: true,
+                lotNumber: true,
+                price: true,
+                areaM2: true,
+                status: true,
+                panoramaUrl: true,
+                mapElement: {
+                  select: {
+                    code: true,
+                  }
+                }
+              }
+            },
+            linkPanorama: {
+              select: {
+                id: true,
+                title: true,
+                projection: true,
+              }
+            }
+          }
+        }
+      }
     });
 
     return this.normalizePanoramaAssets(created);
@@ -119,7 +227,34 @@ export class PanoramaService {
       data: dto,
       include: {
         snapshots: { orderBy: { sortOrder: 'asc' } },
-        beacons: { orderBy: { createdAt: 'asc' } }
+        beacons: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            linkLot: {
+              select: {
+                id: true,
+                block: true,
+                lotNumber: true,
+                price: true,
+                areaM2: true,
+                status: true,
+                panoramaUrl: true,
+                mapElement: {
+                  select: {
+                    code: true,
+                  }
+                }
+              }
+            },
+            linkPanorama: {
+              select: {
+                id: true,
+                title: true,
+                projection: true,
+              }
+            }
+          }
+        }
       }
     });
 
@@ -298,7 +433,31 @@ export class PanoramaService {
         x: dto.x,
         y: dto.y,
         style: dto.style ?? 'default',
-        visible: dto.visible ?? true
+        visible: dto.visible ?? true,
+        linkType: dto.linkType ?? 'NONE',
+        linkLotId: dto.linkType === 'LOT' ? dto.linkLotId : null,
+        linkPanoramaId: dto.linkType === 'PANORAMA' ? dto.linkPanoramaId : null,
+        linkUrl: dto.linkType === 'URL' ? dto.linkUrl : null,
+      },
+      include: {
+        linkLot: {
+          select: {
+            id: true,
+            block: true,
+            lotNumber: true,
+            price: true,
+            areaM2: true,
+            status: true,
+            panoramaUrl: true,
+          }
+        },
+        linkPanorama: {
+          select: {
+            id: true,
+            title: true,
+            projection: true,
+          }
+        }
       }
     });
   }
@@ -306,9 +465,45 @@ export class PanoramaService {
   async updateBeacon(tenantId: string, beaconId: string, dto: UpdateBeaconDto) {
     const beacon = await this._findBeacon(tenantId, beaconId);
 
+    // Build update data, handling link type changes
+    const updateData: any = { ...dto };
+
+    // When linkType changes, clear irrelevant fields
+    if (dto.linkType !== undefined) {
+      if (dto.linkType !== 'LOT') updateData.linkLotId = null;
+      if (dto.linkType !== 'PANORAMA') updateData.linkPanoramaId = null;
+      if (dto.linkType !== 'URL') updateData.linkUrl = null;
+      // If linkType is NONE, clear all link references
+      if (dto.linkType === 'NONE') {
+        updateData.linkLotId = null;
+        updateData.linkPanoramaId = null;
+        updateData.linkUrl = null;
+      }
+    }
+
     return this.prisma.panoramaBeacon.update({
       where: { id: beacon.id },
-      data: dto
+      data: updateData,
+      include: {
+        linkLot: {
+          select: {
+            id: true,
+            block: true,
+            lotNumber: true,
+            price: true,
+            areaM2: true,
+            status: true,
+            panoramaUrl: true,
+          }
+        },
+        linkPanorama: {
+          select: {
+            id: true,
+            title: true,
+            projection: true,
+          }
+        }
+      }
     });
   }
 

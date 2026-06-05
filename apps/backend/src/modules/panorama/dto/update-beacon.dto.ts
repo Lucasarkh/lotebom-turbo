@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -7,6 +8,7 @@ import {
   Min
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PanoramaBeaconLinkType } from '@prisma/client';
 
 export class UpdateBeaconDto {
   @ApiPropertyOptional()
@@ -42,4 +44,24 @@ export class UpdateBeaconDto {
   @IsOptional()
   @IsBoolean()
   visible?: boolean;
+
+  @ApiPropertyOptional({ enum: PanoramaBeaconLinkType, description: 'Tipo de link do beacon' })
+  @IsOptional()
+  @IsEnum(PanoramaBeaconLinkType)
+  linkType?: PanoramaBeaconLinkType;
+
+  @ApiPropertyOptional({ description: 'ID do lote vinculado (quando linkType=LOT)' })
+  @IsOptional()
+  @IsString()
+  linkLotId?: string;
+
+  @ApiPropertyOptional({ description: 'ID do panorama vinculado (quando linkType=PANORAMA)' })
+  @IsOptional()
+  @IsString()
+  linkPanoramaId?: string;
+
+  @ApiPropertyOptional({ description: 'URL do link (quando linkType=URL)' })
+  @IsOptional()
+  @IsString()
+  linkUrl?: string;
 }

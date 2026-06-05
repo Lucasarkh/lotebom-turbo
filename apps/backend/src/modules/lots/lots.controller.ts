@@ -67,6 +67,18 @@ export class LotsController {
     return this.lotsService.listCategories(tenantId, projectId);
   }
 
+  @Get('summary')
+  @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
+  @ApiOperation({ summary: 'Resumo leve dos lotes (para dropdowns/seletores)' })
+  @ApiQuery({ name: 'search', required: false, description: 'Filtrar por quadra ou número do lote' })
+  findSummary(
+    @TenantId() tenantId: string,
+    @Param('projectId') projectId: string,
+    @Query('search') search?: string,
+  ) {
+    return this.lotsService.findSummary(tenantId, projectId, search);
+  }
+
   @Post('categories')
   @Roles('LOTEADORA', 'SYSADMIN')
   @ApiOperation({ summary: 'Criar categoria de lote' })

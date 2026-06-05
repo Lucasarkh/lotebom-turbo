@@ -5,14 +5,31 @@
         <h2 class="v4-section-title">Vista 360°</h2>
         <p class="v4-section-subtitle">Explore o empreendimento e seus arredores com vista panorâmica.</p>
       </div>
+
+      <!-- Panorama selector tabs -->
+      <div v-if="panoramas.length > 1" class="v4-panorama-selector">
+        <a
+          v-for="pano in panoramas"
+          :key="pano.id"
+          :href="`#panorama-${pano.id}`"
+          class="v4-panorama-tab"
+        >
+          {{ pano.title }}
+        </a>
+      </div>
+
       <ClientOnly>
         <div
           v-for="pano in panoramas"
           :key="pano.id"
+          :id="`panorama-${pano.id}`"
           class="v4-panorama-card"
           :class="{ 'is-interaction-disabled': !panoramaInteractionEnabled }"
         >
-          <PanoramaViewer :panorama="pano" />
+          <PanoramaViewer
+            :panorama="pano"
+            @lot-cta="handleLotCta"
+          />
           <div v-if="showTouchCta" class="v4-interaction-gate">
             <button type="button" class="v4-interaction-gate__btn" @click.stop.prevent="enableInteraction">
               Ver 360 interativo
@@ -26,6 +43,7 @@
           </div>
         </template>
       </ClientOnly>
+
       <button
         v-if="showDisableButton"
         class="v4-interaction-toggle"
@@ -48,6 +66,10 @@ const props = defineProps<{
   isTouchMobile: boolean
 }>()
 
+const emit = defineEmits<{
+  navigateToLot: [lotCode: string]
+}>()
+
 const tracking = useTracking()
 
 const panoramaInteractionEnabled = ref(!props.isTouchMobile)
@@ -66,6 +88,13 @@ function enableInteraction() {
 
 function disableInteraction() {
   panoramaInteractionEnabled.value = false
+}
+
+function handleLotCta(_lotId: string, lotCode: string | null) {
+  if (lotCode) {
+    emit('navigateToLot', lotCode)
+    tracking.trackClick('Panorama: CTA Ver mais informações', 'VIEW_360')
+  }
 }
 </script>
 
@@ -91,10 +120,41 @@ function disableInteraction() {
   color: #64748b;
 }
 
+/* Panorama selector tabs */
+.v4-panorama-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  justify-content: center;
+}
+
+.v4-panorama-tab {
+  padding: 8px 18px;
+  border: 1px solid var(--v4-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--v4-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.v4-panorama-tab:hover {
+  border-color: var(--v4-primary);
+  color: var(--v4-primary);
+}
+
 @media (max-width: 768px) {
   .v4-panorama-card {
     height: clamp(220px, 56vw, 320px);
     margin-bottom: 16px;
+  }
+
+  .v4-panorama-tab {
+    padding: 6px 14px;
+    font-size: 0.76rem;
   }
 }
 

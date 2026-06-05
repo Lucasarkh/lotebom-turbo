@@ -537,4 +537,48 @@ export class LotsService {
 
     return this.prisma.lotDetails.delete({ where: { id: lot.id } });
   }
+
+  /**
+   * Lightweight lot summary for dropdowns/selectors.
+   * Returns only id, block, lotNumber, areaM2, status, panoramaUrl, and mapElement.code.
+   * Supports optional search filter (by block or lotNumber).
+   * Max 200 results (enough for any dropdown).
+   */
+  async findSummary(
+    tenantId: string,
+    projectId: string,
+    search?: string,
+  ) {
+    const where: any = { tenantId, projectId };
+    if (search) {
+      const term = search.trim();
+      where.OR = [
+        { block: { contains: term, mode: 'insensitive' } },
+        { lotNumber: { contains: term, mode: 'insensitive' } },
+        { mapElement: { code: { contains: term, mode: 'insensitive' } } },
+      ];
+    }
+
+    const lots = await this.prisma.lotDetails.findMany({
+      where,
+      select: {
+        id: true,
+        block: true,
+        lotNumber: true,
+        areaM2: true,
+        status: true,
+        panoramaUrl: true,
+        mapElement: {
+          select: { code: true },
+        },
+      },
+      orderBy: [
+        { block: 'asc' },
+        { lotNumber: 'asc' },
+      ],
+      take: 200,
+    });
+
+    return lots;
+  }
 }

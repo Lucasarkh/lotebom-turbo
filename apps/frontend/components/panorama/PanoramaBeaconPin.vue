@@ -1,7 +1,7 @@
 <template>
   <div
     class="panorama-beacon"
-    :class="[`beacon-style--${beacon.style}`, { 'beacon--dragging': isDragging }]"
+    :class="[`beacon-style--${beacon.style}`, { 'beacon--dragging': isDragging, 'beacon--linked': hasLink }]"
     :style="pinStyle"
     @mousedown.stop="onMouseDown"
     @click.stop="$emit('click', beacon)"
@@ -9,6 +9,9 @@
     <div class="beacon-stem"></div>
     <div class="beacon-label">
       <span class="beacon-text">{{ beacon.title }}</span>
+      <span v-if="hasLink" class="beacon-link-icon" :title="linkTooltip">
+        <i :class="linkIconClass" aria-hidden="true"></i>
+      </span>
     </div>
   </div>
 </template>
@@ -34,6 +37,26 @@ const pinStyle = computed(() => ({
   left: `${props.beacon.x * 100}%`,
   top: `${props.beacon.y * 100}%`,
 }))
+
+const hasLink = computed(() => props.beacon.linkType && props.beacon.linkType !== 'NONE')
+
+const linkIconClass = computed(() => {
+  switch (props.beacon.linkType) {
+    case 'LOT': return 'bi bi-house-door-fill'
+    case 'PANORAMA': return 'bi bi-arrow-left-right'
+    case 'URL': return 'bi bi-box-arrow-up-right'
+    default: return 'bi bi-link-45deg'
+  }
+})
+
+const linkTooltip = computed(() => {
+  switch (props.beacon.linkType) {
+    case 'LOT': return `Lote: ${props.beacon.linkLot?.lotNumber || props.beacon.linkLot?.block || '—'}`
+    case 'PANORAMA': return `Panorama: ${props.beacon.linkPanorama?.title || '—'}`
+    case 'URL': return 'Link externo'
+    default: return ''
+  }
+})
 
 function onMouseDown(e: MouseEvent) {
   if (props.editable) {
@@ -95,6 +118,37 @@ function onMouseDown(e: MouseEvent) {
   background: rgba(45, 65, 60, 0.95);
   color: #fff;
   backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.beacon-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.beacon--linked .beacon-label {
+  border: 2px solid rgba(16, 185, 129, 0.45);
+  background: rgba(5, 46, 22, 0.92);
+  color: #d1fae5;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25), 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.beacon--linked .beacon-stem {
+  background: rgba(16, 185, 129, 0.6);
+}
+
+.beacon--linked:hover .beacon-link-icon {
+  background: rgba(16, 185, 129, 0.5);
 }
 
 /* ─── Styles ──────────────────────────────────────────── */

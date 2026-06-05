@@ -68,6 +68,7 @@
           :panoramas="panoramas"
           :section-style="publicSectionStyle('pub-panorama')"
           :is-touch-mobile="isTouchMobile"
+          @navigateToLot="handlePanoramaNavigateToLot"
         />
 
         <LandingVideoSection
@@ -882,6 +883,10 @@ async function handlePreferenceNavigation(criteria: IdealLotCriteria, source: Se
     path: pathPrefix.value + '/unidades',
     query: buildQueryFromCriteria(criteria, corretorCode),
   })
+}
+
+function handlePanoramaNavigateToLot(lotCode: string) {
+  navigateTo({ path: `${pathPrefix.value}/${lotCode}` })
 }
 
 /* ------------------------------------------------------------------ */
