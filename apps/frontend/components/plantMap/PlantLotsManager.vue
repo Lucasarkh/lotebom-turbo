@@ -329,6 +329,97 @@
         </div>
 
         <div class="space-y-3">
+          <h4 class="text-sm font-semibold text-p-text">Viela</h4>
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="lotForm.hasViela" type="checkbox" class="h-4 w-4 rounded border-p-border text-p-accent focus:ring-p-accent" />
+              <span class="text-sm text-p-text">Lote possui viela</span>
+            </label>
+          </div>
+          <div v-if="lotForm.hasViela" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Largura da Viela (m)</label>
+              <input v-model.number="lotForm.vielaWidth" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 2.50" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Lado da Viela</label>
+              <select v-model="lotForm.vielaSide" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none appearance-none">
+                <option value="">Não definido</option>
+                <option value="RIGHT">Lado Direito</option>
+                <option value="LEFT">Lado Esquerdo</option>
+                <option value="BACK">Fundos</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="text-sm font-semibold text-p-text">Restrições Urbanísticas</h4>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Recuo Frontal (m)</label>
+              <input v-model.number="lotForm.recuoFrontal" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 5.00" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Recuo Lateral (m)</label>
+              <input v-model.number="lotForm.recuoLateral" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 1.50" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Recuo de Fundos (m)</label>
+              <input v-model.number="lotForm.recuoFundos" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 3.00" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Taxa de Ocupação (%)</label>
+              <input v-model.number="lotForm.taxaOcupacao" type="number" step="0.1" min="0" max="100" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 60" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Coef. de Aproveitamento</label>
+              <input v-model.number="lotForm.coeficienteAproveitamento" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 1.00" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Gabarito Máximo (m)</label>
+              <input v-model.number="lotForm.gabaritoMaximo" type="number" step="0.01" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 9.00" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Taxa de Permeabilidade (%)</label>
+              <input v-model.number="lotForm.taxaPermeabilidade" type="number" step="0.1" min="0" max="100" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 20" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Zoneamento</label>
+              <input v-model="lotForm.zoneamento" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: ZR-1" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Uso Permitido</label>
+              <select v-model="lotForm.usoPermitido" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text focus:border-p-accent focus:outline-none appearance-none">
+                <option value="">Não definido</option>
+                <option value="Residencial">Residencial</option>
+                <option value="Comercial">Comercial</option>
+                <option value="Misto">Misto</option>
+                <option value="Industrial">Industrial</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="text-sm font-semibold text-p-text">Informações Legais</h4>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Matrícula do Imóvel</label>
+              <input v-model="lotForm.matricula" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Nº da matrícula" />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-p-text-secondary">Inscrição Imobiliária</label>
+              <input v-model="lotForm.inscricaoImobiliaria" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none" placeholder="Ex: 001.002.003" />
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-p-text-secondary">Confrontações</label>
+            <textarea v-model="lotForm.confrontacoes" rows="3" class="w-full rounded-lg border border-p-border bg-p-raised px-3.5 py-2.5 text-sm text-p-text placeholder:text-p-text-muted focus:border-p-accent focus:outline-none resize-y min-h-[80px]" placeholder="Norte: Lote 02; Sul: Rua A; Leste: Lote 03; Oeste: Viela sanitária"></textarea>
+          </div>
+        </div>
+
+        <div class="space-y-3">
           <h4 class="text-sm font-semibold text-p-text">Selos Customizados</h4>
           <div class="flex flex-wrap gap-2">
             <div
@@ -508,6 +599,24 @@ const lotForm = ref({
   frontEdgeIndex: null as number | null,
   conditionsText: '',
   paymentConditions: null as any,
+  // Viela
+  hasViela: false,
+  vielaWidth: null as number | null,
+  vielaSide: '' as string,
+  // Restrições Urbanísticas
+  recuoFrontal: null as number | null,
+  recuoLateral: null as number | null,
+  recuoFundos: null as number | null,
+  taxaOcupacao: null as number | null,
+  coeficienteAproveitamento: null as number | null,
+  gabaritoMaximo: null as number | null,
+  taxaPermeabilidade: null as number | null,
+  zoneamento: '',
+  usoPermitido: '',
+  // Informações Legais
+  matricula: '',
+  inscricaoImobiliaria: '',
+  confrontacoes: '',
 })
 const savingLot = ref(false)
 const uploadingLotMedia = ref(false)
@@ -853,9 +962,9 @@ const handleLotCsvSelected = async (event: Event) => {
 
 const downloadLotCsvTemplate = () => {
   const lines = [
-    'codigo;status;quadra;lote;area_m2;valor_total;valor_m2;frente;fundo;lateral_esquerda;lateral_direita;topografia;tags;observacoes',
-    'Q1-L01;DISPONIVEL;Q1;01;300;120000;400;12;25;25;25;PLANO;"esquina;sol da manhã";"Lote de esquina"',
-    'Q1-L02;RESERVADO;Q1;02;280;98000;350;10;28;28;28;ACLIVE;"vista livre";""',
+    'codigo;status;quadra;lote;area_m2;valor_total;valor_m2;frente;fundo;lateral_esquerda;lateral_direita;topografia;tags;observacoes;viela;largura_viela;lado_viela;recuo_frontal;recuo_lateral;recuo_fundos;taxa_ocupacao;coef_aproveitamento;gabarito_maximo;taxa_permeabilidade;zoneamento;uso_permitido;matricula;inscricao_imobiliaria;confrontacoes',
+    'Q1-L01;DISPONIVEL;Q1;01;300;120000;400;12;25;25;25;PLANO;"esquina;sol da manhã";"Lote de esquina";SIM;2.5;RIGHT;5;1.5;3;60;1;9;20;ZR-1;Residencial;12345;001.002.003;"Norte: Lote 02; Sul: Rua A"',
+    'Q1-L02;RESERVADO;Q1;02;280;98000;350;10;28;28;28;ACLIVE;"vista livre";"";NAO;;;5;1.5;3;60;1;9;20;ZR-1;Residencial;;;',
   ]
 
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
@@ -991,6 +1100,21 @@ const openEditLot = (lot: any) => {
     frontEdgeIndex: normalizeFrontEdgeIndex(lot.frontEdgeIndex ?? lot.mapElement?.metaJson?.frontEdgeIndex, Array.isArray(lot.sideMetricsJson) ? lot.sideMetricsJson.length : 0),
     conditionsText: Array.isArray(lot.conditionsJson) ? lot.conditionsJson.join('\n') : '',
     paymentConditions: lot.paymentConditions ? JSON.parse(JSON.stringify(lot.paymentConditions)) : null,
+    hasViela: lot.hasViela ?? false,
+    vielaWidth: lot.vielaWidth ?? null,
+    vielaSide: lot.vielaSide || '',
+    recuoFrontal: lot.recuoFrontal ?? null,
+    recuoLateral: lot.recuoLateral ?? null,
+    recuoFundos: lot.recuoFundos ?? null,
+    taxaOcupacao: lot.taxaOcupacao ?? null,
+    coeficienteAproveitamento: lot.coeficienteAproveitamento ?? null,
+    gabaritoMaximo: lot.gabaritoMaximo ?? null,
+    taxaPermeabilidade: lot.taxaPermeabilidade ?? null,
+    zoneamento: lot.zoneamento || '',
+    usoPermitido: lot.usoPermitido || '',
+    matricula: lot.matricula || '',
+    inscricaoImobiliaria: lot.inscricaoImobiliaria || '',
+    confrontacoes: lot.confrontacoes || '',
   }
 }
 
@@ -1088,6 +1212,21 @@ const saveLotDetails = async () => {
       notes: lotForm.value.notes || undefined,
       tags: lotForm.value.tags,
       paymentConditions: lotForm.value.paymentConditions || undefined,
+      hasViela: lotForm.value.hasViela,
+      vielaWidth: lotForm.value.hasViela ? toNum(lotForm.value.vielaWidth) : undefined,
+      vielaSide: lotForm.value.hasViela ? (lotForm.value.vielaSide || undefined) : undefined,
+      recuoFrontal: toNum(lotForm.value.recuoFrontal),
+      recuoLateral: toNum(lotForm.value.recuoLateral),
+      recuoFundos: toNum(lotForm.value.recuoFundos),
+      taxaOcupacao: toNum(lotForm.value.taxaOcupacao),
+      coeficienteAproveitamento: toNum(lotForm.value.coeficienteAproveitamento),
+      gabaritoMaximo: toNum(lotForm.value.gabaritoMaximo),
+      taxaPermeabilidade: toNum(lotForm.value.taxaPermeabilidade),
+      zoneamento: lotForm.value.zoneamento || undefined,
+      usoPermitido: lotForm.value.usoPermitido || undefined,
+      matricula: lotForm.value.matricula || undefined,
+      inscricaoImobiliaria: lotForm.value.inscricaoImobiliaria || undefined,
+      confrontacoes: lotForm.value.confrontacoes || undefined,
     }
     if (calc !== null) {
       payload.areaM2 = Math.round(calc * 100) / 100

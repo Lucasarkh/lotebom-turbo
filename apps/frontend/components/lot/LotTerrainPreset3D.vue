@@ -40,6 +40,15 @@
         >
           Sol
         </button>
+        <button
+          v-if="hasBuildingData"
+          type="button"
+          class="lot-terrain-3d__control-chip"
+          :class="{ 'is-active': showBuildingOverlay }"
+          @click="showBuildingOverlay = !showBuildingOverlay"
+        >
+          Construção
+        </button>
       </div>
 
       <div v-if="!isSceneReady && !sceneError" class="lot-terrain-3d__overlay lot-terrain-3d__overlay--loading">
@@ -75,6 +84,14 @@ type LotDetailsLike = {
   sideRight?: number | string | null
   sideMetricsJson?: SideMetric[] | null
   slope?: string | null
+  recuoFrontal?: number | string | null
+  recuoLateral?: number | string | null
+  recuoFundos?: number | string | null
+  taxaOcupacao?: number | string | null
+  gabaritoMaximo?: number | string | null
+  hasViela?: boolean | null
+  vielaWidth?: number | string | null
+  vielaSide?: string | null
 }
 
 type RawPoint = {
@@ -130,6 +147,7 @@ const sceneError = ref('')
 const showFrontOverlay = ref(true)
 const showMeasureOverlay = ref(true)
 const showSolarOverlay = ref(true)
+const showBuildingOverlay = ref(true)
 
 const toNumber = (value: unknown) => {
   const parsed = Number(value)
@@ -424,6 +442,23 @@ const solarGuideAngleDeg = computed(() => {
 
 const hasSolarGuide = computed(() => solarGuideAngleDeg.value !== null)
 
+const buildingParams = computed(() => ({
+  recuoFrontal: toNumber(props.details?.recuoFrontal) ?? 0,
+  recuoLateral: toNumber(props.details?.recuoLateral) ?? 0,
+  recuoFundos: toNumber(props.details?.recuoFundos) ?? 0,
+  taxaOcupacao: toNumber(props.details?.taxaOcupacao) ?? null,
+  gabaritoMaximo: toNumber(props.details?.gabaritoMaximo) ?? null,
+  hasViela: Boolean(props.details?.hasViela),
+  vielaWidth: toNumber(props.details?.vielaWidth) ?? 0,
+  vielaSide: (props.details?.vielaSide as string) || '',
+}))
+
+const hasBuildingData = computed(() => {
+  const p = buildingParams.value
+  return p.recuoFrontal > 0 || p.recuoLateral > 0 || p.recuoFundos > 0
+    || p.taxaOcupacao !== null || p.gabaritoMaximo !== null
+})
+
 const displayArea = computed(() => {
   if (!terrainSpec.value.area) return null
   return Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(terrainSpec.value.area)
@@ -563,6 +598,42 @@ const createTextSprite = (
   const material = new three.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false })
   const sprite = new three.Sprite(material)
   sprite.scale.set(options.scaleX ?? 5.4, options.scaleY ?? 2.1, 1)
+  sprite.renderOrder = 40
+  return sprite
+}
+
+const createPlainTextSprite = (
+  three: ThreeModule,
+  text: string,
+  options: { color: string; fontSize?: number; scaleX?: number; scaleY?: number },
+) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 80
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const fontSize = options.fontSize ?? 32
+  ctx.font = `700 ${fontSize}px sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.shadowColor = 'rgba(0,0,0,0.7)'
+  ctx.shadowBlur = 6
+  ctx.shadowOffsetX = 1
+  ctx.shadowOffsetY = 1
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+  ctx.lineWidth = 5
+  ctx.strokeText(text, 256, 40)
+  ctx.shadowBlur = 0
+  ctx.shadowColor = 'transparent'
+  ctx.fillStyle = '#2c1a00'
+  ctx.fillText(text, 256, 40)
+
+  const texture = new three.CanvasTexture(canvas)
+  texture.colorSpace = three.SRGBColorSpace
+  const material = new three.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false })
+  const sprite = new three.Sprite(material)
+  sprite.scale.set(options.scaleX ?? 5, options.scaleY ?? 0.8, 1)
   sprite.renderOrder = 40
   return sprite
 }
@@ -741,6 +812,389 @@ const resolvePlanShape = () => {
     { x: offsetX + halfBack, z: depth },
     { x: offsetX - halfBack, z: depth },
   ] as PlanPoint[]
+}
+
+const buildConstructionOverlay = (
+  three: ThreeModule,
+  spec: TerrainSpec,
+  planShape: PlanPoint[],
+  thickness: number,
+  slopeHeight: number,
+) => {
+  const group = new three.Group()
+  const bp = buildingParams.value
+
+  const minX = Math.min(...planShape.map(p => p.x))
+  const maxX = Math.max(...planShape.map(p => p.x))
+  const minZ = Math.min(...planShape.map(p => p.z))
+  const maxZ = Math.max(...planShape.map(p => p.z))
+  const lotW = maxX - minX
+  const lotD = maxZ - minZ
+
+  const recF = Math.min(bp.recuoFrontal, lotD * 0.4)
+  const recB = Math.min(bp.recuoFundos, lotD * 0.4)
+  const recL = Math.min(bp.recuoLateral, lotW * 0.3)
+  const recR = Math.min(bp.recuoLateral, lotW * 0.3)
+
+  const buildableW = Math.max(lotW - recL - recR, 2)
+  const buildableD = Math.max(lotD - recF - recB, 2)
+
+  let houseW = buildableW
+  let houseD = buildableD
+  if (bp.taxaOcupacao !== null && bp.taxaOcupacao > 0) {
+    const lotArea = spec.area ?? (lotW * lotD)
+    const maxFootprint = lotArea * (bp.taxaOcupacao / 100)
+    if (houseW * houseD > maxFootprint && maxFootprint > 0) {
+      const scale = Math.sqrt(maxFootprint / (houseW * houseD))
+      houseW *= scale
+      houseD *= scale
+    }
+  } else {
+    houseW *= 0.6
+    houseD *= 0.6
+  }
+
+  if (houseW > houseD * 2) houseW = houseD * 2
+  if (houseD > houseW * 2.5) houseD = houseW * 2.5
+  houseW = clamp(houseW, 3, buildableW)
+  houseD = clamp(houseD, 3.5, buildableD)
+
+  const wallHeight = bp.gabaritoMaximo ? Math.min(bp.gabaritoMaximo, 4) : 3.2
+  const numFloors = 1
+  const floorH = wallHeight
+  const roofHeight = clamp(houseW * 0.25, 1.2, 2.5)
+
+  const centerX = (minX + recL + maxX - recR) / 2
+  const centerZ = minZ + recF + houseD / 2
+  const surfaceY = lotD > 0 ? slopeHeight * ((centerZ - minZ) / lotD) : 0
+
+  const foundH = 0.12
+  const wallBaseY = surfaceY + foundH
+  const hw = houseW / 2
+  const hd = houseD / 2
+
+  // Foundation
+  const foundGeo = new three.BoxGeometry(houseW + 0.15, foundH, houseD + 0.15)
+  const foundMat = new three.MeshStandardMaterial({ color: '#a09890', roughness: 0.92 })
+  const foundation = new three.Mesh(foundGeo, foundMat)
+  foundation.position.set(centerX, surfaceY + foundH / 2, centerZ)
+  foundation.receiveShadow = true
+  group.add(foundation)
+
+  // Walls
+  const wallGeo = new three.BoxGeometry(houseW, wallHeight, houseD)
+  const wallMat = new three.MeshStandardMaterial({ color: '#f5ede0', roughness: 0.78 })
+  const walls = new three.Mesh(wallGeo, wallMat)
+  walls.position.set(centerX, wallBaseY + wallHeight / 2, centerZ)
+  walls.castShadow = true
+  walls.receiveShadow = true
+  group.add(walls)
+
+  // Wall edges
+  const edgesGeo = new three.EdgesGeometry(wallGeo)
+  const edgesMat = new three.LineBasicMaterial({ color: '#b0a090', transparent: true, opacity: 0.35 })
+  const edgeLines = new three.LineSegments(edgesGeo, edgesMat)
+  edgeLines.position.copy(walls.position)
+  group.add(edgeLines)
+
+  // Floor division lines
+  const floorLineMat = new three.LineBasicMaterial({ color: '#c4a882', transparent: true, opacity: 0.5 })
+  for (let f = 1; f < numFloors; f++) {
+    const fy = wallBaseY + floorH * f
+    const e = 0.01
+    const pts = [
+      new three.Vector3(centerX - hw - e, fy, centerZ - hd - e),
+      new three.Vector3(centerX + hw + e, fy, centerZ - hd - e),
+      new three.Vector3(centerX + hw + e, fy, centerZ + hd + e),
+      new three.Vector3(centerX - hw - e, fy, centerZ + hd + e),
+      new three.Vector3(centerX - hw - e, fy, centerZ - hd - e),
+    ]
+    const floorGeo = new three.BufferGeometry().setFromPoints(pts)
+    const floorLine = new three.Line(floorGeo, floorLineMat)
+    floorLine.renderOrder = 10
+    group.add(floorLine)
+  }
+
+  // Windows and Door
+  const winW = clamp(houseW * 0.1, 0.5, 1.0)
+  const winH = clamp(floorH * 0.35, 0.6, 1.2)
+  const winProt = 0.05
+  const windowMat = new three.MeshStandardMaterial({ color: '#7eaed0', roughness: 0.25, metalness: 0.15, transparent: true, opacity: 0.85 })
+  const windowFrameMat = new three.LineBasicMaterial({ color: '#e0d8c8', transparent: true, opacity: 0.8 })
+  const crossMat = new three.LineBasicMaterial({ color: '#d0c8b8', transparent: true, opacity: 0.65 })
+
+  const addWindow = (x: number, y: number, z: number, onZWall: boolean) => {
+    const wGeo = onZWall
+      ? new three.BoxGeometry(winW, winH, winProt)
+      : new three.BoxGeometry(winProt, winH, winW)
+    const win = new three.Mesh(wGeo, windowMat)
+    win.position.set(x, y, z)
+    win.renderOrder = 5
+    group.add(win)
+    const frameGeo = new three.EdgesGeometry(wGeo)
+    const frame = new three.LineSegments(frameGeo, windowFrameMat)
+    frame.position.copy(win.position)
+    frame.renderOrder = 12
+    group.add(frame)
+    if (onZWall) {
+      const cPts = [
+        new three.Vector3(x - winW / 2, y, z), new three.Vector3(x + winW / 2, y, z),
+        new three.Vector3(x, y - winH / 2, z), new three.Vector3(x, y + winH / 2, z),
+      ]
+      const cGeo = new three.BufferGeometry().setFromPoints(cPts)
+      group.add(Object.assign(new three.LineSegments(cGeo, crossMat), { renderOrder: 12 }))
+    } else {
+      const cPts = [
+        new three.Vector3(x, y, z - winW / 2), new three.Vector3(x, y, z + winW / 2),
+        new three.Vector3(x, y - winH / 2, z), new three.Vector3(x, y + winH / 2, z),
+      ]
+      const cGeo = new three.BufferGeometry().setFromPoints(cPts)
+      group.add(Object.assign(new three.LineSegments(cGeo, crossMat), { renderOrder: 12 }))
+    }
+  }
+
+  const frontWinCount = Math.max(1, Math.floor(houseW / 2.8))
+  const sideWinCount = Math.max(1, Math.floor(houseD / 3.5))
+  const frontSpacing = houseW / (frontWinCount + 1)
+  const sideSpacing = houseD / (sideWinCount + 1)
+  const doorW = clamp(houseW * 0.1, 0.7, 1.1)
+  const doorH = clamp(floorH * 0.72, 1.8, 2.4)
+
+  for (let f = 0; f < numFloors; f++) {
+    const winY = wallBaseY + f * floorH + floorH * 0.55
+
+    for (let i = 0; i < frontWinCount; i++) {
+      const wx = centerX - hw + frontSpacing * (i + 1)
+      if (f === 0 && Math.abs(wx - centerX) < (doorW + winW) / 2 + 0.2) continue
+      addWindow(wx, winY, centerZ - hd - winProt / 2, true)
+    }
+
+    for (let i = 0; i < frontWinCount; i++) {
+      const wx = centerX - hw + frontSpacing * (i + 1)
+      addWindow(wx, winY, centerZ + hd + winProt / 2, true)
+    }
+
+    for (let i = 0; i < sideWinCount; i++) {
+      const wz = centerZ - hd + sideSpacing * (i + 1)
+      addWindow(centerX - hw - winProt / 2, winY, wz, false)
+      addWindow(centerX + hw + winProt / 2, winY, wz, false)
+    }
+  }
+
+  // Door
+  const doorMat = new three.MeshStandardMaterial({ color: '#6b4226', roughness: 0.65 })
+  const doorGeo = new three.BoxGeometry(doorW, doorH, winProt)
+  const door = new three.Mesh(doorGeo, doorMat)
+  door.position.set(centerX, wallBaseY + doorH / 2, centerZ - hd - winProt / 2)
+  group.add(door)
+  const doorFrameGeo = new three.EdgesGeometry(doorGeo)
+  const doorFrameLines = new three.LineSegments(doorFrameGeo, new three.LineBasicMaterial({ color: '#8b6040' }))
+  doorFrameLines.position.copy(door.position)
+  doorFrameLines.renderOrder = 12
+  group.add(doorFrameLines)
+
+  // Porch canopy
+  const canopyGeo = new three.BoxGeometry(doorW + 0.6, 0.08, 0.45)
+  const canopyMat = new three.MeshStandardMaterial({ color: '#c4613a', roughness: 0.8 })
+  const canopy = new three.Mesh(canopyGeo, canopyMat)
+  canopy.position.set(centerX, wallBaseY + doorH + 0.15, centerZ - hd - 0.22)
+  canopy.castShadow = true
+  group.add(canopy)
+
+  // Roof — gable with ridge along Z (depth), no rotation needed
+  const overhang = 0.4
+  const roofW = houseW + overhang * 2
+  const roofD = houseD + overhang * 2
+  const roofBaseY = wallBaseY + wallHeight
+
+  const roofShape = new three.Shape()
+  roofShape.moveTo(-roofW / 2, 0)
+  roofShape.lineTo(0, roofHeight)
+  roofShape.lineTo(roofW / 2, 0)
+  roofShape.closePath()
+
+  const roofGeo = new three.ExtrudeGeometry(roofShape, { depth: roofD, bevelEnabled: false })
+  const roofMat = new three.MeshStandardMaterial({ color: '#c4613a', roughness: 0.82 })
+  const roof = new three.Mesh(roofGeo, roofMat)
+  roof.position.set(centerX, roofBaseY, centerZ - roofD / 2)
+  roof.castShadow = true
+  group.add(roof)
+
+  const roofEdgesGeo = new three.EdgesGeometry(roofGeo)
+  const roofEdges = new three.LineSegments(
+    roofEdgesGeo,
+    new three.LineBasicMaterial({ color: '#8b4020', transparent: true, opacity: 0.45 }),
+  )
+  roofEdges.position.copy(roof.position)
+  roofEdges.renderOrder = 10
+  group.add(roofEdges)
+
+  // Setback lines on terrain surface — individual dashed lines per side with inline labels
+  const setbackY = 0.08
+  const setbackMat = new three.LineDashedMaterial({
+    color: '#d4880e',
+    dashSize: 0.4,
+    gapSize: 0.25,
+    transparent: true,
+    opacity: 0.85,
+  })
+
+  const drawSetbackLine = (pts: import('three').Vector3[]) => {
+    const geo = new three.BufferGeometry().setFromPoints(pts)
+    const line = new three.Line(geo, setbackMat.clone())
+    line.computeLineDistances()
+    line.renderOrder = 15
+    return line
+  }
+
+  const sbLeft = minX + recL
+  const sbRight = maxX - recR
+  const sbFront = minZ + recF
+  const sbBack = maxZ - recB
+
+  // Frontal setback line
+  if (recF > 0) {
+    group.add(drawSetbackLine([
+      new three.Vector3(sbLeft, setbackY, sbFront),
+      new three.Vector3(sbRight, setbackY, sbFront),
+    ]))
+    // Perpendicular ticks showing the setback distance
+    const tickX = sbLeft + (sbRight - sbLeft) * 0.5
+    group.add(drawSetbackLine([
+      new three.Vector3(tickX, setbackY, minZ),
+      new three.Vector3(tickX, setbackY, sbFront),
+    ]))
+    const label = createPlainTextSprite(three, `Recuo Frontal ${formatMeters(recF)}`, {
+      color: '#8b6914',
+      scaleX: 4.5,
+      scaleY: 0.6,
+    })
+    if (label) {
+      label.position.set(tickX, setbackY + 0.25, minZ + recF * 0.5)
+      group.add(label)
+    }
+  }
+
+  // Fundos setback line
+  if (recB > 0) {
+    group.add(drawSetbackLine([
+      new three.Vector3(sbLeft, setbackY, sbBack),
+      new three.Vector3(sbRight, setbackY, sbBack),
+    ]))
+    const tickX = sbLeft + (sbRight - sbLeft) * 0.5
+    group.add(drawSetbackLine([
+      new three.Vector3(tickX, setbackY, maxZ),
+      new three.Vector3(tickX, setbackY, sbBack),
+    ]))
+    const label = createPlainTextSprite(three, `Recuo Fundos ${formatMeters(recB)}`, {
+      color: '#8b6914',
+      scaleX: 4.5,
+      scaleY: 0.6,
+    })
+    if (label) {
+      label.position.set(tickX, setbackY + 0.25, maxZ - recB * 0.5)
+      group.add(label)
+    }
+  }
+
+  // Left lateral setback line
+  if (recL > 0) {
+    group.add(drawSetbackLine([
+      new three.Vector3(sbLeft, setbackY, sbFront),
+      new three.Vector3(sbLeft, setbackY, sbBack),
+    ]))
+    const tickZ = sbFront + (sbBack - sbFront) * 0.3
+    group.add(drawSetbackLine([
+      new three.Vector3(minX, setbackY, tickZ),
+      new three.Vector3(sbLeft, setbackY, tickZ),
+    ]))
+    const label = createPlainTextSprite(three, `Recuo Lateral ${formatMeters(recL)}`, {
+      color: '#8b6914',
+      scaleX: 4.2,
+      scaleY: 0.6,
+    })
+    if (label) {
+      label.position.set(minX + recL * 0.5, setbackY + 0.25, tickZ)
+      group.add(label)
+    }
+  }
+
+  // Right lateral setback line
+  if (recR > 0) {
+    group.add(drawSetbackLine([
+      new three.Vector3(sbRight, setbackY, sbFront),
+      new three.Vector3(sbRight, setbackY, sbBack),
+    ]))
+    const tickZ = sbFront + (sbBack - sbFront) * 0.3
+    group.add(drawSetbackLine([
+      new three.Vector3(maxX, setbackY, tickZ),
+      new three.Vector3(sbRight, setbackY, tickZ),
+    ]))
+    const label = createPlainTextSprite(three, `Recuo Lateral ${formatMeters(recR)}`, {
+      color: '#8b6914',
+      scaleX: 4.2,
+      scaleY: 0.6,
+    })
+    if (label) {
+      label.position.set(maxX - recR * 0.5, setbackY + 0.25, tickZ)
+      group.add(label)
+    }
+  }
+
+  // Viela strip — positioned by vielaSide
+  if (bp.hasViela && bp.vielaWidth > 0) {
+    const vW = bp.vielaWidth
+    const side = (bp.vielaSide || 'RIGHT').toUpperCase()
+
+    let vX: number, vZ: number, vGeoW: number, vGeoD: number
+    if (side === 'BACK') {
+      vGeoW = lotW + 1
+      vGeoD = vW
+      vX = (minX + maxX) / 2
+      vZ = maxZ + vW / 2 + 0.1
+    } else if (side === 'LEFT') {
+      vGeoW = vW
+      vGeoD = lotD + 1
+      vX = minX - vW / 2 - 0.1
+      vZ = (minZ + maxZ) / 2
+    } else {
+      vGeoW = vW
+      vGeoD = lotD + 1
+      vX = maxX + vW / 2 + 0.1
+      vZ = (minZ + maxZ) / 2
+    }
+
+    const vielaGeo = new three.BoxGeometry(vGeoW, 0.06, vGeoD)
+    const vielaMat = new three.MeshStandardMaterial({
+      color: '#c8c0b8',
+      roughness: 0.95,
+      transparent: true,
+      opacity: 0.75,
+    })
+    const viela = new three.Mesh(vielaGeo, vielaMat)
+    viela.position.set(vX, 0.04, vZ)
+    viela.receiveShadow = true
+    group.add(viela)
+
+    // Viela label — small, positioned just above the viela strip surface
+    const vLabel = createTextSprite(three, `Viela ${formatMeters(vW)}`, {
+      background: 'rgba(140, 135, 128, 0.92)',
+      color: '#fff',
+      scaleX: 3.8,
+      scaleY: 1.3,
+    })
+    if (vLabel) {
+      const labelOffsetY = 0.4
+      if (side === 'BACK') {
+        vLabel.position.set(vX, labelOffsetY, vZ)
+      } else {
+        vLabel.position.set(vX, labelOffsetY, vZ - vGeoD * 0.35)
+      }
+      group.add(vLabel)
+    }
+  }
+
+  return group
 }
 
 const applyTerrainRelief = (
@@ -944,8 +1398,10 @@ const buildTerrainGroup = () => {
     const halfExtent = lotSpan * 0.5 * 1.55
     const start = center.clone().add(direction.clone().multiplyScalar(-halfExtent))
     const end = center.clone().add(direction.clone().multiplyScalar(halfExtent))
-    const arcBaseHeight = 1.4
-    const arcPeakHeight = Math.max(5, lotSpan * 0.4)
+    const buildingActive = showBuildingOverlay.value && hasBuildingData.value
+    const buildingTopY = buildingActive ? 8 : 0
+    const arcBaseHeight = buildingActive ? buildingTopY + 1.5 : 1.4
+    const arcPeakHeight = Math.max(buildingActive ? buildingTopY + 5 : 5, lotSpan * 0.4)
     start.y = arcBaseHeight
     end.y = arcBaseHeight
     const arcControl = center.clone()
@@ -981,6 +1437,15 @@ const buildTerrainGroup = () => {
     if (sunset) {
       sunset.position.copy(start.clone().add(new three.Vector3(0, 0.8, 0)))
       terrainGroup.add(sunset)
+    }
+  }
+
+  if (showBuildingOverlay.value && hasBuildingData.value) {
+    try {
+      const constructionGroup = buildConstructionOverlay(three, terrainSpec.value, planShape, thickness, slopeHeight)
+      terrainGroup.add(constructionGroup)
+    } catch (err) {
+      console.warn('[LotTerrain3D] Construction overlay error:', err)
     }
   }
 
@@ -1152,7 +1617,7 @@ const destroyScene = () => {
   isSceneReady.value = false
 }
 
-watch([terrainSpec, normalizedPolygon, solarGuideAngleDeg, showFrontOverlay, showMeasureOverlay, showSolarOverlay], () => {
+watch([terrainSpec, normalizedPolygon, solarGuideAngleDeg, showFrontOverlay, showMeasureOverlay, showSolarOverlay, showBuildingOverlay], () => {
   if (!runtime) return
   mountTerrain()
   resizeRenderer()

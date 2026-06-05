@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "LotDetails" ADD COLUMN     "coeficienteAproveitamento" DOUBLE PRECISION,
+ADD COLUMN     "confrontacoes" TEXT,
+ADD COLUMN     "gabaritoMaximo" DOUBLE PRECISION,
+ADD COLUMN     "hasViela" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "inscricaoImobiliaria" TEXT,
+ADD COLUMN     "matricula" TEXT,
+ADD COLUMN     "recuoFrontal" DOUBLE PRECISION,
+ADD COLUMN     "recuoFundos" DOUBLE PRECISION,
+ADD COLUMN     "recuoLateral" DOUBLE PRECISION,
+ADD COLUMN     "taxaOcupacao" DOUBLE PRECISION,
+ADD COLUMN     "taxaPermeabilidade" DOUBLE PRECISION,
+ADD COLUMN     "usoPermitido" TEXT,
+ADD COLUMN     "vielaWidth" DOUBLE PRECISION,
+ADD COLUMN     "zoneamento" TEXT;

@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsObject,
@@ -110,4 +111,91 @@ export class UpsertLotDetailsDto {
   @IsOptional()
   @IsString({ each: true })
   tags?: string[];
+
+  // Viela
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  hasViela?: boolean;
+
+  @ApiPropertyOptional({ example: 2.5 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  vielaWidth?: number;
+
+  @ApiPropertyOptional({ example: 'RIGHT' })
+  @IsOptional()
+  @IsString()
+  vielaSide?: string;
+
+  // Restrições Urbanísticas
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  recuoFrontal?: number;
+
+  @ApiPropertyOptional({ example: 1.5 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  recuoLateral?: number;
+
+  @ApiPropertyOptional({ example: 3 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  recuoFundos?: number;
+
+  @ApiPropertyOptional({ example: 60 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  taxaOcupacao?: number;
+
+  @ApiPropertyOptional({ example: 1.0 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  coeficienteAproveitamento?: number;
+
+  @ApiPropertyOptional({ example: 9 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  gabaritoMaximo?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  taxaPermeabilidade?: number;
+
+  @ApiPropertyOptional({ example: 'ZR-1' })
+  @IsOptional()
+  @IsString()
+  zoneamento?: string;
+
+  @ApiPropertyOptional({ example: 'Residencial' })
+  @IsOptional()
+  @IsString()
+  usoPermitido?: string;
+
+  // Informações Legais
+  @ApiPropertyOptional({ example: '12345' })
+  @IsOptional()
+  @IsString()
+  matricula?: string;
+
+  @ApiPropertyOptional({ example: '001.002.003' })
+  @IsOptional()
+  @IsString()
+  inscricaoImobiliaria?: string;
+
+  @ApiPropertyOptional({ example: 'Norte: Lote 02; Sul: Rua A; Leste: Lote 03; Oeste: Viela sanitária' })
+  @IsOptional()
+  @IsString()
+  confrontacoes?: string;
 }

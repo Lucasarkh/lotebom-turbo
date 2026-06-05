@@ -160,6 +160,70 @@
                   <span class="s-label">Perfil do Terreno</span>
                   <span class="s-value">{{ slopeLabel(details?.slope) }}</span>
                 </div>
+                <div class="spec-entry" v-if="details?.hasViela">
+                  <span class="s-label">Viela</span>
+                  <span class="s-value">Sim{{ details?.vielaWidth ? ` (${details.vielaWidth} m)` : '' }}{{ details?.vielaSide === 'LEFT' ? ' — Lado Esquerdo' : details?.vielaSide === 'RIGHT' ? ' — Lado Direito' : details?.vielaSide === 'BACK' ? ' — Fundos' : '' }}</span>
+                </div>
+              </div>
+
+              <div v-if="hasUrbanisticRestrictions" class="specs-subsection-v4">
+                <div class="subsection-title">Restrições Urbanísticas</div>
+                <div class="specs-grid-v4">
+                  <div class="spec-entry" v-if="details?.recuoFrontal">
+                    <span class="s-label">Recuo Frontal</span>
+                    <span class="s-value">{{ details.recuoFrontal }} m</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.recuoLateral">
+                    <span class="s-label">Recuo Lateral</span>
+                    <span class="s-value">{{ details.recuoLateral }} m</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.recuoFundos">
+                    <span class="s-label">Recuo de Fundos</span>
+                    <span class="s-value">{{ details.recuoFundos }} m</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.taxaOcupacao">
+                    <span class="s-label">Taxa de Ocupação</span>
+                    <span class="s-value">{{ details.taxaOcupacao }}%</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.coeficienteAproveitamento">
+                    <span class="s-label">Coef. de Aproveitamento</span>
+                    <span class="s-value">{{ details.coeficienteAproveitamento }}</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.gabaritoMaximo">
+                    <span class="s-label">Gabarito Máximo</span>
+                    <span class="s-value">{{ details.gabaritoMaximo }} m</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.taxaPermeabilidade">
+                    <span class="s-label">Taxa de Permeabilidade</span>
+                    <span class="s-value">{{ details.taxaPermeabilidade }}%</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.zoneamento">
+                    <span class="s-label">Zoneamento</span>
+                    <span class="s-value">{{ details.zoneamento }}</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.usoPermitido">
+                    <span class="s-label">Uso Permitido</span>
+                    <span class="s-value">{{ details.usoPermitido }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="hasLegalInfo" class="specs-subsection-v4">
+                <div class="subsection-title">Informações Legais</div>
+                <div class="specs-grid-v4">
+                  <div class="spec-entry" v-if="details?.matricula">
+                    <span class="s-label">Matrícula</span>
+                    <span class="s-value">{{ details.matricula }}</span>
+                  </div>
+                  <div class="spec-entry" v-if="details?.inscricaoImobiliaria">
+                    <span class="s-label">Inscrição Imobiliária</span>
+                    <span class="s-value">{{ details.inscricaoImobiliaria }}</span>
+                  </div>
+                </div>
+                <div v-if="details?.confrontacoes" class="notes-box-v4 mt-3">
+                  <div class="box-header">Confrontações</div>
+                  <div class="box-body">{{ details.confrontacoes }}</div>
+                </div>
               </div>
 
               <div v-if="details?.notes" class="notes-box-v4">
@@ -1228,7 +1292,22 @@ const lot = computed(() => {
               publicDetails?.paymentConditions
               ?? ((typeof found.paymentConditions === 'string' ? JSON.parse(found.paymentConditions) : found.paymentConditions) || null),
             panoramaUrl: publicDetails?.panoramaUrl ?? found.panoramaUrl ?? null,
-            medias: Array.isArray(publicDetails?.medias) ? publicDetails.medias : []
+            medias: Array.isArray(publicDetails?.medias) ? publicDetails.medias : [],
+            hasViela: publicDetails?.hasViela ?? found.hasViela ?? false,
+            vielaWidth: publicDetails?.vielaWidth ?? found.vielaWidth ?? null,
+            vielaSide: publicDetails?.vielaSide ?? found.vielaSide ?? null,
+            recuoFrontal: publicDetails?.recuoFrontal ?? found.recuoFrontal ?? null,
+            recuoLateral: publicDetails?.recuoLateral ?? found.recuoLateral ?? null,
+            recuoFundos: publicDetails?.recuoFundos ?? found.recuoFundos ?? null,
+            taxaOcupacao: publicDetails?.taxaOcupacao ?? found.taxaOcupacao ?? null,
+            coeficienteAproveitamento: publicDetails?.coeficienteAproveitamento ?? found.coeficienteAproveitamento ?? null,
+            gabaritoMaximo: publicDetails?.gabaritoMaximo ?? found.gabaritoMaximo ?? null,
+            taxaPermeabilidade: publicDetails?.taxaPermeabilidade ?? found.taxaPermeabilidade ?? null,
+            zoneamento: publicDetails?.zoneamento ?? found.zoneamento ?? null,
+            usoPermitido: publicDetails?.usoPermitido ?? found.usoPermitido ?? null,
+            matricula: publicDetails?.matricula ?? found.matricula ?? null,
+            inscricaoImobiliaria: publicDetails?.inscricaoImobiliaria ?? found.inscricaoImobiliaria ?? null,
+            confrontacoes: publicDetails?.confrontacoes ?? found.confrontacoes ?? null,
           }
         }
       }
@@ -1325,6 +1404,37 @@ const hasTechnicalSheet = computed(() => Boolean(
   || details.value?.sideRight
   || details.value?.slope
   || details.value?.notes
+  || details.value?.hasViela
+  || details.value?.recuoFrontal
+  || details.value?.recuoLateral
+  || details.value?.recuoFundos
+  || details.value?.taxaOcupacao
+  || details.value?.coeficienteAproveitamento
+  || details.value?.gabaritoMaximo
+  || details.value?.taxaPermeabilidade
+  || details.value?.zoneamento
+  || details.value?.usoPermitido
+  || details.value?.matricula
+  || details.value?.inscricaoImobiliaria
+  || details.value?.confrontacoes
+))
+
+const hasUrbanisticRestrictions = computed(() => Boolean(
+  details.value?.recuoFrontal
+  || details.value?.recuoLateral
+  || details.value?.recuoFundos
+  || details.value?.taxaOcupacao
+  || details.value?.coeficienteAproveitamento
+  || details.value?.gabaritoMaximo
+  || details.value?.taxaPermeabilidade
+  || details.value?.zoneamento
+  || details.value?.usoPermitido
+))
+
+const hasLegalInfo = computed(() => Boolean(
+  details.value?.matricula
+  || details.value?.inscricaoImobiliaria
+  || details.value?.confrontacoes
 ))
 
 const hasSimulator = computed(() => Boolean(project.value?.showPaymentConditions))
@@ -2809,8 +2919,12 @@ async function submitReservation() {
 .spec-entry .s-value { font-size: 20px; font-weight: 600; color: var(--v4-text); }
 
 .notes-box-v4 { margin-top: 32px; background: #f5f5f7; border-radius: 16px; overflow: hidden; border: 1px solid var(--v4-border); }
+.notes-box-v4.mt-3 { margin-top: 12px; }
 .box-header { padding: 12px 24px; background: white; border-bottom: 1px solid var(--v4-border); color: var(--v4-text); font-weight: 600; font-size: 14px; }
-.box-body { padding: 24px; font-size: 16px; line-height: 1.5; color: var(--v4-text); }
+.box-body { padding: 24px; font-size: 16px; line-height: 1.5; color: var(--v4-text); white-space: pre-line; }
+
+.specs-subsection-v4 { margin-top: 32px; }
+.specs-subsection-v4 .subsection-title { font-size: 14px; font-weight: 700; color: var(--v4-text); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--v4-border); }
 
 /* Finance V4 */
 .finance-card-v4 { border: 1px solid var(--v4-border); border-radius: 20px; overflow: hidden; background: white; box-shadow: none; }

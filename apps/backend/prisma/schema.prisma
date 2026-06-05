@@ -605,6 +605,28 @@ model LotDetails {
   panoramaUrl    String?
   notes          String?    @db.Text
   tags           String[]   @default([])
+
+  // Viela
+  hasViela                  Boolean    @default(false)
+  vielaWidth                Float?
+  vielaSide                 String?
+
+  // Restrições Urbanísticas
+  recuoFrontal              Float?
+  recuoLateral              Float?
+  recuoFundos               Float?
+  taxaOcupacao              Float?
+  coeficienteAproveitamento Float?
+  gabaritoMaximo            Float?
+  taxaPermeabilidade        Float?
+  zoneamento                String?
+  usoPermitido              String?
+
+  // Informações Legais
+  matricula                 String?
+  inscricaoImobiliaria      String?
+  confrontacoes             String?    @db.Text
+
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 

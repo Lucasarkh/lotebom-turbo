@@ -36,7 +36,22 @@ const HEADER_ALIASES = {
   sideRight: ['sideright', 'lateral_direita', 'lateraldireita', 'direita'],
   slope: ['slope', 'topografia', 'inclinacao'],
   tags: ['tags', 'etiquetas'],
-  notes: ['notes', 'observacoes', 'obs', 'descricao']
+  notes: ['notes', 'observacoes', 'obs', 'descricao'],
+  hasViela: ['hasviela', 'viela', 'tem_viela'],
+  vielaWidth: ['vielawidth', 'largura_viela', 'larguraviela'],
+  vielaSide: ['vielaside', 'lado_viela', 'ladoviela'],
+  recuoFrontal: ['recuofrontal', 'recuo_frontal'],
+  recuoLateral: ['recuolateral', 'recuo_lateral'],
+  recuoFundos: ['recuofundos', 'recuo_fundos', 'recuo_fundo'],
+  taxaOcupacao: ['taxaocupacao', 'taxa_ocupacao'],
+  coeficienteAproveitamento: ['coeficienteaproveitamento', 'coef_aproveitamento', 'coeficiente_aproveitamento'],
+  gabaritoMaximo: ['gabarito', 'gabarito_maximo', 'gabaritomaximo'],
+  taxaPermeabilidade: ['taxapermeabilidade', 'taxa_permeabilidade'],
+  zoneamento: ['zoneamento', 'zona'],
+  usoPermitido: ['usopermitido', 'uso_permitido', 'uso'],
+  matricula: ['matricula'],
+  inscricaoImobiliaria: ['inscricaoimobiliaria', 'inscricao_imobiliaria', 'inscricao'],
+  confrontacoes: ['confrontacoes', 'confrontacao'],
 } as const;
 
 type ImportStatus =
@@ -69,6 +84,21 @@ interface CsvRowCandidate {
   slope: string | null;
   notes: string | null;
   tags: string[] | null;
+  hasViela: boolean;
+  vielaWidth: number | null;
+  vielaSide: string | null;
+  recuoFrontal: number | null;
+  recuoLateral: number | null;
+  recuoFundos: number | null;
+  taxaOcupacao: number | null;
+  coeficienteAproveitamento: number | null;
+  gabaritoMaximo: number | null;
+  taxaPermeabilidade: number | null;
+  zoneamento: string | null;
+  usoPermitido: string | null;
+  matricula: string | null;
+  inscricaoImobiliaria: string | null;
+  confrontacoes: string | null;
   raw: Record<string, string>;
 }
 
@@ -440,7 +470,21 @@ export class LotsImportService implements OnModuleInit {
         sideRight: row.sideRight,
         slope: row.slope,
         notes: row.notes,
-        tags: row.tags
+        tags: row.tags,
+        hasViela: row.hasViela,
+        vielaWidth: row.vielaWidth,
+        vielaSide: row.vielaSide,
+        recuoLateral: row.recuoLateral,
+        recuoFundos: row.recuoFundos,
+        taxaOcupacao: row.taxaOcupacao,
+        coeficienteAproveitamento: row.coeficienteAproveitamento,
+        gabaritoMaximo: row.gabaritoMaximo,
+        taxaPermeabilidade: row.taxaPermeabilidade,
+        zoneamento: row.zoneamento,
+        usoPermitido: row.usoPermitido,
+        matricula: row.matricula,
+        inscricaoImobiliaria: row.inscricaoImobiliaria,
+        confrontacoes: row.confrontacoes,
       });
     }
 
@@ -476,7 +520,22 @@ export class LotsImportService implements OnModuleInit {
           "sideRight" double precision,
           slope text,
           notes text,
-          tags jsonb
+          tags jsonb,
+          "hasViela" boolean,
+          "vielaWidth" double precision,
+          "vielaSide" text,
+          "recuoFrontal" double precision,
+          "recuoLateral" double precision,
+          "recuoFundos" double precision,
+          "taxaOcupacao" double precision,
+          "coeficienteAproveitamento" double precision,
+          "gabaritoMaximo" double precision,
+          "taxaPermeabilidade" double precision,
+          zoneamento text,
+          "usoPermitido" text,
+          matricula text,
+          "inscricaoImobiliaria" text,
+          confrontacoes text
         )
       )
       INSERT INTO "LotDetails" (
@@ -497,6 +556,21 @@ export class LotsImportService implements OnModuleInit {
         slope,
         notes,
         tags,
+        "hasViela",
+        "vielaWidth",
+        "vielaSide",
+        "recuoFrontal",
+        "recuoLateral",
+        "recuoFundos",
+        "taxaOcupacao",
+        "coeficienteAproveitamento",
+        "gabaritoMaximo",
+        "taxaPermeabilidade",
+        zoneamento,
+        "usoPermitido",
+        matricula,
+        "inscricaoImobiliaria",
+        confrontacoes,
         "createdAt",
         "updatedAt"
       )
@@ -521,6 +595,21 @@ export class LotsImportService implements OnModuleInit {
           (SELECT ARRAY(SELECT jsonb_array_elements_text(data.tags))),
           ARRAY[]::text[]
         ),
+        COALESCE(data."hasViela", false),
+        data."vielaWidth",
+        NULLIF(data."vielaSide", ''),
+        data."recuoFrontal",
+        data."recuoLateral",
+        data."recuoFundos",
+        data."taxaOcupacao",
+        data."coeficienteAproveitamento",
+        data."gabaritoMaximo",
+        data."taxaPermeabilidade",
+        NULLIF(data.zoneamento, ''),
+        NULLIF(data."usoPermitido", ''),
+        NULLIF(data.matricula, ''),
+        NULLIF(data."inscricaoImobiliaria", ''),
+        NULLIF(data.confrontacoes, ''),
         NOW(),
         NOW()
       FROM data
@@ -542,6 +631,21 @@ export class LotsImportService implements OnModuleInit {
           WHEN array_length(EXCLUDED.tags, 1) IS NULL OR array_length(EXCLUDED.tags, 1) = 0 THEN "LotDetails".tags
           ELSE EXCLUDED.tags
         END,
+        "hasViela" = COALESCE(EXCLUDED."hasViela", "LotDetails"."hasViela"),
+        "vielaWidth" = COALESCE(EXCLUDED."vielaWidth", "LotDetails"."vielaWidth"),
+        "vielaSide" = COALESCE(EXCLUDED."vielaSide", "LotDetails"."vielaSide"),
+        "recuoFrontal" = COALESCE(EXCLUDED."recuoFrontal", "LotDetails"."recuoFrontal"),
+        "recuoLateral" = COALESCE(EXCLUDED."recuoLateral", "LotDetails"."recuoLateral"),
+        "recuoFundos" = COALESCE(EXCLUDED."recuoFundos", "LotDetails"."recuoFundos"),
+        "taxaOcupacao" = COALESCE(EXCLUDED."taxaOcupacao", "LotDetails"."taxaOcupacao"),
+        "coeficienteAproveitamento" = COALESCE(EXCLUDED."coeficienteAproveitamento", "LotDetails"."coeficienteAproveitamento"),
+        "gabaritoMaximo" = COALESCE(EXCLUDED."gabaritoMaximo", "LotDetails"."gabaritoMaximo"),
+        "taxaPermeabilidade" = COALESCE(EXCLUDED."taxaPermeabilidade", "LotDetails"."taxaPermeabilidade"),
+        zoneamento = COALESCE(EXCLUDED.zoneamento, "LotDetails".zoneamento),
+        "usoPermitido" = COALESCE(EXCLUDED."usoPermitido", "LotDetails"."usoPermitido"),
+        matricula = COALESCE(EXCLUDED.matricula, "LotDetails".matricula),
+        "inscricaoImobiliaria" = COALESCE(EXCLUDED."inscricaoImobiliaria", "LotDetails"."inscricaoImobiliaria"),
+        confrontacoes = COALESCE(EXCLUDED.confrontacoes, "LotDetails".confrontacoes),
         "updatedAt" = NOW();
       `,
       payload
@@ -854,6 +958,60 @@ export class LotsImportService implements OnModuleInit {
 
     const tags = this.parseTags(this.readRawValue(raw, HEADER_ALIASES.tags));
 
+    const vielaWidth = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.vielaWidth),
+      'largura_viela'
+    );
+    if ('error' in vielaWidth) return vielaWidth;
+
+    const vielaSideRaw = this.readRawValue(raw, HEADER_ALIASES.vielaSide)?.trim().toUpperCase() || '';
+    const vielaSide = ['RIGHT', 'LEFT', 'BACK'].includes(vielaSideRaw) ? vielaSideRaw : null;
+
+    const recuoFrontal = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.recuoFrontal),
+      'recuo_frontal'
+    );
+    if ('error' in recuoFrontal) return recuoFrontal;
+
+    const recuoLateral = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.recuoLateral),
+      'recuo_lateral'
+    );
+    if ('error' in recuoLateral) return recuoLateral;
+
+    const recuoFundos = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.recuoFundos),
+      'recuo_fundos'
+    );
+    if ('error' in recuoFundos) return recuoFundos;
+
+    const taxaOcupacao = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.taxaOcupacao),
+      'taxa_ocupacao'
+    );
+    if ('error' in taxaOcupacao) return taxaOcupacao;
+
+    const coeficienteAproveitamento = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.coeficienteAproveitamento),
+      'coef_aproveitamento'
+    );
+    if ('error' in coeficienteAproveitamento) return coeficienteAproveitamento;
+
+    const gabaritoMaximo = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.gabaritoMaximo),
+      'gabarito_maximo'
+    );
+    if ('error' in gabaritoMaximo) return gabaritoMaximo;
+
+    const taxaPermeabilidade = parseNumberField(
+      this.readRawValue(raw, HEADER_ALIASES.taxaPermeabilidade),
+      'taxa_permeabilidade'
+    );
+    if ('error' in taxaPermeabilidade) return taxaPermeabilidade;
+
+    const vielaRaw = this.readRawValue(raw, HEADER_ALIASES.hasViela).trim().toLowerCase();
+    const hasViela = vielaRaw === 'sim' || vielaRaw === 'true' || vielaRaw === '1' || vielaRaw === 's';
+
     return {
       row: {
         line,
@@ -877,6 +1035,31 @@ export class LotsImportService implements OnModuleInit {
           this.readRawValue(raw, HEADER_ALIASES.notes)
         ),
         tags,
+        hasViela,
+        vielaWidth: vielaWidth.value,
+        vielaSide,
+        recuoFrontal: recuoFrontal.value,
+        recuoLateral: recuoLateral.value,
+        recuoFundos: recuoFundos.value,
+        taxaOcupacao: taxaOcupacao.value,
+        coeficienteAproveitamento: coeficienteAproveitamento.value,
+        gabaritoMaximo: gabaritoMaximo.value,
+        taxaPermeabilidade: taxaPermeabilidade.value,
+        zoneamento: this.toNullableString(
+          this.readRawValue(raw, HEADER_ALIASES.zoneamento)
+        ),
+        usoPermitido: this.toNullableString(
+          this.readRawValue(raw, HEADER_ALIASES.usoPermitido)
+        ),
+        matricula: this.toNullableString(
+          this.readRawValue(raw, HEADER_ALIASES.matricula)
+        ),
+        inscricaoImobiliaria: this.toNullableString(
+          this.readRawValue(raw, HEADER_ALIASES.inscricaoImobiliaria)
+        ),
+        confrontacoes: this.toNullableString(
+          this.readRawValue(raw, HEADER_ALIASES.confrontacoes)
+        ),
         raw
       }
     };
