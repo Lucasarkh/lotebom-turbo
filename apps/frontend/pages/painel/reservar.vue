@@ -124,29 +124,51 @@ async function selectProject(project: ProjectRef) {
   lots.value = []
   loadingLots.value = true
   try {
-    const data = await getPublic(`/p/${project.slug}`)
-    // Parse available lots from mapElements
-    const available: LotOption[] = []
-    for (const el of data.mapElements || []) {
-      const ld = el.lotDetails || el.hotspot?.lotDetails
-      if (!ld || ld.status !== 'AVAILABLE') continue
-      available.push({
-        mapElementId: el.id,
-        code: el.code || el.name || el.id,
-        block: ld.block || null,
-        areaM2: ld.areaM2 || null,
-        price: ld.price ? Number(ld.price) : null,
-        tags: ld.tags || [],
-        status: ld.status
-      })
+    const [data, lotsData] = await Promise.all([
+      getPublic(`/p/${project.slug}`),
+      getPublic(`/p/${project.slug}/lots?limit=50&page=1`),
+    ])
+
+    const parseLots = (items: any[]) => {
+      for (const el of items) {
+        const ld = el.lotDetails
+        if (!ld) continue
+        available.push({
+          mapElementId: el.id,
+          code: el.code || el.name || el.id,
+          block: ld.block || null,
+          areaM2: ld.areaM2 || null,
+          price: ld.price ? Number(ld.price) : null,
+          tags: ld.tags || [],
+          status: ld.status || 'AVAILABLE'
+        })
+      }
     }
+
+    const available: LotOption[] = []
+    parseLots(lotsData.data || [])
+
+    let page = lotsData.page || 1
+    const totalPages = lotsData.totalPages || 1
+    while (page < totalPages) {
+      page++
+      const next = await getPublic(`/p/${project.slug}/lots?limit=50&page=${page}`)
+      parseLots(next.data || [])
+    }
+
     lots.value = available
 
-    reservationRules.value = {
-      feeType: data.reservationFeeType || 'FIXED',
-      feeValue: Number(data.reservationFeeValue) || 500,
-      expiryHours: data.reservationExpiryHours || 24,
-      currency: 'BRL'
+    const hasPaymentGateway = Array.isArray(data.paymentGateways) && data.paymentGateways.some((g: any) => g.isActive)
+
+    if (hasPaymentGateway) {
+      reservationRules.value = {
+        feeType: data.reservationFeeType || 'FIXED',
+        feeValue: Number(data.reservationFeeValue) || 500,
+        expiryHours: data.reservationExpiryHours || 24,
+        currency: 'BRL'
+      }
+    } else {
+      reservationRules.value = null
     }
   } catch {
     toastError('Erro ao carregar lotes do projeto.')
@@ -370,7 +392,7 @@ onMounted(loadProjects)
           <div v-if="selectedCorretor" class="flex justify-between items-center gap-3 py-2.5 text-[15px]"><span class="text-p-text-muted">Corretor</span><strong class="text-p-text">{{ selectedCorretor.name }}</strong></div>
         </div>
 
-        <div class="sm:col-span-2 rounded-2xl border border-p-info/20 bg-p-info/[0.06] p-5">
+        <div v-if="reservationRules" class="sm:col-span-2 rounded-2xl border border-p-info/20 bg-p-info/[0.06] p-5">
           <div class="text-xs font-bold uppercase tracking-widest text-p-text-muted mb-3.5">Condições de Reserva</div>
           <div class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Taxa de reserva</span><strong class="text-p-text">{{ feeDisplay }}</strong></div>
           <div v-if="feeAmount" class="flex justify-between items-center gap-3 py-2.5 text-[15px] border-b border-p-border/50"><span class="text-p-text-muted">Valor estimado</span><strong class="text-p-text">{{ formatPrice(feeAmount) }}</strong></div>

@@ -217,7 +217,7 @@
                   <UiButton variant="secondary" size="sm" @click="addCondition(tableIndex)">Nova condicao</UiButton>
                 </div>
 
-                <div v-for="(condition, conditionIndex) in table.conditions" :key="condition.localId" class="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+                <div v-for="(condition, conditionIndex) in table.conditions" :key="condition.localId" class="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
                   <input v-model.number="condition.numberInstallments" type="number" min="1" class="rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Parcelas" />
                   <input v-model.number="condition.entryAmount" type="number" min="0" class="rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Entrada" />
                   <input v-model.number="condition.installmentAmount" type="number" min="0" class="rounded-lg border border-p-border bg-p-overlay px-3 py-2 text-sm text-p-text focus:border-p-accent focus:outline-none" placeholder="Valor da parcela" />
