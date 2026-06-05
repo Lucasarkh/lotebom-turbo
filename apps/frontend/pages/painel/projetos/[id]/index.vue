@@ -786,6 +786,64 @@
         </div>
       </section>
 
+      <!-- Edição por Agente (MCP) -->
+      <section v-if="activeSection === 'edicao-agente'" id="edicao-agente" class="animate-[fadeIn_0.15s_ease]">
+        <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="max-width: 600px;">
+          <fieldset :disabled="!authStore.canEdit || isArchivedProject" style="border:0;padding:0;margin:0;min-inline-size:0;">
+          <h3 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span><i class="bi bi-robot" aria-hidden="true"></i></span> Edição por Agente de IA (MCP)
+          </h3>
+          <p class="text-sm text-p-text-muted" style="font-size: 0.85rem; margin-bottom: 24px;">
+            Permite que agentes de IA (via protocolo MCP) editem dados deste projeto automaticamente.
+            Configure chaves API na página <NuxtLink to="/painel/chaves-api" class="text-p-accent font-medium hover:underline">Chaves API</NuxtLink>.
+            Quando ativo, o agente poderá criar/editar lotes, alterar status, gerenciar leads e ajustar configurações.
+          </p>
+
+          <div class="space-y-4" style="display:flex; align-items:center; gap: 8px; margin-bottom: 24px;">
+            <input type="checkbox" v-model="editForm.agentEnabled" id="chkAgentEnabled" style="width:20px; height:20px; cursor:pointer;" />
+            <label for="chkAgentEnabled" style="font-weight: 600; cursor:pointer;">Habilitar edição por agente de IA (MCP)</label>
+          </div>
+
+          <div v-if="editForm.agentEnabled" style="background: rgba(59, 130, 246, 0.08); color: #60a5fa; padding: 16px; border-radius: 10px; font-size: 0.85rem; border: 1px solid rgba(59, 130, 246, 0.25);">
+            <div style="display: flex; align-items: flex-start; gap: 8px;">
+              <i class="bi bi-info-circle-fill" style="font-size: 1.1rem; margin-top: 1px;"></i>
+              <div>
+                <p style="margin: 0 0 8px; font-weight: 600;">O agente poderá:</p>
+                <ul style="margin: 0; padding-left: 18px; line-height: 1.8;">
+                  <li>Listar, criar e editar projetos e lotes</li>
+                  <li>Alterar status de lotes (Disponível → Reservado → Vendido)</li>
+                  <li>Atualizar dados comerciais (preço, área, tags, condições)</li>
+                  <li>Gerenciar leads e categorias de lote</li>
+                  <li>Habilitar/desabilitar assistente IA</li>
+                </ul>
+                <p style="margin: 10px 0 0; font-size: 0.8rem; opacity: 0.9;">
+                  ⚠️ Certifique-se de que as permissões da chave API estão corretas antes de ativar.
+                  Todas as ações do agente são registradas em logs de auditoria.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div v-else style="background: var(--glass-bg-heavy); padding: 16px; border-radius: 10px; font-size: 0.85rem; border: 1px solid var(--glass-border-subtle);">
+            <p style="margin: 0; color: var(--color-surface-400);">
+              <i class="bi bi-lock-fill" style="margin-right: 6px;"></i>
+              Desabilitado: nenhum agente de IA pode editar este projeto. Ideal para projetos em produção que não devem ser alterados automaticamente.
+            </p>
+          </div>
+
+          <div class="flex justify-end" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--glass-border-subtle);">
+            <button class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold bg-p-accent text-white hover:bg-p-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed" @click="saveSettings" :disabled="!authStore.canEdit || savingSettings" :title="!authStore.canEdit ? 'Disponível apenas para usuários com permissão de edição' : undefined">
+              <span v-if="savingSettings">Salvando...</span>
+              <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="bi bi-floppy-fill" aria-hidden="true"></i>
+                <span>Salvar Configuração de Agente</span>
+              </span>
+            </button>
+          </div>
+          </fieldset>
+        </div>
+      </section>
+
       <!-- Agendamento de Visitas -->
       <section v-if="activeSection === 'pub-scheduling'" id="agendamento" class="animate-[fadeIn_0.15s_ease]">
         <div class="rounded-xl border border-p-border bg-p-elevated p-5" style="max-width: 900px;">
@@ -4282,6 +4340,8 @@ const configurationSections = computed<SidebarSectionItem[]>(() => {
   if (aiConfigs.value.length > 0) {
     sections.push({ id: 'assistente-ia', icon: 'bi bi-robot', label: 'Assistente IA' })
   }
+  // Always show agent editing section
+  sections.push({ id: 'edicao-agente', icon: 'bi bi-cpu', label: 'Edição por Agente IA' })
   return sections
 })
 
@@ -4648,6 +4708,7 @@ const loadProject = async () => {
       allowIntermediary: p.allowIntermediary ?? false,
       financingDisclaimer: p.financingDisclaimer || 'Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas.',
       aiEnabled: p.aiEnabled ?? false,
+      agentEnabled: p.agentEnabled ?? false,
       aiConfigId: p.aiConfigId || '',
       maxInstallments: p.maxInstallments ?? 180,
       paymentConditions: Array.isArray(p.paymentConditions) ? [...p.paymentConditions] : [],

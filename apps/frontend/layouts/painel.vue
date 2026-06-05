@@ -233,6 +233,16 @@
                 </NavItem>
               </template>
 
+              <!-- API Keys for Agents -->
+              <template v-if="authStore.isLoteadora">
+                <div class="pt-4 pb-1 px-3">
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-p-text-muted">Integrações</span>
+                </div>
+                <NavItem to="/painel/chaves-api" label="Chaves API (Agentes)" @click="sidebarOpen = false">
+                  <i class="bi bi-key text-[18px] shrink-0"></i>
+                </NavItem>
+              </template>
+
               <!-- Common: User Management -->
               <template v-if="authStore.canManageUsers">
                 <div class="pt-4 pb-1 px-3">

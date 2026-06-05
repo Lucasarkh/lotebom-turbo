@@ -139,6 +139,11 @@ export class UpdateProjectDto {
   @IsBoolean()
   aiEnabled?: boolean;
 
+  @ApiPropertyOptional({ description: 'Habilita edição por agentes IA (MCP)' })
+  @IsOptional()
+  @IsBoolean()
+  agentEnabled?: boolean;
+
   @ApiPropertyOptional({ description: 'ID da configuração de IA' })
   @IsOptional()
   @IsString()

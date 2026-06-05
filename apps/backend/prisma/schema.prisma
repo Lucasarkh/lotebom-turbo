@@ -325,10 +325,11 @@ model Tenant {
   subscription      TenantSubscription?
   billingInvoices   BillingInvoice[]
   supportTickets    SupportTicket[]
-  inviteCodes       TenantInviteCode[]
-  logos             TenantLogo[]
-  projectLogos      ProjectLogo[]
+  inviteCodes      TenantInviteCode[]
+  logos            TenantLogo[]
+  projectLogos     ProjectLogo[]
   preLaunchQueueEntries PreLaunchQueueEntry[]
+  agentApiKeys     AgentApiKey[]
 }
 
 model TenantLogo {
@@ -497,6 +498,7 @@ model Project {
   nearbyErrorMessage  String?  @db.Text
 
   aiEnabled        Boolean       @default(false)
+  agentEnabled     Boolean       @default(false)
   aiConfigId       String?
   aiConfig         AiConfig?     @relation(fields: [aiConfigId], references: [id], onDelete: SetNull)
   purchaseFlowConfig PurchaseFlowConfig?
@@ -1810,3 +1812,47 @@ model Notification {
   @@index([userId, isRead])
   @@index([userId, createdAt(sort: Desc)])
 }
+
+// ─── AGENT API KEYS (MCP / AI Agent Access) ───────────────
+
+model AgentApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  keyPrefix   String    // First 8 chars visible for identification in the panel
+  keyHash     String    @unique // SHA-256 hash of the full key
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  projectIds  String[]  @default([]) // Which projects this key can access (empty = all)
+  permissions String[]  // e.g. ["projects:read","projects:write","lots:read","lots:write","leads:read","leads:write","ai:read","ai:write","map:read","map:write"]
+  lastUsedAt  DateTime?
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  auditLogs AgentAuditLog[]
+
+  @@index([tenantId])
+  @@index([keyHash])
+}
+
+model AgentAuditLog {
+  id         String       @id @default(cuid())
+  apiKeyId   String
+  apiKey     AgentApiKey  @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  action     String       // "projects:read", "lots:update", "leads:status_update", etc.
+  targetId   String?      // Which entity was affected
+  targetType String?      // "Project", "LotDetails", "Lead", etc.
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime     @default(now())
+
+  @@index([apiKeyId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+}
+
+// ─── AGENT CONFIG ON PROJECT ────────────────────────────
+// Field added to Project model via migration extension below.
+// Project.agentEnabled Boolean @default(false)
+// Managed via a separate column migration.

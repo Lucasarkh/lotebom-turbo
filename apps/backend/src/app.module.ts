@@ -36,6 +36,7 @@ import { SupportModule } from '@modules/support/support.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { LeadDistributionModule } from '@modules/lead-distribution/lead-distribution.module';
 import { PurchaseFlowModule } from '@modules/purchase-flow/purchase-flow.module';
+import { AgentApiKeysModule } from '@modules/agent-api-keys/agent-api-keys.module';
 import { AppController } from './app.controller';
 import { TermsGuard } from './common/guards/terms.guard';
 import { PanelPermissionGuard } from './common/guards/panel-permission.guard';
@@ -91,7 +92,8 @@ import { PanelPermissionGuard } from './common/guards/panel-permission.guard';
     SupportModule,
     NotificationsModule,
     LeadDistributionModule,
-    PurchaseFlowModule
+    PurchaseFlowModule,
+    AgentApiKeysModule
   ],
   controllers: [AppController],
   providers: [
