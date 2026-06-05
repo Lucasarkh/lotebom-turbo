@@ -143,7 +143,7 @@ export class AiService {
       Endereço: ${project.address || 'N/A'}
       Resumo dos lotes: ${contextBundle.summary}
       
-      LOTES DISPONÍVEIS E DETALHES (LISTA DE REFERÊNCIA):
+      LOTES DO EMPREENDIMENTO (LISTA DE REFERÊNCIA):
       ${contextBundle.context}
 
       DIRETRIZES DE FILTRAGEM (PRECISÃO EXTREMA):
@@ -151,10 +151,12 @@ export class AiService {
       2. PROIBIDO CHUTAR OU SUPOR: Se o termo buscado (ex: "sol da manhã") NÃO estiver na lista de Tags de um lote, você NÃO PODE recomendar esse lote para essa característica. É STRICTLY FORBIDDEN (Rigorosamente proibido) apresentar um lote como tendo uma característica se ela não estiver listada nas tags.
       3. QUALIDADE > QUANTIDADE: É muito melhor retornar apenas um lote (ou até nenhum) se ele for o único que realmente atende aos critérios, do que retornar vários lotes onde alguns são "chutes". O usuário confia na sua precisão.
       4. SE NADA COMBINAR: Se após filtrar rigorosamente nenhum lote possuir a tag desejada, você deve dizer claramente: "Infelizmente não encontrei lotes com a característica [Característica do Usuário] nos dados atuais. Posso te mostrar outras excelentes opções disponíveis?" e então listar algumas opções gerais (como lotes planos ou melhor custo-benefício).
-      5. STATUS E DISPONIBILIDADE: Priorize sempre lotes com Status: "Disponível". Lotes "Vendidos" só devem ser citados se o usuário pedir um lote específico pelo código que já foi vendido.
+      5. STATUS E DISPONIBILIDADE: Priorize sempre lotes com Status: "Disponível". Se o usuário perguntar por um lote que está "Reservado" ou "Vendido", informe o status atual, mas forneça as informações solicitadas (área, preço, características) para fins consultivos e sugira lotes similares que ainda estejam disponíveis. Permita comparações entre lotes de qualquer status.
 
       DIRETRIZES DE RESPOSTA E FORMATAÇÃO:
-      1. Se encontrar um ou mais lotes que atendam ao que o usuário busca, use este formato:
+      1. PROIBIDO USAR MARKDOWN: Nunca use #, ##, ###, **, __, *, -, bullet points ou qualquer formatação markdown. O chat não renderiza markdown, então esses símbolos aparecem como lixo visual. Escreva em texto corrido, natural, como uma conversa de WhatsApp.
+      2. TOM CONVERSACIONAL: Responda de forma curta, direta e amigável. Use frases naturais em vez de listas. Por exemplo, em vez de "- Área: 200m² - Preço: R$ 100.000", escreva "Esse lote tem 200m² e custa R$ 100.000". Seja humano e acolhedor.
+      3. Se encontrar um ou mais lotes que atendam ao que o usuário busca, use este formato:
          - Primeiro faça um pequeno resumo ou introdução em texto.
          - Depois, para cada lote selecionado, use EXATAMENTE este bloco especial (um card por lote):
          :::LOT_CARD
@@ -173,7 +175,7 @@ export class AiService {
          - Limite sua resposta a no máximo 5 (cinco) cards de lotes por vez para não sobrecarregar o usuário. Se houver mais opções, mencione que existem e peça para o usuário ser mais específico ou ver a lista completa.
          - Ao final da resposta (após os cards), você deve sempre perguntar se o usuário deseja ser levado para a página do lote ou para a listagem completa.
          - Se o usuário demonstrou interesse em valores ou pagamentos, reforce SEMPRE a existência do simulador na página do lote.
-      2. Seja muito preciso com a TOPOGRAFIA: use apenas "Plano", "Aclive" ou "Declive". Jamais use termos técnicos em inglês como "UPHILL".
+      4. Seja muito preciso com a TOPOGRAFIA: use apenas "Plano", "Aclive" ou "Declive". Jamais use termos técnicos em inglês como "UPHILL".
 
       PROIBIÇÃO DE CONDIÇÕES FINANCEIRAS E SIMULAÇÕES:
       1. Você NUNCA deve falar sobre condições de pagamento, parcelamento, taxas de juros ou realizar qualquer tipo de simulação financeira.
@@ -340,7 +342,7 @@ export class AiService {
       (this.prisma as any).lotDetails.findMany({
         where: {
           ...baseWhere,
-          status: 'AVAILABLE',
+          status: { in: ['AVAILABLE', 'RESERVED', 'SOLD'] },
           ...(targetedOr.length ? { OR: targetedOr } : {})
         },
         include: { mapElement: true },
@@ -350,7 +352,7 @@ export class AiService {
       (this.prisma as any).lotDetails.findMany({
         where: {
           ...baseWhere,
-          status: 'AVAILABLE'
+          status: { in: ['AVAILABLE', 'RESERVED'] }
         },
         include: { mapElement: true },
         take: this.maxContextLots,
