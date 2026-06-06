@@ -445,4 +445,188 @@ export function registerProjectTools(
       };
     }
   );
+
+  // ─── manage_public_sections ────────────────────────────────────
+  // Known public section IDs (synced with frontend PUBLIC_SECTION_CATALOG)
+  const PUBLIC_SECTIONS: Record<string, string> = {
+    'pub-banner': 'Banner',
+    'pub-plant': 'Planta Interativa',
+    'pub-panorama': 'Panorama 360°',
+    'pub-video': 'Vídeo de Apresentação',
+    'pub-lots-carousel': 'Carrossel de Lotes',
+    'pub-category-carousel': 'Carrossel de Categorias',
+    'pub-featured-lots-carousel': 'Lotes em Destaque',
+    'pub-lots': 'Lotes Disponíveis',
+    'pub-construction': 'Obras',
+    'pub-location': 'Localização',
+    'pub-nearby': 'Proximidades',
+    'pub-scheduling': 'Agendamento',
+    'pub-infra': 'Infraestrutura',
+    'pub-highlights': 'Destaques',
+    'pub-description': 'Texto Descritivo',
+    'pub-gallery': 'Galeria de Mídia',
+    'pub-logos': 'Logos de Rodapé',
+    'pub-legal': 'Informações Legais',
+  };
+
+  const SECTION_ORDER_META_TYPE = '_section_order';
+
+  function parsePublicSections(highlightsJson: any): { order: string[]; disabled: string[] } {
+    const arr = Array.isArray(highlightsJson) ? highlightsJson : [];
+    const meta = arr.find((item: any) =>
+      item && typeof item === 'object' && item.type === SECTION_ORDER_META_TYPE
+    );
+    return {
+      order: meta?.order || Object.keys(PUBLIC_SECTIONS),
+      disabled: meta?.disabled || [],
+    };
+  }
+
+  function buildHighlightsJson(highlightsJson: any, order: string[], disabled: string[]): any[] {
+    const arr = Array.isArray(highlightsJson) ? [...highlightsJson] : [];
+    // Remove old meta item
+    const filtered = arr.filter((item: any) =>
+      !(item && typeof item === 'object' && item.type === SECTION_ORDER_META_TYPE)
+    );
+    // Add new meta item
+    filtered.push({
+      type: SECTION_ORDER_META_TYPE,
+      order,
+      disabled: disabled.filter((id) => PUBLIC_SECTIONS[id]),
+    });
+    return filtered;
+  }
+
+  server.tool(
+    'manage_public_sections',
+    'Gerencia as seções/blocos da página pública do projeto: lista, reordena, ativa ou desativa seções (Banner, Planta, Panorama, Vídeo, Carrosséis, Lotes, Obras, Localização, Proximidades, Agendamento, etc).',
+    {
+      project_id: z.string().describe('ID do projeto'),
+      action: z
+        .enum(['list', 'reorder', 'toggle'])
+        .describe('Ação: list (ver atual), reorder (reordenar), toggle (ativar/desativar)'),
+      order: z
+        .array(z.string())
+        .optional()
+        .describe('Nova ordem das seções (ex: ["pub-banner","pub-lots","pub-plant"]). Obrigatório para action=reorder.'),
+      enable: z
+        .array(z.string())
+        .optional()
+        .describe('IDs das seções para ATIVAR (ex: ["pub-nearby","pub-scheduling"]).'),
+      disable: z
+        .array(z.string())
+        .optional()
+        .describe('IDs das seções para DESATIVAR (ex: ["pub-video","pub-gallery"]).')
+    },
+    async (params) => {
+      const auth = await getAuth(prisma);
+      requirePermission(auth, 'projects:write');
+      requireProjectAccess(auth, params.project_id);
+
+      const project = await prisma.project.findFirst({
+        where: { id: params.project_id, tenantId: auth.tenantId },
+        select: { id: true, agentEnabled: true, highlightsJson: true }
+      });
+      if (!project) throw new Error(`Projeto ${params.project_id} não encontrado.`);
+      if (!project.agentEnabled) {
+        throw new Error('Edição agentica desabilitada para este projeto.');
+      }
+
+      const current = parsePublicSections(project.highlightsJson);
+
+      if (params.action === 'list') {
+        // Build human-readable list
+        const sections = current.order.map((id) => ({
+          id,
+          label: PUBLIC_SECTIONS[id] || id,
+          enabled: !current.disabled.includes(id),
+        }));
+
+        await logAudit(prisma, auth.apiKeyId, 'sections:list', params.project_id, 'Project');
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              sections,
+              disabled_count: current.disabled.length,
+              total: sections.length,
+              available_sections: Object.entries(PUBLIC_SECTIONS).map(([id, label]) => ({
+                id, label
+              }))
+            }, null, 2)
+          }]
+        };
+      }
+
+      // ── Mutate ──
+      let newOrder = [...current.order];
+      const newDisabled = new Set(current.disabled);
+
+      if (params.action === 'reorder') {
+        if (!params.order || params.order.length === 0) {
+          throw new Error('Para action=reorder, o campo "order" é obrigatório.');
+        }
+        // Validate all IDs are known
+        const unknown = params.order.filter((id) => !PUBLIC_SECTIONS[id]);
+        if (unknown.length > 0) {
+          throw new Error(`Seções desconhecidas: ${unknown.join(', ')}. IDs válidos: ${Object.keys(PUBLIC_SECTIONS).join(', ')}`);
+        }
+        // Add missing known sections at the end
+        const providedSet = new Set(params.order);
+        for (const id of Object.keys(PUBLIC_SECTIONS)) {
+          if (!providedSet.has(id)) {
+            params.order.push(id);
+          }
+        }
+        newOrder = params.order;
+      }
+
+      if (params.action === 'toggle') {
+        for (const id of (params.enable || [])) {
+          if (!PUBLIC_SECTIONS[id]) throw new Error(`Seção desconhecida: ${id}`);
+          newDisabled.delete(id);
+        }
+        for (const id of (params.disable || [])) {
+          if (!PUBLIC_SECTIONS[id]) throw new Error(`Seção desconhecida: ${id}`);
+          newDisabled.add(id);
+        }
+      }
+
+      const updatedHighlights = buildHighlightsJson(
+        project.highlightsJson,
+        newOrder,
+        Array.from(newDisabled)
+      );
+
+      await prisma.project.update({
+        where: { id: params.project_id },
+        data: { highlightsJson: updatedHighlights }
+      });
+
+      await logAudit(prisma, auth.apiKeyId, 'sections:update', params.project_id, 'Project', {
+        action: params.action,
+        enabled: params.enable,
+        disabled: params.disable
+      });
+
+      const result = parsePublicSections(updatedHighlights);
+      const sections = result.order.map((id) => ({
+        id,
+        label: PUBLIC_SECTIONS[id] || id,
+        enabled: !result.disabled.includes(id),
+      }));
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            message: `Seções atualizadas (action: ${params.action}).`,
+            sections,
+            disabled_count: result.disabled.length
+          }, null, 2)
+        }]
+      };
+    }
+  );
 }

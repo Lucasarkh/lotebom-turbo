@@ -6,6 +6,7 @@ import { registerLeadTools } from './tools/leads.js';
 import { registerAiConfigTools } from './tools/ai-config.js';
 import { registerCategoryTools } from './tools/categories.js';
 import { registerTenantTools } from './tools/tenants.js';
+import { registerAnalyticsTools } from './tools/analytics.js';
 
 export function createServer(prisma: PrismaClient): McpServer {
   const server = new McpServer(
@@ -26,6 +27,7 @@ export function createServer(prisma: PrismaClient): McpServer {
   registerAiConfigTools(server, prisma);
   registerCategoryTools(server, prisma);
   registerTenantTools(server, prisma);
+  registerAnalyticsTools(server, prisma);
 
   return server;
 }
