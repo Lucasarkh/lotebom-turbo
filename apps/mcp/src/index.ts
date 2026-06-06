@@ -30,7 +30,12 @@ async function main() {
     // que rejeitaria o Host: lotio.com.br enviado pelo Caddy.
     // Em produção o servidor já está atrás de reverse proxy com auth.
     const app = createMcpExpressApp({ host: '0.0.0.0' });
-    const transports: Record<string, any> = {};
+
+    // ── Transport único: o SDK gerencia sessões internamente ──
+    const transport = new (StreamableHTTPServerTransport as any)({
+      sessionIdGenerator: () => randomUUID()
+    });
+    await server.connect(transport);
 
     // ── Auth middleware: valida X-Lotio-API-Key em toda request ──
     app.use(async (req: any, _res: any, next: any) => {
@@ -52,37 +57,13 @@ async function main() {
       }
     });
 
+    // ── Rota MCP: delega para o transport único ──
     app.all('/mcp', async (req: any, res: any) => {
-      const sessionId = req.headers['mcp-session-id'] as string;
-      let transport: any | undefined;
-
-      if (sessionId && transports[sessionId]) {
-        transport = transports[sessionId];
-      } else if (!sessionId && req.method === 'POST') {
-        try {
-          transport = new (StreamableHTTPServerTransport as any)({
-            sessionIdGenerator: () => randomUUID()
-          });
-          await server.connect(transport);
-          if (transport.sessionId) {
-            transports[transport.sessionId] = transport;
-            transport.onclose = () => {
-              const sid = (transport as any).sessionId;
-              if (sid) delete transports[sid];
-            };
-          }
-        } catch (err: any) {
-          console.error('[Lotio MCP] Erro ao inicializar transport:', err?.message || err, err?.stack || '');
-          res.status(400).json({ error: 'Invalid initialization request' });
-          return;
-        }
-      } else {
-        res.status(400).json({ error: 'No valid session' });
-        return;
-      }
-
-      if (transport) {
+      try {
         await transport.handleRequest(req, res, req.body);
+      } catch (err: any) {
+        console.error('[Lotio MCP] Erro na requisição:', err?.message || err);
+        res.status(500).json({ error: 'Internal server error' });
       }
     });
 
@@ -98,12 +79,9 @@ async function main() {
     // Graceful shutdown
     process.on('SIGTERM', async () => {
       console.error('[Lotio MCP] Encerrando...');
-      for (const sid of Object.keys(transports)) {
-        try {
-          await transports[sid].close();
-        } catch {}
-        delete transports[sid];
-      }
+      try {
+        await transport.close();
+      } catch {}
       process.exit(0);
     });
   } else {

@@ -154,11 +154,57 @@ jobs:
           cache-to: type=gha,mode=max,scope=mcp
 
   # ============================================
+  # MCP: Deploy
+  # ============================================
+  mcp-deploy:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, mcp-build]
+    environment: production
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.mcp == 'true' || github.event.inputs.force_mcp == 'true') &&
+      needs.mcp-build.result == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deployment files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Deploy MCP via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,MCP_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD
+          script: |
+            set -e
+            cd "${DEPLOY_PATH}"
+
+            GHCR_OWNER=$(echo "$GHCR_USERNAME" | tr '[:upper:]' '[:lower:]')
+
+            # Login to GHCR
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+            # Pull & restart MCP
+            docker compose -f docker-compose.prod.yml --env-file .env pull mcp
+            docker compose -f docker-compose.prod.yml --env-file .env up -d mcp
+
+            echo "MCP deploy completed successfully."
+
+  # ============================================
   # Backend: Deploy
   # ============================================
   backend-deploy:
     runs-on: ubuntu-latest
-    needs: [detect-changes, backend-build, mcp-build]
+    needs: [detect-changes, backend-build]
     environment: production
     if: |
       always() &&
@@ -185,10 +231,8 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BACKEND_IMAGE: ghcr.io/${{ needs.backend-build.outputs.owner_lc }}/lotio-backend:${{ github.sha }}
           FRONTEND_IMAGE: ghcr.io/${{ needs.backend-build.outputs.owner_lc }}/lotio-frontend:latest
-          MCP_IMAGE: ghcr.io/${{ needs.mcp-build.outputs.owner_lc }}/lotio-mcp:latest
           BACKEND_PORT: ${{ secrets.BACKEND_PORT }}
           FRONTEND_PORT: ${{ secrets.FRONTEND_PORT }}
-          MCP_PORT: ${{ secrets.MCP_PORT }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -225,7 +269,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_IMAGE,FRONTEND_IMAGE,MCP_IMAGE,BACKEND_PORT,FRONTEND_PORT,MCP_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
+          envs: DEPLOY_PATH,GHCR_USERNAME,GHCR_TOKEN,BACKEND_IMAGE,FRONTEND_IMAGE,BACKEND_PORT,FRONTEND_PORT,MCP_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REDIS_PASSWORD,REDIS_COMMANDER_PASS,RABBITMQ_USER,RABBITMQ_PASS,JWT_SECRET,ENCRYPTION_KEY,MAIN_DOMAIN,FRONTEND_URL,FRONTEND_API_URL,FRONTEND_SITE_URL,NUXT_PUBLIC_ASSET_BASE,NUXT_PUBLIC_FB_APP_ID,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_S3_BUCKET,ASSET_CDN_BASE_URL,SENDPULSE_CLIENT_ID,SENDPULSE_CLIENT_SECRET,SENDPULSE_FROM_EMAIL,SENDPULSE_FROM_NAME,STRIPE_SECRET_KEY,STRIPE_PUBLISHABLE_KEY,STRIPE_WEBHOOK_SECRET,MERCADOPAGO_ACCESS_TOKEN,GOOGLE_MAPS_API_KEY,WHAPI_TOKEN,WHAPI_DEFAULT_COUNTRY_CODE,OPENAI_API_KEY
           script: |
             set -e
             mkdir -p "$DEPLOY_PATH"
@@ -311,10 +355,6 @@ jobs:
 
             # --- Pull backend image ---
             docker compose -f docker-compose.prod.yml --env-file .env pull backend
-
-            # --- Pull & start MCP server ---
-            docker compose -f docker-compose.prod.yml --env-file .env pull mcp 2>/dev/null || true
-            docker compose -f docker-compose.prod.yml --env-file .env up -d mcp 2>/dev/null || true
 
             # --- Start infra ---
             docker compose -f docker-compose.prod.yml --env-file .env up -d db redis rabbitmq
@@ -577,7 +617,7 @@ jobs:
   # ============================================
   summary:
     runs-on: ubuntu-latest
-    needs: [detect-changes, backend-deploy, frontend-deploy]
+    needs: [detect-changes, backend-deploy, frontend-deploy, mcp-deploy]
     if: always()
     steps:
       - name: Deploy Summary
@@ -588,7 +628,7 @@ jobs:
           echo "|-----|---------|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Backend | ${{ needs.detect-changes.outputs.backend }} | ${{ github.event.inputs.force_backend || 'false' }} | ${{ needs.backend-deploy.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend | ${{ needs.detect-changes.outputs.frontend }} | ${{ github.event.inputs.force_frontend || 'false' }} | ${{ needs.frontend-deploy.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| MCP | ${{ needs.detect-changes.outputs.mcp }} | ${{ github.event.inputs.force_mcp || 'false' }} | deployed with backend |" >> $GITHUB_STEP_SUMMARY
+          echo "| MCP | ${{ needs.detect-changes.outputs.mcp }} | ${{ github.event.inputs.force_mcp || 'false' }} | ${{ needs.mcp-deploy.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
