@@ -454,4 +454,137 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       };
     }
   );
+
+  // ─── batch_update_lots ────────────────────────────────────
+  // Shared field mapping for snake_case (zod) → camelCase (Prisma)
+  const LOT_FIELD_MAP: Record<string, string> = {
+    price_per_m2: 'pricePerM2',
+    area_m2: 'areaM2',
+    lot_number: 'lotNumber',
+    side_left: 'sideLeft',
+    side_right: 'sideRight',
+    panorama_url: 'panoramaUrl',
+    recuo_frontal: 'recuoFrontal',
+    recuo_lateral: 'recuoLateral',
+    recuo_fundos: 'recuoFundos',
+    taxa_ocupacao: 'taxaOcupacao',
+    coeficiente_aproveitamento: 'coeficienteAproveitamento',
+    gabarito_maximo: 'gabaritoMaximo',
+    taxa_permeabilidade: 'taxaPermeabilidade',
+    uso_permitido: 'usoPermitido',
+    inscricao_imobiliaria: 'inscricaoImobiliaria',
+    category_id: 'categoryId',
+  };
+
+  server.tool(
+    'batch_update_lots',
+    'Atualiza múltiplos lotes de uma vez. Envie um array de objetos, cada um com lot_id e os campos a alterar. Muito mais rápido que chamar update_lot individualmente para cada lote.',
+    {
+      updates: z
+        .array(
+          z.object({
+            lot_id: z.string().describe('ID do lote (LotDetails id)'),
+            status: z.enum(['AVAILABLE', 'RESERVED', 'SOLD']).optional(),
+            price: z.number().min(0).optional(),
+            price_per_m2: z.number().min(0).optional(),
+            area_m2: z.number().min(0).optional(),
+            block: z.string().optional(),
+            lot_number: z.string().optional(),
+            frontage: z.number().min(0).optional(),
+            depth: z.number().min(0).optional(),
+            side_left: z.number().min(0).optional(),
+            side_right: z.number().min(0).optional(),
+            slope: z.enum(['FLAT', 'UPHILL', 'DOWNHILL']).optional(),
+            category_id: z.string().optional(),
+            tags: z.array(z.string()).optional(),
+            notes: z.string().optional(),
+            panorama_url: z.string().optional(),
+            matricula: z.string().optional(),
+            inscricao_imobiliaria: z.string().optional(),
+            confrontacoes: z.string().optional(),
+            recuo_frontal: z.number().optional(),
+            recuo_lateral: z.number().optional(),
+            recuo_fundos: z.number().optional(),
+            taxa_ocupacao: z.number().optional(),
+            coeficiente_aproveitamento: z.number().optional(),
+            gabarito_maximo: z.number().optional(),
+            taxa_permeabilidade: z.number().optional(),
+            zoneamento: z.string().optional(),
+            uso_permitido: z.string().optional()
+          })
+        )
+        .min(1)
+        .max(200)
+        .describe('Array de lotes a atualizar (máx 200)')
+    },
+    async (params) => {
+      const auth = await getAuth(prisma);
+      requirePermission(auth, 'lots:write');
+
+      // Pre-fetch all lots to validate
+      const lotIds = params.updates.map((u) => u.lot_id);
+      const existingLots = await prisma.lotDetails.findMany({
+        where: { id: { in: lotIds }, tenantId: auth.tenantId },
+        select: { id: true, projectId: true }
+      });
+      const existingMap = new Map(existingLots.map((l) => [l.id, l.projectId]));
+
+      // Validate all lots exist
+      const missing = lotIds.filter((id) => !existingMap.has(id));
+      if (missing.length > 0) {
+        throw new Error(`Lotes não encontrados: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? ` e mais ${missing.length - 5}` : ''}`);
+      }
+
+      // Check agentEnabled on all projects
+      const projectIds = [...new Set(existingLots.map((l) => l.projectId))];
+      for (const pid of projectIds) {
+        requireProjectAccess(auth, pid);
+      }
+      const projects = await prisma.project.findMany({
+        where: { id: { in: projectIds } },
+        select: { id: true, agentEnabled: true, name: true }
+      });
+      const disabled = projects.filter((p) => !p.agentEnabled);
+      if (disabled.length > 0) {
+        throw new Error(`Edição agentica desabilitada para: ${disabled.map(p => p.name).join(', ')}`);
+      }
+
+      // Process all updates in a transaction
+      const results = await prisma.$transaction(
+        params.updates.map((u) => {
+          const { lot_id, category_id, ...rest } = u;
+          const data: any = {};
+          if (category_id !== undefined) data.categoryId = category_id;
+          for (const [key, value] of Object.entries(rest)) {
+            if (value !== undefined) {
+              const mappedKey = LOT_FIELD_MAP[key] ?? key;
+              data[mappedKey] = value;
+            }
+          }
+          return prisma.lotDetails.update({
+            where: { id: lot_id },
+            data,
+            select: { id: true, mapElement: { select: { code: true } } }
+          });
+        })
+      );
+
+      await logAudit(prisma, auth.apiKeyId, 'lots:batch_update', null, 'LotDetails', {
+        count: results.length,
+        lot_ids: lotIds
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              message: `${results.length} lotes atualizados com sucesso.`,
+              updated: results.map((r: any) => ({ id: r.id, code: r.mapElement?.code }))
+            }, null, 2)
+          }
+        ]
+      };
+    }
+  );
 }
