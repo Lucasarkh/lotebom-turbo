@@ -71,7 +71,8 @@ async function main() {
               if (sid) delete transports[sid];
             };
           }
-        } catch {
+        } catch (err: any) {
+          console.error('[Lotio MCP] Erro ao inicializar transport:', err?.message || err, err?.stack || '');
           res.status(400).json({ error: 'Invalid initialization request' });
           return;
         }
