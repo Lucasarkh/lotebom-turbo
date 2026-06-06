@@ -26,7 +26,10 @@ async function main() {
     );
     const { randomUUID } = await import('node:crypto');
 
-    const app = createMcpExpressApp();
+    // host: '0.0.0.0' desabilita a proteção DNS rebinding do SDK MCP,
+    // que rejeitaria o Host: lotio.com.br enviado pelo Caddy.
+    // Em produção o servidor já está atrás de reverse proxy com auth.
+    const app = createMcpExpressApp({ host: '0.0.0.0' });
     const transports: Record<string, any> = {};
 
     // ── Auth middleware: valida X-Lotio-API-Key em toda request ──
