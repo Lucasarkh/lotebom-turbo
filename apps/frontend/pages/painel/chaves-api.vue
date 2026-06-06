@@ -368,7 +368,7 @@ const today = computed(() => new Date().toISOString().split('T')[0])
 const mcpConfigExample = computed(() => `{
   "mcpServers": {
     "lotio": {
-      "url": "https://www.lotio.com.br/mcp",
+      "url": "https://lotio.com.br/mcp",
       "headers": {
         "X-API-Key": "${createdKey.value || 'SUA_CHAVE_AQUI'}"
       }
