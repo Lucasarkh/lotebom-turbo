@@ -45,17 +45,22 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S mcp -u 1001 -G nodejs -h /home/mcp
 
-# Hoisted node_modules from pnpm
+# Root node_modules (pnpm virtual store .pnpm/)
 COPY --from=deps --chown=mcp:nodejs /app/node_modules ./node_modules
 
+# Workspace-specific node_modules (deps like dotenv live here with pnpm)
+COPY --from=deps --chown=mcp:nodejs /app/apps/mcp/node_modules ./apps/mcp/node_modules
+
 # Compiled output
-COPY --from=build --chown=mcp:nodejs /app/apps/mcp/dist ./dist
+COPY --from=build --chown=mcp:nodejs /app/apps/mcp/dist ./apps/mcp/dist
 
 # Package metadata
-COPY --from=build --chown=mcp:nodejs /app/apps/mcp/package.json ./
+COPY --from=build --chown=mcp:nodejs /app/apps/mcp/package.json ./apps/mcp/
 
-# Prisma schema + migrations (needed at runtime)
-COPY --from=build --chown=mcp:nodejs /app/apps/backend/prisma ./prisma
+# Prisma schema (needed at runtime for PrismaClient queries)
+COPY --from=build --chown=mcp:nodejs /app/apps/backend/prisma ./apps/backend/prisma
+
+WORKDIR /app/apps/mcp
 
 USER mcp
 
