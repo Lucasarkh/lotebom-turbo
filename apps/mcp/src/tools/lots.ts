@@ -92,6 +92,8 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         topography: slopeMap[lot.slope] || 'Plano',
         frontage: lot.frontage,
         depth: lot.depth,
+        side_left: lot.sideLeft,
+        side_right: lot.sideRight,
         category: lot.category?.name || null,
         tags: lot.tags || [],
         notes: lot.notes,
@@ -174,10 +176,10 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
     }
   );
 
-  // ─── update_lot ────────────────────────────────────
+   // ─── update_lot ────────────────────────────────────
   server.tool(
     'update_lot',
-    'Atualiza os dados de um lote. Envie apenas os campos que deseja alterar. Pode atualizar preço, status, área, topografia, tags, restrições urbanísticas, dados legais e mais.',
+    'Atualiza os dados de um lote. Campos geométricos: frontage = Frente/Testada (largura da rua), depth = Fundo (largura traseira), side_left/side_right = Laterais (comprimento/profundidade). Em lotes retangulares: depth = frontage e side_left = side_right.',
     {
       lot_id: z.string().describe('ID do lote (LotDetails id)'),
       status: z
@@ -186,13 +188,13 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         .describe('Status do lote'),
       price: z.number().min(0).optional().describe('Preço total (R$)'),
       price_per_m2: z.number().min(0).optional().describe('Preço por m² (R$)'),
-      area_m2: z.number().min(0).optional().describe('Área em m²'),
+      area_m2: z.number().min(0).optional().describe('Área em m² (frente × lateral)'),
       block: z.string().optional().describe('Quadra'),
       lot_number: z.string().optional().describe('Número do lote'),
-      frontage: z.number().min(0).optional().describe('Frente (m)'),
-      depth: z.number().min(0).optional().describe('Profundidade (m)'),
-      side_left: z.number().min(0).optional().describe('Lateral esquerda (m)'),
-      side_right: z.number().min(0).optional().describe('Lateral direita (m)'),
+      frontage: z.number().min(0).optional().describe('Frente/Testada (m) — largura que dá para a rua'),
+      depth: z.number().min(0).optional().describe('Fundo (m) — largura dos fundos do lote. Em retângulos é igual à frente'),
+      side_left: z.number().min(0).optional().describe('Lateral esquerda (m) — comprimento do lado esquerdo'),
+      side_right: z.number().min(0).optional().describe('Lateral direita (m) — comprimento do lado direito'),
       slope: z.enum(['FLAT', 'UPHILL', 'DOWNHILL']).optional().describe('Topografia'),
       category_id: z.string().optional().describe('ID da categoria'),
       tags: z.array(z.string()).optional().describe('Tags (ex: ["esquina", "sol da manhã"])'),
@@ -299,20 +301,20 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
   // ─── upsert_lot ────────────────────────────────────
   server.tool(
     'upsert_lot',
-    'Cria ou atualiza detalhes de um lote vinculado a um MapElement (elemento do mapa). Use quando o lote já existe no mapa (criado pelo editor de planta) e você quer preencher seus dados comerciais.',
+    'Cria ou atualiza detalhes de um lote vinculado a um MapElement. Campos: frontage=Frente/Testada, depth=Fundo (largura traseira), side_left/side_right=Laterais (comprimento).',
     {
       project_id: z.string().describe('ID do projeto'),
       map_element_id: z.string().describe('ID do MapElement (elemento no mapa)'),
       block: z.string().optional().describe('Quadra'),
       lot_number: z.string().optional().describe('Número do lote'),
       price: z.number().min(0).optional().describe('Preço total (R$)'),
-      area_m2: z.number().min(0).optional().describe('Área em m²'),
+      area_m2: z.number().min(0).optional().describe('Área em m² (frente × lateral)'),
       status: z.enum(['AVAILABLE', 'RESERVED', 'SOLD']).optional().describe('Status'),
       slope: z.enum(['FLAT', 'UPHILL', 'DOWNHILL']).optional().describe('Topografia'),
       category_id: z.string().optional().describe('ID da categoria'),
       tags: z.array(z.string()).optional().describe('Tags'),
-      frontage: z.number().optional().describe('Frente (m)'),
-      depth: z.number().optional().describe('Profundidade (m)')
+      frontage: z.number().optional().describe('Frente/Testada (m)'),
+      depth: z.number().optional().describe('Fundo (m) — ⚠️ igual à frente em retângulos')
     },
     async (params) => {
       const auth = await getAuth(prisma);
@@ -503,22 +505,22 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
 
   server.tool(
     'batch_update_lots',
-    'Atualiza múltiplos lotes de uma vez. Envie um array de objetos, cada um com lot_id e os campos a alterar. Muito mais rápido que chamar update_lot individualmente para cada lote.',
+    'Atualiza múltiplos lotes de uma vez. Campos geométricos: frontage=Frente/Testada, depth=Fundo (largura traseira), side_left/side_right=Laterais (comprimento). Retângulo: frontage=depth, side_left=side_right.',
     {
       updates: z
         .array(
           z.object({
-            lot_id: z.string().describe('ID do lote (LotDetails id)'),
+            lot_id: z.string().describe('ID do lote'),
             status: z.enum(['AVAILABLE', 'RESERVED', 'SOLD']).optional(),
             price: z.number().min(0).optional(),
             price_per_m2: z.number().min(0).optional(),
-            area_m2: z.number().min(0).optional(),
+            area_m2: z.number().min(0).optional().describe('Área (frente × lateral)'),
             block: z.string().optional(),
             lot_number: z.string().optional(),
-            frontage: z.number().min(0).optional(),
-            depth: z.number().min(0).optional(),
-            side_left: z.number().min(0).optional(),
-            side_right: z.number().min(0).optional(),
+            frontage: z.number().min(0).optional().describe('Frente/Testada (m)'),
+            depth: z.number().min(0).optional().describe('Fundo (m) — largura traseira'),
+            side_left: z.number().min(0).optional().describe('Lateral esquerda (m) — comprimento'),
+            side_right: z.number().min(0).optional().describe('Lateral direita (m) — comprimento'),
             slope: z.enum(['FLAT', 'UPHILL', 'DOWNHILL']).optional(),
             category_id: z.string().optional(),
             tags: z.array(z.string()).optional(),
