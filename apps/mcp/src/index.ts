@@ -70,8 +70,13 @@ async function main() {
         if (sessionId && transports[sessionId]) {
           // Reuse existing transport for this session
           transport = transports[sessionId];
-        } else if (req.method === 'POST' && !sessionId && isInitializeRequest(req.body)) {
-          // New initialization — create a fresh transport bound to this session
+        } else if (req.method === 'POST' && isInitializeRequest(req.body)) {
+          // Initialize request — always create a fresh transport.
+          // This handles both first-time init AND re-initialization after
+          // server restart (stale session from client).
+          if (sessionId) {
+            console.error(`[Lotio MCP] Re-inicializando sessão stale: ${sessionId}`);
+          }
           transport = new (StreamableHTTPServerTransport as any)({
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (sid: string) => {
