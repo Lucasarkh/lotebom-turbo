@@ -252,6 +252,13 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         }
       }
 
+      // Auto-calculate pricePerM2 when price & area provided but pricePerM2 is not
+      if (rest.price !== undefined && rest.area_m2 !== undefined && rest.price_per_m2 === undefined) {
+        if (Number(rest.price) > 0 && Number(rest.area_m2) > 0) {
+          data.pricePerM2 = Math.round(Number(rest.price) / Number(rest.area_m2));
+        }
+      }
+
       const updated = await prisma.lotDetails.update({
         where: { id: lot_id },
         data,
@@ -349,6 +356,13 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         if (value !== undefined) {
           const mappedKey = fieldMap[key] ?? key;
           data[mappedKey] = value;
+        }
+      }
+
+      // Auto-calculate pricePerM2 when price & area provided
+      if (rest.price !== undefined && rest.area_m2 !== undefined) {
+        if (Number(rest.price) > 0 && Number(rest.area_m2) > 0) {
+          data.pricePerM2 = Math.round(Number(rest.price) / Number(rest.area_m2));
         }
       }
 
@@ -561,6 +575,12 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
               data[mappedKey] = value;
             }
           }
+          // Auto-calculate pricePerM2 when price & area provided but pricePerM2 is not
+          if (rest.price !== undefined && rest.area_m2 !== undefined && rest.price_per_m2 === undefined) {
+            if (Number(rest.price) > 0 && Number(rest.area_m2) > 0) {
+              data.pricePerM2 = Math.round(Number(rest.price) / Number(rest.area_m2));
+            }
+          }
           return prisma.lotDetails.update({
             where: { id: lot_id },
             data,
@@ -584,6 +604,74 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
             }, null, 2)
           }
         ]
+      };
+    }
+  );
+
+  // ─── recalculate_lot_metrics ────────────────────────────────────
+  server.tool(
+    'recalculate_lot_metrics',
+    'Recalcula o preço por m² de todos os lotes de um projeto com base no preço total e área. Útil após importações ou ajustes em massa.',
+    {
+      project_id: z.string().describe('ID do projeto')
+    },
+    async (params) => {
+      const auth = await getAuth(prisma);
+      requirePermission(auth, 'lots:write');
+      requireProjectAccess(auth, params.project_id);
+
+      const project = await prisma.project.findFirst({
+        where: { id: params.project_id, tenantId: auth.tenantId },
+        select: { agentEnabled: true }
+      });
+      if (!project?.agentEnabled) {
+        throw new Error('Edição agentica desabilitada para este projeto.');
+      }
+
+      const lots = await prisma.lotDetails.findMany({
+        where: {
+          projectId: params.project_id,
+          tenantId: auth.tenantId,
+          price: { not: null },
+          areaM2: { not: null }
+        },
+        select: { id: true, price: true, areaM2: true }
+      });
+
+      let updated = 0;
+      const updates = lots
+        .filter((l: any) => {
+          const p = Number(l.price);
+          const a = Number(l.areaM2);
+          return p > 0 && a > 0;
+        })
+        .map((l: any) => {
+          const pricePerM2 = Math.round(Number(l.price) / Number(l.areaM2));
+          updated++;
+          return prisma.lotDetails.update({
+            where: { id: l.id },
+            data: { pricePerM2 },
+            select: { id: true }
+          });
+        });
+
+      if (updates.length > 0) {
+        await prisma.$transaction(updates);
+      }
+
+      await logAudit(prisma, auth.apiKeyId, 'lots:recalculate_metrics', params.project_id, 'Project', {
+        updated
+      });
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            message: `${updated} lotes tiveram o preço/m² recalculado.`,
+            project_id: params.project_id,
+            updated
+          }, null, 2)
+        }]
       };
     }
   );
