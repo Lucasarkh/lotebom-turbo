@@ -6,6 +6,7 @@ deploy_path: /opt/lotio
 caddy_admin_email: contato@lotio.com.br
 caddy_lotio_web_upstream: "127.0.0.1:3100"
 caddy_lotio_api_upstream: "127.0.0.1:8180"
+caddy_lotio_mcp_upstream: "127.0.0.1:3101"
 caddy_lotio_rabbitmq_upstream: "127.0.0.1:15673"
 caddy_lotio_redis_commander_upstream: "127.0.0.1:8181"
 caddy_lotio_primary_domain: lotio.com.br

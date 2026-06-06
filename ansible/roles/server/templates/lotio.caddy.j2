@@ -17,6 +17,18 @@
 		}
 	}
 
+	@mcp path /mcp /mcp/*
+	handle @mcp {
+		reverse_proxy {{ caddy_lotio_mcp_upstream }} {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 60s
+			}
+		}
+	}
+
 	@socket path /socket.io /socket.io/*
 	handle @socket {
 		reverse_proxy {{ caddy_lotio_api_upstream }} {

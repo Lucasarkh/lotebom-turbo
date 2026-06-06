@@ -33,6 +33,7 @@ async function main() {
     app.use(async (req: any, _res: any, next: any) => {
       const apiKey =
         req.headers['x-lotio-api-key']?.trim() ||
+        req.headers['x-api-key']?.trim() ||
         req.headers['authorization']?.replace(/^Bearer\s+/i, '')?.trim() ||
         '';
 
