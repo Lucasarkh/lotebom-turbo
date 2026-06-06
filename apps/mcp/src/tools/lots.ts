@@ -4,6 +4,14 @@ import { getAuth, requirePermission, requireProjectAccess } from '../auth.js';
 import { logAudit } from '../audit.js';
 import { z } from 'zod';
 
+/** Touch project updatedAt to bust public page SSR cache */
+async function touchProject(prisma: PrismaClient, projectId: string) {
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { updatedAt: new Date() }
+  }).catch(() => {});
+}
+
 /**
  * Lot tools — list, get, update, upsert lot details.
  */
@@ -271,6 +279,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       await logAudit(prisma, auth.apiKeyId, 'lots:update', lot_id, 'LotDetails', {
         updatedFields: Object.keys(data)
       });
+      await touchProject(prisma, lot.projectId);
 
       return {
         content: [
@@ -385,6 +394,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         mapElementId: map_element_id,
         operation: 'upsert'
       });
+      await touchProject(prisma, project_id);
 
       return {
         content: [
@@ -453,6 +463,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         from: lot.status,
         to: params.status
       });
+      await touchProject(prisma, lot.projectId);
 
       return {
         content: [
@@ -593,6 +604,10 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
         count: results.length,
         lot_ids: lotIds
       });
+      // Touch all affected projects
+      for (const pid of projectIds) {
+        await touchProject(prisma, pid);
+      }
 
       return {
         content: [
@@ -662,6 +677,7 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       await logAudit(prisma, auth.apiKeyId, 'lots:recalculate_metrics', params.project_id, 'Project', {
         updated
       });
+      await touchProject(prisma, params.project_id);
 
       return {
         content: [{

@@ -14,6 +14,7 @@ import {
 
 type PublicProject = {
   name?: string
+  updatedAt?: string
   preLaunchEnabled?: boolean
   preLaunchCaptureMode?: 'QUEUE' | 'RESERVATION'
   ogLogoUrl?: string
@@ -65,7 +66,7 @@ const { data: projectData } = await useAsyncData<PublicProject | null>(
 )
 
 const { data: lotsData } = await useAsyncData<PublicLot[]>(
-  () => `seo-lots-${slug.value}-${lotCode.value}`,
+  () => `seo-lots-${slug.value}-${lotCode.value}-${projectData.value?.updatedAt || '0'}`,
   async () => {
     if (!slug.value || !lotCode.value) return []
     try {
