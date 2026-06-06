@@ -827,7 +827,7 @@
           <div v-else style="background: var(--glass-bg-heavy); padding: 16px; border-radius: 10px; font-size: 0.85rem; border: 1px solid var(--glass-border-subtle);">
             <p style="margin: 0; color: var(--color-surface-400);">
               <i class="bi bi-lock-fill" style="margin-right: 6px;"></i>
-              Desabilitado: nenhum agente de IA pode editar este projeto. Ideal para projetos em produção que não devem ser alterados automaticamente.
+              Desabilitado: nenhum agente de IA pode editar este projeto. Ideal para projetos que não devem ser alterados automaticamente.
             </p>
           </div>
 

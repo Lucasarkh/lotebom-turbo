@@ -1520,6 +1520,7 @@ export class ProjectsService {
           reservationFeeValue: dto.reservationFeeValue
         }),
         ...(dto.aiEnabled !== undefined && { aiEnabled: dto.aiEnabled }),
+        ...(dto.agentEnabled !== undefined && { agentEnabled: dto.agentEnabled }),
         ...(dto.aiConfigId !== undefined && {
           aiConfigId: dto.aiConfigId || null
         }),

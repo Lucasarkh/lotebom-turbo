@@ -237,7 +237,8 @@ export function registerProjectTools(
         select: { id: true, agentEnabled: true }
       });
       if (!project) throw new Error(`Projeto ${params.project_id} não encontrado.`);
-      if (!project.agentEnabled) {
+      // Allow the update if the request itself is enabling agent access
+      if (!project.agentEnabled && params.agent_enabled !== true) {
         throw new Error(
           `❌ Edição agentica desabilitada para este projeto.\n\n` +
             `O projeto "${params.project_id}" tem agentEnabled = false.\n` +
@@ -245,11 +246,29 @@ export function registerProjectTools(
         );
       }
 
+      // Map snake_case (zod) → camelCase (Prisma)
+      const fieldMap: Record<string, string> = {
+        agent_enabled: 'agentEnabled',
+        ai_enabled: 'aiEnabled',
+        starting_price: 'startingPrice',
+        max_installments: 'maxInstallments',
+        reservation_fee: 'reservationFeeValue',
+        show_payment_conditions: 'showPaymentConditions',
+        pre_launch_enabled: 'preLaunchEnabled',
+        banner_image_url: 'bannerImageUrl',
+        youtube_video_url: 'youtubeVideoUrl',
+        location_text: 'locationText',
+        google_maps_url: 'googleMapsUrl',
+        legal_notice: 'legalNotice',
+      };
+
       const { project_id, ...updateFields } = params;
-      // Clean undefined values
       const data: any = {};
       for (const [key, value] of Object.entries(updateFields)) {
-        if (value !== undefined) data[key] = value;
+        if (value !== undefined) {
+          const mappedKey = fieldMap[key] ?? key;
+          data[mappedKey] = value;
+        }
       }
 
       const updated = await prisma.project.update({

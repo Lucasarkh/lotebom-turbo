@@ -223,12 +223,33 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       }
 
       const { lot_id, category_id, ...rest } = params;
-      const data: any = { ...rest };
-      if (category_id !== undefined) data.categoryId = category_id;
 
-      // Clean undefined
-      for (const key of Object.keys(data)) {
-        if (data[key] === undefined) delete data[key];
+      // Map snake_case (zod) → camelCase (Prisma)
+      const fieldMap: Record<string, string> = {
+        price_per_m2: 'pricePerM2',
+        area_m2: 'areaM2',
+        lot_number: 'lotNumber',
+        side_left: 'sideLeft',
+        side_right: 'sideRight',
+        panorama_url: 'panoramaUrl',
+        recuo_frontal: 'recuoFrontal',
+        recuo_lateral: 'recuoLateral',
+        recuo_fundos: 'recuoFundos',
+        taxa_ocupacao: 'taxaOcupacao',
+        coeficiente_aproveitamento: 'coeficienteAproveitamento',
+        gabarito_maximo: 'gabaritoMaximo',
+        taxa_permeabilidade: 'taxaPermeabilidade',
+        uso_permitido: 'usoPermitido',
+        inscricao_imobiliaria: 'inscricaoImobiliaria',
+      };
+
+      const data: any = {};
+      if (category_id !== undefined) data.categoryId = category_id;
+      for (const [key, value] of Object.entries(rest)) {
+        if (value !== undefined) {
+          const mappedKey = fieldMap[key] ?? key;
+          data[mappedKey] = value;
+        }
       }
 
       const updated = await prisma.lotDetails.update({
@@ -302,11 +323,33 @@ export function registerLotTools(server: McpServer, prisma: PrismaClient) {
       if (!el) throw new Error(`MapElement ${params.map_element_id} não encontrado no projeto.`);
 
       const { project_id, map_element_id, category_id, ...rest } = params;
-      const data: any = { ...rest };
-      if (category_id !== undefined) data.categoryId = category_id;
 
-      for (const key of Object.keys(data)) {
-        if (data[key] === undefined) delete data[key];
+      // Map snake_case (zod) → camelCase (Prisma)
+      const fieldMap: Record<string, string> = {
+        price_per_m2: 'pricePerM2',
+        area_m2: 'areaM2',
+        lot_number: 'lotNumber',
+        side_left: 'sideLeft',
+        side_right: 'sideRight',
+        panorama_url: 'panoramaUrl',
+        recuo_frontal: 'recuoFrontal',
+        recuo_lateral: 'recuoLateral',
+        recuo_fundos: 'recuoFundos',
+        taxa_ocupacao: 'taxaOcupacao',
+        coeficiente_aproveitamento: 'coeficienteAproveitamento',
+        gabarito_maximo: 'gabaritoMaximo',
+        taxa_permeabilidade: 'taxaPermeabilidade',
+        uso_permitido: 'usoPermitido',
+        inscricao_imobiliaria: 'inscricaoImobiliaria',
+      };
+
+      const data: any = {};
+      if (category_id !== undefined) data.categoryId = category_id;
+      for (const [key, value] of Object.entries(rest)) {
+        if (value !== undefined) {
+          const mappedKey = fieldMap[key] ?? key;
+          data[mappedKey] = value;
+        }
       }
 
       const lot = await prisma.lotDetails.upsert({
