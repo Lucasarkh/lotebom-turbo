@@ -866,36 +866,87 @@ const buildConstructionOverlay = (
 
   const centerX = (minX + recL + maxX - recR) / 2
   const centerZ = minZ + recF + houseD / 2
-  const surfaceY = lotD > 0 ? slopeHeight * ((centerZ - minZ) / lotD) : 0
+  const frontEdgeY = lotD > 0 ? slopeHeight * ((centerZ - houseD / 2 - minZ) / lotD) : 0
+  const backEdgeY = lotD > 0 ? slopeHeight * ((centerZ + houseD / 2 - minZ) / lotD) : 0
+  const houseBaseY = Math.max(frontEdgeY, backEdgeY)
+
+  const houseGroup = new three.Group()
+  houseGroup.position.set(centerX, houseBaseY, centerZ)
 
   const foundH = 0.12
-  const wallBaseY = surfaceY + foundH
+  const wallBaseY = foundH
   const hw = houseW / 2
   const hd = houseD / 2
 
-  // Foundation
-  const foundGeo = new three.BoxGeometry(houseW + 0.15, foundH, houseD + 0.15)
-  const foundMat = new three.MeshStandardMaterial({ color: '#a09890', roughness: 0.92 })
+  // Foundation — adapts to terrain slope (tall on low side, flush on high side)
+  const fhw = (houseW + 0.15) / 2
+  const fhd = (houseD + 0.15) / 2
+  const frontBotY = frontEdgeY - houseBaseY
+  const backBotY = backEdgeY - houseBaseY
+  const foundVerts = new Float32Array([
+    -fhw, foundH, -fhd,     fhw, foundH, -fhd,
+     fhw, foundH,  fhd,    -fhw, foundH,  fhd,
+    -fhw, frontBotY, -fhd,  fhw, frontBotY, -fhd,
+     fhw, backBotY,   fhd, -fhw, backBotY,   fhd,
+  ])
+  const foundGeo = new three.BufferGeometry()
+  foundGeo.setAttribute('position', new three.BufferAttribute(foundVerts, 3))
+  foundGeo.setIndex([0,2,1, 0,3,2, 4,5,6, 4,6,7, 0,1,5, 0,5,4, 2,3,7, 2,7,6, 0,4,7, 0,7,3, 1,2,6, 1,6,5])
+  foundGeo.computeVertexNormals()
+  const foundMat = new three.MeshStandardMaterial({ color: '#8e8279', roughness: 0.88 })
   const foundation = new three.Mesh(foundGeo, foundMat)
-  foundation.position.set(centerX, surfaceY + foundH / 2, centerZ)
   foundation.receiveShadow = true
-  group.add(foundation)
+  foundation.castShadow = true
+  houseGroup.add(foundation)
+  const foundEdgesGeo = new three.EdgesGeometry(foundGeo)
+  houseGroup.add(new three.LineSegments(foundEdgesGeo, new three.LineBasicMaterial({ color: '#7a6e64', transparent: true, opacity: 0.5 })))
+
+  // Horizontal block course lines on exposed foundation faces
+  const courseMat = new three.LineBasicMaterial({ color: '#706258', transparent: true, opacity: 0.25 })
+  const courseSpacing = 0.35
+  const addCourseLine = (pts: import('three').Vector3[]) => {
+    const geo = new three.BufferGeometry().setFromPoints(pts)
+    houseGroup.add(Object.assign(new three.Line(geo, courseMat), { renderOrder: 6 }))
+  }
+  const frontExposure = Math.abs(Math.min(frontBotY, 0))
+  for (let cy = -courseSpacing; cy > Math.min(frontBotY, backBotY); cy -= courseSpacing) {
+    if (cy > frontBotY) {
+      addCourseLine([new three.Vector3(-fhw, cy, -fhd - 0.01), new three.Vector3(fhw, cy, -fhd - 0.01)])
+    }
+    if (cy > backBotY) {
+      addCourseLine([new three.Vector3(-fhw, cy, fhd + 0.01), new three.Vector3(fhw, cy, fhd + 0.01)])
+    }
+    if (cy > frontBotY && cy > backBotY) {
+      addCourseLine([new three.Vector3(-fhw - 0.01, cy, -fhd), new three.Vector3(-fhw - 0.01, cy, fhd)])
+      addCourseLine([new three.Vector3(fhw + 0.01, cy, -fhd), new three.Vector3(fhw + 0.01, cy, fhd)])
+    } else if (frontBotY !== backBotY) {
+      const t = (cy - frontBotY) / (backBotY - frontBotY)
+      const zAtCy = -fhd + t * 2 * fhd
+      if (cy > frontBotY) {
+        addCourseLine([new three.Vector3(-fhw - 0.01, cy, -fhd), new three.Vector3(-fhw - 0.01, cy, Math.min(zAtCy, fhd))])
+        addCourseLine([new three.Vector3(fhw + 0.01, cy, -fhd), new three.Vector3(fhw + 0.01, cy, Math.min(zAtCy, fhd))])
+      } else if (cy > backBotY) {
+        addCourseLine([new three.Vector3(-fhw - 0.01, cy, Math.max(zAtCy, -fhd)), new three.Vector3(-fhw - 0.01, cy, fhd)])
+        addCourseLine([new three.Vector3(fhw + 0.01, cy, Math.max(zAtCy, -fhd)), new three.Vector3(fhw + 0.01, cy, fhd)])
+      }
+    }
+  }
 
   // Walls
   const wallGeo = new three.BoxGeometry(houseW, wallHeight, houseD)
   const wallMat = new three.MeshStandardMaterial({ color: '#f5ede0', roughness: 0.78 })
   const walls = new three.Mesh(wallGeo, wallMat)
-  walls.position.set(centerX, wallBaseY + wallHeight / 2, centerZ)
+  walls.position.set(0, wallBaseY + wallHeight / 2, 0)
   walls.castShadow = true
   walls.receiveShadow = true
-  group.add(walls)
+  houseGroup.add(walls)
 
   // Wall edges
   const edgesGeo = new three.EdgesGeometry(wallGeo)
   const edgesMat = new three.LineBasicMaterial({ color: '#b0a090', transparent: true, opacity: 0.35 })
   const edgeLines = new three.LineSegments(edgesGeo, edgesMat)
   edgeLines.position.copy(walls.position)
-  group.add(edgeLines)
+  houseGroup.add(edgeLines)
 
   // Floor division lines
   const floorLineMat = new three.LineBasicMaterial({ color: '#c4a882', transparent: true, opacity: 0.5 })
@@ -903,16 +954,16 @@ const buildConstructionOverlay = (
     const fy = wallBaseY + floorH * f
     const e = 0.01
     const pts = [
-      new three.Vector3(centerX - hw - e, fy, centerZ - hd - e),
-      new three.Vector3(centerX + hw + e, fy, centerZ - hd - e),
-      new three.Vector3(centerX + hw + e, fy, centerZ + hd + e),
-      new three.Vector3(centerX - hw - e, fy, centerZ + hd + e),
-      new three.Vector3(centerX - hw - e, fy, centerZ - hd - e),
+      new three.Vector3(-hw - e, fy, -hd - e),
+      new three.Vector3(hw + e, fy, -hd - e),
+      new three.Vector3(hw + e, fy, hd + e),
+      new three.Vector3(-hw - e, fy, hd + e),
+      new three.Vector3(-hw - e, fy, -hd - e),
     ]
     const floorGeo = new three.BufferGeometry().setFromPoints(pts)
     const floorLine = new three.Line(floorGeo, floorLineMat)
     floorLine.renderOrder = 10
-    group.add(floorLine)
+    houseGroup.add(floorLine)
   }
 
   // Windows and Door
@@ -930,26 +981,26 @@ const buildConstructionOverlay = (
     const win = new three.Mesh(wGeo, windowMat)
     win.position.set(x, y, z)
     win.renderOrder = 5
-    group.add(win)
+    houseGroup.add(win)
     const frameGeo = new three.EdgesGeometry(wGeo)
     const frame = new three.LineSegments(frameGeo, windowFrameMat)
     frame.position.copy(win.position)
     frame.renderOrder = 12
-    group.add(frame)
+    houseGroup.add(frame)
     if (onZWall) {
       const cPts = [
         new three.Vector3(x - winW / 2, y, z), new three.Vector3(x + winW / 2, y, z),
         new three.Vector3(x, y - winH / 2, z), new three.Vector3(x, y + winH / 2, z),
       ]
       const cGeo = new three.BufferGeometry().setFromPoints(cPts)
-      group.add(Object.assign(new three.LineSegments(cGeo, crossMat), { renderOrder: 12 }))
+      houseGroup.add(Object.assign(new three.LineSegments(cGeo, crossMat), { renderOrder: 12 }))
     } else {
       const cPts = [
         new three.Vector3(x, y, z - winW / 2), new three.Vector3(x, y, z + winW / 2),
         new three.Vector3(x, y - winH / 2, z), new three.Vector3(x, y + winH / 2, z),
       ]
       const cGeo = new three.BufferGeometry().setFromPoints(cPts)
-      group.add(Object.assign(new three.LineSegments(cGeo, crossMat), { renderOrder: 12 }))
+      houseGroup.add(Object.assign(new three.LineSegments(cGeo, crossMat), { renderOrder: 12 }))
     }
   }
 
@@ -964,20 +1015,20 @@ const buildConstructionOverlay = (
     const winY = wallBaseY + f * floorH + floorH * 0.55
 
     for (let i = 0; i < frontWinCount; i++) {
-      const wx = centerX - hw + frontSpacing * (i + 1)
-      if (f === 0 && Math.abs(wx - centerX) < (doorW + winW) / 2 + 0.2) continue
-      addWindow(wx, winY, centerZ - hd - winProt / 2, true)
+      const wx = -hw + frontSpacing * (i + 1)
+      if (f === 0 && Math.abs(wx) < (doorW + winW) / 2 + 0.2) continue
+      addWindow(wx, winY, -hd - winProt / 2, true)
     }
 
     for (let i = 0; i < frontWinCount; i++) {
-      const wx = centerX - hw + frontSpacing * (i + 1)
-      addWindow(wx, winY, centerZ + hd + winProt / 2, true)
+      const wx = -hw + frontSpacing * (i + 1)
+      addWindow(wx, winY, hd + winProt / 2, true)
     }
 
     for (let i = 0; i < sideWinCount; i++) {
-      const wz = centerZ - hd + sideSpacing * (i + 1)
-      addWindow(centerX - hw - winProt / 2, winY, wz, false)
-      addWindow(centerX + hw + winProt / 2, winY, wz, false)
+      const wz = -hd + sideSpacing * (i + 1)
+      addWindow(-hw - winProt / 2, winY, wz, false)
+      addWindow(hw + winProt / 2, winY, wz, false)
     }
   }
 
@@ -985,21 +1036,43 @@ const buildConstructionOverlay = (
   const doorMat = new three.MeshStandardMaterial({ color: '#6b4226', roughness: 0.65 })
   const doorGeo = new three.BoxGeometry(doorW, doorH, winProt)
   const door = new three.Mesh(doorGeo, doorMat)
-  door.position.set(centerX, wallBaseY + doorH / 2, centerZ - hd - winProt / 2)
-  group.add(door)
+  door.position.set(0, wallBaseY + doorH / 2, -hd - winProt / 2)
+  houseGroup.add(door)
   const doorFrameGeo = new three.EdgesGeometry(doorGeo)
   const doorFrameLines = new three.LineSegments(doorFrameGeo, new three.LineBasicMaterial({ color: '#8b6040' }))
   doorFrameLines.position.copy(door.position)
   doorFrameLines.renderOrder = 12
-  group.add(doorFrameLines)
+  houseGroup.add(doorFrameLines)
 
   // Porch canopy
   const canopyGeo = new three.BoxGeometry(doorW + 0.6, 0.08, 0.45)
   const canopyMat = new three.MeshStandardMaterial({ color: '#c4613a', roughness: 0.8 })
   const canopy = new three.Mesh(canopyGeo, canopyMat)
-  canopy.position.set(centerX, wallBaseY + doorH + 0.15, centerZ - hd - 0.22)
+  canopy.position.set(0, wallBaseY + doorH + 0.15, -hd - 0.22)
   canopy.castShadow = true
-  group.add(canopy)
+  houseGroup.add(canopy)
+
+  // Stairs at the front when foundation is exposed
+  if (frontExposure > 0.25) {
+    const stairW = doorW + 0.8
+    const stepH = 0.18
+    const stepD = 0.28
+    const numSteps = Math.max(1, Math.round(frontExposure / stepH))
+    const actualStepH = frontExposure / numSteps
+    const stairMat = new three.MeshStandardMaterial({ color: '#9a9088', roughness: 0.9 })
+    const stairEdgeMat = new three.LineBasicMaterial({ color: '#7a7068', transparent: true, opacity: 0.4 })
+    for (let s = 0; s < numSteps; s++) {
+      const stepGeo = new three.BoxGeometry(stairW, actualStepH, stepD)
+      const step = new three.Mesh(stepGeo, stairMat)
+      step.position.set(0, frontBotY + actualStepH * (s + 0.5), -fhd - stepD * 0.5 - stepD * (numSteps - 1 - s))
+      step.castShadow = true
+      step.receiveShadow = true
+      houseGroup.add(step)
+      const stepEdge = new three.LineSegments(new three.EdgesGeometry(stepGeo), stairEdgeMat)
+      stepEdge.position.copy(step.position)
+      houseGroup.add(stepEdge)
+    }
+  }
 
   // Roof — gable with ridge along Z (depth), no rotation needed
   const overhang = 0.4
@@ -1016,9 +1089,9 @@ const buildConstructionOverlay = (
   const roofGeo = new three.ExtrudeGeometry(roofShape, { depth: roofD, bevelEnabled: false })
   const roofMat = new three.MeshStandardMaterial({ color: '#c4613a', roughness: 0.82 })
   const roof = new three.Mesh(roofGeo, roofMat)
-  roof.position.set(centerX, roofBaseY, centerZ - roofD / 2)
+  roof.position.set(0, roofBaseY, -roofD / 2)
   roof.castShadow = true
-  group.add(roof)
+  houseGroup.add(roof)
 
   const roofEdgesGeo = new three.EdgesGeometry(roofGeo)
   const roofEdges = new three.LineSegments(
@@ -1027,10 +1100,13 @@ const buildConstructionOverlay = (
   )
   roofEdges.position.copy(roof.position)
   roofEdges.renderOrder = 10
-  group.add(roofEdges)
+  houseGroup.add(roofEdges)
+
+  group.add(houseGroup)
 
   // Setback lines on terrain surface — individual dashed lines per side with inline labels
   const setbackY = 0.08
+  const slopeYAt = (z: number) => lotD > 0 ? slopeHeight * ((z - minZ) / lotD) : 0
   const setbackMat = new three.LineDashedMaterial({
     color: '#d4880e',
     dashSize: 0.4,
@@ -1055,14 +1131,13 @@ const buildConstructionOverlay = (
   // Frontal setback line
   if (recF > 0) {
     group.add(drawSetbackLine([
-      new three.Vector3(sbLeft, setbackY, sbFront),
-      new three.Vector3(sbRight, setbackY, sbFront),
+      new three.Vector3(sbLeft, setbackY + slopeYAt(sbFront), sbFront),
+      new three.Vector3(sbRight, setbackY + slopeYAt(sbFront), sbFront),
     ]))
-    // Perpendicular ticks showing the setback distance
     const tickX = sbLeft + (sbRight - sbLeft) * 0.5
     group.add(drawSetbackLine([
-      new three.Vector3(tickX, setbackY, minZ),
-      new three.Vector3(tickX, setbackY, sbFront),
+      new three.Vector3(tickX, setbackY + slopeYAt(minZ), minZ),
+      new three.Vector3(tickX, setbackY + slopeYAt(sbFront), sbFront),
     ]))
     const label = createPlainTextSprite(three, `Recuo Frontal ${formatMeters(recF)}`, {
       color: '#8b6914',
@@ -1070,7 +1145,7 @@ const buildConstructionOverlay = (
       scaleY: 0.6,
     })
     if (label) {
-      label.position.set(tickX, setbackY + 0.25, minZ + recF * 0.5)
+      label.position.set(tickX, setbackY + 0.25 + slopeYAt(minZ + recF * 0.5), minZ + recF * 0.5)
       group.add(label)
     }
   }
@@ -1078,13 +1153,13 @@ const buildConstructionOverlay = (
   // Fundos setback line
   if (recB > 0) {
     group.add(drawSetbackLine([
-      new three.Vector3(sbLeft, setbackY, sbBack),
-      new three.Vector3(sbRight, setbackY, sbBack),
+      new three.Vector3(sbLeft, setbackY + slopeYAt(sbBack), sbBack),
+      new three.Vector3(sbRight, setbackY + slopeYAt(sbBack), sbBack),
     ]))
     const tickX = sbLeft + (sbRight - sbLeft) * 0.5
     group.add(drawSetbackLine([
-      new three.Vector3(tickX, setbackY, maxZ),
-      new three.Vector3(tickX, setbackY, sbBack),
+      new three.Vector3(tickX, setbackY + slopeYAt(maxZ), maxZ),
+      new three.Vector3(tickX, setbackY + slopeYAt(sbBack), sbBack),
     ]))
     const label = createPlainTextSprite(three, `Recuo Fundos ${formatMeters(recB)}`, {
       color: '#8b6914',
@@ -1092,7 +1167,7 @@ const buildConstructionOverlay = (
       scaleY: 0.6,
     })
     if (label) {
-      label.position.set(tickX, setbackY + 0.25, maxZ - recB * 0.5)
+      label.position.set(tickX, setbackY + 0.25 + slopeYAt(maxZ - recB * 0.5), maxZ - recB * 0.5)
       group.add(label)
     }
   }
@@ -1100,13 +1175,13 @@ const buildConstructionOverlay = (
   // Left lateral setback line
   if (recL > 0) {
     group.add(drawSetbackLine([
-      new three.Vector3(sbLeft, setbackY, sbFront),
-      new three.Vector3(sbLeft, setbackY, sbBack),
+      new three.Vector3(sbLeft, setbackY + slopeYAt(sbFront), sbFront),
+      new three.Vector3(sbLeft, setbackY + slopeYAt(sbBack), sbBack),
     ]))
     const tickZ = sbFront + (sbBack - sbFront) * 0.3
     group.add(drawSetbackLine([
-      new three.Vector3(minX, setbackY, tickZ),
-      new three.Vector3(sbLeft, setbackY, tickZ),
+      new three.Vector3(minX, setbackY + slopeYAt(tickZ), tickZ),
+      new three.Vector3(sbLeft, setbackY + slopeYAt(tickZ), tickZ),
     ]))
     const label = createPlainTextSprite(three, `Recuo Lateral ${formatMeters(recL)}`, {
       color: '#8b6914',
@@ -1114,7 +1189,7 @@ const buildConstructionOverlay = (
       scaleY: 0.6,
     })
     if (label) {
-      label.position.set(minX + recL * 0.5, setbackY + 0.25, tickZ)
+      label.position.set(minX + recL * 0.5, setbackY + 0.25 + slopeYAt(tickZ), tickZ)
       group.add(label)
     }
   }
@@ -1122,13 +1197,13 @@ const buildConstructionOverlay = (
   // Right lateral setback line
   if (recR > 0) {
     group.add(drawSetbackLine([
-      new three.Vector3(sbRight, setbackY, sbFront),
-      new three.Vector3(sbRight, setbackY, sbBack),
+      new three.Vector3(sbRight, setbackY + slopeYAt(sbFront), sbFront),
+      new three.Vector3(sbRight, setbackY + slopeYAt(sbBack), sbBack),
     ]))
     const tickZ = sbFront + (sbBack - sbFront) * 0.3
     group.add(drawSetbackLine([
-      new three.Vector3(maxX, setbackY, tickZ),
-      new three.Vector3(sbRight, setbackY, tickZ),
+      new three.Vector3(maxX, setbackY + slopeYAt(tickZ), tickZ),
+      new three.Vector3(sbRight, setbackY + slopeYAt(tickZ), tickZ),
     ]))
     const label = createPlainTextSprite(three, `Recuo Lateral ${formatMeters(recR)}`, {
       color: '#8b6914',
@@ -1136,7 +1211,7 @@ const buildConstructionOverlay = (
       scaleY: 0.6,
     })
     if (label) {
-      label.position.set(maxX - recR * 0.5, setbackY + 0.25, tickZ)
+      label.position.set(maxX - recR * 0.5, setbackY + 0.25 + slopeYAt(tickZ), tickZ)
       group.add(label)
     }
   }
