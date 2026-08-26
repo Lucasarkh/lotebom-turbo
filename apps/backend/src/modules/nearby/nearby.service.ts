@@ -286,6 +286,11 @@ export class NearbyService {
 
           if (!driving) return null;
 
+          const walkingLabel =
+            walking && walking.durationSeconds > driving.durationSeconds
+              ? walking.durationText
+              : null;
+
           return {
             ...place,
             distanceMeters: driving.distanceMeters,
@@ -293,7 +298,7 @@ export class NearbyService {
             durationSecondsWalking: walking?.durationSeconds ?? null,
             distanceLabel: driving.distanceText,
             drivingLabel: driving.durationText,
-            walkingLabel: walking?.durationText ?? null,
+            walkingLabel,
             routeUrl: `https://www.google.com/maps/dir/?api=1&origin=${geo.lat},${geo.lng}&destination=${place.lat},${place.lng}`
           };
         })

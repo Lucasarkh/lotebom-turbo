@@ -230,6 +230,7 @@ watch(() => props.projectSlug, loadNearby)
   padding: 12px 14px;
   text-decoration: none;
   transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  height: 100%;
 }
 
 .nearby-item:hover {
@@ -261,7 +262,8 @@ watch(() => props.projectSlug, loadNearby)
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-top: 2px;
+  margin-top: auto;
+  padding-top: 8px;
 }
 
 .nearby-chip {
