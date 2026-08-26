@@ -22,7 +22,6 @@ export interface NearbyPlace {
   lat: number;
   lng: number;
   category: string;
-  photoUrl: string | null;
 }
 
 export interface DistanceResult {
@@ -205,7 +204,7 @@ export class GoogleMapsService {
               'Content-Type': 'application/json',
               'X-Goog-Api-Key': this.apiKey,
               'X-Goog-FieldMask':
-                'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress,places.location,places.primaryType,places.types,places.photos'
+                'places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress,places.location,places.primaryType,places.types'
             }
           }
         );
@@ -261,9 +260,7 @@ export class GoogleMapsService {
           lat: p.location?.latitude ?? 0,
           lng: p.location?.longitude ?? 0,
           category,
-          photoUrl: p.photos?.[0]?.name
-            ? `https://places.googleapis.com/v1/${p.photos[0].name}/media?maxWidthPx=400&key=${this.apiKey}`
-            : null
+          photoUrl: null
         }));
       } catch (err: any) {
         if (

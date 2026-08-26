@@ -17,40 +17,26 @@
             <h3 class="nearby-category-title">{{ group.categoryLabel }}</h3>
           </div>
 
-          <div class="nearby-cards">
+          <div class="nearby-items">
             <a
               v-for="item in group.items"
               :key="item.name"
               :href="item.routeUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="nearby-card"
+              class="nearby-item"
               :title="`Ver rota para ${item.name}`"
             >
-              <div class="nearby-card-photo" :class="{ 'has-photo': !!item.photoUrl }">
-                <img
-                  v-if="item.photoUrl"
-                  :src="item.photoUrl"
-                  :alt="item.name"
-                  loading="lazy"
-                  @error="($event.target as HTMLImageElement).parentElement!.classList.remove('has-photo')"
-                />
-                <span v-else class="nearby-card-photo-fallback">
-                  <i :class="['bi', categoryIcon(group.category)]" aria-hidden="true"></i>
+              <span class="nearby-item-name">{{ item.name }}</span>
+              <span class="nearby-item-distance">{{ item.distanceLabel }}</span>
+              <span class="nearby-item-meta">
+                <span v-if="item.drivingLabel" class="nearby-chip">
+                  <i class="bi bi-car-front-fill" aria-hidden="true"></i> {{ item.drivingLabel }}
                 </span>
-              </div>
-              <div class="nearby-card-body">
-                <span class="nearby-card-name">{{ item.name }}</span>
-                <span class="nearby-card-distance">{{ item.distanceLabel }}</span>
-                <span class="nearby-card-meta">
-                  <span v-if="item.drivingLabel" class="nearby-chip">
-                    <i class="bi bi-car-front-fill" aria-hidden="true"></i> {{ item.drivingLabel }}
-                  </span>
-                  <span v-if="item.walkingLabel" class="nearby-chip">
-                    <i class="bi bi-person-walking" aria-hidden="true"></i> {{ item.walkingLabel }}
-                  </span>
+                <span v-if="item.walkingLabel" class="nearby-chip">
+                  <i class="bi bi-person-walking" aria-hidden="true"></i> {{ item.walkingLabel }}
                 </span>
-              </div>
+              </span>
             </a>
           </div>
         </div>
@@ -89,7 +75,6 @@ interface NearbyItem {
   walkingLabel: string | null
   shortAddress: string | null
   routeUrl: string
-  photoUrl: string | null
 }
 
 interface NearbyResponse {
@@ -224,69 +209,36 @@ watch(() => props.projectSlug, loadNearby)
 }
 
 /* ========================================
-   Cards grid — mobile first (2 cols)
+   Items grid — mobile first (2 cols)
    ======================================== */
-.nearby-cards {
+.nearby-items {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 /* ========================================
-   Individual card
+   Individual item
    ======================================== */
-.nearby-card {
+.nearby-item {
   display: flex;
   flex-direction: column;
+  gap: 3px;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 14px;
-  overflow: hidden;
+  border-radius: 12px;
+  padding: 12px 14px;
   text-decoration: none;
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
-.nearby-card:hover {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
-  transform: translateY(-3px);
+.nearby-item:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
-/* ========================================
-   Card photo
-   ======================================== */
-.nearby-card-photo {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  background: var(--v4-bg-alt, #f5f5f7);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nearby-card-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.nearby-card-photo-fallback {
-  font-size: 1.6rem;
-  color: rgba(0, 0, 0, 0.12);
-}
-
-/* ========================================
-   Card body
-   ======================================== */
-.nearby-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px 14px;
-}
-
-.nearby-card-name {
+.nearby-item-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--v4-text, #1d1d1f);
@@ -297,15 +249,15 @@ watch(() => props.projectSlug, loadNearby)
   overflow: hidden;
 }
 
-.nearby-card-distance {
-  font-size: 18px;
+.nearby-item-distance {
+  font-size: 17px;
   font-weight: 700;
   color: var(--v4-text, #1d1d1f);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
-.nearby-card-meta {
+.nearby-item-meta {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -329,7 +281,7 @@ watch(() => props.projectSlug, loadNearby)
 }
 
 /* ========================================
-   Tablet (≥ 640px) — 3 cols
+   Tablet (≥ 640px) — 4 cols
    ======================================== */
 @media (min-width: 640px) {
   .v4-container {
@@ -348,22 +300,26 @@ watch(() => props.projectSlug, loadNearby)
     margin-bottom: 48px;
   }
 
-  .nearby-cards {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+  .nearby-items {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
   }
 
-  .nearby-card-body {
-    padding: 14px 16px 16px;
+  .nearby-item {
+    padding: 14px 16px;
   }
 
-  .nearby-card-name {
+  .nearby-item-name {
     font-size: 14px;
+  }
+
+  .nearby-item-distance {
+    font-size: 18px;
   }
 }
 
 /* ========================================
-   Desktop (≥ 960px) — 5 cols (all visible)
+   Desktop (≥ 960px) — 6 cols
    ======================================== */
 @media (min-width: 960px) {
   .v4-section-title {
@@ -382,9 +338,9 @@ watch(() => props.projectSlug, loadNearby)
     gap: 40px;
   }
 
-  .nearby-cards {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
+  .nearby-items {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
   }
 }
 
