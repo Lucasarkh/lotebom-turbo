@@ -209,10 +209,10 @@ export const buildConstructionOverlay = (input: ConstructionInput) => {
     })
   }
 
-  addSetbackGuides({ three, group, bounds, footprint, colors: c, label, slopeYAt })
+  const setbackGroup = addSetbackGuides({ three, group, bounds, footprint, colors: c, label, slopeYAt })
   addViela({ three, group, bounds, params: bp, colors: c, label, lotWidth, lotDepth, slopeYAt })
 
-  return { group, occupied, excavation }
+  return { group, occupied, excavation, setbackGroup }
 }
 
 type SetbackInput = {
@@ -225,8 +225,14 @@ type SetbackInput = {
   slopeYAt: (z: number) => number
 }
 
-/** Linhas tracejadas dos recuos, com a medida escrita sobre a faixa. */
+/**
+ * Linhas tracejadas dos recuos, com a medida escrita sobre a faixa. Vao para um
+ * subgrupo proprio porque pertencem a camada de medidas: desligar "Medidas"
+ * precisa apagar recuo junto com cota.
+ */
 const addSetbackGuides = ({ three, group, bounds, footprint, colors: c, label, slopeYAt }: SetbackInput) => {
+  const setbackGroup = new three.Group()
+  group.add(setbackGroup)
   const lift = 0.1
   const addLine = (points: import('three').Vector3[]) => {
     const material = new three.LineDashedMaterial({
@@ -239,7 +245,7 @@ const addSetbackGuides = ({ three, group, bounds, footprint, colors: c, label, s
     const line = new three.Line(new three.BufferGeometry().setFromPoints(points), material)
     line.computeLineDistances()
     line.renderOrder = 15
-    group.add(line)
+    setbackGroup.add(line)
   }
 
   const left = bounds.minX + footprint.side
@@ -256,7 +262,7 @@ const addSetbackGuides = ({ three, group, bounds, footprint, colors: c, label, s
     addLine(line)
     const setbackLabel = label(text, 'setback')
     setbackLabel.position.copy(labelPosition)
-    group.add(setbackLabel)
+    setbackGroup.add(setbackLabel)
   }
 
   if (footprint.front > 0) {
@@ -284,6 +290,8 @@ const addSetbackGuides = ({ three, group, bounds, footprint, colors: c, label, s
     )
     addLine([new three.Vector3(right, slopeYAt(front) + lift, front), new three.Vector3(right, slopeYAt(back) + lift, back)])
   }
+
+  return setbackGroup
 }
 
 type VielaInput = {

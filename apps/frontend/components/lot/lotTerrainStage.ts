@@ -63,6 +63,14 @@ export const createStage = ({ three, orbitControls, css2d, host, colors: c }: St
   controls.rotateSpeed = 0.75
   controls.zoomSpeed = 0.8
 
+  // O OrbitControls trava touch-action: none no canvas, o que sequestra a rolagem
+  // da pagina no celular — com o canvas ocupando a largura toda, nao sobraria por
+  // onde rolar. Em ponteiro grosso devolvemos o eixo vertical ao navegador: o
+  // arraste horizontal ainda gira o modelo e dois dedos continuam aproximando.
+  if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
+    renderer.domElement.style.touchAction = 'pan-y'
+  }
+
   const hemisphereLight = new three.HemisphereLight(
     new three.Color(c.skyLight),
     new three.Color(c.groundLight),

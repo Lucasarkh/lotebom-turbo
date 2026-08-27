@@ -144,6 +144,37 @@ export class LotsController {
     return this.lotsService.removeCategoryImage(tenantId, projectId, categoryId);
   }
 
+  @Post('categories/:categoryId/banner')
+  @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Upload do banner de topo da categoria' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } }
+    }
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  uploadCategoryBanner(
+    @TenantId() tenantId: string,
+    @Param('projectId') projectId: string,
+    @Param('categoryId') categoryId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.lotsService.uploadCategoryBanner(tenantId, projectId, categoryId, file);
+  }
+
+  @Delete('categories/:categoryId/banner')
+  @Roles('LOTEADORA', 'SYSADMIN')
+  @ApiOperation({ summary: 'Remover banner de topo da categoria' })
+  removeCategoryBanner(
+    @TenantId() tenantId: string,
+    @Param('projectId') projectId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    return this.lotsService.removeCategoryBanner(tenantId, projectId, categoryId);
+  }
+
   @Get(':mapElementId')
   @Roles('LOTEADORA', 'CORRETOR', 'SYSADMIN')
   @ApiOperation({ summary: 'Buscar detalhes do lote' })

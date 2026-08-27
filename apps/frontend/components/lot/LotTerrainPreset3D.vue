@@ -12,8 +12,35 @@
       </button>
     </div>
 
-    <div class="lot-terrain-3d__viewport">
-      <div ref="canvasHost" class="lot-terrain-3d__canvas"></div>
+    <!-- Palco: no desktop os controles flutuam sobre o modelo; no mobile eles
+         descem para o fluxo, abaixo do canvas, em vez de disputar a mesma área. -->
+    <div class="lot-terrain-3d__stage" @pointerdown="dismissHint" @wheel.passive="dismissHint">
+      <div class="lot-terrain-3d__viewport">
+        <div ref="canvasHost" class="lot-terrain-3d__canvas"></div>
+
+        <div
+          v-if="!isSceneReady && !sceneError"
+          class="lot-terrain-3d__overlay lot-terrain-3d__overlay--loading"
+          role="status"
+          aria-live="polite"
+        >
+          Preparando visualização 3D…
+        </div>
+
+        <div
+          v-else-if="sceneError"
+          class="lot-terrain-3d__overlay lot-terrain-3d__overlay--error"
+          role="alert"
+        >
+          {{ sceneError }}
+        </div>
+
+        <Transition name="lot3d-hint">
+          <p v-if="showHint" class="lot-terrain-3d__hint">
+            {{ hintText }}
+          </p>
+        </Transition>
+      </div>
 
       <div class="lot-terrain-3d__controls" role="group" aria-label="Camadas do modelo">
         <button
@@ -27,23 +54,6 @@
         >
           {{ control.label }}
         </button>
-      </div>
-
-      <div
-        v-if="!isSceneReady && !sceneError"
-        class="lot-terrain-3d__overlay lot-terrain-3d__overlay--loading"
-        role="status"
-        aria-live="polite"
-      >
-        Preparando visualização 3D…
-      </div>
-
-      <div
-        v-else-if="sceneError"
-        class="lot-terrain-3d__overlay lot-terrain-3d__overlay--error"
-        role="alert"
-      >
-        {{ sceneError }}
       </div>
 
       <div v-if="hasSolarGuide && showSolarOverlay" class="lot-terrain-3d__sun">
@@ -63,8 +73,6 @@
           <span class="lot-terrain-3d__sun-end">Poente</span>
         </div>
       </div>
-
-      <div class="lot-terrain-3d__hint">Arraste para orbitar · role para aproximar</div>
     </div>
 
     <LotTerrainMetrics
@@ -114,6 +122,27 @@ const {
 // com o nascente à esquerda. Sem hora: o modelo mostra o percurso, não o relógio —
 // a hora real depende de latitude e época do ano, que o simulador não conhece.
 const sunPathT = computed(() => 1 - sunSlider.value)
+
+// A dica de interação é instrução de primeira vez, não elemento fixo: some ao
+// primeiro toque no modelo (ou sozinha, em alguns segundos). Enquanto ficava
+// permanente, cobria o controle de sol no mobile.
+const showHint = ref(true)
+const isCoarsePointer = ref(false)
+let hintTimer: ReturnType<typeof setTimeout> | null = null
+
+const hintText = computed(() =>
+  isCoarsePointer.value
+    ? 'Arraste para girar · pinça para aproximar'
+    : 'Arraste para orbitar · role para aproximar',
+)
+
+const dismissHint = () => {
+  if (hintTimer) {
+    clearTimeout(hintTimer)
+    hintTimer = null
+  }
+  showHint.value = false
+}
 
 const sunPositionLabel = computed(() => {
   if (sunSlider.value < 0.34) return 'Próximo ao nascente'
@@ -175,6 +204,9 @@ let visibilityObserver: IntersectionObserver | null = null
 let hasInitialized = false
 
 onMounted(() => {
+  isCoarsePointer.value = window.matchMedia('(hover: none)').matches
+  hintTimer = setTimeout(dismissHint, 7000)
+
   if (!root.value || typeof IntersectionObserver === 'undefined') {
     hasInitialized = true
     initScene()
@@ -195,6 +227,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (hintTimer) clearTimeout(hintTimer)
   visibilityObserver?.disconnect()
   destroyScene()
 })
@@ -251,6 +284,12 @@ onUnmounted(() => {
   padding: 10px 16px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* O palco guarda o canvas e os controles. No desktop os controles flutuam
+   sobre o modelo; no mobile viram linhas no fluxo, logo abaixo dele. */
+.lot-terrain-3d__stage {
+  position: relative;
 }
 
 .lot-terrain-3d__viewport {
@@ -447,6 +486,7 @@ onUnmounted(() => {
   left: 18px;
   bottom: 16px;
   z-index: 3;
+  margin: 0;
   padding: 8px 12px;
   border-radius: 999px;
   background: rgba(75, 45, 24, 0.78);
@@ -454,6 +494,16 @@ onUnmounted(() => {
   font-size: 0.8rem;
   letter-spacing: 0.02em;
   pointer-events: none;
+}
+
+.lot3d-hint-enter-active,
+.lot3d-hint-leave-active {
+  transition: opacity 260ms ease;
+}
+
+.lot3d-hint-enter-from,
+.lot3d-hint-leave-to {
+  opacity: 0;
 }
 
 .lot-terrain-3d__footnote {
@@ -479,26 +529,87 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 640px) {
+/* Mobile: uma moldura só. O card continua sendo o card, mas o canvas encosta
+   nas bordas dele e os controles saem de cima do modelo — em vez de padding
+   dentro de padding espremendo a visualização. */
+@media (max-width: 768px) {
   .lot-terrain-3d {
-    padding: 18px;
+    padding: 16px;
     border-radius: 22px;
+    gap: 14px;
   }
 
   .lot-terrain-3d__header {
-    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
 
   .lot-terrain-3d__reset {
-    align-self: flex-start;
+    flex: 0 0 auto;
+    padding: 9px 14px;
+    font-size: 0.8rem;
+  }
+
+  .lot-terrain-3d__stage {
+    display: grid;
+    gap: 12px;
   }
 
   .lot-terrain-3d__viewport {
-    height: clamp(280px, 78vw, 360px);
+    margin-inline: -16px;
+    height: min(62vh, 420px);
+    min-height: 300px;
+    border-radius: 0;
+    border-inline: 0;
+  }
+
+  .lot-terrain-3d__controls {
+    position: static;
+    max-width: none;
+    flex-wrap: wrap;
+    gap: 4px;
+    overflow-x: visible;
+    /* Empilhado em duas linhas, o raio de pilula deixa de fazer sentido. */
+    border-radius: 18px;
+    box-shadow: none;
+    background: rgba(255, 252, 245, 0.7);
+  }
+
+  .lot-terrain-3d__control-chip {
+    flex: 1 1 auto;
+    padding: 9px 12px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .lot-terrain-3d__sun {
+    position: static;
+    gap: 8px;
+    padding: 12px 14px;
+    box-shadow: none;
+  }
+
+  .lot-terrain-3d__sun-track {
+    gap: 10px;
+  }
+
+  .lot-terrain-3d__sun-range {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    height: 26px;
   }
 
   .lot-terrain-3d__hint {
-    font-size: 0.72rem;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    font-size: 0.74rem;
+    text-align: center;
+  }
+
+  .lot-terrain-3d__footnote {
+    font-size: 0.7rem;
   }
 }
 </style>

@@ -68,6 +68,31 @@
         </button>
       </div>
 
+      <!-- Descrição do beacon informativo. Fica dentro do container do viewer
+           para continuar visível quando o panorama está em tela cheia. -->
+      <Transition name="panorama-info">
+        <aside
+          v-if="activeInfoBeacon"
+          class="panorama-info-card"
+          role="dialog"
+          aria-live="polite"
+          :aria-label="activeInfoBeacon.title"
+        >
+          <div class="panorama-info-card__head">
+            <span class="panorama-info-card__title">{{ activeInfoBeacon.title }}</span>
+            <button
+              type="button"
+              class="panorama-info-card__close"
+              aria-label="Fechar descrição"
+              @click="closeBeaconInfo"
+            >
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+          <p class="panorama-info-card__text">{{ activeInfoBeacon.description }}</p>
+        </aside>
+      </Transition>
+
       <!-- Bottom center: timeline (only for main panorama) -->
       <div v-if="!isNavigating && panorama.snapshots.length > 1" class="panorama-bottom-center">
         <PanoramaTimeline
@@ -348,6 +373,14 @@ function createBeaconTooltip(div: HTMLElement, b: PanoramaBeacon) {
   text.innerText = b.title
   label.appendChild(text)
 
+  // Sinal de que há descrição para abrir — sem ele, o clique parece não fazer nada.
+  if (!isNav && props.showBeaconInfo && b.description?.trim()) {
+    const icon = document.createElement('i')
+    icon.className = 'bi bi-info-circle beacon-info-icon'
+    icon.setAttribute('aria-hidden', 'true')
+    label.appendChild(icon)
+  }
+
   div.appendChild(stem)
   div.appendChild(label)
 }
@@ -464,6 +497,13 @@ function handleLotCta() {
   emit('lotCta', entry.lotId ?? '', lotCode)
 }
 
+// Beacon sem link é informativo: o clique abre a descrição cadastrada.
+const activeInfoBeacon = ref<PanoramaBeacon | null>(null)
+
+function closeBeaconInfo() {
+  activeInfoBeacon.value = null
+}
+
 function handleBeaconClick(beacon: PanoramaBeacon) {
   const fresh = props.panorama.beacons.find(b => b.id === beacon.id) ?? beacon
 
@@ -497,7 +537,12 @@ function handleBeaconClick(beacon: PanoramaBeacon) {
     return
   }
 
-  // Info-only beacon — emit for parent (e.g. show detail panel)
+  // Info-only beacon — abre o cartão aqui e avisa o pai. Clicar no mesmo beacon
+  // fecha; sem descrição cadastrada não há o que abrir.
+  if (props.showBeaconInfo && fresh.description?.trim()) {
+    activeInfoBeacon.value = activeInfoBeacon.value?.id === fresh.id ? null : fresh
+  }
+
   emit('beaconClick', fresh)
 }
 
@@ -566,12 +611,20 @@ watch(() => props.activeSnapshotId, (newId) => {
   else activeSnapshot.value = null
 })
 
+// Trocar de cena ou de data descarta a descrição aberta: ela pertence à vista
+// em que o beacon foi clicado.
+watch([activeSnapshot, () => navStack.value.length], closeBeaconInfo)
+
 // Re-init when snapshot changes
 watch([activeSnapshot, () => props.panorama.projection, () => props.panorama.beacons.length, () => props.editable], () => {
   if (props.panorama.projection === 'EQUIRECTANGULAR') {
     setTimeout(initPannellum, 300)
   }
 })
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') closeBeaconInfo()
+}
 
 onMounted(() => {
   window.addEventListener('mousemove', onPanMove)
@@ -581,6 +634,7 @@ onMounted(() => {
   document.addEventListener('fullscreenchange', () => { isFullscreen.value = !!document.fullscreenElement; setTimeout(requestViewerResize, 100) })
   window.addEventListener('resize', requestViewerResize)
   window.addEventListener('orientationchange', requestViewerResize)
+  window.addEventListener('keydown', onKeydown)
 
   if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
     resizeObserver = new ResizeObserver(() => requestViewerResize())
@@ -596,6 +650,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('mouseup', onPanEnd)
   window.removeEventListener('touchmove', onTouchMove)
   window.removeEventListener('touchend', onTouchEnd)
+  window.removeEventListener('keydown', onKeydown)
   resizeObserver?.disconnect(); resizeObserver = null
   if (resizeRaf !== null) { window.cancelAnimationFrame(resizeRaf); resizeRaf = null }
   if (pviewer) { try { pviewer.destroy() } catch {} }
@@ -704,6 +759,8 @@ defineExpose({ navigateToScene, navigateBack, navStack })
 .beacon-style--highlight .beacon-label { background: rgba(120, 53, 15, 0.92); border-color: rgba(251, 191, 36, 0.35); color: #fef3c7; }
 .beacon-style--subtle .beacon-label { background: rgba(255,255,255,0.7); color: #1e293b; border-color: rgba(255,255,255,0.4); }
 .beacon-style--subtle .beacon-stem { background: rgba(255,255,255,0.5); }
+
+.beacon-info-icon { margin-left: 7px; font-size: 0.78em; opacity: 0.75; }
 </style>
 
 <style scoped>
@@ -756,6 +813,67 @@ defineExpose({ navigateToScene, navigateBack, navStack })
 
 .panorama-bottom-center { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); }
 .panorama-bottom-right { position: absolute; bottom: 16px; right: 16px; }
+
+/* ─── Descrição do beacon informativo ─── */
+
+.panorama-info-card {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 60;
+  width: min(340px, calc(100% - 32px));
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(8, 19, 38, 0.92);
+  color: #f8fafc;
+  box-shadow: 0 12px 32px rgba(2, 8, 20, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.panorama-info-card__head { display: flex; align-items: flex-start; gap: 12px; }
+
+.panorama-info-card__title { flex: 1; font-size: 0.95rem; font-weight: 700; line-height: 1.25; }
+
+.panorama-info-card__close {
+  flex: 0 0 auto;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.panorama-info-card__close:hover { background: rgba(255, 255, 255, 0.22); }
+
+.panorama-info-card__text {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(248, 250, 252, 0.86);
+  white-space: pre-line;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.panorama-info-enter-active,
+.panorama-info-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+
+.panorama-info-enter-from,
+.panorama-info-leave-to { opacity: 0; transform: translateY(8px); }
+
+/* No mobile o cartão ocupa a largura e sobe para nao cobrir a linha do tempo. */
+@media (max-width: 640px) {
+  .panorama-info-card {
+    left: 12px;
+    right: 12px;
+    bottom: 76px;
+    width: auto;
+  }
+}
 
 .panorama-cta-btn {
   display: inline-flex; align-items: center; gap: 8px;

@@ -1287,6 +1287,8 @@ export class ProjectsService {
       name: category.name,
       slug: category.slug,
       imageUrl: this.toPublicAssetUrlSync(category.imageUrl),
+      bannerUrl: this.toPublicAssetUrlSync(category.bannerUrl),
+      bannerPosition: category.bannerPosition || '50% 50%',
       description: category.description || null,
       availableLots: category.lots.length,
       teaserLots: category.lots.slice(0, 3).map((lot) => String(lot.mapElement?.code || lot.mapElement?.name || lot.id)),

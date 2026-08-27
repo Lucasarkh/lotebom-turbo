@@ -169,7 +169,21 @@
                   </div>
                 </div>
               </section>
-              
+
+              <!-- Simulação 3D do lote — logo após o topo, antes da galeria -->
+              <section
+                v-if="showTerrainPreset3d"
+                id="simulacao-3d"
+                class="section-v4 terrain-preset-v4"
+              >
+                <LotTerrainPreset3D
+                  :details="details"
+                  :lot-label="details?.lotNumber || lot?.code || lot?.name"
+                  :lot-data="terrainLotData"
+                  :sun-path-angle-deg="terrainSunPathAngleDeg"
+                />
+              </section>
+
               <!-- Gallery -->
               <section
                 v-if="galleryMedias.length"
@@ -268,18 +282,6 @@
                 <div class="section-title-v4">
                   <h2>Ficha Técnica Detalhada</h2>
                   <div class="title-line"></div>
-                </div>
-
-                <div
-                  v-if="showTerrainPreset3d"
-                  class="terrain-preset-v4"
-                >
-                  <LotTerrainPreset3D
-                    :details="details"
-                    :lot-label="details?.lotNumber || lot?.code || lot?.name"
-                    :lot-data="terrainLotData"
-                    :sun-path-angle-deg="terrainSunPathAngleDeg"
-                  />
                 </div>
 
                 <div class="specs-grid-v4">
@@ -2422,6 +2424,8 @@
     Boolean(details.value?.paymentConditions),
   );
 
+  // A ordem aqui espelha a ordem dos blocos no template — o menu segue a pagina,
+  // nao o contrario. Ao mover uma secao, mover a entrada correspondente junto.
   const sectionNavItems = computed(() => {
     const items = [
       {
@@ -2433,20 +2437,12 @@
         visible: true,
       },
       {
-        id: "ficha",
-        href: "#ficha",
-        title: "Ficha Técnica Detalhada",
-        shortLabel: "Ficha",
-        mobileLabel: "Ficha",
-        visible: hasTechnicalSheet.value,
-      },
-      {
-        id: "localizacao",
-        href: "#localizacao",
-        title: "Localização no Loteamento",
-        shortLabel: "Planta",
-        mobileLabel: "Mapa",
-        visible: Boolean(lotPlantMap.value),
+        id: "simulacao-3d",
+        href: "#simulacao-3d",
+        title: "Simulação 3D do lote",
+        shortLabel: "3D",
+        mobileLabel: "3D",
+        visible: showTerrainPreset3d.value,
       },
       {
         id: "galeria",
@@ -2463,6 +2459,22 @@
         shortLabel: "360°",
         mobileLabel: "360°",
         visible: Boolean(lotPanorama.value),
+      },
+      {
+        id: "ficha",
+        href: "#ficha",
+        title: "Ficha Técnica Detalhada",
+        shortLabel: "Ficha",
+        mobileLabel: "Ficha",
+        visible: hasTechnicalSheet.value,
+      },
+      {
+        id: "localizacao",
+        href: "#localizacao",
+        title: "Localização no Loteamento",
+        shortLabel: "Planta",
+        mobileLabel: "Mapa",
+        visible: Boolean(lotPlantMap.value),
       },
       {
         id: "simulador",
@@ -4404,7 +4416,7 @@
     transform: scale(1.05);
   }
 
-  /* Specs Grid V4 */
+  /* Simulação 3D — o card já traz o próprio título, dispensa cabeçalho de seção */
   .terrain-preset-v4 {
     margin-bottom: 24px;
   }
@@ -5526,6 +5538,17 @@
     .section-v4 {
       padding: 20px;
       border-radius: 20px;
+    }
+
+    /* O simulador 3D já chega como card fechado. No mobile ele deixa de morar
+       dentro de outro card — senão o padding do container externo soma com o
+       dele e sobra pouca largura para o modelo. */
+    .terrain-preset-v4 {
+      padding: 0;
+      background: none;
+      border: 0;
+      border-radius: 0;
+      margin-inline: -8px;
     }
     .hero-header-row {
       flex-direction: column;

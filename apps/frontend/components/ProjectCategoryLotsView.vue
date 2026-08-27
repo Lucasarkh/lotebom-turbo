@@ -40,7 +40,11 @@
           </div>
 
           <template v-else-if="category">
-            <div class="v4-category-hero-card">
+            <div
+              class="v4-category-hero-card"
+              :class="{ 'has-banner': !!categoryBannerUrl }"
+              :style="heroBannerStyle"
+            >
               <div class="v4-category-hero-copy">
                 <span class="v4-category-kicker">Categoria selecionada</span>
                 <h1>{{ category.name }}</h1>
@@ -169,6 +173,8 @@ type PublicCategory = {
   slug: string
   description?: string | null
   imageUrl?: string | null
+  bannerUrl?: string | null
+  bannerPosition?: string | null
   availableLots: number
   teaserLots: string[]
 }
@@ -214,6 +220,25 @@ const unitsUrl = computed(() => {
 })
 const brokerPrimaryHref = computed(() => `${projectUrl.value}#contato`)
 const category = computed(() => categories.value.find(item => item.slug === categorySlug.value) || null)
+
+const categoryBannerUrl = computed(() => String(category.value?.bannerUrl || '').trim())
+
+// Ponto de foco definido no painel. Formato "X% Y%"; sem valor, centraliza.
+const categoryBannerPosition = computed(() => {
+  const raw = String(category.value?.bannerPosition || '').trim()
+  return /^\d{1,3}% \d{1,3}%$/.test(raw) ? raw : '50% 50%'
+})
+
+// A imagem entra por variavel: o escurecimento fica no CSS, sempre por cima dela,
+// para o texto nao depender de quao clara a foto enviada e.
+const heroBannerStyle = computed(() => (
+  categoryBannerUrl.value
+    ? {
+        '--category-banner': `url("${encodeURI(categoryBannerUrl.value)}")`,
+        '--category-banner-position': categoryBannerPosition.value,
+      }
+    : {}
+))
 const totalPages = computed(() => Math.ceil(lotsTotal.value / lotsPerPage))
 const paginationMeta = computed(() => ({
   totalItems: lotsTotal.value,
@@ -397,6 +422,129 @@ watch(() => route.query.page, async (nextPage) => {
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.04);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+}
+
+/* ─── Banner de topo da categoria ───────────────────────
+   A foto precisa aparecer: nada de veu pesado no card inteiro. O escurecimento
+   e local — forte atras da coluna de texto e some antes da metade, e o contador
+   ganha um painel proprio. Assim o contraste nao depende da foto e o resto da
+   imagem fica limpo. */
+.v4-category-hero-card.has-banner {
+  position: relative;
+  background-color: #0b1220;
+  background-image:
+    linear-gradient(180deg, rgba(6, 12, 24, 0.2), rgba(6, 12, 24, 0.3)),
+    var(--category-banner);
+  background-size: cover, cover;
+  background-position: center, var(--category-banner-position, 50% 50%);
+  background-repeat: no-repeat;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 48px rgba(2, 8, 20, 0.18);
+}
+
+/* Sombra que protege so a coluna de texto. */
+.v4-category-hero-card.has-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    95deg,
+    rgba(6, 12, 24, 0.92) 0%,
+    rgba(6, 12, 24, 0.84) 26%,
+    rgba(6, 12, 24, 0.5) 46%,
+    rgba(6, 12, 24, 0.12) 62%,
+    rgba(6, 12, 24, 0) 74%
+  );
+  pointer-events: none;
+}
+
+.v4-category-hero-card.has-banner .v4-category-hero-copy,
+.v4-category-hero-card.has-banner .v4-category-hero-side {
+  position: relative;
+  z-index: 1;
+}
+
+.v4-category-hero-card.has-banner .v4-category-kicker {
+  color: #93c5fd;
+}
+
+.v4-category-hero-card.has-banner .v4-category-hero-copy h1 {
+  color: #fff;
+  text-shadow: 0 1px 14px rgba(2, 8, 20, 0.55);
+}
+
+.v4-category-hero-card.has-banner .v4-category-hero-copy p {
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 10px rgba(2, 8, 20, 0.5);
+}
+
+/* Botao secundario claro sobre foto: inverte em vez de virar fantasma. */
+.v4-category-hero-card.has-banner .v4-category-btn--ghost {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+}
+
+.v4-category-hero-card.has-banner .v4-category-btn--ghost:hover {
+  background: #fff;
+}
+
+/* O contador fica na parte limpa da foto, entao carrega o proprio fundo. */
+.v4-category-hero-card.has-banner .v4-category-hero-side {
+  border-color: transparent;
+}
+
+.v4-category-hero-card.has-banner .v4-category-badge-box {
+  padding: 16px 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(6, 12, 24, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.v4-category-hero-card.has-banner .v4-category-badge-box strong {
+  color: #fff;
+}
+
+.v4-category-hero-card.has-banner .v4-category-badge-box span {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.v4-category-kicker {
+  color: #93c5fd;
+}
+
+.v4-category-hero-card.has-banner .v4-category-hero-copy h1 {
+  color: #fff;
+  text-shadow: 0 1px 14px rgba(2, 8, 20, 0.5);
+}
+
+.v4-category-hero-card.has-banner .v4-category-hero-copy p {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 10px rgba(2, 8, 20, 0.45);
+}
+
+/* Botao secundario claro sobre fundo escuro: inverte em vez de virar fantasma. */
+.v4-category-hero-card.has-banner .v4-category-btn--ghost {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+}
+
+.v4-category-hero-card.has-banner .v4-category-btn--ghost:hover {
+  background: #fff;
+}
+
+.v4-category-hero-card.has-banner .v4-category-hero-side {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.v4-category-hero-card.has-banner .v4-category-badge-box strong {
+  color: #fff;
+  text-shadow: 0 1px 14px rgba(2, 8, 20, 0.5);
+}
+
+.v4-category-hero-card.has-banner .v4-category-badge-box span {
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .v4-category-kicker {
@@ -811,6 +959,19 @@ watch(() => route.query.page, async (nextPage) => {
     font-size: 3rem;
   }
 
+  /* Com banner, o texto fica dentro da faixa protegida: titulo longo quebra
+     linha em vez de invadir a parte clara da foto. */
+  .v4-category-hero-card.has-banner .v4-category-hero-copy {
+    max-width: 56%;
+  }
+
+  /* Proporcao fixa em tela larga: e o que torna o preview do painel fiel ao
+     recorte real. Descricao muito longa ainda pode esticar o card. */
+  .v4-category-hero-card.has-banner {
+    aspect-ratio: 4.4 / 1;
+    align-items: center;
+  }
+
   .v4-category-results-head {
     margin-bottom: 48px;
     padding-bottom: 24px;
@@ -835,6 +996,19 @@ watch(() => route.query.page, async (nextPage) => {
 @media (min-width: 1400px) {
   .v4-lots-grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  /* Empilhado, o texto cobre a largura toda: a sombra lateral nao protege mais e
+     da lugar a uma vertical, ainda leve o bastante para a foto aparecer. */
+  .v4-category-hero-card.has-banner::before {
+    background: linear-gradient(
+      180deg,
+      rgba(6, 12, 24, 0.86) 0%,
+      rgba(6, 12, 24, 0.72) 55%,
+      rgba(6, 12, 24, 0.6) 100%
+    );
   }
 }
 

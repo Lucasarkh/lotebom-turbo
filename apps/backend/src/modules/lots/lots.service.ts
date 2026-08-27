@@ -86,6 +86,8 @@ export class LotsService {
         name: category.name,
         slug: category.slug,
         imageUrl: this.s3.resolvePublicAssetUrl(category.imageUrl) || category.imageUrl || null,
+        bannerUrl: this.s3.resolvePublicAssetUrl(category.bannerUrl) || category.bannerUrl || null,
+        bannerPosition: category.bannerPosition || '50% 50%',
         description: category.description || null,
         sortOrder: category.sortOrder,
         totalLots: lots.length,
@@ -160,6 +162,9 @@ export class LotsService {
         ...(dto.description !== undefined
           ? { description: this.normalizeMediaUrl(dto.description) }
           : {}),
+        ...(dto.bannerPosition !== undefined
+          ? { bannerPosition: dto.bannerPosition || '50% 50%' }
+          : {}),
       },
     });
 
@@ -233,6 +238,64 @@ export class LotsService {
     await this.prisma.lotCategory.update({
       where: { id: categoryId },
       data: { imageUrl: null },
+    });
+
+    return this.listCategories(tenantId, projectId);
+  }
+
+  async uploadCategoryBanner(
+    tenantId: string,
+    projectId: string,
+    categoryId: string,
+    file: Express.Multer.File,
+  ) {
+    const project = await this.ensureProjectBelongsToTenant(tenantId, projectId);
+    this.ensureProjectEditable(project);
+
+    const category = await this.prisma.lotCategory.findFirst({
+      where: { id: categoryId, tenantId, projectId },
+      select: { id: true, bannerUrl: true },
+    });
+    if (!category) throw new NotFoundException('Categoria não encontrada.');
+
+    const key = this.s3.buildKey(
+      tenantId,
+      `projects/${projectId}/lot-categories/${categoryId}/banner`,
+      file.originalname,
+    );
+    const uploadedUrl = await this.s3.upload(file.buffer, key, file.mimetype);
+
+    const previousKey = this.s3.keyFromUrl(category.bannerUrl || '');
+    if (previousKey) {
+      await this.s3.delete(previousKey).catch(() => {});
+    }
+
+    await this.prisma.lotCategory.update({
+      where: { id: categoryId },
+      data: { bannerUrl: uploadedUrl },
+    });
+
+    return this.listCategories(tenantId, projectId);
+  }
+
+  async removeCategoryBanner(tenantId: string, projectId: string, categoryId: string) {
+    const project = await this.ensureProjectBelongsToTenant(tenantId, projectId);
+    this.ensureProjectEditable(project);
+
+    const category = await this.prisma.lotCategory.findFirst({
+      where: { id: categoryId, tenantId, projectId },
+      select: { id: true, bannerUrl: true },
+    });
+    if (!category) throw new NotFoundException('Categoria não encontrada.');
+
+    const previousKey = this.s3.keyFromUrl(category.bannerUrl || '');
+    if (previousKey) {
+      await this.s3.delete(previousKey).catch(() => {});
+    }
+
+    await this.prisma.lotCategory.update({
+      where: { id: categoryId },
+      data: { bannerUrl: null },
     });
 
     return this.listCategories(tenantId, projectId);

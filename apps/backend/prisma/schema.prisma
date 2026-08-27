@@ -529,6 +529,8 @@ model LotCategory {
   name        String
   slug        String
   imageUrl     String?
+  bannerUrl   String?
+  bannerPosition String? @default("50% 50%")
   description String?   @db.Text
   sortOrder   Int       @default(0)
   createdAt   DateTime  @default(now())

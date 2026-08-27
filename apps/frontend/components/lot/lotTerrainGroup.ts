@@ -79,6 +79,7 @@ export const buildTerrainGroup = (ctx: LotTerrainGroupContext) => {
   const buildingActive = ctx.showBuilding && ctx.hasBuildingData
   let occupiedAreas: OccupiedArea[] = []
   let constructionGroup: import('three').Group | null = null
+  let setbackGroup: import('three').Group | null = null
   let excavation: OccupiedArea | null = null
 
   if (buildingActive) {
@@ -94,6 +95,7 @@ export const buildTerrainGroup = (ctx: LotTerrainGroupContext) => {
         label: ctx.label,
       })
       constructionGroup = construction.group
+      setbackGroup = construction.setbackGroup
       occupiedAreas = construction.occupied
       excavation = construction.excavation
     } catch (error) {
@@ -191,6 +193,9 @@ export const buildTerrainGroup = (ctx: LotTerrainGroupContext) => {
     slopeYAt,
     label: ctx.label,
   })
+  // Os recuos nascem junto da construcao, mas sao lidos como medida: passam a
+  // viver na mesma camada das cotas para ligar e desligar com ela.
+  if (setbackGroup) dimensions.add(setbackGroup)
   dimensions.visible = ctx.showMeasure
   terrainGroup.add(dimensions)
 

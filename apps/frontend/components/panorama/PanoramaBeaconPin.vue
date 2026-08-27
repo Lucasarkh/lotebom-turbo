@@ -12,6 +12,11 @@
       <span v-if="hasLink" class="beacon-link-icon" :title="linkTooltip">
         <i :class="linkIconClass" aria-hidden="true"></i>
       </span>
+      <i
+        v-else-if="hasDescription"
+        class="bi bi-info-circle beacon-info-icon"
+        aria-hidden="true"
+      ></i>
     </div>
   </div>
 </template>
@@ -39,6 +44,9 @@ const pinStyle = computed(() => ({
 }))
 
 const hasLink = computed(() => props.beacon.linkType && props.beacon.linkType !== 'NONE')
+
+// Beacon informativo com texto cadastrado: o clique abre a descrição no viewer.
+const hasDescription = computed(() => Boolean(props.beacon.description?.trim()))
 
 const linkIconClass = computed(() => {
   switch (props.beacon.linkType) {
