@@ -1287,7 +1287,10 @@
                     </div>
                   </div>
 
-                  <div class="form-header-v4">
+                  <div
+                    v-if="showLeadForm"
+                    class="form-header-v4"
+                  >
                     <h3>Tenho Interesse</h3>
                     <p>
                       Tire todas as suas dúvidas ou agende uma visita no local.
@@ -1295,7 +1298,7 @@
                   </div>
 
                   <form
-                    v-if="!leadSuccess"
+                    v-if="showLeadForm && !leadSuccess"
                     @submit.prevent="submitLead"
                     class="form-v4"
                   >
@@ -1356,7 +1359,7 @@
                   </form>
 
                   <div
-                    v-else
+                    v-else-if="showLeadForm"
                     class="form-success-v4"
                   >
                     <div class="success-animation-v4">
@@ -3480,6 +3483,10 @@
   const bookingError = ref("");
   const bookingLoading = ref(false);
   const priorityQueueSuccess = ref(false);
+
+  const showLeadForm = computed(
+    () => !(showBookingSection.value && bookingMode.value),
+  );
 
   // ── Simulator ───────────────────────────────────────────
   const simMonths = ref(120);
