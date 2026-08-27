@@ -55,13 +55,6 @@
                   <NuxtLink :to="categoriesUrl" class="v4-category-btn v4-category-btn--ghost">Outras categorias</NuxtLink>
                 </div>
               </div>
-
-              <div class="v4-category-hero-side">
-                <div class="v4-category-badge-box">
-                  <strong>{{ category.availableLots }}</strong>
-                  <span>lotes publicados</span>
-                </div>
-              </div>
             </div>
           </template>
         </div>
@@ -459,8 +452,7 @@ watch(() => route.query.page, async (nextPage) => {
   pointer-events: none;
 }
 
-.v4-category-hero-card.has-banner .v4-category-hero-copy,
-.v4-category-hero-card.has-banner .v4-category-hero-side {
+.v4-category-hero-card.has-banner .v4-category-hero-copy {
   position: relative;
   z-index: 1;
 }
@@ -489,27 +481,6 @@ watch(() => route.query.page, async (nextPage) => {
   background: #fff;
 }
 
-/* O contador fica na parte limpa da foto, entao carrega o proprio fundo. */
-.v4-category-hero-card.has-banner .v4-category-hero-side {
-  border-color: transparent;
-}
-
-.v4-category-hero-card.has-banner .v4-category-badge-box {
-  padding: 16px 22px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(6, 12, 24, 0.62);
-  backdrop-filter: blur(10px);
-}
-
-.v4-category-hero-card.has-banner .v4-category-badge-box strong {
-  color: #fff;
-}
-
-.v4-category-hero-card.has-banner .v4-category-badge-box span {
-  color: rgba(255, 255, 255, 0.85);
-}
-
 .v4-category-kicker {
   color: #93c5fd;
 }
@@ -532,19 +503,6 @@ watch(() => route.query.page, async (nextPage) => {
 
 .v4-category-hero-card.has-banner .v4-category-btn--ghost:hover {
   background: #fff;
-}
-
-.v4-category-hero-card.has-banner .v4-category-hero-side {
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-.v4-category-hero-card.has-banner .v4-category-badge-box strong {
-  color: #fff;
-  text-shadow: 0 1px 14px rgba(2, 8, 20, 0.5);
-}
-
-.v4-category-hero-card.has-banner .v4-category-badge-box span {
-  color: rgba(255, 255, 255, 0.78);
 }
 
 .v4-category-kicker {
@@ -611,37 +569,6 @@ watch(() => route.query.page, async (nextPage) => {
 
 .v4-category-btn--ghost:hover {
   background: #e8e8ed;
-}
-
-.v4-category-hero-side {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding-top: 24px;
-  border-top: 1px solid #f5f5f7;
-}
-
-.v4-category-badge-box {
-  display: flex;
-  flex-direction: column;
-}
-
-.v4-category-badge-box strong {
-  display: block;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1d1d1f;
-  line-height: 1;
-}
-
-.v4-category-badge-box span {
-  display: block;
-  margin-top: 4px;
-  color: #86868b;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
 }
 
 .v4-results-section {
@@ -944,19 +871,6 @@ watch(() => route.query.page, async (nextPage) => {
 
   .v4-category-hero-copy h1 {
     font-size: 3.5rem;
-  }
-
-  .v4-category-hero-side {
-    padding-top: 0;
-    padding-left: 64px;
-    border-top: 0;
-    border-left: 1px solid #f5f5f7;
-    min-width: 320px;
-    justify-content: center;
-  }
-
-  .v4-category-badge-box strong {
-    font-size: 3rem;
   }
 
   /* Com banner, o texto fica dentro da faixa protegida: titulo longo quebra

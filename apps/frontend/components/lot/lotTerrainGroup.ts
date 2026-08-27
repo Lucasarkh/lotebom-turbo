@@ -4,7 +4,7 @@ import { createDimensionGroup, createFrontMarker } from './lotTerrainDimensions'
 import { createGrassFringeMaterial, createTerrainMaterials } from './lotTerrainMaterials'
 import { createSidewalk } from './lotTerrainSidewalk'
 import { createSolarGuide } from './lotTerrainSolar'
-import { buildConstructionOverlay, type BuildingParams, type OccupiedArea } from './lotTerrainConstruction'
+import { buildConstructionOverlay, buildSetbackGuides, type BuildingParams, type OccupiedArea } from './lotTerrainConstruction'
 import type { TerrainAssets } from './lotTerrainAssets'
 import type { LabelFactory } from './lotTerrainLabels'
 import type { LotTerrainColors } from './lotTerrainPalette'
@@ -79,7 +79,6 @@ export const buildTerrainGroup = (ctx: LotTerrainGroupContext) => {
   const buildingActive = ctx.showBuilding && ctx.hasBuildingData
   let occupiedAreas: OccupiedArea[] = []
   let constructionGroup: import('three').Group | null = null
-  let setbackGroup: import('three').Group | null = null
   let excavation: OccupiedArea | null = null
 
   if (buildingActive) {
@@ -95,7 +94,6 @@ export const buildTerrainGroup = (ctx: LotTerrainGroupContext) => {
         label: ctx.label,
       })
       constructionGroup = construction.group
-      setbackGroup = construction.setbackGroup
       occupiedAreas = construction.occupied
       excavation = construction.excavation
     } catch (error) {
@@ -193,9 +191,23 @@ export const buildTerrainGroup = (ctx: LotTerrainGroupContext) => {
     slopeYAt,
     label: ctx.label,
   })
-  // Os recuos nascem junto da construcao, mas sao lidos como medida: passam a
-  // viver na mesma camada das cotas para ligar e desligar com ela.
-  if (setbackGroup) dimensions.add(setbackGroup)
+  // O recuo e regra do terreno, nao edificacao: vive na camada de medidas e so
+  // depende de haver parametro construtivo, mesmo com a casa desligada.
+  if (ctx.hasBuildingData) {
+    try {
+      dimensions.add(buildSetbackGuides({
+        three,
+        spec,
+        planShape,
+        slopeHeight,
+        params: ctx.buildingParams,
+        colors: c,
+        label: ctx.label,
+      }))
+    } catch (error) {
+      console.warn('[LotTerrain3D] Falha ao montar os recuos:', error)
+    }
+  }
   dimensions.visible = ctx.showMeasure
   terrainGroup.add(dimensions)
 

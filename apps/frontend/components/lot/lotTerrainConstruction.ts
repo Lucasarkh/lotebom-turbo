@@ -209,15 +209,49 @@ export const buildConstructionOverlay = (input: ConstructionInput) => {
     })
   }
 
-  const setbackGroup = addSetbackGuides({ three, group, bounds, footprint, colors: c, label, slopeYAt })
   addViela({ three, group, bounds, params: bp, colors: c, label, lotWidth, lotDepth, slopeYAt })
 
-  return { group, occupied, excavation, setbackGroup }
+  return { group, occupied, excavation }
+}
+
+/**
+ * Recuos como camada propria, independente da casa: eles sao a regra do
+ * terreno, nao a edificacao. Montados fora do overlay de construcao para que
+ * desligar "Construcao" nao apague a medida legal junto com a casa.
+ */
+export const buildSetbackGuides = (input: SetbackGuidesInput) => {
+  const { three, spec, planShape, slopeHeight, params: bp, colors: c, label } = input
+
+  const bounds: Bounds = {
+    minX: Math.min(...planShape.map((point) => point.x)),
+    maxX: Math.max(...planShape.map((point) => point.x)),
+    minZ: Math.min(...planShape.map((point) => point.z)),
+    maxZ: Math.max(...planShape.map((point) => point.z)),
+  }
+  const slopeYAt = createSlopeSampler(bounds.minZ, bounds.maxZ - bounds.minZ, slopeHeight)
+
+  return addSetbackGuides({
+    three,
+    bounds,
+    footprint: resolveFootprint(spec, bounds, bp),
+    colors: c,
+    label,
+    slopeYAt,
+  })
+}
+
+export type SetbackGuidesInput = {
+  three: ThreeModule
+  spec: TerrainSpec
+  planShape: PlanPoint[]
+  slopeHeight: number
+  params: BuildingParams
+  colors: LotTerrainColors
+  label: LabelFactory
 }
 
 type SetbackInput = {
   three: ThreeModule
-  group: import('three').Group
   bounds: Bounds
   footprint: ReturnType<typeof resolveFootprint>
   colors: LotTerrainColors
@@ -226,13 +260,12 @@ type SetbackInput = {
 }
 
 /**
- * Linhas tracejadas dos recuos, com a medida escrita sobre a faixa. Vao para um
- * subgrupo proprio porque pertencem a camada de medidas: desligar "Medidas"
- * precisa apagar recuo junto com cota.
+ * Linhas tracejadas dos recuos, com a medida escrita sobre a faixa. Devolve o
+ * grupo solto para quem monta a cena pendura-lo na camada de medidas: recuo e
+ * cota ligam e desligam juntos, no chip "Medidas".
  */
-const addSetbackGuides = ({ three, group, bounds, footprint, colors: c, label, slopeYAt }: SetbackInput) => {
+const addSetbackGuides = ({ three, bounds, footprint, colors: c, label, slopeYAt }: SetbackInput) => {
   const setbackGroup = new three.Group()
-  group.add(setbackGroup)
   const lift = 0.1
   const addLine = (points: import('three').Vector3[]) => {
     const material = new three.LineDashedMaterial({
