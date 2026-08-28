@@ -543,15 +543,8 @@ export class LeadsService {
       );
     }
 
-    // Expose who the lead landed on so public surfaces (ex: the AI chat) can
-    // confirm the handoff. Only data already public on the realtor link.
-    const assignedRealtor = finalRealtorLinkId
-      ? await this.prisma.realtorLink.findUnique({
-          where: { id: finalRealtorLinkId },
-          select: { id: true, name: true }
-        })
-      : null;
-
+    // Public surfaces only learn HOW the lead was routed, never to whom — the
+    // visitor should not see which broker is on the queue.
     return {
       ...lead,
       realtorLinkId: finalRealtorLinkId,
@@ -559,8 +552,7 @@ export class LeadsService {
         ? 'unassigned'
         : realtorLinkId
           ? 'realtor_code'
-          : 'auto_distribution',
-      assignedRealtor
+          : 'auto_distribution'
     };
   }
 

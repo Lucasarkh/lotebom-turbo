@@ -230,12 +230,10 @@ function onLeadPhoneInput(event: Event) {
   leadForm.value.phone = maskPhone((event.target as HTMLInputElement).value)
 }
 
-function buildLeadConfirmation(realtorName?: string | null) {
-  const target = realtorName
-    ? `para ${realtorName}, que vai`
-    : 'para a nossa equipe de vendas e um corretor vai'
-  return `Prontinho! Seus dados já foram enviados ${target} entrar em contato com você em breve. Enquanto isso, posso continuar te ajudando com os lotes.`
-}
+// The visitor is never told which broker got the lead — only that the
+// commercial team has it.
+const LEAD_CONFIRMATION =
+  'Prontinho! Seus dados já foram enviados para o nosso time comercial e um corretor vai entrar em contato com você em breve. Enquanto isso, posso continuar te ajudando com os lotes.'
 
 async function submitLead() {
   if (leadSubmitting.value || chatStore.leadCaptured) return
@@ -275,12 +273,12 @@ async function submitLead() {
       aiChatTranscript: chatStore.getTranscript() || undefined
     })
 
-    chatStore.markLeadCaptured(res?.assignedRealtor?.name)
+    chatStore.markLeadCaptured()
     tracking.trackLeadSubmit('FORM', {
       source: 'ai_chat',
       assignmentMode: res?.assignmentMode
     })
-    chatStore.addMessage('ai', buildLeadConfirmation(res?.assignedRealtor?.name))
+    chatStore.addMessage('ai', LEAD_CONFIRMATION)
     leadForm.value = { name: '', email: '', phone: '' }
   } catch (error) {
     leadError.value = getErrorMessage(error)
@@ -450,9 +448,7 @@ onMounted(() => {
 
                 <div v-else class="p-3 text-[0.8rem] text-[var(--chat-muted)] leading-snug">
                   <template v-if="chatStore.leadCaptured">
-                    Contato enviado
-                    <span v-if="chatStore.assignedRealtorName">— {{ chatStore.assignedRealtorName }} vai falar com você em breve.</span>
-                    <span v-else>— um corretor vai falar com você em breve.</span>
+                    Contato enviado — nosso time comercial vai falar com você em breve.
                   </template>
                   <template v-else>
                     Role até a última mensagem para deixar seu contato.

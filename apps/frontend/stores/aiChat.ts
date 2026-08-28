@@ -7,7 +7,6 @@ export const useAiChatStore = defineStore('aiChat', () => {
   const hasInitialized = ref(false)
   const currentProject = ref<any>(null)
   const leadCaptured = ref(false)
-  const assignedRealtorName = ref<string | null>(null)
 
   function setProject(project: any) {
     currentProject.value = project
@@ -36,12 +35,10 @@ export const useAiChatStore = defineStore('aiChat', () => {
     messages.value = []
     hasInitialized.value = false
     leadCaptured.value = false
-    assignedRealtorName.value = null
   }
 
-  function markLeadCaptured(realtorName?: string | null) {
+  function markLeadCaptured() {
     leadCaptured.value = true
-    assignedRealtorName.value = realtorName || null
   }
 
   function hasConversation(): boolean {
@@ -58,7 +55,6 @@ export const useAiChatStore = defineStore('aiChat', () => {
     messages,
     currentProject,
     leadCaptured,
-    assignedRealtorName,
     setProject,
     init,
     toggle,
