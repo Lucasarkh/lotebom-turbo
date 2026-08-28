@@ -741,14 +741,13 @@
 
                     <div class="sim-disclaimer-v4">
                       <i
-                        class="bi bi-megaphone-fill"
+                        class="bi bi-info-circle-fill sim-disclaimer-icon"
                         aria-hidden="true"
                       ></i>
                       <strong>Importante:</strong>
                       Este é um simulador informativo. As parcelas serão
                       reajustadas mensalmente pelo
-                      <strong>{{ project.indexer || "IGP-M" }}</strong>
-                      .
+                      <strong>{{ project.indexer || "IGP-M" }}</strong>.
                       {{
                         project?.financingDisclaimer ||
                         "Simulação baseada nas regras vigentes. Sujeito à aprovação de crédito e alteração de taxas."
@@ -1790,7 +1789,6 @@
   const salesMotionLastShownAt = ref(0);
   const salesMotionLastViews = ref(0);
   const salesMotionLastVisits = ref(0);
-  const salesMotionSeenSections = ref<string[]>([]);
   const salesMotionReachedMilestones = ref<number[]>([]);
   const otherLotsCarouselModules = [A11y, Autoplay];
   const otherLotsCarouselAutoplay = {
@@ -3102,10 +3100,7 @@
     }
   };
 
-  const buildSalesMotionNotice = (
-    reason: "initial" | "scroll" | "section",
-    sectionId?: string,
-  ) => {
+  const buildSalesMotionNotice = (reason: "initial" | "scroll") => {
     const cfg = salesMotionConfig.value;
     const baseViews = Math.max(
       4,
@@ -3120,17 +3115,7 @@
     );
     const pool = salesMotionLotPool.value;
     const sessionState = readSalesMotionSessionState();
-    const sectionMap: Record<string, string> = {
-      galeria: "galeria",
-      localizacao: "planta",
-      "vista-360": "vista 360",
-      ficha: "ficha técnica",
-      simulador: "simulador",
-      financiamento: "tabela de pagamento",
-    };
-    const sectionLabel = sectionId
-      ? sectionMap[sectionId] || "detalhes do lote"
-      : "detalhes do lote";
+    const sectionLabel = "detalhes do lote";
 
     const fillTemplate = (tpl: any) => {
       const text = String(tpl?.text || "");
@@ -3211,18 +3196,6 @@
       .map((tpl: any) => fillTemplate(tpl))
       .filter(Boolean);
 
-    if (reason === "section" && sectionId) {
-      const contextual = (cfg.templates || [])
-        .filter((tpl: any) => tpl?.enabled !== false)
-        .filter((tpl: any) =>
-          String(tpl?.text || "").includes("{{sectionLabel}}"),
-        )
-        .map((tpl: any) => fillTemplate(tpl))
-        .filter(Boolean);
-      const source = contextual.length > 0 ? contextual : options;
-      return source[Math.floor(Math.random() * source.length)] || "";
-    }
-
     if (reason === "scroll") {
       const contextual = (cfg.templates || [])
         .filter((tpl: any) => tpl?.enabled !== false)
@@ -3248,10 +3221,7 @@
     ),
   );
 
-  const showNextSalesNotice = (
-    reason: "initial" | "scroll" | "section",
-    sectionId?: string,
-  ) => {
+  const showNextSalesNotice = (reason: "initial" | "scroll") => {
     if (!process.client) return;
     const cfg = salesMotionConfig.value;
     const minGapMs = cfg.showOnce
@@ -3259,8 +3229,9 @@
       : Math.max(2000, cfg.intervalSeconds * 1000);
     if (!cfg.enabled) return;
     if (salesMotionShownCount.value >= cfg.maxNotices) {
-      clearSalesMotionTimers();
-      currentSalesNotice.value = "";
+      if (!currentSalesNotice.value) {
+        clearSalesMotionTimers();
+      }
       return;
     }
 
@@ -3268,7 +3239,7 @@
     if (currentSalesNotice.value) return;
     if (!cfg.showOnce && now - salesMotionLastShownAt.value < minGapMs) return;
 
-    const message = buildSalesMotionNotice(reason, sectionId);
+    const message = buildSalesMotionNotice(reason);
     if (!message) return;
 
     currentSalesNotice.value = message;
@@ -3298,7 +3269,6 @@
     salesMotionLastVisits.value = Number.isFinite(sessionVisits)
       ? sessionVisits
       : 0;
-    salesMotionSeenSections.value = [];
     salesMotionReachedMilestones.value = [];
 
     if (!salesMotionConfig.value.enabled) return;
@@ -3781,14 +3751,6 @@
   const handleScroll = () => {
     handleSalesMotionByProgress();
   };
-
-  watch(activeSection, (section) => {
-    if (!salesMotionConfig.value.enabled) return;
-    if (section === "hero") return;
-    if (salesMotionSeenSections.value.includes(section)) return;
-    salesMotionSeenSections.value = [...salesMotionSeenSections.value, section];
-    showNextSalesNotice("section", section);
-  });
 
   function openLightbox(idx: number) {
     lightboxIdx.value = idx;
@@ -5408,6 +5370,15 @@
     line-height: 1.6;
     padding: 0 8px;
     text-align: center;
+  }
+
+  /* Sem isto o glifo encosta no "Importante:" e vira um borrão. */
+  .sim-disclaimer-icon {
+    margin-right: 6px;
+    font-size: 14px;
+    line-height: 1;
+    color: #94a3b8;
+    vertical-align: -1px;
   }
 
   .lot-plant-map-frame {
