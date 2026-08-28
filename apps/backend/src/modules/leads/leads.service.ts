@@ -543,7 +543,25 @@ export class LeadsService {
       );
     }
 
-    return lead;
+    // Expose who the lead landed on so public surfaces (ex: the AI chat) can
+    // confirm the handoff. Only data already public on the realtor link.
+    const assignedRealtor = finalRealtorLinkId
+      ? await this.prisma.realtorLink.findUnique({
+          where: { id: finalRealtorLinkId },
+          select: { id: true, name: true }
+        })
+      : null;
+
+    return {
+      ...lead,
+      realtorLinkId: finalRealtorLinkId,
+      assignmentMode: !finalRealtorLinkId
+        ? 'unassigned'
+        : realtorLinkId
+          ? 'realtor_code'
+          : 'auto_distribution',
+      assignedRealtor
+    };
   }
 
   /** Panel – create lead manually by Realtor or Developer */

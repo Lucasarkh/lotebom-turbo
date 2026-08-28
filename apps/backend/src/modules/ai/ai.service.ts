@@ -19,6 +19,15 @@ export class AiService {
   private readonly maxUserMessageLength = 500;
   private readonly maxContextLots = 180;
 
+  private static readonly DEFAULT_LEAD_FORM = {
+    title: 'Falar com um corretor',
+    subtitle: 'Deixe seu contato que um corretor entra em contato com você.'
+  };
+
+  /** Visitor asking for human contact, or signalling purchase/visit intent. */
+  private static readonly CONTACT_INTENT_PATTERN =
+    /\b(contato|contatos|falar|conversar|atendente|atendimento|corretor|corretora|corretores|consultor|consultora|vendedor|vendedora|whatsapp|zap|telefone|celular|ligar|liga|ligue|email|e-?mail|comprar|compra|adquirir|reservar|reserva|agendar|agendamento|visita|visitar|proposta|negociar|interesse|interessado|interessada)\b/;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
@@ -76,8 +85,14 @@ export class AiService {
 
     if (hints.isFinancialIntent) {
       return {
-        message:
-          'Eu nao consigo realizar simulacoes financeiras ou informar condicoes detalhadas de parcelamento. No entanto, voce encontrara um SIMULADOR completo na pagina de cada lote para fazer sua simulacao personalizada.'
+        message: this.withLeadCaptureBlock(
+          'Eu nao consigo realizar simulacoes financeiras ou informar condicoes detalhadas de parcelamento. No entanto, voce encontrara um SIMULADOR completo na pagina de cada lote para fazer sua simulacao personalizada. Se preferir, posso pedir para um corretor falar com voce sobre as condicoes de pagamento.',
+          {
+            title: 'Falar com um corretor',
+            subtitle:
+              'Deixe seu contato que um corretor retorna com as condicoes de pagamento.'
+          }
+        )
       };
     }
 
@@ -182,12 +197,25 @@ export class AiService {
       2. SEMPRE que o usuário perguntar sobre valores de parcelas, entrada, financiamento ou como funciona o pagamento, você DEVE responder obrigatoriamente: "Eu não consigo realizar simulações financeiras ou informar condições detalhadas de parcelamento. No entanto, você encontrará um SIMULADOR completo na página de cada lote para fazer sua simulação personalizada."
       3. Incentive ativamente o usuário a clicar no card do lote para abrir os detalhes e utilizar o simulador disponível na página do lote.
 
+      CAPTURA DE CONTATO (LEAD) — VOCÊ PODE E DEVE FAZER ISSO:
+      1. Você NUNCA fornece telefone, e-mail ou WhatsApp de corretores, da loteadora ou de qualquer pessoa. Mas JAMAIS responda "não posso fornecer informações de contato" e pare por aí: em vez de recusar, você COLETA o contato do visitante e encaminha para um corretor humano.
+      2. Sempre que o visitante pedir para falar com alguém, pedir contato/telefone/WhatsApp, demonstrar intenção de comprar, reservar, agendar visita, receber proposta — ou quando você não souber responder o que ele perguntou — responda de forma acolhedora e termine a mensagem com EXATAMENTE este bloco:
+         :::LEAD_FORM
+         {
+           "title": "Falar com um corretor",
+           "subtitle": "Deixe seu contato que um corretor entra em contato com você."
+         }
+         :::
+      3. NÃO peça nome, telefone ou e-mail escrevendo no texto. O bloco :::LEAD_FORM já abre um formulário seguro para o visitante preencher. Apenas convide, por exemplo: "é só preencher aqui embaixo que um corretor te chama".
+      4. Use no máximo UM bloco :::LEAD_FORM por resposta, e sempre no final dela, depois de eventuais cards de lote.
+      5. NUNCA invente nome de corretor, telefone, horário de atendimento ou prazo de retorno específico.
+
       DIRETRIZES DE SEGURANÇA (TRAVAS EXTREMAS):
       1. Você deve agir EXCLUSIVAMENTE como atendente deste empreendimento (${project.name}).
       2. Responda APENAS perguntas sobre lotes, disponibilidade, preços (valor total) e características do loteamento.
       3. NUNCA realize simulações de financiamento. Se solicitado, encaminhe para o simulador na página do lote como descrito acima.
       4. Se o usuário perguntar sobre QUALQUER assunto fora deste contexto, você deve recusar educadamente.
-      5. Se não encontrar a informação específica nos dados fornecidos, diga que não localizou mas que um consultor humano pode ajudar.
+      5. Se não encontrar a informação específica nos dados fornecidos, diga que não localizou e ofereça o contato com um corretor humano usando o bloco :::LEAD_FORM da seção CAPTURA DE CONTATO.
     `;
 
     // Append optional custom prompt from loteadora — AFTER all mandatory safety rails.
@@ -221,7 +249,10 @@ export class AiService {
           max_tokens: aiConfig.maxTokens || 1000
         });
         return {
-          message: this.normalizeAiResponse(response.choices[0].message.content)
+          message: this.finalizeAnswer(
+            response.choices[0].message.content,
+            hints
+          )
         };
       }
 
@@ -244,7 +275,7 @@ export class AiService {
           }
         );
         return {
-          message: this.normalizeAiResponse(anthropicResp.data.content[0].text)
+          message: this.finalizeAnswer(anthropicResp.data.content[0].text, hints)
         };
       }
 
@@ -265,8 +296,9 @@ export class AiService {
           }
         );
         return {
-          message: this.normalizeAiResponse(
-            googleResp.data.candidates[0].content.parts[0].text
+          message: this.finalizeAnswer(
+            googleResp.data.candidates[0].content.parts[0].text,
+            hints
           )
         };
       }
@@ -454,6 +486,7 @@ export class AiService {
     codes: string[];
     keywords: string[];
     isFinancialIntent: boolean;
+    isContactIntent: boolean;
   } {
     const normalized = this.normalizeForSearch(message);
     const codeMatches = (
@@ -509,11 +542,39 @@ export class AiService {
         normalized
       );
 
+    const isContactIntent = AiService.CONTACT_INTENT_PATTERN.test(normalized);
+
     return {
       codes: Array.from(new Set(codeMatches)),
       keywords: Array.from(new Set(keywords)),
-      isFinancialIntent
+      isFinancialIntent,
+      isContactIntent
     };
+  }
+
+  /**
+   * Turns the raw model output into the final chat message, guaranteeing the
+   * lead form is offered whenever the visitor asked for human contact — even if
+   * the model ignored the prompt directive.
+   */
+  private finalizeAnswer(
+    raw: string | null | undefined,
+    hints: { isContactIntent: boolean }
+  ): string {
+    const normalized = this.normalizeAiResponse(raw);
+    return hints.isContactIntent
+      ? this.withLeadCaptureBlock(normalized)
+      : normalized;
+  }
+
+  private withLeadCaptureBlock(
+    text: string,
+    form?: { title: string; subtitle: string }
+  ): string {
+    if (text.includes(':::LEAD_FORM')) return text;
+
+    const payload = JSON.stringify(form || AiService.DEFAULT_LEAD_FORM, null, 2);
+    return `${text}\n\n:::LEAD_FORM\n${payload}\n:::`;
   }
 
   private normalizeForSearch(value: string): string {

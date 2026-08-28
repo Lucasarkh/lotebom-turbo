@@ -3,6 +3,8 @@ import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { usePublicApi } from '@/composables/usePublicApi'
 import { useAiChatStore } from '@/stores/aiChat'
 import { useTracking } from '@/composables/useTracking'
+import { useTrackingStore } from '@/stores/tracking'
+import { useMasks } from '@/composables/useMasks'
 
 const props = defineProps<{
   project: any
@@ -12,7 +14,9 @@ const router = useRouter()
 const route = useRoute()
 const chatStore = useAiChatStore()
 const tracking = useTracking()
+const trackingStore = useTrackingStore()
 const { post } = usePublicApi()
+const { maskPhone, unmask, validateEmail, validatePhone } = useMasks()
 
 const input = ref('')
 const loading = ref(false)
@@ -20,6 +24,15 @@ const loadingStatus = ref('')
 const scrollContainer = ref<HTMLElement | null>(null)
 const lgpdConsentAccepted = ref(false)
 const consentClosing = ref(false)
+
+const DEFAULT_LEAD_FORM = {
+  title: 'Falar com um corretor',
+  subtitle: 'Deixe seu contato que um corretor entra em contato com você.'
+}
+
+const leadForm = ref({ name: '', email: '', phone: '' })
+const leadSubmitting = ref(false)
+const leadError = ref('')
 
 const consentStorageKey = computed(() => {
   const projectSlug = props.project?.slug || 'global'
@@ -95,8 +108,8 @@ const getErrorMessage = (error: unknown) => {
 }
 
 const parseMessage = (text: string) => {
-  const parts: { type: 'text' | 'card', content: any }[] = []
-  const regex = /:::LOT_CARD\n?([\s\S]*?)\n?:::/g
+  const parts: { type: 'text' | 'card' | 'leadForm', content: any }[] = []
+  const regex = /:::(LOT_CARD|LEAD_FORM)\n?([\s\S]*?)\n?:::/g
   let lastIndex = 0
   let match
 
@@ -106,15 +119,37 @@ const parseMessage = (text: string) => {
       if (txt) parts.push({ type: 'text', content: txt })
     }
 
+    const blockKind = match[1]
+    const blockRaw = match[2]
+
+    if (blockKind === 'LEAD_FORM') {
+      // The form must render even if the model mangled the JSON payload —
+      // losing the capture point is worse than losing the custom wording.
+      let formData: any = {}
+      try {
+        formData = blockRaw ? JSON.parse(blockRaw) : {}
+      } catch {
+        formData = {}
+      }
+      parts.push({
+        type: 'leadForm',
+        content: {
+          title: formData.title || DEFAULT_LEAD_FORM.title,
+          subtitle: formData.subtitle || DEFAULT_LEAD_FORM.subtitle
+        }
+      })
+      lastIndex = regex.lastIndex
+      continue
+    }
+
     try {
-      const cardRaw = match[1]
-      if (!cardRaw) {
+      if (!blockRaw) {
         parts.push({ type: 'text', content: match[0] })
         lastIndex = regex.lastIndex
         continue
       }
 
-      const cardData = JSON.parse(cardRaw)
+      const cardData = JSON.parse(blockRaw)
       parts.push({ type: 'card', content: cardData })
     } catch (e) {
       parts.push({ type: 'text', content: match[0] })
@@ -177,6 +212,80 @@ async function sendMessage() {
   } finally {
     loading.value = false
     loadingStatus.value = ''
+    await nextTick()
+    scrollToBottom()
+  }
+}
+
+// Broker mode: the ?c= code on the public URL. When present the lead belongs to
+// that broker; when absent the backend hands it to the next broker in the queue.
+const corretorCode = computed(() => (route.query.c as string) || '')
+
+// Only the form inside the latest assistant message stays interactive, so an
+// older block scrolled up in the history can't open a second capture.
+const isLeadFormActive = (messageIndex: number) =>
+  !chatStore.leadCaptured && messageIndex === messages.value.length - 1
+
+function onLeadPhoneInput(event: Event) {
+  leadForm.value.phone = maskPhone((event.target as HTMLInputElement).value)
+}
+
+function buildLeadConfirmation(realtorName?: string | null) {
+  const target = realtorName
+    ? `para ${realtorName}, que vai`
+    : 'para a nossa equipe de vendas e um corretor vai'
+  return `Prontinho! Seus dados já foram enviados ${target} entrar em contato com você em breve. Enquanto isso, posso continuar te ajudando com os lotes.`
+}
+
+async function submitLead() {
+  if (leadSubmitting.value || chatStore.leadCaptured) return
+
+  const name = leadForm.value.name.trim()
+  const email = leadForm.value.email.trim()
+
+  if (name.length < 3) {
+    leadError.value = 'Informe seu nome completo'
+    return
+  }
+  if (!validatePhone(leadForm.value.phone)) {
+    leadError.value = 'Telefone inválido (informe DDD + número)'
+    return
+  }
+  if (!validateEmail(email)) {
+    leadError.value = 'E-mail inválido'
+    return
+  }
+
+  leadSubmitting.value = true
+  leadError.value = ''
+
+  try {
+    const lastUserMessage = [...messages.value].reverse().find(m => m.role === 'user')?.text
+
+    const res = await post(`/p/${props.project.slug}/leads`, {
+      name,
+      email,
+      phone: unmask(leadForm.value.phone),
+      message: lastUserMessage
+        ? `Contato solicitado pelo assistente virtual. Última pergunta: "${lastUserMessage}"`
+        : 'Contato solicitado pelo assistente virtual.',
+      realtorCode: corretorCode.value || undefined,
+      visitorId: trackingStore.visitorId || undefined,
+      sessionId: trackingStore.sessionId || undefined,
+      aiChatTranscript: chatStore.getTranscript() || undefined
+    })
+
+    chatStore.markLeadCaptured(res?.assignedRealtor?.name)
+    tracking.trackLeadSubmit('FORM', {
+      source: 'ai_chat',
+      assignmentMode: res?.assignmentMode
+    })
+    chatStore.addMessage('ai', buildLeadConfirmation(res?.assignedRealtor?.name))
+    leadForm.value = { name: '', email: '', phone: '' }
+  } catch (error) {
+    leadError.value = getErrorMessage(error)
+  } finally {
+    leadSubmitting.value = false
     await nextTick()
     scrollToBottom()
   }
@@ -287,6 +396,67 @@ onMounted(() => {
                 <div class="px-3 py-2 bg-[#122d35] border-t border-[#2f5562] flex justify-between items-center text-[0.8rem] font-semibold text-[#7ad7e4]">
                   <span>Ver detalhes</span>
                   <span>&rarr;</span>
+                </div>
+              </div>
+
+              <div v-else-if="part.type === 'leadForm'" class="bg-[#173741] border border-[#2f5562] rounded-xl overflow-hidden shadow-md w-full max-w-[280px]">
+                <div class="px-3 py-2.5 bg-[#122d35] border-b border-[#2f5562]">
+                  <div class="font-bold text-[#ebf9fc] text-[0.9rem]">{{ part.content.title }}</div>
+                  <div class="text-[0.75rem] text-[var(--chat-muted)] mt-0.5 leading-snug">{{ part.content.subtitle }}</div>
+                </div>
+
+                <form v-if="isLeadFormActive(i)" class="p-3 flex flex-col gap-2" @submit.prevent="submitLead">
+                  <input
+                    v-model="leadForm.name"
+                    type="text"
+                    maxlength="80"
+                    autocomplete="name"
+                    placeholder="Seu nome completo"
+                    class="w-full bg-[#0b1e24] border border-[#3d6672] rounded-lg px-3 py-2 text-[0.85rem] text-[#ecfafc] placeholder:text-[#7fa4ae] outline-none transition-colors focus:border-[var(--chat-primary)]"
+                  />
+                  <input
+                    :value="leadForm.phone"
+                    type="tel"
+                    inputmode="tel"
+                    autocomplete="tel"
+                    placeholder="(00) 00000-0000"
+                    class="w-full bg-[#0b1e24] border border-[#3d6672] rounded-lg px-3 py-2 text-[0.85rem] text-[#ecfafc] placeholder:text-[#7fa4ae] outline-none transition-colors focus:border-[var(--chat-primary)]"
+                    @input="onLeadPhoneInput"
+                  />
+                  <input
+                    v-model="leadForm.email"
+                    type="email"
+                    maxlength="120"
+                    autocomplete="email"
+                    placeholder="seu@email.com"
+                    class="w-full bg-[#0b1e24] border border-[#3d6672] rounded-lg px-3 py-2 text-[0.85rem] text-[#ecfafc] placeholder:text-[#7fa4ae] outline-none transition-colors focus:border-[var(--chat-primary)]"
+                  />
+
+                  <p v-if="leadError" class="text-[0.72rem] text-red-400 leading-snug">{{ leadError }}</p>
+
+                  <button
+                    type="submit"
+                    :disabled="leadSubmitting"
+                    class="w-full bg-[var(--chat-primary)] text-white border-none rounded-lg py-2 text-[0.85rem] font-semibold cursor-pointer transition-all duration-200 hover:enabled:bg-[var(--chat-primary-strong)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {{ leadSubmitting ? 'Enviando...' : 'Quero falar com um corretor' }}
+                  </button>
+
+                  <p class="text-[0.65rem] text-[var(--chat-muted)] leading-snug">
+                    Ao enviar, você autoriza o contato de um corretor conforme a
+                    <NuxtLink to="/politica-de-privacidade" target="_blank" class="text-[#61d9ff] underline">Política de Privacidade</NuxtLink>.
+                  </p>
+                </form>
+
+                <div v-else class="p-3 text-[0.8rem] text-[var(--chat-muted)] leading-snug">
+                  <template v-if="chatStore.leadCaptured">
+                    Contato enviado
+                    <span v-if="chatStore.assignedRealtorName">— {{ chatStore.assignedRealtorName }} vai falar com você em breve.</span>
+                    <span v-else>— um corretor vai falar com você em breve.</span>
+                  </template>
+                  <template v-else>
+                    Role até a última mensagem para deixar seu contato.
+                  </template>
                 </div>
               </div>
             </div>

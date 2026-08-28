@@ -153,12 +153,24 @@ export class LeadDistributionService {
         (freshConfig.lastAssignedIndex + 1) % eligibleBrokers.length;
       const assignedBroker = eligibleBrokers[nextIndex];
 
+      // Keep the original acquisition channel (ex: website:ai_chat) and only
+      // append the distribution marker, so the panel still shows where the
+      // lead came from.
+      const current = await tx.lead.findUnique({
+        where: { id: leadId },
+        select: { source: true }
+      });
+      const baseSource = current?.source?.trim() || 'website';
+      const source = baseSource.endsWith(':auto_dist')
+        ? baseSource
+        : `${baseSource}:auto_dist`;
+
       // Update the lead with the assigned broker
       await tx.lead.update({
         where: { id: leadId },
         data: {
           realtorLinkId: assignedBroker.id,
-          source: 'website:auto_dist'
+          source
         }
       });
 
