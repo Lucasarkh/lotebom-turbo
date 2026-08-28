@@ -67,6 +67,7 @@
         <CommonSectionNavGuide
           :labels="sectionNavLabels"
           :titles="sectionNavTitles"
+          collapsible
           @update:active="activeSection = $event"
         />
 
