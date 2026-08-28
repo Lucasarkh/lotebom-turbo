@@ -426,8 +426,10 @@
               v-for="(tag, idx) in (lotForm.tags || [])"
               :key="idx"
               class="flex items-center gap-1.5 rounded-full bg-p-info-subtle px-2.5 py-0.5 text-xs font-semibold text-p-info"
+              :title="hasCustomSealIcon(tag) ? 'Ícone reconhecido pelo texto do selo' : 'Sem ícone próprio — entra com o ícone neutro'"
             >
-              {{ tag }}
+              <i :class="`bi ${resolveSealVisual(tag).icon}`" aria-hidden="true"></i>
+              {{ formatSealLabel(tag) }}
               <span @click="lotForm.tags.splice(idx, 1)" class="cursor-pointer opacity-60 text-sm">✕</span>
             </div>
             <span v-if="!(lotForm.tags?.length)" class="text-xs text-p-text-muted">Nenhum selo cadastrado.</span>
@@ -438,14 +440,20 @@
           </div>
           <div class="flex gap-1.5 flex-wrap">
             <button
-              v-for="suggestion in ['sol da manhã', 'esquina', 'vista livre', 'próximo à portaria', 'fundo para área verde']"
+              v-for="suggestion in LOT_SEAL_SUGGESTIONS"
               :key="suggestion"
               @click="addSuggestedTag(suggestion)"
-              class="rounded-lg border border-p-border bg-p-overlay px-2 py-1 text-[11px] text-p-text-secondary hover:bg-p-raised hover:text-p-text transition-colors"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-p-border bg-p-overlay px-2 py-1 text-[11px] text-p-text-secondary hover:bg-p-raised hover:text-p-text transition-colors"
             >
-              + {{ suggestion }}
+              <i :class="`bi ${resolveSealVisual(suggestion).icon}`" aria-hidden="true"></i>
+              {{ suggestion }}
             </button>
           </div>
+          <p class="text-[11px] leading-relaxed text-p-text-muted">
+            O ícone do selo é escolhido pelo texto — as sugestões acima já vêm com
+            ícone próprio. Selo livre fora desse vocabulário aparece na página do
+            lote com o ícone neutro.
+          </p>
         </div>
 
         <div class="space-y-1">
@@ -522,6 +530,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePlantMapApi } from '~/composables/plantMap/usePlantMapApi'
+import {
+  LOT_SEAL_SUGGESTIONS,
+  formatSealLabel,
+  hasCustomSealIcon,
+  resolveSealVisual,
+} from '~/utils/lotSeals'
 import {
   normalizePublicFeaturedLotsCarouselConfig,
   PUBLIC_FEATURED_LOTS_CAROUSEL_META_TYPE,

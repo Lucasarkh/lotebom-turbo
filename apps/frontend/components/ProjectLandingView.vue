@@ -223,6 +223,12 @@
         :units-url="unitsUrl"
       />
 
+      <CommonSectionNavGuide
+        :labels="SECTION_NAV_LABELS"
+        :titles="SECTION_NAV_TITLES"
+        collapsible
+      />
+
       <LandingPreferenceOnboarding
         :visible="showPreferenceOnboarding"
         :project="project"
@@ -424,6 +430,51 @@ const isPublicSectionEnabled = (sectionId: string) => !disabledPublicSections.va
 const publicSectionOrderIndex = computed(() =>
   new Map(publicSectionOrder.value.map((id, idx) => [id, idx + 1])),
 )
+/**
+ * Rótulos do trilho lateral. A ordem em que aparecem vem da posição real das
+ * seções na página — as seções públicas são reordenáveis, então lista fixa aqui
+ * mentiria. Basta o id existir no DOM para entrar no trilho.
+ */
+const SECTION_NAV_LABELS: Record<string, string> = {
+  inicio: 'Início',
+  info: 'Sobre',
+  infraestrutura: 'Infra',
+  planta: 'Planta',
+  panorama: '360°',
+  'video-apresentacao': 'Vídeo',
+  destaques: 'Destaques',
+  'carrossel-lotes': 'Lotes',
+  'categorias-destaque': 'Categorias',
+  'lotes-em-destaque': 'Seleção',
+  lotes: 'Unidades',
+  obras: 'Obras',
+  galeria: 'Galeria',
+  localizacao: 'Local',
+  proximidades: 'Redondezas',
+  agendamento: 'Visita',
+  contato: 'Contato',
+}
+
+const SECTION_NAV_TITLES: Record<string, string> = {
+  inicio: 'Início',
+  info: 'Sobre o empreendimento',
+  infraestrutura: 'Infraestrutura',
+  planta: 'Planta interativa',
+  panorama: 'Vista 360°',
+  'video-apresentacao': 'Vídeo de apresentação',
+  destaques: 'Destaques',
+  'carrossel-lotes': 'Lotes disponíveis',
+  'categorias-destaque': 'Categorias de lotes',
+  'lotes-em-destaque': 'Lotes em destaque',
+  lotes: 'Unidades disponíveis',
+  obras: 'Andamento da obra',
+  galeria: 'Galeria de imagens',
+  localizacao: 'Localização',
+  proximidades: 'O que tem por perto',
+  agendamento: 'Agendar visita',
+  contato: 'Fale com a equipe',
+}
+
 const publicSectionStyle = (sectionId: string) => ({
   order: String(publicSectionOrderIndex.value.get(sectionId) ?? 999),
 })

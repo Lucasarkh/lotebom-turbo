@@ -64,22 +64,11 @@
       </Transition>
 
       <div class="layout-v4-main">
-        <!-- Persistent Side Navigation Guide -->
-        <aside class="side-navigation-guide">
-          <div class="nav-stack">
-            <a
-              v-for="item in sectionNavItems"
-              :key="item.id"
-              :href="item.href"
-              class="nav-dot"
-              :class="{ 'is-active': activeSection === item.id }"
-              :title="item.title"
-            >
-              <span class="dot"></span>
-              <span class="label">{{ item.shortLabel }}</span>
-            </a>
-          </div>
-        </aside>
+        <CommonSectionNavGuide
+          :labels="sectionNavLabels"
+          :titles="sectionNavTitles"
+          @update:active="activeSection = $event"
+        />
 
         <div class="main-content-flow-v4">
           <div class="page-container-v4 split-view">
@@ -92,58 +81,31 @@
               >
                 <div class="hero-header-row">
                   <div class="hero-main-info">
-                    <h1 class="lot-code-title">
-                      <span
-                        v-if="details?.block"
-                        style="
-                          color: var(--v4-text-muted);
-                          font-weight: 500;
-                          margin-right: 8px;
-                        "
-                      >
-                        {{ details.block }}
-                      </span>
-                      <span>
-                        {{ details?.lotNumber || lot?.name || lot?.code }}
-                      </span>
-                    </h1>
-
-                    <div class="lot-share-actions-v4">
-                      <button
-                        type="button"
-                        class="lot-share-btn-v4"
-                        @click="shareCurrentLot"
-                      >
-                        <i
-                          class="bi bi-share-fill"
+                    <div class="hero-eyebrow">
+                      <template v-if="heroBlockLabel">
+                        <span>Quadra {{ heroBlockLabel }}</span>
+                        <span
+                          class="eyebrow-sep"
                           aria-hidden="true"
-                        ></i>
-                        <span>Compartilhar</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        class="lot-share-btn-v4 lot-share-btn-v4--whatsapp"
-                        @click="shareCurrentLotWhatsapp"
-                      >
-                        <i
-                          class="bi bi-whatsapp"
-                          aria-hidden="true"
-                        ></i>
-                        <span>WhatsApp</span>
-                      </button>
+                        ></span>
+                      </template>
+                      <span>Lote</span>
                     </div>
 
-                    <div
-                      v-if="details?.tags?.length"
-                      class="lot-seals-v4"
-                    >
+                    <div class="hero-title-row">
+                      <h1 class="lot-code-title">
+                        {{ details?.lotNumber || lot?.name || lot?.code }}
+                      </h1>
+
                       <span
-                        v-for="tag in details?.tags"
-                        :key="tag"
-                        class="seal-pill"
+                        class="hero-status-pill"
+                        :class="statusClass"
                       >
-                        {{ tag }}
+                        <span
+                          class="status-dot"
+                          aria-hidden="true"
+                        ></span>
+                        {{ statusLabel }}
                       </span>
                     </div>
                   </div>
@@ -152,20 +114,86 @@
                     v-if="details?.price || details?.paymentConditions?.price"
                     class="hero-price-box"
                   >
-                    <div
-                      class="hp-status-tag"
-                      :class="details?.status"
-                    >
-                      {{ statusLabel }}
-                    </div>
                     <span class="hp-label">Investimento</span>
-                    <span class="hp-value">
-                      {{
-                        formatCurrencyToBrasilia(
-                          details?.price || details?.paymentConditions?.price,
-                        )
-                      }}
+                    <div class="hp-price-line">
+                      <span class="hp-value">
+                        {{
+                          formatCurrencyToBrasilia(
+                            details?.price || details?.paymentConditions?.price,
+                          )
+                        }}
+                      </span>
+                      <span
+                        v-if="details?.pricePerM2"
+                        class="hp-sub"
+                      >
+                        {{ formatCurrencyToBrasilia(details.pricePerM2) }}/m²
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="lotSeals.length"
+                  class="lot-seals-v4"
+                >
+                  <span
+                    v-for="seal in lotSeals"
+                    :key="seal.key"
+                    class="seal-item"
+                    :class="`tone-${seal.tone}`"
+                  >
+                    <span
+                      class="seal-icon"
+                      aria-hidden="true"
+                    >
+                      <i :class="`bi ${seal.icon}`"></i>
                     </span>
+                    <span class="seal-label">{{ seal.label }}</span>
+                  </span>
+                </div>
+
+                <div class="hero-footer-row">
+                  <div
+                    v-if="heroMetrics.length"
+                    class="quick-metrics-v4"
+                  >
+                    <div
+                      v-for="metric in heroMetrics"
+                      :key="metric.label"
+                      class="q-item"
+                    >
+                      <span class="q-val">{{ metric.value }}</span>
+                      <span class="q-unit">{{ metric.label }}</span>
+                    </div>
+                  </div>
+
+                  <div class="lot-share-actions-v4">
+                    <button
+                      type="button"
+                      class="lot-share-btn-v4 lot-share-btn-v4--secondary"
+                      aria-label="Compartilhar"
+                      title="Compartilhar"
+                      @click="shareCurrentLot"
+                    >
+                      <i
+                        class="bi bi-share-fill"
+                        aria-hidden="true"
+                      ></i>
+                      <span class="share-label">Compartilhar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="lot-share-btn-v4 lot-share-btn-v4--whatsapp"
+                      @click="shareCurrentLotWhatsapp"
+                    >
+                      <i
+                        class="bi bi-whatsapp"
+                        aria-hidden="true"
+                      ></i>
+                      <span>WhatsApp</span>
+                    </button>
                   </div>
                 </div>
               </section>
@@ -1698,6 +1726,7 @@
   import { useAiChatStore } from "~/stores/aiChat";
   import { getTodayInBrasilia, getYearInBrasilia } from "~/utils/date";
   import { formatCurrencyToBrasilia } from "~/utils/money";
+  import { formatSealLabel, resolveSealVisual } from "~/utils/lotSeals";
   import PanoramaViewer from "~/components/panorama/PanoramaViewer.vue";
   import PlantMapViewer from "~/components/plantMap/PlantMapViewer.vue";
   import LotTerrainPreset3D from "~/components/lot/LotTerrainPreset3D.vue";
@@ -2501,6 +2530,18 @@
     sectionNavItems.value.filter((item) => item.id !== "hero"),
   );
 
+  const sectionNavLabels = computed(() =>
+    Object.fromEntries(
+      sectionNavItems.value.map((item) => [item.id, item.shortLabel]),
+    ),
+  );
+
+  const sectionNavTitles = computed(() =>
+    Object.fromEntries(
+      sectionNavItems.value.map((item) => [item.id, item.title]),
+    ),
+  );
+
   const isPreLaunchMode = computed(
     () => project.value?.preLaunchEnabled === true,
   );
@@ -2667,6 +2708,66 @@
     };
     return map[details.value?.status || "AVAILABLE"] || "status-available";
   });
+
+  const heroBlockLabel = computed(() => {
+    const block = normalizeBlockLabel(details.value?.block);
+    return block === "---" ? "" : block;
+  });
+
+  const formatMeasure = (value: unknown, unit: string) => {
+    const measure = Number(value);
+    if (!Number.isFinite(measure) || measure <= 0) return "";
+
+    return `${measure.toLocaleString("pt-BR", {
+      minimumFractionDigits: measure % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    })} ${unit}`;
+  };
+
+  /** Números que o comprador procura primeiro — ficam no topo, não na ficha. */
+  const heroMetrics = computed(() =>
+    [
+      { label: "Área total", value: formatMeasure(details.value?.areaM2, "m²") },
+      { label: "Testada", value: formatMeasure(details.value?.frontage, "m") },
+      {
+        label: "Profundidade",
+        value: formatMeasure(details.value?.depth, "m"),
+      },
+    ].filter((metric) => metric.value),
+  );
+
+  const SEAL_MINOR_WORDS = new Set([
+    "a",
+    "à",
+    "às",
+    "ao",
+    "aos",
+    "com",
+    "da",
+    "das",
+    "de",
+    "do",
+    "dos",
+    "e",
+    "em",
+    "na",
+    "nas",
+    "no",
+    "nos",
+    "o",
+    "os",
+    "para",
+    "por",
+  ]);
+
+  /** Ícone e tom vêm de `~/utils/lotSeals`, o mesmo que o painel usa no preview. */
+  const lotSeals = computed(() =>
+    (details.value?.tags ?? []).map((tag: string) => ({
+      key: tag,
+      label: formatSealLabel(tag),
+      ...resolveSealVisual(tag),
+    })),
+  );
 
   const statusLabel = computed(() => {
     const map: Record<string, string> = {
@@ -3677,17 +3778,6 @@
   const activeSection = ref("hero");
 
   const handleScroll = () => {
-    const sections = sectionNavItems.value.map((item) => item.id);
-    for (const sectionId of [...sections].reverse()) {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        if (rect.top <= 150) {
-          activeSection.value = sectionId;
-          break;
-        }
-      }
-    }
     handleSalesMotionByProgress();
   };
 
@@ -4129,67 +4219,6 @@
   }
 
   /* Vertical Nav Guide */
-  .side-navigation-guide {
-    position: fixed;
-    top: 50%;
-    transform: translateY(-50%);
-    left: 30px;
-    width: 70px;
-    display: flex;
-    flex-direction: column;
-    padding: 24px 0;
-    background: white;
-    border-radius: 50px;
-    border: 1px solid var(--v4-border);
-    z-index: 150;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  }
-  @media (max-width: 1100px) {
-    .side-navigation-guide {
-      display: none;
-    }
-  }
-
-  .nav-stack {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    width: 100%;
-    align-items: center;
-  }
-  .nav-dot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-decoration: none;
-    width: 100%;
-    padding: 12px 0;
-    transition: all 0.3s;
-  }
-  .nav-dot .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #d2d2d7;
-    transition: all 0.3s;
-  }
-  .nav-dot .label {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #86868b;
-    margin-top: 8px;
-  }
-  .nav-dot:hover .dot,
-  .nav-dot.is-active .dot {
-    background: var(--v4-primary);
-    transform: scale(1.2);
-  }
-  .nav-dot:hover .label,
-  .nav-dot.is-active .label {
-    color: var(--v4-primary);
-  }
-
   /* Split View Grid */
   .page-container-v4 {
     max-width: 1400px;
@@ -4213,7 +4242,7 @@
   .hero-v4 {
     position: relative;
     background: white;
-    padding: 48px;
+    padding: 32px 40px;
     border-radius: var(--v4-radius-lg);
     margin-bottom: 32px;
     border: 1px solid var(--v4-border);
@@ -4223,16 +4252,176 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 32px;
-    margin-bottom: 32px;
+    gap: 40px;
+  }
+  .hero-main-info {
+    min-width: 0;
+  }
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--v4-text-muted);
+  }
+  .eyebrow-sep {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.55;
+  }
+  .hero-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 8px;
   }
   .lot-code-title {
     font-size: 56px;
     font-weight: 700;
     margin: 0;
     color: var(--v4-text);
-    line-height: 1.1;
+    line-height: 1;
     letter-spacing: -0.03em;
+  }
+
+  .hero-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background: #e9f9ef;
+    color: #0f7a3d;
+    border: 1px solid #b9ebcd;
+  }
+  .hero-status-pill .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+  }
+  .hero-status-pill.status-reserved {
+    background: #fff6e8;
+    color: #9a5b00;
+    border-color: #ffdfae;
+  }
+  .hero-status-pill.status-reserved .status-dot {
+    background: #ff9f0a;
+    box-shadow: 0 0 0 3px rgba(255, 159, 10, 0.18);
+  }
+  .hero-status-pill.status-sold {
+    background: #fdedec;
+    color: #a3271f;
+    border-color: #f8c9c5;
+  }
+  .hero-status-pill.status-sold .status-dot {
+    background: #ff453a;
+    box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.18);
+  }
+
+  .hero-price-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #f8fafc 0%, #eef4fd 100%);
+    padding: 16px 22px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+  }
+  .hp-price-line {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-top: 2px;
+  }
+  .hp-label {
+    font-size: 12px;
+    color: var(--v4-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .hp-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--v4-primary);
+    letter-spacing: -1px;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .hp-sub {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--v4-text-muted);
+    white-space: nowrap;
+  }
+
+  /* Diferenciais do lote — lista de atributo, não de controle: sem caixa,
+     sem borda, sem sombra. Quem carrega o destaque é o ícone colorido. */
+  .lot-seals-v4 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--v4-border);
+  }
+  .seal-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--v4-text);
+  }
+  .seal-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 17px;
+    line-height: 1;
+    color: #0071e3;
+  }
+  .seal-item.tone-sun .seal-icon {
+    color: #b06f00;
+  }
+  .seal-item.tone-nature .seal-icon {
+    color: #12813f;
+  }
+  .seal-item.tone-view .seal-icon {
+    color: #0057c7;
+  }
+  .seal-item.tone-infra .seal-icon {
+    color: #5a6478;
+  }
+
+  /* Faixa inferior do topo: números-chave à esquerda, ações à direita. */
+  .hero-footer-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--v4-border);
   }
 
   .lot-share-actions-v4 {
@@ -4240,7 +4429,6 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 16px;
   }
 
   .lot-share-btn-v4 {
@@ -4280,85 +4468,29 @@
     box-shadow: 0 8px 16px rgba(23, 168, 83, 0.2);
   }
 
-  .hero-price-box {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    text-align: right;
-    background: #f8fafc;
-    padding: 24px;
-    border-radius: 20px;
-    border: 1px solid #e2e8f0;
-  }
-  .hp-status-tag {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 100px;
-    margin-bottom: 12px;
-    background: #32d74b;
-    color: white;
-  }
-  .hp-status-tag.RESERVED {
-    background: #ff9f0a;
-  }
-  .hp-status-tag.SOLD {
-    background: #ff453a;
-  }
-  .hp-label {
-    font-size: 13px;
-    color: var(--v4-text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .hp-value {
-    font-size: 36px;
-    font-weight: 800;
-    color: var(--v4-primary);
-    letter-spacing: -1px;
-    margin-top: 4px;
-  }
-
-  /* Seals / Tags */
-  .lot-seals-v4 {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 16px;
-  }
-  .seal-pill {
-    background: #f0f7ff;
-    color: #0071e3;
-    padding: 6px 14px;
-    border-radius: 100px;
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: capitalize;
-    border: 1px solid #d0e7ff;
-  }
-
   .quick-metrics-v4 {
     display: flex;
-    gap: 48px;
+    flex-wrap: wrap;
+    gap: 16px 40px;
   }
   .q-item {
     display: flex;
     flex-direction: column;
+    gap: 2px;
   }
   .q-val {
-    font-size: 28px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--v4-text);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
   }
   .q-unit {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--v4-text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 4px;
+    letter-spacing: 0.08em;
   }
 
   /* Section Generic V4 */
@@ -5552,41 +5684,82 @@
     }
     .hero-header-row {
       flex-direction: column;
-      align-items: flex-start;
-      gap: 24px;
-      margin-bottom: 32px;
+      align-items: stretch;
+      gap: 20px;
+    }
+    .hero-eyebrow {
+      font-size: 12px;
+    }
+    .hero-title-row {
+      gap: 12px;
     }
     .lot-code-title {
-      font-size: 32px;
+      font-size: 40px;
     }
-    .lot-share-actions-v4 {
-      width: 100%;
+    .hero-status-pill {
+      height: 26px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+    .lot-seals-v4 {
+      gap: 10px 18px;
+      margin-top: 20px;
+      padding-top: 18px;
+    }
+    .seal-item {
       gap: 8px;
+      font-size: 13.5px;
     }
-    .lot-share-btn-v4 {
-      height: 34px;
-      padding: 0 12px;
-      font-size: 12px;
+    .seal-icon {
+      font-size: 16px;
     }
     .hero-price-box {
       width: 100%;
-      align-items: flex-start;
-      text-align: left;
-      padding: 20px;
+      padding: 16px 18px;
     }
     .hp-value {
       font-size: 26px;
     }
 
+    .hero-footer-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 20px;
+      margin-top: 22px;
+      padding-top: 20px;
+    }
+    /* No mobile o WhatsApp fica com a largura toda e o compartilhar vira
+       ícone — dois botões de rótulo cheio quebram para duas linhas. */
+    .lot-share-actions-v4 {
+      width: 100%;
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+    .lot-share-btn-v4 {
+      height: 40px;
+      justify-content: center;
+    }
+    .lot-share-btn-v4--secondary {
+      width: 40px;
+      flex: 0 0 40px;
+      padding: 0;
+    }
+    .lot-share-btn-v4--secondary .share-label {
+      display: none;
+    }
+    .lot-share-btn-v4--whatsapp {
+      flex: 1;
+      font-size: 14px;
+    }
+
     .quick-metrics-v4 {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 24px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px 12px;
       width: 100%;
     }
     .q-val {
-      font-size: 18px;
+      font-size: 19px;
     }
     .q-unit {
       font-size: 10px;
