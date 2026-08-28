@@ -256,7 +256,7 @@ onUnmounted(() => {
 }
 
 .section-nav.is-collapsible.is-open .section-nav-toggle {
-  transform: translate(94px, -50%);
+  transform: translate(81px, -50%);
   color: #0071e3;
 }
 
